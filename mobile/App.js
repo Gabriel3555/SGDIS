@@ -29,7 +29,7 @@ const COLORS = {
 
 
 
-  console.log("App loaded");
+//  console.log("App loaded");
 
 export default function App() {
   const [email, setEmail] = useState("");
