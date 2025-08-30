@@ -27,6 +27,10 @@ const COLORS = {
   bg2: "#D1F1DC",
 };
 
+
+
+  console.log("App loaded");
+
 export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
