@@ -1,4 +1,4 @@
 package com.sgdis.backend.auth.application.dto;
 
-public record AuthResponse() {
+public record UserResponse() {
 }
