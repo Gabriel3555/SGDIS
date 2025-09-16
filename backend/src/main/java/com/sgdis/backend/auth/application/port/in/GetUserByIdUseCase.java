@@ -1,5 +1,7 @@
 package com.sgdis.backend.auth.application.port.in;
 
-public interface GetUserByIdUseCase {
+import com.sgdis.backend.auth.application.dto.UserResponse;
 
+public interface GetUserByIdUseCase {
+    UserResponse getUserById(Long id);
 }

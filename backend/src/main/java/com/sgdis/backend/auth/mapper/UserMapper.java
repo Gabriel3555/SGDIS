@@ -2,6 +2,7 @@ package com.sgdis.backend.auth.mapper;
 
 import com.sgdis.backend.auth.domain.User;
 import com.sgdis.backend.auth.infrastructure.entity.UserEntity;
+import com.sgdis.backend.auth.application.dto.UserResponse;
 
 public final class UserMapper {
 
@@ -25,4 +26,12 @@ public final class UserMapper {
                 .build();
     }
 
+    public static UserResponse toResponse(User user) {
+        return new UserResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole()
+        );
+    }
 }
