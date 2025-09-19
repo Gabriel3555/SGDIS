@@ -6,13 +6,15 @@ public class User {
     private String password;
     private String email;
     private String role;
+    private boolean status;
 
-    public User(Long id, String username, String password, String email, String role) {
+    public User(Long id, String username, String password, String email, String role, boolean status) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.email = email;
         this.role = role;
+        this.status = status;
     }
 
     public User() {
@@ -56,5 +58,13 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public boolean isStatus() {
+        return status;
+    }
+
+    public void setStatus(boolean status) {
+        this.status = status;
     }
 }

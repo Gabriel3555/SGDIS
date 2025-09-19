@@ -22,4 +22,5 @@ public class UserEntity {
     private String password;
     private String email;
     private String role;
+    private boolean status = true; // Add status field for auth
 }
