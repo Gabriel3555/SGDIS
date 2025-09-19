@@ -1,8 +1,5 @@
 package com.sgdis.backend.user.mapper;
 
-import com.sgdis.backend.user.domain.User;
-import com.sgdis.backend.user.infrastructure.entity.UserEntity;
-import com.sgdis.backend.user.application.dto.UserResponse;
 
 public final class UserMapper {
 
