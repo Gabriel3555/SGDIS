@@ -1,6 +1,7 @@
-package com.sgdis.backend.auth.application.port.out;
+package com.sgdis.backend.user.application.port.out;
 
-import com.sgdis.backend.auth.domain.User;
+
+import com.sgdis.backend.user.domain.User;
 
 import java.util.Optional;
 
