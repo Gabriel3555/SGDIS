@@ -1,9 +1,8 @@
-package com.sgdis.backend.auth.infrastructure.repository;
+package com.sgdis.backend.user.infrastructure.repository;
 
-import com.sgdis.backend.auth.application.port.out.GetUserByIdRepository;
-import com.sgdis.backend.auth.domain.User;
-import com.sgdis.backend.auth.infrastructure.entity.UserEntity;
-import com.sgdis.backend.auth.mapper.UserMapper;
+import com.sgdis.backend.user.application.port.out.GetUserByIdRepository;
+import com.sgdis.backend.user.domain.User;
+import com.sgdis.backend.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 

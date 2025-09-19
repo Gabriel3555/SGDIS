@@ -1,4 +1,4 @@
-package com.sgdis.backend.auth.infrastructure.entity;
+package com.sgdis.backend.user.infrastructure.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

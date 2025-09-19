@@ -1,8 +1,8 @@
-package com.sgdis.backend.auth.mapper;
+package com.sgdis.backend.user.mapper;
 
-import com.sgdis.backend.auth.domain.User;
-import com.sgdis.backend.auth.infrastructure.entity.UserEntity;
-import com.sgdis.backend.auth.application.dto.UserResponse;
+import com.sgdis.backend.user.application.dto.UserResponse;
+import com.sgdis.backend.user.domain.User;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 
 public final class UserMapper {
 

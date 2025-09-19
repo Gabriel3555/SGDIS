@@ -1,7 +1,7 @@
-package com.sgdis.backend.auth.web;
+package com.sgdis.backend.user.web;
 
-import com.sgdis.backend.auth.application.dto.UserResponse;
-import com.sgdis.backend.auth.application.port.in.GetUserByIdUseCase;
+import com.sgdis.backend.user.application.dto.UserResponse;
+import com.sgdis.backend.user.application.port.in.GetUserByIdUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

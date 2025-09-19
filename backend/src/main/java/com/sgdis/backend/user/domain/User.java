@@ -1,4 +1,4 @@
-package com.sgdis.backend.auth.domain;
+package com.sgdis.backend.user.domain;
 
 public class User {
     private Long id;
