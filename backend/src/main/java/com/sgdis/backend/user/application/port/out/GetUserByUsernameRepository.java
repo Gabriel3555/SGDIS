@@ -4,6 +4,6 @@ import com.sgdis.backend.user.domain.User;
 
 import java.util.Optional;
 
-public interface GetUserByIdRepository {
-    User findUserById(Long id);
+public interface GetUserByUsernameRepository {
+    User findUserByUsername(String username);
 }
