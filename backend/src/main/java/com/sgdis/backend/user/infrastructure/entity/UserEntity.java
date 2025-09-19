@@ -1,4 +1,4 @@
-package com.sgdis.backend.auth.infrastructure.entity;
+package com.sgdis.backend.user.infrastructure.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -22,4 +22,5 @@ public class UserEntity {
     private String password;
     private String email;
     private String role;
+    private boolean status = true; // Add status field for auth
 }

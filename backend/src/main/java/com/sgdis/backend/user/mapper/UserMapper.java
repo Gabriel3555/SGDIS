@@ -1,8 +1,8 @@
-package com.sgdis.backend.auth.mapper;
+package com.sgdis.backend.user.mapper;
 
-import com.sgdis.backend.auth.domain.User;
-import com.sgdis.backend.auth.infrastructure.entity.UserEntity;
-import com.sgdis.backend.auth.application.dto.UserResponse;
+import com.sgdis.backend.user.domain.User;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.application.dto.UserResponse;
 
 public final class UserMapper {
 
@@ -14,7 +14,8 @@ public final class UserMapper {
                 entity.getUsername(),
                 entity.getPassword(),
                 entity.getEmail(),
-                entity.getRole()
+                entity.getRole(),
+                entity.isStatus()
         );
     }
 
@@ -22,7 +23,10 @@ public final class UserMapper {
         return UserEntity.builder()
                 .id(user.getId())
                 .username(user.getUsername())
+                .password(user.getPassword())
+                .email(user.getEmail())
                 .role(user.getRole())
+                .status(user.isStatus())
                 .build();
     }
 
