@@ -1,5 +1,6 @@
 package com.sgdis.backend.user.infrastructure.entity;
 
+import com.sgdis.backend.user.domain.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class UserEntity {
     private String username;
     private String password;
     private String email;
-    private String role;
-    private boolean status = true; // Add status field for auth
+    @Enumerated(EnumType.STRING)
+    private Role role;
+    private boolean status = true;
 }

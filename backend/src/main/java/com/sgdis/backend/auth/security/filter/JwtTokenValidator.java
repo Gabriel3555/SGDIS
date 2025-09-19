@@ -1,6 +1,7 @@
 package com.sgdis.backend.auth.security.filter;
 
 import com.sgdis.backend.auth.utils.JwtUtils;
+import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -38,12 +39,21 @@ public class JwtTokenValidator extends OncePerRequestFilter {
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
 
-            DecodedJWT decodedJWT = jwtUtils.verifyToken(token);
-            Long userId = decodedJWT.getClaim("userId").asLong();
-            String roleString = jwtUtils.extractSpecificClaim(decodedJWT, "role").asString();
-            GrantedAuthority role = new SimpleGrantedAuthority(roleString);
+            try {
+                DecodedJWT decodedJWT = jwtUtils.verifyToken(token);
+                Claim userIdClaim = decodedJWT.getClaim("userId");
+                Claim roleClaim = decodedJWT.getClaim("role");
 
-            SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of(role)));
+                if (userIdClaim != null && roleClaim != null) {
+                    Long userId = userIdClaim.asLong();
+                    String roleString = roleClaim.asString();
+                    GrantedAuthority role = new SimpleGrantedAuthority(roleString);
+
+                    SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of(role)));
+                }
+            } catch (Exception e) {
+                // Invalid token, do nothing
+            }
         }
 
         filterChain.doFilter(request, response);

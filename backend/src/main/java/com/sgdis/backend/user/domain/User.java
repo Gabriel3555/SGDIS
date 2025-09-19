@@ -5,10 +5,10 @@ public class User {
     private String username;
     private String password;
     private String email;
-    private String role;
+    private Role role;
     private boolean status;
 
-    public User(Long id, String username, String password, String email, String role, boolean status) {
+    public User(Long id, String username, String password, String email, Role role, boolean status) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -52,11 +52,11 @@ public class User {
         this.email = email;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 
