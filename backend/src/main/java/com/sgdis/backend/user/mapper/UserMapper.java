@@ -14,9 +14,12 @@ public final class UserMapper {
     public static User toDomain(UserEntity entity) {
         return new User(
                 entity.getId(),
-                entity.getUsername(),
                 entity.getPassword(),
                 entity.getEmail(),
+                entity.getFullName(),
+                entity.getJobTitle(),
+                entity.getLaborDepartment(),
+                entity.getImgUrl(),
                 entity.getRole(),
                 entity.isStatus()
         );
@@ -25,9 +28,12 @@ public final class UserMapper {
     public static UserEntity toEntity(User user) {
         return UserEntity.builder()
                 .id(user.getId())
-                .username(user.getUsername())
                 .password(user.getPassword())
                 .email(user.getEmail())
+                .fullName(user.getFullName())
+                .jobTitle(user.getJobTitle())
+                .laborDepartment(user.getLaborDepartment())
+                .imgUrl(user.getImgUrl())
                 .role(user.getRole())
                 .status(user.isStatus())
                 .build();
@@ -36,8 +42,11 @@ public final class UserMapper {
     public static UserResponse toResponse(User user) {
         return new UserResponse(
                 user.getId(),
-                user.getUsername(),
                 user.getEmail(),
+                user.getFullName(),
+                user.getJobTitle(),
+                user.getLaborDepartment(),
+                user.getImgUrl(),
                 user.getRole().name(),
                 user.isStatus()
         );
@@ -46,9 +55,12 @@ public final class UserMapper {
     public static User toDomain(CreateUserRequest request) {
         return new User(
                 null,
-                request.username(),
-                null, // password will be set later
+                null,
                 request.email(),
+                null,
+                null,
+                null,
+                null,
                 Role.valueOf(request.role().toUpperCase()),
                 true
         );
@@ -57,9 +69,12 @@ public final class UserMapper {
     public static User toDomain(UpdateUserRequest request, Long id) {
         return new User(
                 id,
-                request.username(),
-                null, // password not updated here
+                null,
                 request.email(),
+                null,
+                null,
+                null,
+                null,
                 Role.valueOf(request.role().toUpperCase()),
                 true
         );

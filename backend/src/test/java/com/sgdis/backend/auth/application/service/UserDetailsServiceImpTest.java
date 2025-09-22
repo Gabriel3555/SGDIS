@@ -5,6 +5,8 @@ import com.sgdis.backend.auth.application.dto.AuthRequest;
 import com.sgdis.backend.auth.application.dto.AuthResponse;
 import com.sgdis.backend.auth.application.dto.RefreshTokenRequest;
 import com.sgdis.backend.auth.application.dto.RefreshTokenResponse;
+import com.sgdis.backend.auth.application.dto.RegisterRequest;
+import com.sgdis.backend.user.application.service.FileUploadService;
 import com.sgdis.backend.auth.utils.JwtUtils;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.domain.User;
@@ -41,6 +43,7 @@ class UserDetailsServiceImpTest {
     private JpaUserRepository userRepository;
     private PasswordEncoder passwordEncoder;
     private JwtUtils jwtUtils;
+    private FileUploadService fileUploadService;
     private UserDetailsServiceImp userDetailsServiceImp;
 
     private User testUser;
@@ -54,15 +57,16 @@ class UserDetailsServiceImpTest {
         // Set JWT properties for testing
         ReflectionTestUtils.setField(jwtUtils, "secretPassword", "test-secret-key-for-jwt");
         ReflectionTestUtils.setField(jwtUtils, "userGenerator", "test-issuer");
-        userDetailsServiceImp = new UserDetailsServiceImp(userRepository, springDataUserRepository, passwordEncoder, jwtUtils);
+        fileUploadService = new FileUploadService();
+        userDetailsServiceImp = new UserDetailsServiceImp(userRepository, springDataUserRepository, passwordEncoder, jwtUtils, fileUploadService);
 
         // Create test user using repository
         String encodedPassword = passwordEncoder.encode("password123");
-        UserEntity userEntity = new UserEntity(null, "testuser", encodedPassword, "test@example.com", Role.USER, true);
+        UserEntity userEntity = new UserEntity(null, encodedPassword, "test@soy.sena.edu.co", "Test User", "Developer", "IT", null, Role.USER, true);
         springDataUserRepository.save(userEntity);
 
-        testUser = new User(1L, "testuser", encodedPassword, "test@example.com", Role.USER, true);
-        authRequest = new AuthRequest("testuser", "password123");
+        testUser = new User(1L, encodedPassword, "test@soy.sena.edu.co", "Test User", "Developer", "IT", null, Role.USER, true);
+        authRequest = new AuthRequest("test@soy.sena.edu.co", "password123");
     }
 
     @Test
@@ -74,7 +78,7 @@ class UserDetailsServiceImpTest {
         // Then
         assertNotNull(response);
         assertEquals(1L, response.id());
-        assertEquals("testuser", response.username());
+        assertEquals("test@soy.sena.edu.co", response.email());
         assertEquals("logged successfully!", response.message());
         assertNotNull(response.jwt());
         assertNotNull(response.refreshToken());
@@ -83,24 +87,22 @@ class UserDetailsServiceImpTest {
 
     @Test
     void login_WithInactiveUser_ShouldThrowBadCredentialsException() {
-        // Given - Create inactive user
         String encodedPassword = passwordEncoder.encode("password123");
-        UserEntity inactiveUserEntity = new UserEntity(null, "inactiveuser", encodedPassword, "inactive@example.com", Role.USER, false);
+        UserEntity inactiveUserEntity = new UserEntity(null, encodedPassword, "inactive@soy.sena.edu.co", "Inactive User", "Tester", "QA", null, Role.USER, false);
         entityManager.persist(inactiveUserEntity);
         entityManager.flush();
 
-        AuthRequest inactiveRequest = new AuthRequest("inactiveuser", "password123");
+        AuthRequest inactiveRequest = new AuthRequest("inactive@soy.sena.edu.co", "password123");
 
-        // When & Then
         Exception exception = assertThrows(Exception.class,
                 () -> userDetailsServiceImp.login(inactiveRequest));
-        assertTrue(exception.getMessage().contains("Invalid username or password"));
+        assertTrue(exception.getMessage().contains("Invalid email or password"));
     }
 
     @Test
     void login_WithInvalidPassword_ShouldThrowBadCredentialsException() {
         // Given
-        AuthRequest invalidRequest = new AuthRequest("testuser", "wrongpassword");
+        AuthRequest invalidRequest = new AuthRequest("test@soy.sena.edu.co", "wrongpassword");
 
         // When & Then
         Exception exception = assertThrows(Exception.class,
@@ -129,13 +131,13 @@ class UserDetailsServiceImpTest {
     }
 
     @Test
-    void searchUserDetails_WithValidUsername_ShouldReturnUserDetails() {
+    void searchUserDetails_WithValidEmail_ShouldReturnUserDetails() {
         // When
-        var userDetails = userDetailsServiceImp.searchUserDetails("testuser");
+        var userDetails = userDetailsServiceImp.searchUserDetails("test@soy.sena.edu.co");
 
         // Then
         assertNotNull(userDetails);
-        assertEquals("testuser", userDetails.getUsername());
+        assertEquals("test@soy.sena.edu.co", userDetails.getUsername());
         assertNotNull(userDetails.getPassword());
         assertTrue(userDetails.getAuthorities().stream()
                 .anyMatch(auth -> auth.getAuthority().equals("ROLE_USER")));
@@ -169,11 +171,41 @@ class UserDetailsServiceImpTest {
 
     @Test
     void loadUserByUsername_ShouldDelegateToSearchUserDetails() {
-        // When
-        var userDetails = userDetailsServiceImp.loadUserByUsername("testuser");
+        var userDetails = userDetailsServiceImp.loadUserByUsername("test@soy.sena.edu.co");
 
-        // Then
         assertNotNull(userDetails);
-        assertEquals("testuser", userDetails.getUsername());
+        assertEquals("test@soy.sena.edu.co", userDetails.getUsername());
+    }
+
+    @Test
+    void register_WithValidData_ShouldCreateUser() {
+        RegisterRequest request = new RegisterRequest("password123", "newuser@soy.sena.edu.co", "New User", "Developer", "IT");
+
+        userDetailsServiceImp.register(request);
+
+        UserEntity saved = springDataUserRepository.findByEmail("newuser@soy.sena.edu.co").orElse(null);
+        assertNotNull(saved);
+        assertEquals("newuser@soy.sena.edu.co", saved.getEmail());
+        assertEquals("New User", saved.getFullName());
+        assertEquals("Developer", saved.getJobTitle());
+        assertEquals("IT", saved.getLaborDepartment());
+    }
+
+    @Test
+    void register_WithInvalidEmailDomain_ShouldThrowException() {
+        RegisterRequest request = new RegisterRequest("password123", "newuser@gmail.com", "New User", "Developer", "IT");
+
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> userDetailsServiceImp.register(request));
+        assertTrue(exception.getMessage().contains("Email must be from"));
+    }
+
+    @Test
+    void register_WithDuplicateEmail_ShouldThrowException() {
+        RegisterRequest request = new RegisterRequest("password123", "test@soy.sena.edu.co", "Test User", "Developer", "IT");
+
+        Exception exception = assertThrows(IllegalArgumentException.class,
+                () -> userDetailsServiceImp.register(request));
+        assertTrue(exception.getMessage().contains("Email already exists"));
     }
 }

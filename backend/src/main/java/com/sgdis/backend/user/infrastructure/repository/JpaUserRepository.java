@@ -18,7 +18,7 @@ public class JpaUserRepository implements
         DeleteUserRepository,
         ListUserRepository,
         GetUserByIdRepository,
-        GetUserByUsernameRepository  {
+        GetUserByEmailRepository  {
 
     private final SpringDataUserRepository repository;
 
@@ -57,9 +57,9 @@ public class JpaUserRepository implements
     }
 
     @Override
-    public User findUserByUsername(String username) {
-        return repository.findByUsername(username)
+    public User findUserByEmail(String email) {
+        return repository.findByEmail(email)
                 .map(UserMapper::toDomain)
-                .orElseThrow(()->new ResourceNotFoundException("No user found with username " + username));
+                .orElseThrow(()->new ResourceNotFoundException("No user found with email " + email));
     }
 }

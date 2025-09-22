@@ -19,9 +19,13 @@ public class UserEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String username;
     private String password;
+    @Column(unique = true)
     private String email;
+    private String fullName;
+    private String jobTitle;
+    private String laborDepartment;
+    private String imgUrl;
     @Enumerated(EnumType.STRING)
     private Role role;
     private boolean status = true;
