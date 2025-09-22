@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Almacenista - SGDIS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'sena-verde': '#39A900',
+                        'sena-verde-oscuro': '#2D8000',
+                        'sena-verde-claro': '#E8F5E8',
+                        'sena-acento': '#FF6B00'
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fdfdfd;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-4xl">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-4">¡Bienvenido al Dashboard Almacenista!</h1>
+                <p class="text-lg text-gray-600">Panel de gestión de almacén del Sistema de Gestión de Inventario SGDIS.
+                </p>
+                <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-4"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-sena-verde-claro p-6 rounded-xl">
+                    <h2 class="text-xl font-semibold text-sena-verde mb-2">Recepción de Mercancía</h2>
+                    <p class="text-gray-700">Registrar entrada de productos y materiales al almacén.</p>
+                </div>
+                <div class="bg-sena-verde-claro p-6 rounded-xl">
+                    <h2 class="text-xl font-semibold text-sena-verde mb-2">Control de Inventario</h2>
+                    <p class="text-gray-700">Gestionar stock, ubicaciones y movimientos de productos.</p>
+                </div>
+                <div class="bg-sena-verde-claro p-6 rounded-xl">
+                    <h2 class="text-xl font-semibold text-sena-verde mb-2">Despachos</h2>
+                    <p class="text-gray-700">Procesar salidas de mercancía y entregas.</p>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button onclick="logout()"
+                    class="bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Verificar autenticación al cargar la página
+        document.addEventListener('DOMContentLoaded', function () {
+            const token = localStorage.getItem('jwt');
+            if (!token) {
+                window.location.href = '/index.html';
+            }
+        });
+
+        function logout() {
+            // Limpiar tokens
+            localStorage.removeItem('jwt');
+            localStorage.removeItem('refreshToken');
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+
+</html>
