@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # SGDIS - SENA Inventory Management System
 
 [![Java](https://img.shields.io/badge/Java-17-orange)](https://openjdk.java.net/projects/jdk/17/)
