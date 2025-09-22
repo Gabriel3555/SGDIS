@@ -309,5 +309,5 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ---
 
 **Versión:** 0.0.1
-**Última actualización:** Septiembre 2024
+**Última actualización:** Septiembre 2025
 **Estado:** En desarrollo activo
