@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # SGDIS - SENA Inventory Management System
 
 [![Java](https://img.shields.io/badge/Java-17-orange)](https://openjdk.java.net/projects/jdk/17/)
@@ -311,3 +312,6 @@ This project is under the MIT License. See the `LICENSE` file for more details.
 **Version:** 0.0.1
 **Last update:** September 2025
 **Status:** Active development
+=======
+
+>>>>>>> 3c458e1aa930c2140a2e50c773689f8d82318c22
