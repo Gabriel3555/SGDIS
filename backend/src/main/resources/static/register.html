@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGDIS - Sistema de Gestión de Inventario SENA</title>
+    <title>Registro - SGDIS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -132,16 +132,16 @@
                         <img src="svg/box.jpg" alt="Logo Caja"
                             class="h-20 w-20 mx-auto rounded-2xl shadow-lg object-cover">
                     </div>
-                    <h1 class="text-2xl font-bold text-gray-800 mb-2">SGDIS</h1>
+                    <h1 class="text-2xl font-bold text-gray-800 mb-2">Registro</h1>
                     <h2 class="text-lg font-semibold text-sena-verde mb-1">Sistema de Gestión de Inventario</h2>
                     <p class="text-sm text-gray-600">Servicio Nacional de Aprendizaje - SENA</p>
                     <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-3"></div>
                 </div>
 
-                <form class="space-y-6" id="loginForm" onsubmit="return false">
+                <form class="space-y-6" id="registerForm">
                     <div>
-                        <label for="usuario" class="block text-sm font-medium text-gray-700 mb-2">
-                            Usuario
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                            Nombre de Usuario
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -151,14 +151,32 @@
                                         d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
                             </div>
-                            <input type="text" id="usuario" name="usuario"
+                            <input type="text" id="username" name="username"
                                 class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
-                                placeholder="usuario123" required>
+                                placeholder="usuario.sena" required>
                         </div>
                     </div>
 
                     <div>
-                        <label for="contrasena" class="block text-sm font-medium text-gray-700 mb-2">
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                            Correo Electrónico
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                                </svg>
+                            </div>
+                            <input type="email" id="email" name="email"
+                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                placeholder="usuario@sena.edu.co" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
                             Contraseña
                         </label>
                         <div class="relative">
@@ -169,10 +187,11 @@
                                         d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                                 </svg>
                             </div>
-                            <input type="password" id="contrasena" name="contrasena"
+                            <input type="password" id="password" name="password"
                                 class="entrada-focus block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
                                 placeholder="Ingresa tu contraseña" required>
-                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                id="togglePassword">
                                 <svg class="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" fill="none"
                                     stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -184,50 +203,52 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input id="recordarme" name="recordarme" type="checkbox"
-                                class="h-4 w-4 text-sena-verde focus:ring-sena-verde border-gray-300 rounded">
-                            <label for="recordarme" class="ml-2 block text-sm text-gray-700">
-                                Recordarme
-                            </label>
+                    <div>
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                            Confirmar Contraseña
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <input type="password" id="confirmPassword" name="confirmPassword"
+                                class="entrada-focus block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                placeholder="Confirma tu contraseña" required>
+                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                                id="toggleConfirmPassword">
+                                <svg class="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
                         </div>
-                        <a href="#"
-                            class="text-sm text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
-                            ¿Olvidaste tu contraseña?
-                        </a>
                     </div>
 
-                    <button type="button" onclick="login()"
+                    <button type="submit"
                         class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-sena-verde hover:bg-sena-verde-oscuro focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sena-verde transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
-                        Iniciar Sesión
+                        Registrarse
                     </button>
                 </form>
 
                 <div class="mt-6 text-center">
-                    <p class="text-sm text-gray-600 mb-3">
-                        ¿No tienes cuenta?
-                        <a href="register.html"
+                    <p class="text-sm text-gray-600">
+                        ¿Ya tienes cuenta?
+                        <a href="index.html"
                             class="text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
-                            Regístrate aquí
+                            Inicia sesión
                         </a>
                     </p>
-                    <p class="text-xs text-gray-500 mb-3">
-                        ¿Necesitas ayuda?
-                        <a href="mailto:soporte@sena.edu.co"
-                            class="text-sena-verde hover:text-sena-verde-oscuro font-medium">
-                            Contacta soporte técnico
-                        </a>
-                    </p>
-                    <div class="flex items-center justify-center space-x-4 text-xs text-gray-400">
-                        <a href="#" class="hover:text-sena-verde transition-colors">Términos de uso</a>
-                        <span>•</span>
-                        <a href="#" class="hover:text-sena-verde transition-colors">Política de privacidad</a>
-                    </div>
                 </div>
 
                 <div class="text-center mt-6">
@@ -240,83 +261,82 @@
                 </div>
             </div>
         </div>
+    </div>
 
-        <script>
-            // Agregar interacciones suaves
-            document.addEventListener('DOMContentLoaded', function () {
-                const entradas = document.querySelectorAll('input[type="text"], input[type="password"]');
+    <script>
+        // Agregar interacciones suaves
+        document.addEventListener('DOMContentLoaded', function () {
+            const entradas = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
 
-                entradas.forEach(entrada => {
-                    entrada.addEventListener('focus', function () {
-                        this.parentElement.classList.add('scale-[1.02]');
-                    });
-
-                    entrada.addEventListener('blur', function () {
-                        this.parentElement.classList.remove('scale-[1.02]');
-                    });
+            entradas.forEach(entrada => {
+                entrada.addEventListener('focus', function () {
+                    this.parentElement.classList.add('scale-[1.02]');
                 });
 
-                // Alternar visibilidad de contraseña
-                const alternarContrasena = document.querySelector('button[type="button"]');
-                const campoContrasena = document.getElementById('contrasena');
-
-                alternarContrasena.addEventListener('click', function () {
-                    const tipo = campoContrasena.getAttribute('type') === 'password' ? 'text' : 'password';
-                    campoContrasena.setAttribute('type', tipo);
+                entrada.addEventListener('blur', function () {
+                    this.parentElement.classList.remove('scale-[1.02]');
                 });
-
-                // Función de login
-                window.login = async function () {
-                    const usuario = document.getElementById('usuario').value;
-                    const contrasena = document.getElementById('contrasena').value;
-
-                    try {
-                        const response = await fetch('/api/v1/auth/login', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                username: usuario,
-                                password: contrasena
-                            })
-                        });
-
-                        const data = await response.json();
-
-                        if (response.ok && data.status) {
-                            // Login exitoso
-                            // Guardar tokens
-                            localStorage.setItem('jwt', data.jwt);
-                            localStorage.setItem('refreshToken', data.refreshToken);
-
-                            // Decodificar JWT para obtener rol y redirigir
-                            const token = data.jwt;
-                            const payload = JSON.parse(atob(token.split(".")[1]));
-                            const role = payload.role;
-                            let redirectUrl = '/index.html'; // Default
-
-                            if (role === "ROLE_ADMIN") {
-                                redirectUrl = '/dashboard/admin/dashboard.html';
-                            } else if (role === "ROLE_WAREHOUSE") {
-                                redirectUrl = '/dashboard/warehouse/dashboard.html';
-                            } else if (role === "ROLE_USER") {
-                                redirectUrl = '/dashboard/user/dashboard.html';
-                            }
-
-                            window.location.href = redirectUrl;
-                        } else {
-                            // Error en login
-                            console.error('Error en login:', data.message || 'Credenciales inválidas');
-                            alert('Error en login: ' + (data.message || 'Credenciales inválidas'));
-                        }
-                    } catch (error) {
-                        console.error('Error de conexión:', error);
-                        alert('Error de conexión. Inténtalo de nuevo.');
-                    }
-                };
             });
-        </script>
+
+            // Alternar visibilidad de contraseña
+            const togglePassword = document.getElementById('togglePassword');
+            const passwordField = document.getElementById('password');
+
+            togglePassword.addEventListener('click', function () {
+                const tipo = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordField.setAttribute('type', tipo);
+            });
+
+            const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+            const confirmPasswordField = document.getElementById('confirmPassword');
+
+            toggleConfirmPassword.addEventListener('click', function () {
+                const tipo = confirmPasswordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                confirmPasswordField.setAttribute('type', tipo);
+            });
+
+            // Manejar el envío del formulario de registro
+            const registerForm = document.getElementById('registerForm');
+            registerForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const username = document.getElementById('username').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+
+                if (password !== confirmPassword) {
+                    alert('Las contraseñas no coinciden');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/v1/auth/register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            username: username,
+                            password: password,
+                            email: email
+                        })
+                    });
+
+                    if (response.ok) {
+                        alert('Usuario registrado exitosamente. Ahora puedes iniciar sesión.');
+                        window.location.href = '/index.html';
+                    } else {
+                        const errorText = await response.text();
+                        alert('Error en registro: ' + errorText);
+                    }
+                } catch (error) {
+                    console.error('Error de conexión:', error);
+                    alert('Error de conexión. Inténtalo de nuevo.');
+                }
+            });
+        });
+    </script>
 
 </body>
 
