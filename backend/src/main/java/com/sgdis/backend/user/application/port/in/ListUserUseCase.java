@@ -2,6 +2,8 @@ package com.sgdis.backend.user.application.port.in;
 
 import com.sgdis.backend.user.application.dto.UserResponse;
 
+import java.util.List;
+
 public interface ListUserUseCase {
-    UserResponse listUsers();
+    List<UserResponse> listUsers();
 }
