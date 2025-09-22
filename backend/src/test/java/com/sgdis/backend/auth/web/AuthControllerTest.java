@@ -8,6 +8,7 @@ import com.sgdis.backend.auth.application.dto.RefreshTokenResponse;
 import com.sgdis.backend.auth.application.port.LoginUseCase;
 import com.sgdis.backend.auth.application.port.RefreshTokenUseCase;
 import com.sgdis.backend.auth.application.port.RegisterUseCase;
+import com.sgdis.backend.user.domain.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -44,8 +45,8 @@ class AuthControllerTest {
     @WithMockUser
     void authenticate_WithValidRequest_ShouldReturnAuthResponse() throws Exception {
         // Given
-        AuthRequest authRequest = new AuthRequest("testuser", "password123");
-        AuthResponse authResponse = new AuthResponse(1L, "testuser", "Login successful", "jwt-token", "refresh-token", true);
+        AuthRequest authRequest = new AuthRequest("testuser@example.com", "password123");
+        AuthResponse authResponse = new AuthResponse(1L, "testuser@example.com", Role.USER, "Login successful", "jwt-token", "refresh-token", true);
 
         when(loginUseCase.login(any(AuthRequest.class))).thenReturn(authResponse);
 
@@ -57,7 +58,8 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.email").value("testuser@example.com"))
+                .andExpect(jsonPath("$.role").value("USER"))
                 .andExpect(jsonPath("$.message").value("Login successful"))
                 .andExpect(jsonPath("$.jwt").value("jwt-token"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh-token"))

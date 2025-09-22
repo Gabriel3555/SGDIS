@@ -8,6 +8,7 @@ import com.sgdis.backend.auth.application.dto.RefreshTokenResponse;
 import com.sgdis.backend.auth.application.port.LoginUseCase;
 import com.sgdis.backend.auth.application.port.RefreshTokenUseCase;
 import com.sgdis.backend.auth.application.port.RegisterUseCase;
+import com.sgdis.backend.user.domain.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
@@ -63,10 +64,11 @@ class AuthIntegrationTest {
     @Test
     void loginIntegrationTest_ShouldReturnAuthResponse() throws Exception {
         // Given
-        AuthRequest authRequest = new AuthRequest("integrationuser", "password123");
+        AuthRequest authRequest = new AuthRequest("integrationuser@soy.sena.edu.co", "password123");
         AuthResponse authResponse = new AuthResponse(
                 1L,
-                "integrationuser",
+                "integrationuser@soy.sena.edu.co",
+                Role.USER,
                 "Login successful",
                 "jwt-token-123",
                 "refresh-token-456",
@@ -82,7 +84,8 @@ class AuthIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.username").value("integrationuser"))
+                .andExpect(jsonPath("$.email").value("integrationuser@soy.sena.edu.co"))
+                .andExpect(jsonPath("$.role").value("USER"))
                 .andExpect(jsonPath("$.message").value("Login successful"))
                 .andExpect(jsonPath("$.jwt").value("jwt-token-123"))
                 .andExpect(jsonPath("$.refreshToken").value("refresh-token-456"))
@@ -114,7 +117,7 @@ class AuthIntegrationTest {
         // For now, we just verify the setup works
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"test\",\"password\":\"test\"}"))
+                        .content("{\"email\":\"test@soy.sena.edu.co\",\"password\":\"test\"}"))
                 .andExpect(status().isOk());
     }
 

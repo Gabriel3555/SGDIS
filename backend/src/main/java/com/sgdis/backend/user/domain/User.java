@@ -2,17 +2,23 @@ package com.sgdis.backend.user.domain;
 
 public class User {
     private Long id;
-    private String username;
     private String password;
     private String email;
+    private String fullName;
+    private String jobTitle;
+    private String laborDepartment;
+    private String imgUrl;
     private Role role;
     private boolean status;
 
-    public User(Long id, String username, String password, String email, Role role, boolean status) {
+    public User(Long id, String password, String email, String fullName, String jobTitle, String laborDepartment, String imgUrl, Role role, boolean status) {
         this.id = id;
-        this.username = username;
         this.password = password;
         this.email = email;
+        this.fullName = fullName;
+        this.jobTitle = jobTitle;
+        this.laborDepartment = laborDepartment;
+        this.imgUrl = imgUrl;
         this.role = role;
         this.status = status;
     }
@@ -26,14 +32,6 @@ public class User {
 
     public void setId(Long id) {
         this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public String getPassword() {
@@ -66,5 +64,37 @@ public class User {
 
     public void setStatus(boolean status) {
         this.status = status;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public String getJobTitle() {
+        return jobTitle;
+    }
+
+    public void setJobTitle(String jobTitle) {
+        this.jobTitle = jobTitle;
+    }
+
+    public String getLaborDepartment() {
+        return laborDepartment;
+    }
+
+    public void setLaborDepartment(String laborDepartment) {
+        this.laborDepartment = laborDepartment;
+    }
+
+    public String getImgUrl() {
+        return imgUrl;
+    }
+
+    public void setImgUrl(String imgUrl) {
+        this.imgUrl = imgUrl;
     }
 }
