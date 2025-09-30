@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -23,10 +24,13 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig  {
 
@@ -39,15 +43,52 @@ public class SecurityConfig  {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(new JwtTokenValidator(jwtUtils), BasicAuthenticationFilter.class)
+                .exceptionHandling(exceptions -> exceptions
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        // For API requests, return JSON error
+                        if (request.getRequestURI().startsWith("/api/")) {
+                            response.setContentType("application/json");
+                            response.setStatus(401);
+                            response.getWriter().write("{\"error\":\"Authentication required\"}");
+                        } else {
+                            // For page requests, redirect to error page
+                            response.sendRedirect("/error.html");
+                        }
+                    })
+                    .accessDeniedHandler((request, response, accessDeniedException) -> {
+                        // For API requests, return JSON error
+                        if (request.getRequestURI().startsWith("/api/")) {
+                            response.setContentType("application/json");
+                            response.setStatus(403);
+                            response.getWriter().write("{\"error\":\"Access denied\"}");
+                        } else {
+                            // For page requests, show error page
+                            response.sendRedirect("/error.html");
+                        }
+                    })
+                )
                 .authorizeHttpRequests(http -> {
                     http.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
                     http.requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll();
                     http.requestMatchers(
                             "/swagger-ui/**",
                             "/v3/api-docs/**",
-                            "/v3/api-docs.yaml"
+                            "/v3/api-docs.yaml",
+                            "/static/**",
+                            "/",
+                            "/index",
+                            "/register",
+                            "/error.html",
+                            "/svg/**",
+                            "/uploads/**"
                     ).permitAll();
-                    http.anyRequest().permitAll();
+                    // Dashboard endpoints require authentication and proper roles
+                    http.requestMatchers("/dashboard/user").hasRole("USER");
+                    http.requestMatchers("/dashboard/admin").hasRole("ADMIN");
+                    http.requestMatchers("/dashboard/warehouse").hasRole("WAREHOUSE");
+                    // API endpoints require authentication
+                    http.requestMatchers("/api/v1/users/**").authenticated();
+                    http.anyRequest().authenticated();
                 });
 
         return httpSecurity.build();

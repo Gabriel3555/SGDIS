@@ -39,6 +39,26 @@
                 <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-4"></div>
             </div>
 
+            <!-- Profile Picture Upload Section -->
+            <div class="bg-gray-50 p-6 rounded-xl mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Foto de Perfil</h2>
+                <div class="flex items-center space-x-4">
+                    <div id="currentProfileImage" class="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center">
+                        <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <input type="file" id="profileImageInput" accept="image/*" class="hidden">
+                        <button onclick="document.getElementById('profileImageInput').click()"
+                            class="bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                            Cambiar Foto
+                        </button>
+                        <p class="text-sm text-gray-600 mt-1">Formatos permitidos: JPG, PNG, GIF. Máximo 5MB.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div class="bg-sena-verde-claro p-6 rounded-xl">
                     <h2 class="text-xl font-semibold text-sena-verde mb-2">Gestión de Inventario</h2>
@@ -65,13 +85,105 @@
             const token = localStorage.getItem('jwt');
             if (!token) {
                 window.location.href = '/index.html';
+                return;
             }
+            loadUserProfile();
+            setupEventListeners();
         });
+
+        function setupEventListeners() {
+            // Profile image upload
+            document.getElementById('profileImageInput').addEventListener('change', uploadProfileImage);
+        }
+
+        async function loadUserProfile() {
+            try {
+                const token = localStorage.getItem('jwt');
+                const response = await fetch('/api/v1/users/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    displayProfileImage(user.imgUrl);
+                } else if (response.status === 401) {
+                    logout();
+                }
+            } catch (error) {
+                console.error('Error loading user profile:', error);
+            }
+        }
+
+        function displayProfileImage(imgUrl) {
+            const container = document.getElementById('currentProfileImage');
+            if (imgUrl) {
+                container.innerHTML = `<img src="/uploads/${imgUrl}" alt="Profile" class="w-20 h-20 rounded-full object-cover">`;
+            } else {
+                container.innerHTML = `
+                    <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                `;
+            }
+        }
+
+        async function uploadProfileImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('El archivo es demasiado grande. Máximo 5MB.');
+                return;
+            }
+
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Por favor selecciona un archivo de imagen válido.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const token = localStorage.getItem('jwt');
+                const response = await fetch('/api/v1/users/me/image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('Foto de perfil actualizada exitosamente');
+                    loadUserProfile(); // Reload profile to show new image
+                } else if (response.status === 401) {
+                    logout();
+                } else {
+                    try {
+                        const errorData = await response.json();
+                        alert('Error actualizando foto de perfil: ' + errorData.error);
+                    } catch (e) {
+                        const error = await response.text();
+                        alert('Error actualizando foto de perfil: ' + error);
+                    }
+                }
+            } catch (error) {
+                console.error('Error uploading profile image:', error);
+                alert('Error actualizando foto de perfil');
+            }
+        }
 
         function logout() {
             // Limpiar tokens
             localStorage.removeItem('jwt');
             localStorage.removeItem('refreshToken');
+            // Clear cookie
+            document.cookie = 'jwt=; path=/; max-age=0';
             window.location.href = '/index.html';
         }
     </script>

@@ -34,10 +34,28 @@ public class JwtTokenValidator extends OncePerRequestFilter {
             return;
         }
 
-        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+        String token = null;
 
+        // Check Authorization header first
+        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
+            token = header.substring(7);
+        }
+
+        // If no token in header, check cookie
+        if (token == null) {
+            jakarta.servlet.http.Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (jakarta.servlet.http.Cookie cookie : cookies) {
+                    if ("jwt".equals(cookie.getName())) {
+                        token = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (token != null) {
 
             try {
                 DecodedJWT decodedJWT = jwtUtils.verifyToken(token);
