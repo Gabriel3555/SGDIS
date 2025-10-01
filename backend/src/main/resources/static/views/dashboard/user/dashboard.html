@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <img src="" alt="" class="icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -18,7 +19,7 @@
             --sena-green: #39A900;
             --sena-dark-green: #2D8000;
             --sena-light-green: #E8F5E8;
-            --sena-accent: #FF6B00;
+            --sena-accent: #fff200;
         }
 
         body {
@@ -27,8 +28,8 @@
         }
 
         .sidebar {
-            background: linear-gradient(180deg, #39A900 0%, #2d8400 100%);
-            box-shadow: 4px 0 20px rgba(57, 169, 0, 0.1);
+            background: white;
+            box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
         }
 
@@ -38,16 +39,18 @@
             margin: 8px 12px;
             padding: 12px 16px;
             cursor: pointer;
+            color: #374151;
         }
 
         .sidebar-item:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(57, 169, 0, 0.1);
             transform: translateX(5px);
         }
 
         .sidebar-item.active {
-            background: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background: rgba(57, 169, 0, 0.15);
+            box-shadow: 0 4px 12px rgba(57, 169, 0, 0.2);
+            color: #39A900;
         }
 
         .stat-card {
@@ -266,17 +269,17 @@
 
     <!-- Sidebar -->
     <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar">
-        <div class="p-6 flex items-center justify-between border-b border-white/20">
+        <div class="p-6 flex items-center justify-between border-b border-gray-200">
             <div class="flex items-center gap-2">
-                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                <div class="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center overflow-hidden">
                     <img src="../../../svg/logoSena.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
-                <div class="text-white">
-                    <div class="font-bold text-lg">SGDO</div>
-                    <div class="text-xs opacity-90">Inventario</div>
+                <div class="text-gray-800">
+                    <div class="font-bold text-lg">SGDIS</div>
+                    <div class="text-xs opacity-70">Inventario</div>
                 </div>
             </div>
-            <button class="text-white lg:hidden" id="closeSidebar">
+            <button class="text-gray-600 lg:hidden" id="closeSidebar">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
@@ -301,19 +304,19 @@
         </nav>
 
         <!-- User Profile in Sidebar (Mobile) -->
-        <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-white/20">
+        <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-600 font-bold">
+                <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
                     S
                 </div>
-                <div class="text-white">
+                <div class="text-gray-800">
                     <div class="font-semibold text-sm">Usuario</div>
-                    <div class="text-xs opacity-90">USER</div>
+                    <div class="text-xs opacity-70">USER</div>
                 </div>
             </div>
             <div class="text-center">
                 <button onclick="logout()"
-                    class="bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+                    class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
                     Cerrar Sesión
                 </button>
             </div>
