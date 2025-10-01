@@ -18,7 +18,7 @@ public class DashboardController {
     @PreAuthorize("hasRole('USER')")
     @ResponseBody
     public ResponseEntity<Resource> userDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/dashboard/user/dashboard.html");
+        Resource resource = new ClassPathResource("static/views/dashboard/user/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -32,7 +32,7 @@ public class DashboardController {
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
     public ResponseEntity<Resource> adminDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/dashboard/admin/dashboard.html");
+        Resource resource = new ClassPathResource("static/views/dashboard/admin/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -46,7 +46,7 @@ public class DashboardController {
     @PreAuthorize("hasRole('WAREHOUSE')")
     @ResponseBody
     public ResponseEntity<Resource> warehouseDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/dashboard/warehouse/dashboard.html");
+        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
