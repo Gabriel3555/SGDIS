@@ -88,7 +88,7 @@ public class SecurityConfig  {
                     http.requestMatchers("/dashboard/warehouse").hasRole("WAREHOUSE");
                     // API endpoints require authentication
                     http.requestMatchers("/api/v1/users/**").authenticated();
-                    http.anyRequest().authenticated();
+                    http.anyRequest().permitAll();
                 });
 
         return httpSecurity.build();

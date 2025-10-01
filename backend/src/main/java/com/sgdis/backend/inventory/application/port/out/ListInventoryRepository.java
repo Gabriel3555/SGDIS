@@ -4,6 +4,6 @@ import com.sgdis.backend.inventory.domain.Inventory;
 
 import java.util.List;
 
-public interface ListUserRepository {
+public interface ListInventoryRepository {
     List<Inventory> findAllInventoryes();
 }
