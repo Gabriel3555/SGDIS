@@ -3,6 +3,7 @@ package com.sgdis.backend.inventory.mapper;
 import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.domain.Inventory;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.user.mapper.UserMapper;
 
 import java.util.UUID;
 
@@ -33,7 +34,7 @@ public class InventoryMapper {
                 inventory.getUuid(),
                 inventory.getName(),
                 inventory.getLocation(),
-                null
+                inventory.getOwner()
         );
     }
 
@@ -43,7 +44,7 @@ public class InventoryMapper {
                 inventory.getUuid(),
                 inventory.getLocation(),
                 inventory.getName(),
-                null
+                inventory.getOwner() != null ? UserMapper.toEntity(inventory.getOwner()) : null
         );
     }
 
@@ -53,7 +54,7 @@ public class InventoryMapper {
                 entity.getUuid(),
                 entity.getLocation(),
                 entity.getName(),
-                null
+                entity.getOwner() != null ? UserMapper.toDomain(entity.getOwner()) : null
         );
     }
 
@@ -74,4 +75,31 @@ public class InventoryMapper {
                 inventory.getLocation()
         );
     }
+
+    public static AssignedInventoryResponse toAssignedResponse(Inventory inventory) {
+        AssignedInventoryUserResponse userResponse = null;
+        if (inventory.getOwner() != null) {
+            var user = inventory.getOwner();
+            userResponse = new AssignedInventoryUserResponse(
+                    user.getId(),
+                    user.getEmail(),
+                    user.getFullName(),
+                    user.getJobTitle(),
+                    user.getLaborDepartment(),
+                    user.getImgUrl(),
+                    user.getRole().name(),
+                    user.isStatus()
+            );
+        }
+
+        return new AssignedInventoryResponse(
+                inventory.getId(),
+                inventory.getUuid(),
+                inventory.getName(),
+                inventory.getLocation(),
+                userResponse
+        );
+    }
+
+
 }

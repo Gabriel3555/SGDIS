@@ -1,6 +1,5 @@
 package com.sgdis.backend.auth.security;
 
-import com.sgdis.backend.auth.application.service.UserDetailsServiceImp;
 import com.sgdis.backend.auth.security.filter.JwtTokenValidator;
 import com.sgdis.backend.auth.utils.JwtUtils;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +23,6 @@ import org.springframework.security.web.authentication.www.BasicAuthenticationFi
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 @Configuration
 @EnableWebSecurity

@@ -5,6 +5,8 @@ import com.sgdis.backend.inventory.application.port.in.*;
 import com.sgdis.backend.inventory.application.port.out.*;
 import com.sgdis.backend.inventory.domain.Inventory;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
+import com.sgdis.backend.user.application.port.out.GetUserByIdRepository;
+import com.sgdis.backend.user.domain.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,13 +15,15 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class InventoryService implements CreateInventoryUseCase, ListInventoryUseCase, UpdateInventoryUseCase, DeleteInventoryUseCase, GetInventoryByIdUseCase {
+public class InventoryService implements CreateInventoryUseCase, ListInventoryUseCase, UpdateInventoryUseCase, DeleteInventoryUseCase, GetInventoryByIdUseCase,AssignedInventoryUseCase {
 
     private final CreateInventoryRepository createInventoryRepository;
     private final ListInventoryRepository  listInventoryRepository;
     private final GetInventoryByIdRepository getInventoryByIdRepository;
     private final DeleteInventoryRepository deleteInventoryRepository;
     private final UpdateInventoryRepository updateInventoryRepository;
+    private final AssignedInventoryRepository assignedInventoryRepository;
+    private final GetUserByIdRepository getUserByIdRepository;
 
     @Override
     public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
@@ -57,5 +61,17 @@ public class InventoryService implements CreateInventoryUseCase, ListInventoryUs
         Inventory inventory = InventoryMapper.toDomain(request,id);
         Inventory updatedInventory = updateInventoryRepository.updateInventory(inventory);
         return InventoryMapper.toUpdateResponse(updatedInventory);
+    }
+
+    @Override
+    public AssignedInventoryResponse assignedInventory(AssignedInventoryRequest request) {
+        Inventory inventory = getInventoryByIdRepository.getInventoryById(request.inventoryId());
+        User owner = getUserByIdRepository.findUserById(request.userId());
+
+        inventory.setOwner(owner);
+
+        Inventory updated = assignedInventoryRepository.asignedInventory(inventory);
+
+        return InventoryMapper.toAssignedResponse(updated);
     }
 }
