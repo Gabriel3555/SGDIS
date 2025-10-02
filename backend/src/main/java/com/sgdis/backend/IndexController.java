@@ -21,7 +21,7 @@ public class IndexController {
     @GetMapping("/index")
     @ResponseBody
     public ResponseEntity<Resource> index() throws IOException {
-        Resource resource = new ClassPathResource("static/views/auth/index.html");
+        Resource resource = new ClassPathResource("static/index.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -34,7 +34,7 @@ public class IndexController {
     @GetMapping("/register")
     @ResponseBody
     public ResponseEntity<Resource> register() throws IOException {
-        Resource resource = new ClassPathResource("static/views/auth/register.html");
+        Resource resource = new ClassPathResource("static/register.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
