@@ -20,6 +20,7 @@ public class InventoryController {
     private final GetInventoryByIdUseCase getInventoryByIdUseCase;
     private final ListInventoryUseCase listInventoryUseCase;
     private final UpdateInventoryUseCase updateInventoryUseCase;
+    private final AssignedInventoryUseCase assignedInventoryUseCase;
 
     @PostMapping
     public CreateInventoryResponse createInventory(@RequestBody CreateInventoryRequest request) {
@@ -50,4 +51,8 @@ public class InventoryController {
         return deleteInventoryUseCase.deleteInventoryById(id);
     }
 
+    @PostMapping("/assignedInventory")
+    public AssignedInventoryResponse assignInventory(@RequestBody AssignedInventoryRequest request) {
+        return assignedInventoryUseCase.assignedInventory(request);
+    }
 }

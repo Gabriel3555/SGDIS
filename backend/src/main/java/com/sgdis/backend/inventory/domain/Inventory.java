@@ -9,19 +9,18 @@ public class Inventory {
     private UUID uuid;
     private String location;
     private String name;
-    private User ownew;
-    //Private Institucion institucion;
+    private User owner;
 
-
-    public Inventory(Long id, UUID uuid, String location, String name, User ownew) {
+    public Inventory(Long id, UUID uuid, String location, String name, User owner) {
         this.id = id;
         this.uuid = uuid;
         this.location = location;
         this.name = name;
-        this.ownew = ownew;
+        this.owner = owner;
     }
 
-    public Inventory() {}
+    public Inventory() {
+    }
 
     public Long getId() {
         return id;
@@ -55,11 +54,11 @@ public class Inventory {
         this.name = name;
     }
 
-    public User getOwnew() {
-        return ownew;
+    public User getOwner() {
+        return owner;
     }
 
-    public void setOwnew(User ownew) {
-        this.ownew = ownew;
+    public void setOwner(User owner) {
+        this.owner = owner;
     }
 }
