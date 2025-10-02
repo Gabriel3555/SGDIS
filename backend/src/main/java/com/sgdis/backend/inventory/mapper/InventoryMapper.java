@@ -32,8 +32,8 @@ public class InventoryMapper {
         return new InventoryResponse(
                 inventory.getId(),
                 inventory.getUuid(),
-                inventory.getName(),
                 inventory.getLocation(),
+                inventory.getName(),
                 inventory.getOwner()
         );
     }
