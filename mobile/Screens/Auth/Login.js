@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { login } from "../../src/Navigation/Services/AuthService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { navigationRef } from "../../src/Navigation/NavigationService";
 
 
 export default function LoginScreen({ navigation }) {
@@ -13,7 +14,7 @@ export default function LoginScreen({ navigation }) {
       const data = await login(email, password);
 
   
-      const role = data.role || data.roles;
+      const role = data.role || (data.roles && data.roles[0]);
       if (!role || typeof role !== "string") {
         Alert.alert("🚫 Acceso denegado", "No se recibió un rol válido.");
         return;
@@ -31,11 +32,16 @@ export default function LoginScreen({ navigation }) {
       await AsyncStorage.setItem("refreshToken", data.refreshToken);
       await AsyncStorage.setItem("userRole", role);
 
-      Alert.alert("✅ Bienvenido", `Token: ${data.jwt}`);
+      // Navigate to main app
+      navigationRef.current?.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
 
     } catch (error) {
       console.error("Error en login:", error);
-      Alert.alert("❌ Error", "Credenciales inválidas o servidor no disponible");
+      const errorMessage = error.error || error.message || "Credenciales inválidas o servidor no disponible";
+      Alert.alert("❌ Error", errorMessage);
     }
   };
 
