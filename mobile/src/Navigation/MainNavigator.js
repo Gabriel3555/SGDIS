@@ -1,34 +1,12 @@
 import React from "react";
-import { Text, View } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 
 // Screens
 import DashboardScreen from "../../Screens/Auth/ScreenUser/homeUser"; // tu dashboard
-
-function InventariosScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Inventarios</Text>
-    </View>
-  );
-}
-
-function VerificacionScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Verificación</Text>
-    </View>
-  );
-}
-
-function NotificacionesScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-      <Text>Notificaciones</Text>
-    </View>
-  );
-}
+import Inventary from "../../Screens/Auth/ScreenUser/InventaryUser";
+import Verification from "../../Screens/Auth/ScreenUser/VerificationUser";
+import Notifications from "../../Screens/Auth/ScreenUser/Notifications";
 
 const Tab = createBottomTabNavigator();
 
@@ -50,9 +28,9 @@ export default function MainNavigator() {
       })}
     >
       <Tab.Screen name="Dashboard" component={DashboardScreen} />
-      <Tab.Screen name="Inventarios" component={InventariosScreen} />
-      <Tab.Screen name="Verificación" component={VerificacionScreen} />
-      <Tab.Screen name="Notificaciones" component={NotificacionesScreen} />
+      <Tab.Screen name="Inventarios" component={Inventary} />
+      <Tab.Screen name="Verificación" component={Verification} />
+      <Tab.Screen name="Notificaciones" component={Notifications} />
     </Tab.Navigator>
   );
 }
