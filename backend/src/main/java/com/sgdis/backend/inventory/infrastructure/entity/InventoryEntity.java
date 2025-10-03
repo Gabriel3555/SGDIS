@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -27,6 +28,10 @@ public class InventoryEntity {
     private String name;
     @ManyToOne(fetch = FetchType.EAGER)
     private UserEntity owner;
+
+    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @JoinTable(name = "managers_inventories", joinColumns = @JoinColumn(name = "inventory_id"), inverseJoinColumns = @JoinColumn(name = "manager_id"))
+    private List<UserEntity> managers;
 
     //@ManyToOne(fetch = FetchType.EAGER)
     //private UserEntity institucion;

@@ -1,5 +1,9 @@
 package com.sgdis.backend.user.domain;
 
+import com.sgdis.backend.inventory.domain.Inventory;
+
+import java.util.List;
+
 public class User {
     private Long id;
     private String password;

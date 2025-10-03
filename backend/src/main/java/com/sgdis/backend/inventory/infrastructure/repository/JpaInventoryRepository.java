@@ -5,6 +5,9 @@ import com.sgdis.backend.inventory.application.port.out.*;
 import com.sgdis.backend.inventory.domain.Inventory;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
+import com.sgdis.backend.user.domain.User;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -18,7 +21,8 @@ public class JpaInventoryRepository implements
         GetInventoryByIdRepository,
         UpdateInventoryRepository,
         DeleteInventoryRepository,
-        AssignedInventoryRepository {
+        AssignedInventoryRepository,
+        AssignManagerInventoryRepository {
 
     private final SpringDataInventoryRepository springDataInventoryRepository;
 
@@ -68,4 +72,18 @@ public class JpaInventoryRepository implements
         return InventoryMapper.toDomain(saved);
     }
 
+    @Override
+    public Inventory assignManagerInventory(Inventory inventory, User user) {
+        InventoryEntity entity = InventoryMapper.toEntity(inventory);
+        UserEntity manager = UserMapper.toEntity(user);
+
+        List<UserEntity> managers = entity.getManagers();
+
+        managers.add(manager);
+        entity.setManagers(managers);
+
+        InventoryEntity inventoryManager = springDataInventoryRepository.save(entity);
+
+        return InventoryMapper.toDomain(inventoryManager);
+    }
 }

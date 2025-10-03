@@ -2,6 +2,7 @@ package com.sgdis.backend.inventory.domain;
 
 import com.sgdis.backend.user.domain.User;
 
+import java.util.List;
 import java.util.UUID;
 
 public class Inventory {
@@ -10,17 +11,18 @@ public class Inventory {
     private String location;
     private String name;
     private User owner;
+    private List<User> managers;
 
-    public Inventory(Long id, UUID uuid, String location, String name, User owner) {
+    public Inventory(Long id, UUID uuid, String location, String name, User owner, List<User> managers) {
         this.id = id;
         this.uuid = uuid;
         this.location = location;
         this.name = name;
         this.owner = owner;
+        this.managers = managers;
     }
 
-    public Inventory() {
-    }
+    public Inventory() {}
 
     public Long getId() {
         return id;
@@ -60,5 +62,13 @@ public class Inventory {
 
     public void setOwner(User owner) {
         this.owner = owner;
+    }
+
+    public List<User> getManagers() {
+        return managers;
+    }
+
+    public void setManagers(List<User> managers) {
+        this.managers = managers;
     }
 }

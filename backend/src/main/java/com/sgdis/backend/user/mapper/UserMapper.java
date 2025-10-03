@@ -7,6 +7,8 @@ import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 
+import java.util.List;
+
 public final class UserMapper {
 
     private UserMapper() {}
@@ -37,6 +39,14 @@ public final class UserMapper {
                 .role(user.getRole())
                 .status(user.isStatus())
                 .build();
+    }
+
+    public static List<UserEntity> toEntityList(List<User> list) {
+        return list.stream().map(UserMapper::toEntity).toList();
+    }
+
+    public static List<User> toDomainList(List<UserEntity> list) {
+        return list.stream().map(UserMapper::toDomain).toList();
     }
 
     public static UserResponse toResponse(User user) {

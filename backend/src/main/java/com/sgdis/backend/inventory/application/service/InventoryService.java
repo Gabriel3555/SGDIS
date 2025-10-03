@@ -15,7 +15,16 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class InventoryService implements CreateInventoryUseCase, ListInventoryUseCase, UpdateInventoryUseCase, DeleteInventoryUseCase, GetInventoryByIdUseCase,AssignedInventoryUseCase {
+public class InventoryService
+        implements
+        CreateInventoryUseCase,
+        ListInventoryUseCase,
+        UpdateInventoryUseCase,
+        DeleteInventoryUseCase,
+        GetInventoryByIdUseCase,
+        AssignedInventoryUseCase,
+        AssignManagerInventoryUseCase
+{
 
     private final CreateInventoryRepository createInventoryRepository;
     private final ListInventoryRepository  listInventoryRepository;
@@ -23,7 +32,9 @@ public class InventoryService implements CreateInventoryUseCase, ListInventoryUs
     private final DeleteInventoryRepository deleteInventoryRepository;
     private final UpdateInventoryRepository updateInventoryRepository;
     private final AssignedInventoryRepository assignedInventoryRepository;
+    private final AssignManagerInventoryRepository assignManagerInventoryRepository;
     private final GetUserByIdRepository getUserByIdRepository;
+    private final GetInventoryByIdRepository getByIdRepository;
 
     @Override
     public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
@@ -73,5 +84,20 @@ public class InventoryService implements CreateInventoryUseCase, ListInventoryUs
         Inventory updated = assignedInventoryRepository.asignedInventory(inventory);
 
         return InventoryMapper.toAssignedResponse(updated);
+    }
+
+    @Override
+    public AssignManagerInventoryResponse assignManagerInventory(AssignManagerInventoryRequest request) {
+        User user = getUserByIdRepository.findUserById(request.managerId());
+        Inventory inventory = getInventoryByIdRepository.getInventoryById(request.inventoryId());
+
+        assignManagerInventoryRepository.assignManagerInventory(inventory, user);
+
+        return new AssignManagerInventoryResponse(
+                new AssignManagerInventoryUserResponse(user.getId(), user.getFullName(), user.getEmail()),
+                inventory.getUuid(),
+                "Assigned Inventory",
+                true
+        );
     }
 }
