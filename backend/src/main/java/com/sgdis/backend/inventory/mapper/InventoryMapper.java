@@ -44,7 +44,8 @@ public class InventoryMapper {
                 inventory.getUuid(),
                 inventory.getLocation(),
                 inventory.getName(),
-                inventory.getOwner() != null ? UserMapper.toEntity(inventory.getOwner()) : null
+                inventory.getOwner() != null ? UserMapper.toEntity(inventory.getOwner()) : null,
+                null
         );
     }
 
@@ -54,7 +55,8 @@ public class InventoryMapper {
                 entity.getUuid(),
                 entity.getLocation(),
                 entity.getName(),
-                entity.getOwner() != null ? UserMapper.toDomain(entity.getOwner()) : null
+                entity.getOwner() != null ? UserMapper.toDomain(entity.getOwner()) : null,
+                UserMapper.toDomainList(entity.getManagers())
         );
     }
 

@@ -1,6 +1,7 @@
 package com.sgdis.backend.inventory.web;
 
 import com.sgdis.backend.inventory.application.dto.*;
+import com.sgdis.backend.inventory.application.port.in.AssignManagerInventoryUseCase;
 import com.sgdis.backend.inventory.application.port.in.*;
 import com.sgdis.backend.inventory.application.service.InventoryService;
 import com.sgdis.backend.inventory.domain.Inventory;
@@ -21,6 +22,7 @@ public class InventoryController {
     private final ListInventoryUseCase listInventoryUseCase;
     private final UpdateInventoryUseCase updateInventoryUseCase;
     private final AssignedInventoryUseCase assignedInventoryUseCase;
+    private final AssignManagerInventoryUseCase assignManagerInventoryUseCase;
 
     @PostMapping
     public CreateInventoryResponse createInventory(@RequestBody CreateInventoryRequest request) {
@@ -54,5 +56,10 @@ public class InventoryController {
     @PostMapping("/assignedInventory")
     public AssignedInventoryResponse assignInventory(@RequestBody AssignedInventoryRequest request) {
         return assignedInventoryUseCase.assignedInventory(request);
+    }
+
+    @PostMapping("/assignManager")
+    public AssignManagerInventoryResponse assignManager(@RequestBody AssignManagerInventoryRequest request) {
+        return assignManagerInventoryUseCase.assignManagerInventory(request);
     }
 }
