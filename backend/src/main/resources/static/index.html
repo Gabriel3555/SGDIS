@@ -116,10 +116,195 @@
         .scroll-personalizado::-webkit-scrollbar-thumb:hover {
             background: rgba(214, 255, 193, 0.8);
         }
+
+        /* SENA Loading Spinner Styles */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 175, 0, 0.1);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 175, 0, 0.25);
+            border: 2px solid rgba(0, 175, 0, 0.1);
+            min-width: 300px;
+        }
+
+        .spinner-logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .spinner {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .spinner-ring {
+            width: 100%;
+            height: 100%;
+            border: 8px solid rgba(0, 175, 0, 0.1);
+            border-radius: 50%;
+            position: absolute;
+            animation: spin 2s linear infinite;
+        }
+
+        .spinner-ring:nth-child(1) {
+            border-top-color: #00AF00;
+            animation-duration: 1.5s;
+        }
+
+        .spinner-ring:nth-child(2) {
+            border-right-color: #2D8000;
+            animation-duration: 2s;
+            animation-direction: reverse;
+        }
+
+        .spinner-ring:nth-child(3) {
+            border-bottom-color: #39A900;
+            animation-duration: 2.5s;
+        }
+
+        .spinner-ring:nth-child(4) {
+            border-left-color: #1F5A00;
+            animation-duration: 3s;
+            animation-direction: reverse;
+        }
+
+        .spinner-center {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00AF00, #39A900);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0, 175, 0, 0.3);
+            animation: pulse-glow 2s ease-in-out infinite alternate;
+        }
+
+        .spinner-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #39A900;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .spinner-subtitle {
+            font-size: 0.875rem;
+            color: #2D8000;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .spinner-dots {
+            display: inline-flex;
+            gap: 0.25rem;
+            margin-left: 0.5rem;
+        }
+
+        .spinner-dot {
+            width: 8px;
+            height: 8px;
+            background: #00AF00;
+            border-radius: 50%;
+            animation: dot-bounce 1.4s ease-in-out infinite both;
+        }
+
+        .spinner-dot:nth-child(1) { animation-delay: -0.32s; }
+        .spinner-dot:nth-child(2) { animation-delay: -0.16s; }
+        .spinner-dot:nth-child(3) { animation-delay: 0s; }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes pulse-glow {
+            from {
+                box-shadow: 0 0 20px rgba(0, 175, 0, 0.3);
+                transform: translate(-50%, -50%) scale(1);
+            }
+            to {
+                box-shadow: 0 0 30px rgba(0, 175, 0, 0.6);
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        @keyframes dot-bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .spinner-container {
+            animation: fade-in 0.3s ease-out;
+        }
     </style>
 </head>
 
 <body class="min-h-screen" style="background-color: #fdfdfd;">
+    <!-- SENA Loading Spinner Overlay -->
+    <div id="senaSpinner" class="spinner-overlay">
+        <div class="spinner-container">
+            <img src="svg/box.png" alt="Logo SGDIS" class="spinner-logo">
+            <div class="spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-center"></div>
+            </div>
+            <div class="spinner-text">
+                Iniciando sesión
+                <div class="spinner-dots">
+                    <div class="spinner-dot"></div>
+                    <div class="spinner-dot"></div>
+                    <div class="spinner-dot"></div>
+                </div>
+            </div>
+            <div class="spinner-subtitle">
+                Cargando dashboard...
+            </div>
+        </div>
+    </div>
+
     <div class="logo-sena">
         <img src="svg/logoSena.png" alt="Logo SENA" class="h-16 w-auto">
     </div>
@@ -130,7 +315,7 @@
                 <div class="text-center mb-8">
                     <div class="mb-4">
                         <img src="svg/box.png" alt="Logo Caja"
-                            class="h-20 w-20 mx-auto rounded-2xl shadow-lg object-cover">
+                            class="h-20 w-20 mx-auto rounded-2xl object-cover">
                     </div>
                     <h1 class="text-2xl font-bold text-gray-800 mb-2">SGDIS</h1>
                     <h2 class="text-lg font-semibold text-sena-verde mb-1">Sistema de Gestión de Inventario</h2>
@@ -170,17 +355,8 @@
                                 </svg>
                             </div>
                             <input type="password" id="contrasena" name="contrasena"
-                                class="entrada-focus block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
                                 placeholder="Ingresa tu contraseña" required>
-                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <svg class="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" fill="none"
-                                    stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                            </button>
                         </div>
                     </div>
 
@@ -192,7 +368,7 @@
                                 Recordarme
                             </label>
                         </div>
-                        <a href="#"
+                        <a href="forgot_password.html"
                             class="text-sm text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
                             ¿Olvidaste tu contraseña?
                         </a>
@@ -255,13 +431,63 @@
                     });
                 });
 
-                // --- Alternar visibilidad de contraseña ---
-                const alternarContrasena = document.querySelector('button[type="button"]');
-                const campoContrasena = document.getElementById('contrasena');
 
-                alternarContrasena.addEventListener('click', function () {
-                    const tipo = campoContrasena.getAttribute('type') === 'password' ? 'text' : 'password';
-                    campoContrasena.setAttribute('type', tipo);
+                // --- Remember me functionality ---
+                const usuarioInput = document.getElementById('usuario');
+                const contrasenaInput = document.getElementById('contrasena');
+                const recordarCheckbox = document.getElementById('recordarme');
+
+                // Auto-fill form if credentials are saved
+                const savedEmail = localStorage.getItem('rememberedEmail');
+                const savedPassword = localStorage.getItem('rememberedPassword');
+
+                if (savedEmail && savedPassword) {
+                    usuarioInput.value = savedEmail;
+                    contrasenaInput.value = savedPassword;
+                    recordarCheckbox.checked = true;
+                }
+
+                // --- Enter key functionality ---
+
+                usuarioInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        login();
+                    }
+                });
+
+                contrasenaInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        login();
+                    }
+                });
+
+                // --- Spinner functions ---
+                function showSenaSpinner() {
+                    const spinner = document.getElementById('senaSpinner');
+                    if (spinner) {
+                        spinner.style.display = 'flex';
+                        // Add slight delay to ensure smooth transition
+                        setTimeout(() => {
+                            spinner.style.opacity = '1';
+                        }, 10);
+                    }
+                }
+
+                function hideSenaSpinner() {
+                    const spinner = document.getElementById('senaSpinner');
+                    if (spinner) {
+                        spinner.style.opacity = '0';
+                        setTimeout(() => {
+                            spinner.style.display = 'none';
+                        }, 300);
+                    }
+                }
+
+                // Hide spinner when page loads
+                window.addEventListener('load', function() {
+                    hideSenaSpinner();
                 });
 
                 // --- Función de login ---
@@ -290,29 +516,60 @@
                         console.log('Response data:', data);
 
                         if (response.ok && data.status) {
-                            console.log('Login successful, role:', data.role);
+                             console.log('Login successful, role:', data.role);
 
-                            // Guardar tokens
-                            localStorage.setItem('jwt', data.jwt);
-                            localStorage.setItem('refreshToken', data.refreshToken);
+                             // Guardar tokens
+                             localStorage.setItem('jwt', data.jwt);
+                             localStorage.setItem('refreshToken', data.refreshToken);
 
-                            // Set cookie para que el servidor pueda leer el JWT
-                            document.cookie = `jwt=${data.jwt}; path=/; max-age=900`; // 15 minutos
+                             // Set cookie para que el servidor pueda leer el JWT
+                             document.cookie = `jwt=${data.jwt}; path=/; max-age=900`; // 15 minutos
 
-                            // Redirección según el rol
-                            let redirectUrl = '/index.html';
-                            if (data.role === "ADMIN") redirectUrl = '/dashboard/admin';
-                            else if (data.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
-                            else if (data.role === "USER") redirectUrl = '/dashboard/user';
+                             // Remember me functionality - save credentials if checkbox is checked
+                             if (recordarCheckbox.checked) {
+                                 localStorage.setItem('rememberedEmail', email);
+                                 localStorage.setItem('rememberedPassword', contrasena);
+                                 console.log('Credentials saved for future logins');
+                             } else {
+                                 // Clear any saved credentials if checkbox is not checked
+                                 localStorage.removeItem('rememberedEmail');
+                                 localStorage.removeItem('rememberedPassword');
+                                 console.log('Remember me not checked, credentials cleared');
+                             }
 
-                            console.log('Redirecting to:', redirectUrl);
-                            window.location.href = redirectUrl;
+                             // Redirección según el rol
+                             let redirectUrl = '/index.html';
+                             if (data.role === "ADMIN") redirectUrl = '/dashboard/admin';
+                             else if (data.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
+                             else if (data.role === "USER") redirectUrl = '/dashboard/user';
+
+                             console.log('Redirecting to:', redirectUrl);
+
+                             // Show SENA loading spinner before redirect
+                             showSenaSpinner();
+
+                             // Redirect after a short delay to show the spinner
+                             setTimeout(() => {
+                                 window.location.href = redirectUrl;
+                             }, 1500);
                         } else {
                             console.error('Error en login:', data.message || 'Credenciales inválidas');
+                            // Hide spinner if it's showing
+                            hideSenaSpinner();
+
+                            // Clear saved credentials on login failure for security
+                            localStorage.removeItem('rememberedEmail');
+                            localStorage.removeItem('rememberedPassword');
+                            recordarCheckbox.checked = false;
+
                             alert('Error en login: ' + (data.message || 'Credenciales inválidas'));
                         }
                     } catch (error) {
                         console.error('Error de conexión:', error);
+
+                        // Hide spinner if it's showing
+                        hideSenaSpinner();
+
                         alert('Error de conexión. Inténtalo de nuevo.');
                     }
                 };

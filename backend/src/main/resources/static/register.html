@@ -331,6 +331,23 @@
                 confirmPasswordField.setAttribute('type', tipo);
             });
 
+            // --- Enter key functionality for all form fields ---
+            const formFields = ['fullName', 'email', 'jobTitle', 'laborDepartment', 'password', 'confirmPassword'];
+            formFields.forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                if (field) {
+                    field.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            // Trigger form submission
+                            const registerForm = document.getElementById('registerForm');
+                            const submitEvent = new Event('submit', { cancelable: true });
+                            registerForm.dispatchEvent(submitEvent);
+                        }
+                    });
+                }
+            });
+
             // Manejar el envío del formulario de registro
             const registerForm = document.getElementById('registerForm');
             registerForm.addEventListener('submit', async function (e) {
