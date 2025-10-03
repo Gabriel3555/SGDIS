@@ -61,6 +61,10 @@ export default function LoginScreen({ navigation }) {
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Ingresar</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.button, styles.registerButton]} onPress={() => navigation.navigate('Register')}>
+        <Text style={styles.buttonText}>Registrar</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -89,6 +93,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#007AFF",
     padding: 15,
     borderRadius: 8,
+    marginBottom: 10,
+  },
+  registerButton: {
+    backgroundColor: "#28a745",
   },
   buttonText: {
     color: "#fff",

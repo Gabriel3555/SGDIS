@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
+import { register } from "../../src/Navigation/Services/AuthService";
 
 export default function RegisterScreen({ navigation }) {
   const [nombre, setNombre] = useState("");
@@ -9,12 +10,19 @@ export default function RegisterScreen({ navigation }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (password !== confirmPassword) {
-      alert("Las contraseñas no coinciden");
+      Alert.alert("Error", "Las contraseñas no coinciden");
       return;
     }
-    alert("Registro exitoso 🎉");
+    try {
+      const data = await register(nombre, correo, cargo, departamento, password, confirmPassword);
+      Alert.alert("Éxito", "Registro exitoso 🎉");
+      navigation.navigate('Login');
+    } catch (error) {
+      console.error("Error en registro:", error);
+      Alert.alert("Error", error.message || "Error en el registro");
+    }
   };
 
   return (
