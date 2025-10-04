@@ -28,6 +28,7 @@ public class DashboardController {
         }
     }
 
+
     @GetMapping("/dashboard/admin")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
@@ -55,4 +56,5 @@ public class DashboardController {
             return ResponseEntity.notFound().build();
         }
     }
+
 }

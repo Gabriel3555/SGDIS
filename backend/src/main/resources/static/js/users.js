@@ -108,7 +108,7 @@ async function loadCurrentUserInfo() {
         }
     } catch (error) {
         console.error('Error loading current user info:', error);
-        // Set default values
+        // Set default values consistent with admin dashboard
         updateUserInfoDisplay({
             fullName: 'Super Admin',
             role: 'ADMIN',
@@ -117,16 +117,12 @@ async function loadCurrentUserInfo() {
     }
 }
 
-// Update user info display in sidebar and header
+// Update user info display in header only (removed sidebar references)
 function updateUserInfoDisplay(userData) {
-    const sidebarUserName = document.getElementById('sidebarUserName');
-    const sidebarUserRole = document.getElementById('sidebarUserRole');
     const headerUserName = document.getElementById('headerUserName');
     const headerUserRole = document.getElementById('headerUserRole');
     const headerUserAvatar = document.getElementById('headerUserAvatar');
 
-    if (sidebarUserName) sidebarUserName.textContent = userData.fullName || 'Super Admin';
-    if (sidebarUserRole) sidebarUserRole.textContent = userData.role || 'ADMIN';
     if (headerUserName) headerUserName.textContent = userData.fullName || 'Super Admin';
     if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN';
     if (headerUserAvatar) headerUserAvatar.textContent = (userData.fullName || 'Super Admin').charAt(0).toUpperCase();

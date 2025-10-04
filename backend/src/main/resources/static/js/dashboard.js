@@ -159,7 +159,7 @@ async function loadUserInfo() {
             throw new Error('No authentication token found');
         }
 
-        const response = await fetch('/api/v1/auth/me', {
+        const response = await fetch('/api/v1/users/me', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -181,18 +181,22 @@ async function loadUserInfo() {
                 role: 'ADMIN',
                 email: 'admin@sena.edu.co'
             };
+            // Also update header immediately with consistent values
+            updateHeaderProfile('Super Admin', 'Super Admin');
         } else if (dashboardData.dashboardType === 'user') {
             dashboardData.user = {
                 fullName: 'Usuario',
                 role: 'USER',
                 email: 'user@sena.edu.co'
             };
+            updateHeaderProfile('Usuario', 'USER');
         } else if (dashboardData.dashboardType === 'warehouse') {
             dashboardData.user = {
                 fullName: 'Admin Warehouse',
                 role: 'WAREHOUSE',
                 email: 'warehouse@sena.edu.co'
             };
+            updateHeaderProfile('Admin Warehouse', 'WAREHOUSE');
         }
     }
 }
@@ -323,6 +327,17 @@ function updateDashboardUI() {
     updateMonthlyStats();
 }
 
+// Update header profile information
+function updateHeaderProfile(userName, userRole) {
+    const headerUserName = document.getElementById('headerUserName');
+    const headerUserRole = document.getElementById('headerUserRole');
+    const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+    if (headerUserName) headerUserName.textContent = userName;
+    if (headerUserRole) headerUserRole.textContent = userRole;
+    if (headerUserAvatar) headerUserAvatar.textContent = userName.charAt(0).toUpperCase();
+}
+
 // Update welcome section
 function updateWelcomeSection() {
     const titleElement = document.getElementById('dashboardTitle');
@@ -340,6 +355,9 @@ function updateWelcomeSection() {
         if (welcomeElement) {
             welcomeElement.textContent = `Bienvenido, ${userName} - ${userRole}`;
         }
+
+        // Also update header profile information
+        updateHeaderProfile(userName, userRole);
     }
 }
 

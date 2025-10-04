@@ -14,6 +14,21 @@ import java.io.IOException;
 @Controller
 public class AdminDashboardController {
 
+    @GetMapping("/admin/dashboard")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminDashboard() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/admin/dashboard.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+
     @GetMapping("/admin/users")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
@@ -27,4 +42,5 @@ public class AdminDashboardController {
             return ResponseEntity.notFound().build();
         }
     }
+
 }
