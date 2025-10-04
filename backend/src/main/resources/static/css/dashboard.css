@@ -27,11 +27,14 @@ body {
     padding: 12px 16px;
     cursor: pointer;
     color: #374151;
+    display: flex;
+    align-items: center;
 }
 
 .sidebar-item:hover {
-    background: rgba(57, 169, 0, 0.1);
+    background: rgba(57, 169, 0, 0.15);
     transform: translateX(5px);
+    color: #1f2937;
 }
 
 .sidebar-item.active {
@@ -246,4 +249,164 @@ body {
 
 .overlay.active {
     display: block;
+}
+
+/* SENA Loading Spinner Styles */
+.spinner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 175, 0, 0.1);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.spinner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 1.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 175, 0, 0.25);
+    border: 2px solid rgba(0, 175, 0, 0.1);
+    min-width: 300px;
+}
+
+.spinner-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1.5rem;
+    animation: pulse 2s infinite;
+}
+
+.spinner {
+    width: 120px;
+    height: 120px;
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.spinner-ring {
+    width: 100%;
+    height: 100%;
+    border: 8px solid rgba(0, 175, 0, 0.1);
+    border-radius: 50%;
+    position: absolute;
+    animation: spin 2s linear infinite;
+}
+
+.spinner-ring:nth-child(1) {
+    border-top-color: #00AF00;
+    animation-duration: 1.5s;
+}
+
+.spinner-ring:nth-child(2) {
+    border-right-color: #2D8000;
+    animation-duration: 2s;
+    animation-direction: reverse;
+}
+
+.spinner-ring:nth-child(3) {
+    border-bottom-color: #39A900;
+    animation-duration: 2.5s;
+}
+
+.spinner-ring:nth-child(4) {
+    border-left-color: #1F5A00;
+    animation-duration: 3s;
+    animation-direction: reverse;
+}
+
+.spinner-center {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #00AF00, #39A900);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 20px rgba(0, 175, 0, 0.3);
+    animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+.spinner-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #39A900;
+    margin-bottom: 0.5rem;
+    text-align: center;
+}
+
+.spinner-subtitle {
+    font-size: 0.875rem;
+    color: #2D8000;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.spinner-dots {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-left: 0.5rem;
+}
+
+.spinner-dot {
+    width: 8px;
+    height: 8px;
+    background: #00AF00;
+    border-radius: 50%;
+    animation: dot-bounce 1.4s ease-in-out infinite both;
+}
+
+.spinner-dot:nth-child(1) { animation-delay: -0.32s; }
+.spinner-dot:nth-child(2) { animation-delay: -0.16s; }
+.spinner-dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes pulse-glow {
+    from {
+        box-shadow: 0 0 20px rgba(0, 175, 0, 0.3);
+        transform: translate(-50%, -50%) scale(1);
+    }
+    to {
+        box-shadow: 0 0 30px rgba(0, 175, 0, 0.6);
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+@keyframes dot-bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes fade-in {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.spinner-container {
+    animation: fade-in 0.3s ease-out;
 }

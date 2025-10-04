@@ -1,4 +1,4 @@
-package com.sgdis.backend;
+package com.sgdis.backend.web;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;

@@ -1,4 +1,4 @@
-package com.sgdis.backend;
+package com.sgdis.backend.web;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;

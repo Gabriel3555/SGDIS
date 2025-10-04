@@ -1,4 +1,4 @@
-package com.sgdis.backend;
+package com.sgdis.backend.web;
 
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -28,6 +28,7 @@ public class DashboardController {
         }
     }
 
+
     @GetMapping("/dashboard/admin")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseBody
@@ -55,4 +56,5 @@ public class DashboardController {
             return ResponseEntity.notFound().build();
         }
     }
+
 }

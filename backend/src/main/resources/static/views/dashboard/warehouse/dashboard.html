@@ -15,14 +15,16 @@
 </head>
 
 <body>
+
     <!-- Overlay for mobile -->
-    <div class="overlay" id="overlay"></div>
+    <div class="overlay" id="overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
 
     <!-- Sidebar -->
-    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar">
-        <div class="p-6 flex items-center justify-between border-b border-gray-200">
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar" style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <!-- Sidebar header -->
+        <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
-                <div class="w-12 h-12 bg-white-600 rounded-lg flex items-center justify-center overflow-hidden">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
                     <img src="../../../svg/logoSena.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
                 <div class="text-gray-800">
@@ -30,64 +32,52 @@
                     <div class="text-xs opacity-70">Inventario</div>
                 </div>
             </div>
-            <button class="text-gray-600 lg:hidden" id="closeSidebar">
-                <i class="fas fa-times text-xl"></i>
+        </div>
+
+        <!-- Sidebar navigation -->
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/warehouse/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventarios</span>
+            </a>
+            <a href="/warehouse/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/warehouse/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/warehouse/maintenance" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-cogs text-lg"></i>
+                <span class="font-medium">Mantenimiento</span>
+            </a>
+            <a href="/warehouse/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/warehouse/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+        </nav>
+
+        <!-- Logout button -->
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
             </button>
         </div>
 
-        <nav class="mt-6">
-            <div class="sidebar-item active text-white flex items-center gap-3">
-                <i class="fas fa-chart-line text-lg"></i>
-                <span class="font-medium">Dashboard</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-boxes text-lg"></i>
-                <span class="font-medium">Inventarios</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-chart-bar text-lg"></i>
-                <span class="font-medium">Reportes</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-cogs text-lg"></i>
-                <span class="font-medium">Mantenimiento</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-bell text-lg"></i>
-                <span class="font-medium">Notificaciones</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-exchange-alt text-lg"></i>
-                <span class="font-medium">Importar/Exportar</span>
-            </div>
-        </nav>
-
-        <!-- User Profile in Sidebar (Mobile) -->
-        <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                    W
-                </div>
-                <div class="text-gray-800">
-                    <div class="font-semibold text-sm">Admin Warehouse</div>
-                    <div class="text-xs opacity-70">WAREHOUSE</div>
-                </div>
-            </div>
-            <div class="text-center">
-                <button onclick="logout()"
-                    class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
-                    Cerrar Sesión
-                </button>
-            </div>
-        </div>
     </aside>
 
     <!-- Main Content -->
-    <div class="main-content ml-64 min-h-screen">
+    <div class="main-content min-h-screen">
         <!-- Header -->
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
@@ -107,10 +97,10 @@
                         <span class="notification-badge">2</span>
                     </div>
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
-                        <div class="user-avatar">W</div>
+                        <div class="user-avatar" id="headerUserAvatar">W</div>
                         <div class="hidden sm:block">
-                            <div class="font-semibold text-gray-800 text-sm">Admin Warehouse</div>
-                            <div class="text-xs text-gray-500">WAREHOUSE</div>
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName">Admin Warehouse</div>
+                            <div class="text-xs text-gray-500" id="headerUserRole">WAREHOUSE</div>
                         </div>
                     </div>
 
@@ -123,196 +113,174 @@
             <!-- Welcome Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Dashboard Almacén</h1>
-                    <p class="text-gray-600">Bienvenido, Administrador de Almacén - WAREHOUSE</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-1" id="dashboardTitle">Dashboard Almacén</h1>
+                    <p class="text-gray-600" id="welcomeMessage">Cargando información del usuario...</p>
                 </div>
-                <button class="btn-update flex items-center gap-2">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Actualizar</span>
+                <button onclick="loadDashboardData()" class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fas fa-sync-alt animate-spin" id="refreshIcon"></i>
+                    <span id="refreshText">Actualizar</span>
                 </button>
             </div>
 
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <!-- Items en Almacén -->
-                <div class="stat-card">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="statsContainer">
+                <!-- Loading State -->
+                <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium mb-1">Items en Almacén</p>
-                            <h3 class="text-3xl font-bold text-gray-800">89</h3>
+                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-16"></div>
                         </div>
-                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-warehouse text-green-600 text-xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <p class="text-green-600 text-sm font-medium">+5% desde el mes pasado</p>
+                    <div class="h-3 bg-gray-200 rounded w-32"></div>
                 </div>
-
-                <!-- Items Activos -->
-                <div class="stat-card">
+                <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium mb-1">Items Activos</p>
-                            <h3 class="text-3xl font-bold text-gray-800">76</h3>
+                            <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
                         </div>
-                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-check-circle text-blue-600 text-xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 85%"></div>
-                    </div>
+                    <div class="h-2 bg-gray-200 rounded w-full"></div>
                 </div>
-
-                <!-- Mantenimiento Pendiente -->
-                <div class="stat-card">
+                <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium mb-1">Mantenimiento Pendiente</p>
-                            <h3 class="text-3xl font-bold text-gray-800">4</h3>
+                            <div class="h-4 bg-gray-200 rounded w-28 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
                         </div>
-                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-tools text-orange-600 text-xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <p class="text-gray-600 text-sm">2 requieren atención urgente</p>
+                    <div class="h-3 bg-gray-200 rounded w-36"></div>
                 </div>
-
-                <!-- Reportes Este Mes -->
-                <div class="stat-card">
+                <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium mb-1">Reportes Este Mes</p>
-                            <h3 class="text-2xl font-bold text-gray-800">12</h3>
+                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-16"></div>
                         </div>
-                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <p class="text-gray-600 text-sm">3 más que el mes anterior</p>
+                    <div class="h-3 bg-gray-200 rounded w-32"></div>
                 </div>
             </div>
 
             <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- Categorías de Items -->
-                <div class="stat-card">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6" id="chartsContainer">
+                <!-- Loading State - Categorías de Items -->
+                <div class="stat-card animate-pulse">
                     <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-th-large text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Categorías de Items</h2>
+                        <div class="w-5 h-5 bg-gray-200 rounded"></div>
+                        <div class="h-6 bg-gray-200 rounded w-32"></div>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">Distribución por categorías en almacén</p>
-
+                    <div class="h-4 bg-gray-200 rounded w-48 mb-4"></div>
                     <div class="space-y-3">
-                        <div class="category-item flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
-                                <span class="text-gray-700 font-medium">Equipos de Cómputo</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-32"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">34</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
-                        <div class="category-item flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                                <span class="text-gray-700 font-medium">Equipos de Laboratorio</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-36"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">28</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
-                        <div class="category-item flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                <span class="text-gray-700 font-medium">Audiovisuales</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-24"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">15</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
-                        <div class="category-item flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-purple-500"></div>
-                                <span class="text-gray-700 font-medium">Móviles</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-16"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">12</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Estado de Mantenimiento -->
-                <div class="stat-card">
+                <!-- Loading State - Estado de Mantenimiento -->
+                <div class="stat-card animate-pulse">
                     <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-wrench text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Estado de Mantenimiento</h2>
+                        <div class="w-5 h-5 bg-gray-200 rounded"></div>
+                        <div class="h-6 bg-gray-200 rounded w-40"></div>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">Estado actual de mantenimiento</p>
-
-                    <div class="status-bar mb-4">
-                        <div class="status-segment" style="width: 85%; background: #39A900;">Óptimo</div>
-                        <div class="status-segment" style="width: 11%; background: #FFA726;">Regular</div>
-                        <div class="status-segment" style="width: 4%; background: #EF5350;">Crítico</div>
-                    </div>
-
+                    <div class="h-4 bg-gray-200 rounded w-44 mb-4"></div>
+                    <div class="h-2 bg-gray-200 rounded w-full mb-4"></div>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-green-600"></div>
-                                <span class="text-gray-700 font-medium">En buen estado</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-24"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">76</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-                                <span class="text-gray-700 font-medium">Requiere revisión</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-28"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">9</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                <span class="text-gray-700 font-medium">Mantenimiento urgente</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-32"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">4</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Estadísticas Mensuales -->
-            <div class="stat-card mb-6">
+            <div class="stat-card mb-6" id="monthlyStatsContainer">
                 <div class="flex items-center gap-2 mb-4">
                     <i class="fas fa-calendar-alt text-green-600 text-xl"></i>
                     <h2 class="text-xl font-bold text-gray-800">Actividad Mensual</h2>
                 </div>
                 <p class="text-gray-600 text-sm mb-6">Movimientos de inventario por mes</p>
 
+                <!-- Loading State -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">Ene</div>
-                        <div class="text-2xl font-bold text-green-600 mb-1">156</div>
-                        <div class="text-sm text-gray-600">movimientos</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">+12%</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
                     </div>
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">Feb</div>
-                        <div class="text-2xl font-bold text-green-600 mb-1">143</div>
-                        <div class="text-sm text-gray-600">movimientos</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">+8%</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
                     </div>
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">Mar</div>
-                        <div class="text-2xl font-bold text-green-600 mb-1">167</div>
-                        <div class="text-sm text-gray-600">movimientos</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">+15%</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
                     </div>
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">Abr</div>
-                        <div class="text-2xl font-bold text-green-600 mb-1">134</div>
-                        <div class="text-sm text-gray-600">movimientos</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">-5%</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
                     </div>
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">May</div>
-                        <div class="text-2xl font-bold text-green-600 mb-1">189</div>
-                        <div class="text-sm text-gray-600">movimientos</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">+18%</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
                     </div>
                 </div>
             </div>
@@ -355,6 +323,139 @@
     </div>
 
     <script src="../../../js/dashboard.js"></script>
-</body>
+
+    <style>
+        /* Adjust main content margin to account for fixed sidebar */
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .overlay {
+                display: none;
+            }
+
+            .overlay.active {
+                display: block;
+            }
+        }
+    </style>
+
+    <script>
+        // Handle sidebar click
+        function handleSidebarClick(event, link) {
+            if (link === '#') {
+                event.preventDefault();
+                return;
+            }
+
+            // Close sidebar on mobile after click
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+
+            // Navigate to the link
+            if (link.startsWith('/')) {
+                window.location.href = link;
+            }
+        }
+
+
+        // Setup mobile menu toggle
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function() {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+
+                    if (isHidden) {
+                        sidebar.style.transform = 'translateX(0)';
+                        overlay.style.display = 'block';
+                    } else {
+                        sidebar.style.transform = 'translateX(-100%)';
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Load current user information for header
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                // Set default values for warehouse
+                updateHeaderUserInfo({
+                    fullName: 'Admin Warehouse',
+                    role: 'WAREHOUSE',
+                    email: 'warehouse@sena.edu.co'
+                });
+            }
+        }
+
+        // Update user info display in header
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Warehouse';
+            if (headerUserRole) headerUserRole.textContent = userData.role || 'WAREHOUSE';
+            if (headerUserAvatar) headerUserAvatar.textContent = (userData.fullName || 'Admin Warehouse').charAt(0).toUpperCase();
+        }
+
+        // Initialize mobile menu toggle when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setupMobileMenuToggle();
+            loadCurrentUserInfo(); // Load user info for header
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
+        }
+    </script>
+    </body>
 
 </html>

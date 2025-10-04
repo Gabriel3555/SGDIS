@@ -1,4 +1,4 @@
-package com.sgdis.backend;
+package com.sgdis.backend.web;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;

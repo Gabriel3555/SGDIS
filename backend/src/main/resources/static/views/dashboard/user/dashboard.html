@@ -15,14 +15,16 @@
 </head>
 
 <body>
+
     <!-- Overlay for mobile -->
-    <div class="overlay" id="overlay"></div>
+    <div class="overlay" id="overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
 
     <!-- Sidebar -->
-    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar">
-        <div class="p-6 flex items-center justify-between border-b border-gray-200">
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar" style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <!-- Sidebar header -->
+        <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
-                <div class="w-12 h-12 bg-white-600 rounded-lg flex items-center justify-center overflow-hidden">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
                     <img src="../../../svg/logoSena.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
                 <div class="text-gray-800">
@@ -30,52 +32,40 @@
                     <div class="text-xs opacity-70">Inventario</div>
                 </div>
             </div>
-            <button class="text-gray-600 lg:hidden" id="closeSidebar">
-                <i class="fas fa-times text-xl"></i>
+        </div>
+
+        <!-- Sidebar navigation -->
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/user/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventarios</span>
+            </a>
+            <a href="/user/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/user/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+        </nav>
+
+        <!-- Logout button -->
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
             </button>
         </div>
 
-        <nav class="mt-6">
-            <div class="sidebar-item active text-white flex items-center gap-3">
-                <i class="fas fa-chart-line text-lg"></i>
-                <span class="font-medium">Dashboard</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-boxes text-lg"></i>
-                <span class="font-medium">Inventarios</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </div>
-            <div class="sidebar-item text-white flex items-center gap-3">
-                <i class="fas fa-bell text-lg"></i>
-                <span class="font-medium">Notificaciones</span>
-            </div>
-        </nav>
-
-        <!-- User Profile in Sidebar (Mobile) -->
-        <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-200">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                    S
-                </div>
-                <div class="text-gray-800">
-                    <div class="font-semibold text-sm">Usuario</div>
-                    <div class="text-xs opacity-70">USER</div>
-                </div>
-            </div>
-            <div class="text-center">
-                <button onclick="logout()"
-                    class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors">
-                    Cerrar Sesión
-                </button>
-            </div>
-        </div>
     </aside>
 
     <!-- Main Content -->
-    <div class="main-content ml-64 min-h-screen">
+    <div class="main-content min-h-screen">
         <!-- Header -->
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
@@ -95,10 +85,10 @@
                         <span class="notification-badge">3</span>
                     </div>
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
-                        <div class="user-avatar">S</div>
+                        <div class="user-avatar" id="headerUserAvatar">U</div>
                         <div class="hidden sm:block">
-                            <div class="font-semibold text-gray-800 text-sm">Usuario</div>
-                            <div class="text-xs text-gray-500">USER</div>
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName">Usuario</div>
+                            <div class="text-xs text-gray-500" id="headerUserRole">USER</div>
                         </div>
                     </div>
 
@@ -111,196 +101,174 @@
             <!-- Welcome Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Dashboard</h1>
-                    <p class="text-gray-600">Bienvenido, Usuario Normal - USER</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-1" id="dashboardTitle">Dashboard Usuario</h1>
+                    <p class="text-gray-600" id="welcomeMessage">Cargando información del usuario...</p>
                 </div>
-                <button class="btn-update flex items-center gap-2">
-                    <i class="fas fa-sync-alt"></i>
-                    <span>Actualizar</span>
+                <button onclick="loadDashboardData()" class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fas fa-sync-alt animate-spin" id="refreshIcon"></i>
+                    <span id="refreshText">Actualizar</span>
                 </button>
             </div>
 
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <!-- Total Items -->
-                <div class="stat-card">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="statsContainer">
+                <!-- Loading State -->
+                <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
-                            <h3 class="text-3xl font-bold text-gray-800">4</h3>
+                            <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
                         </div>
-                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-box text-green-600 text-xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <p class="text-green-600 text-sm font-medium">+12.5% desde el mes pasado</p>
+                    <div class="h-3 bg-gray-200 rounded w-32"></div>
                 </div>
-
-                <!-- Items Activos -->
-                <div class="stat-card">
+                <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium mb-1">Items Activos</p>
-                            <h3 class="text-3xl font-bold text-gray-800">3</h3>
+                            <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
                         </div>
-                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-check-circle text-blue-600 text-xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 75%"></div>
-                    </div>
+                    <div class="h-2 bg-gray-200 rounded w-full"></div>
                 </div>
-
-                <!-- En Mantenimiento -->
-                <div class="stat-card">
+                <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium mb-1">En Mantenimiento</p>
-                            <h3 class="text-3xl font-bold text-gray-800">1</h3>
+                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
                         </div>
-                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-exclamation-triangle text-orange-600 text-xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <p class="text-gray-600 text-sm">1 pendientes</p>
+                    <div class="h-3 bg-gray-200 rounded w-20"></div>
                 </div>
-
-                <!-- Valor Total -->
-                <div class="stat-card">
+                <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
-                            <h3 class="text-2xl font-bold text-gray-800">$ 11.650.000</h3>
+                            <div class="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-20"></div>
                         </div>
-                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
-                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <p class="text-gray-600 text-sm">3 inventarios</p>
+                    <div class="h-3 bg-gray-200 rounded w-16"></div>
                 </div>
             </div>
 
             <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- Items por Categoría -->
-                <div class="stat-card">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6" id="chartsContainer">
+                <!-- Loading State - Items por Categoría -->
+                <div class="stat-card animate-pulse">
                     <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-chart-pie text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Items por Categoría</h2>
+                        <div class="w-5 h-5 bg-gray-200 rounded"></div>
+                        <div class="h-6 bg-gray-200 rounded w-32"></div>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">Distribución de items por categoría</p>
-
+                    <div class="h-4 bg-gray-200 rounded w-48 mb-4"></div>
                     <div class="space-y-3">
-                        <div class="category-item flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                <span class="text-gray-700 font-medium">Equipos de Cómputo</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-32"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">1</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
-                        <div class="category-item flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                                <span class="text-gray-700 font-medium">Equipos Audiovisuales</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-36"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">1</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
-                        <div class="category-item flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                                <span class="text-gray-700 font-medium">Equipos de Laboratorio</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-40"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">1</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
-                        <div class="category-item flex items-center justify-between">
+                        <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-blue-500"></div>
-                                <span class="text-gray-700 font-medium">Dispositivos Móviles</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-28"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">1</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Estado de Items -->
-                <div class="stat-card">
+                <!-- Loading State - Estado de Items -->
+                <div class="stat-card animate-pulse">
                     <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-chart-bar text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Estado de Items</h2>
+                        <div class="w-5 h-5 bg-gray-200 rounded"></div>
+                        <div class="h-6 bg-gray-200 rounded w-24"></div>
                     </div>
-                    <p class="text-gray-600 text-sm mb-4">Distribución por estado actual</p>
-
-                    <div class="status-bar mb-4">
-                        <div class="status-segment" style="width: 75%; background: #39A900;">3</div>
-                        <div class="status-segment" style="width: 25%; background: #FFA726;">1</div>
-                        <div class="status-segment" style="width: 0%; background: #EF5350;">0</div>
-                    </div>
-
+                    <div class="h-4 bg-gray-200 rounded w-40 mb-4"></div>
+                    <div class="h-2 bg-gray-200 rounded w-full mb-4"></div>
                     <div class="space-y-3">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-green-600"></div>
-                                <span class="text-gray-700 font-medium">Activos</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-16"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">3</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-                                <span class="text-gray-700 font-medium">Mantenimiento</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-28"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">1</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                                <span class="text-gray-700 font-medium">Inactivos</span>
+                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-20"></div>
                             </div>
-                            <span class="text-gray-600 font-semibold">0</span>
+                            <div class="h-4 bg-gray-200 rounded w-8"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Estadísticas Mensuales -->
-            <div class="stat-card mb-6">
+            <div class="stat-card mb-6" id="monthlyStatsContainer">
                 <div class="flex items-center gap-2 mb-4">
                     <i class="fas fa-chart-line text-green-600 text-xl"></i>
                     <h2 class="text-xl font-bold text-gray-800">Estadísticas Mensuales</h2>
                 </div>
                 <p class="text-gray-600 text-sm mb-6">Evolución de items y valores por mes</p>
 
+                <!-- Loading State -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">Ene</div>
-                        <div class="text-2xl font-bold text-green-600 mb-1">5</div>
-                        <div class="text-sm text-gray-600">items</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">$ 12.150.000</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto mt-2"></div>
                     </div>
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">Feb</div>
-                        <div class="text-2xl font-bold text-gray-400 mb-1">0</div>
-                        <div class="text-sm text-gray-600">items</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">$ 0</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto mt-2"></div>
                     </div>
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">Mar</div>
-                        <div class="text-2xl font-bold text-gray-400 mb-1">0</div>
-                        <div class="text-sm text-gray-600">items</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">$ 0</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto mt-2"></div>
                     </div>
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">Abr</div>
-                        <div class="text-2xl font-bold text-gray-400 mb-1">0</div>
-                        <div class="text-sm text-gray-600">items</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">$ 0</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto mt-2"></div>
                     </div>
-                    <div class="month-card">
-                        <div class="text-gray-800 font-bold text-lg mb-2">May</div>
-                        <div class="text-2xl font-bold text-gray-400 mb-1">0</div>
-                        <div class="text-sm text-gray-600">items</div>
-                        <div class="text-sm font-semibold text-gray-800 mt-2">$ 0</div>
+                    <div class="month-card animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
+                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto"></div>
+                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto mt-2"></div>
                     </div>
                 </div>
             </div>
@@ -343,6 +311,648 @@
     </div>
 
     <script src="../../../js/dashboard.js"></script>
+
+    <style>
+        /* Adjust main content margin to account for fixed sidebar */
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .overlay {
+                display: none;
+            }
+
+            .overlay.active {
+                display: block;
+            }
+        }
+    </style>
+
+    <script>
+        // Handle sidebar click
+        function handleSidebarClick(event, link) {
+            if (link === '#') {
+                event.preventDefault();
+                return;
+            }
+
+            // Close sidebar on mobile after click
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+
+            // Navigate to the link
+            if (link.startsWith('/')) {
+                window.location.href = link;
+            }
+        }
+
+
+        // Setup mobile menu toggle
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function() {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+
+                    if (isHidden) {
+                        sidebar.style.transform = 'translateX(0)';
+                        overlay.style.display = 'block';
+                    } else {
+                        sidebar.style.transform = 'translateX(-100%)';
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Load current user information for header
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                // Set default values for user
+                updateHeaderUserInfo({
+                    fullName: 'Usuario',
+                    role: 'USER',
+                    email: 'user@sena.edu.co'
+                });
+            }
+        }
+
+        // Update user info display in header
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Usuario';
+            if (headerUserRole) headerUserRole.textContent = userData.role || 'USER';
+            if (headerUserAvatar) headerUserAvatar.textContent = (userData.fullName || 'Usuario').charAt(0).toUpperCase();
+        }
+
+        // Initialize mobile menu toggle when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setupMobileMenuToggle();
+            loadCurrentUserInfo(); // Load user info for header
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
+        }
+    </script>
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboardData();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            if (menuToggle) {
+                menuToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('-translate-x-full');
+                    overlay.classList.toggle('active');
+                });
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', function() {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.remove('active');
+                });
+            }
+        }
+
+        // Load all dashboard data
+        async function loadDashboardData() {
+            if (dashboardData.isLoading) return;
+
+            dashboardData.isLoading = true;
+            showLoadingState();
+
+            try {
+                // Load data in parallel for better performance
+                await Promise.all([
+                    loadUserInfo(),
+                    loadUserInventoryStats(),
+                    loadItemsByCategory(),
+                    loadItemStatus(),
+                    loadMonthlyActivity()
+                ]);
+
+                // Update UI with loaded data
+                updateDashboardUI();
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                // Set everything to 0 if APIs fail
+                setZeroFallbacks();
+                updateDashboardUI();
+            } finally {
+                dashboardData.isLoading = false;
+                hideLoadingState();
+            }
+        }
+
+        // Load user information
+        async function loadUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    dashboardData.user = await response.json();
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+                // Set to default user data
+                dashboardData.user = {
+                    fullName: 'Usuario',
+                    role: 'USER',
+                    email: 'user@sena.edu.co'
+                };
+            }
+        }
+
+        // Load user inventory statistics
+        async function loadUserInventoryStats() {
+            try {
+                const token = localStorage.getItem('jwt');
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                // Try to load user's inventory items
+                const inventoryResponse = await fetch('/api/v1/inventory/user-items', {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (inventoryResponse.ok) {
+                    const inventoryData = await inventoryResponse.json();
+
+                    // Calculate stats from user's inventory
+                    const totalItems = inventoryData.length;
+                    const activeItems = inventoryData.filter(item => item.status === 'ACTIVE').length;
+                    const maintenanceItems = inventoryData.filter(item => item.status === 'MAINTENANCE').length;
+
+                    // Calculate total value (mock calculation for now)
+                    const totalValue = inventoryData.reduce((sum, item) => sum + (item.value || 0), 0);
+
+                    dashboardData.stats = {
+                        totalItems: totalItems,
+                        activeItems: activeItems,
+                        maintenanceItems: maintenanceItems,
+                        totalValue: totalValue
+                    };
+                } else {
+                    throw new Error('Failed to load inventory stats');
+                }
+            } catch (error) {
+                console.error('Error loading inventory stats:', error);
+                // Set to 0 if APIs fail
+                dashboardData.stats = {
+                    totalItems: 0,
+                    activeItems: 0,
+                    maintenanceItems: 0,
+                    totalValue: 0
+                };
+            }
+        }
+
+        // Load items by category
+        async function loadItemsByCategory() {
+            try {
+                const token = localStorage.getItem('jwt');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch('/api/v1/inventory/user-items', {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (response.ok) {
+                    const inventoryData = await response.json();
+                    const categoryCounts = {};
+
+                    // Count items by category
+                    inventoryData.forEach(item => {
+                        const category = item.category || 'Sin Categoría';
+                        categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+                    });
+
+                    // Convert to array format
+                    dashboardData.itemsByCategory = Object.entries(categoryCounts).map(([category, count], index) => ({
+                        category: category,
+                        count: count,
+                        color: ['red', 'yellow', 'green', 'blue'][index % 4] // Cycle through colors
+                    }));
+                } else {
+                    throw new Error('Failed to load items by category');
+                }
+            } catch (error) {
+                console.error('Error loading items by category:', error);
+                // Set to 0 if APIs fail
+                dashboardData.itemsByCategory = [
+                    { category: 'Equipos de Cómputo', count: 0, color: 'red' },
+                    { category: 'Equipos Audiovisuales', count: 0, color: 'yellow' },
+                    { category: 'Equipos de Laboratorio', count: 0, color: 'green' },
+                    { category: 'Dispositivos Móviles', count: 0, color: 'blue' }
+                ];
+            }
+        }
+
+        // Load item status distribution
+        async function loadItemStatus() {
+            try {
+                const token = localStorage.getItem('jwt');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch('/api/v1/inventory/user-items', {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (response.ok) {
+                    const inventoryData = await response.json();
+                    const statusCounts = {
+                        ACTIVE: 0,
+                        MAINTENANCE: 0,
+                        INACTIVE: 0
+                    };
+
+                    // Count items by status
+                    inventoryData.forEach(item => {
+                        const status = item.status || 'INACTIVE';
+                        if (statusCounts.hasOwnProperty(status)) {
+                            statusCounts[status]++;
+                        }
+                    });
+
+                    dashboardData.itemStatus = [
+                        { status: 'Activos', count: statusCounts.ACTIVE, color: 'green' },
+                        { status: 'Mantenimiento', count: statusCounts.MAINTENANCE, color: 'orange' },
+                        { status: 'Inactivos', count: statusCounts.INACTIVE, color: 'red' }
+                    ];
+                } else {
+                    throw new Error('Failed to load item status');
+                }
+            } catch (error) {
+                console.error('Error loading item status:', error);
+                // Set to 0 if APIs fail
+                dashboardData.itemStatus = [
+                    { status: 'Activos', count: 0, color: 'green' },
+                    { status: 'Mantenimiento', count: 0, color: 'orange' },
+                    { status: 'Inactivos', count: 0, color: 'red' }
+                ];
+            }
+        }
+
+        // Load monthly activity
+        async function loadMonthlyActivity() {
+            try {
+                // For users, monthly activity would typically be their own item interactions
+                // Since we don't have this API yet, we'll set to 0
+                const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May'];
+                dashboardData.monthlyActivity = months.map(month => ({
+                    month: month,
+                    items: 0,
+                    value: 0
+                }));
+            } catch (error) {
+                console.error('Error loading monthly activity:', error);
+                // Set to 0 if APIs fail
+                dashboardData.monthlyActivity = [
+                    { month: 'Ene', items: 0, value: 0 },
+                    { month: 'Feb', items: 0, value: 0 },
+                    { month: 'Mar', items: 0, value: 0 },
+                    { month: 'Abr', items: 0, value: 0 },
+                    { month: 'May', items: 0, value: 0 }
+                ];
+            }
+        }
+
+        // Set zero fallbacks for all data
+        function setZeroFallbacks() {
+            dashboardData.user = {
+                fullName: 'Usuario',
+                role: 'USER',
+                email: 'user@sena.edu.co'
+            };
+
+            dashboardData.stats = {
+                totalItems: 0,
+                activeItems: 0,
+                maintenanceItems: 0,
+                totalValue: 0
+            };
+
+            dashboardData.itemsByCategory = [
+                { category: 'Equipos de Cómputo', count: 0, color: 'red' },
+                { category: 'Equipos Audiovisuales', count: 0, color: 'yellow' },
+                { category: 'Equipos de Laboratorio', count: 0, color: 'green' },
+                { category: 'Dispositivos Móviles', count: 0, color: 'blue' }
+            ];
+
+            dashboardData.itemStatus = [
+                { status: 'Activos', count: 0, color: 'green' },
+                { status: 'Mantenimiento', count: 0, color: 'orange' },
+                { status: 'Inactivos', count: 0, color: 'red' }
+            ];
+
+            dashboardData.monthlyActivity = [
+                { month: 'Ene', items: 0, value: 0 },
+                { month: 'Feb', items: 0, value: 0 },
+                { month: 'Mar', items: 0, value: 0 },
+                { month: 'Abr', items: 0, value: 0 },
+                { month: 'May', items: 0, value: 0 }
+            ];
+        }
+
+        // Update dashboard UI with loaded data
+        function updateDashboardUI() {
+            updateWelcomeSection();
+            updateStatsCards();
+            updateChartsSection();
+            updateMonthlyStats();
+        }
+
+        // Update welcome section
+        function updateWelcomeSection() {
+            const titleElement = document.getElementById('dashboardTitle');
+            const welcomeElement = document.getElementById('welcomeMessage');
+
+            if (dashboardData.user) {
+                const userName = dashboardData.user.fullName || 'Usuario';
+                const userRole = dashboardData.user.role || 'USER';
+
+                if (titleElement) {
+                    titleElement.textContent = `Dashboard ${userRole === 'USER' ? '' : userRole}`;
+                }
+
+                if (welcomeElement) {
+                    welcomeElement.textContent = `Bienvenido, ${userName} - ${userRole}`;
+                }
+            }
+        }
+
+        // Update stats cards
+        function updateStatsCards() {
+            if (!dashboardData.stats) return;
+
+            const container = document.getElementById('statsContainer');
+            if (!container) return;
+
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                }).format(value);
+            };
+
+            container.innerHTML = `
+                <!-- Total Items -->
+                <div class="stat-card">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
+                            <h3 class="text-3xl font-bold text-gray-800">${dashboardData.stats.totalItems}</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-box text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-green-600 text-sm font-medium">${dashboardData.stats.totalItems > 0 ? '+12.5% desde el mes pasado' : 'Sin items registrados'}</p>
+                </div>
+
+                <!-- Items Activos -->
+                <div class="stat-card">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium mb-1">Items Activos</p>
+                            <h3 class="text-3xl font-bold text-gray-800">${dashboardData.stats.activeItems}</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-check-circle text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${dashboardData.stats.totalItems > 0 ? (dashboardData.stats.activeItems / dashboardData.stats.totalItems) * 100 : 0}%"></div>
+                    </div>
+                </div>
+
+                <!-- En Mantenimiento -->
+                <div class="stat-card">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium mb-1">En Mantenimiento</p>
+                            <h3 class="text-3xl font-bold text-gray-800">${dashboardData.stats.maintenanceItems}</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-exclamation-triangle text-orange-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm">${dashboardData.stats.maintenanceItems} pendientes</p>
+                </div>
+
+                <!-- Valor Total -->
+                <div class="stat-card">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
+                            <h3 class="text-2xl font-bold text-gray-800">${formatCurrency(dashboardData.stats.totalValue)}</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 text-sm">${dashboardData.stats.totalItems} inventarios</p>
+                </div>
+            `;
+        }
+
+        // Update charts section
+        function updateChartsSection() {
+            const container = document.getElementById('chartsContainer');
+            if (!container) return;
+
+            let itemsByCategoryHtml = '';
+            if (dashboardData.itemsByCategory) {
+                itemsByCategoryHtml = dashboardData.itemsByCategory.map(item =>
+                    `<div class="category-item flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-${item.color}-500"></div>
+                            <span class="text-gray-700 font-medium">${item.category}</span>
+                        </div>
+                        <span class="text-gray-600 font-semibold">${item.count}</span>
+                    </div>`
+                ).join('');
+            }
+
+            let itemStatusHtml = '';
+            if (dashboardData.itemStatus) {
+                const totalItems = dashboardData.itemStatus.reduce((sum, item) => sum + item.count, 0);
+                itemStatusHtml = dashboardData.itemStatus.map(item =>
+                    `<div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-${item.color}-600"></div>
+                            <span class="text-gray-700 font-medium">${item.status}</span>
+                        </div>
+                        <span class="text-gray-600 font-semibold">${item.count}</span>
+                    </div>`
+                ).join('');
+            }
+
+            container.innerHTML = `
+                <!-- Items por Categoría -->
+                <div class="stat-card">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fas fa-chart-pie text-green-600 text-xl"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Items por Categoría</h2>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">Distribución de items por categoría</p>
+                    <div class="space-y-3">
+                        ${itemsByCategoryHtml}
+                    </div>
+                </div>
+
+                <!-- Estado de Items -->
+                <div class="stat-card">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fas fa-chart-bar text-green-600 text-xl"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Estado de Items</h2>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">Distribución por estado actual</p>
+                    <div class="status-bar mb-4">
+                        ${dashboardData.itemStatus ? dashboardData.itemStatus.map(item => {
+                            const percentage = dashboardData.stats && dashboardData.stats.totalItems > 0 ?
+                                (item.count / dashboardData.stats.totalItems) * 100 : 0;
+                            return `<div class="status-segment" style="width: ${percentage}%; background: ${item.color === 'green' ? '#39A900' : item.color === 'orange' ? '#FFA726' : '#EF5350'};">${item.count}</div>`;
+                        }).join('') : '<div class="status-segment" style="width: 100%; background: #39A900;">0</div>'}
+                    </div>
+                    <div class="space-y-3">
+                        ${itemStatusHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update monthly statistics
+        function updateMonthlyStats() {
+            const container = document.getElementById('monthlyStatsContainer');
+            if (!container || !dashboardData.monthlyActivity) return;
+
+            const formatCurrency = (value) => {
+                return new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                }).format(value);
+            };
+
+            const monthCardsHtml = dashboardData.monthlyActivity.map(month =>
+                `<div class="month-card">
+                    <div class="text-gray-800 font-bold text-lg mb-2">${month.month}</div>
+                    <div class="text-2xl font-bold text-green-600 mb-1">${month.items}</div>
+                    <div class="text-sm text-gray-600">items</div>
+                    <div class="text-sm font-semibold text-gray-800 mt-2">${formatCurrency(month.value)}</div>
+                </div>`
+            ).join('');
+
+            // Update the grid inside the container
+            const gridElement = container.querySelector('.grid');
+            if (gridElement) {
+                gridElement.innerHTML = monthCardsHtml;
+            }
+        }
+
+        // Show loading state
+        function showLoadingState() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            const refreshText = document.getElementById('refreshText');
+
+            if (refreshIcon) refreshIcon.classList.add('animate-spin');
+            if (refreshText) refreshText.textContent = 'Cargando...';
+        }
+
+        // Hide loading state
+        function hideLoadingState() {
+            const refreshIcon = document.getElementById('refreshIcon');
+            const refreshText = document.getElementById('refreshText');
+
+            if (refreshIcon) refreshIcon.classList.remove('animate-spin');
+            if (refreshText) refreshText.textContent = 'Actualizar';
+        }
+
+    </script>
 </body>
 
 </html>
