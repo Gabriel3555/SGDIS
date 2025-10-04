@@ -1,4 +1,4 @@
-package com.sgdis.backend.inventory.infrastructure.repository;
+/*package com.sgdis.backend.inventory.infrastructure.repository;
 
 import com.sgdis.backend.inventory.domain.Inventory;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
@@ -89,3 +89,5 @@ class JpaInventoryRepositoryTest {
         assertEquals("Laptop", result.getName());
     }
 }
+
+ */

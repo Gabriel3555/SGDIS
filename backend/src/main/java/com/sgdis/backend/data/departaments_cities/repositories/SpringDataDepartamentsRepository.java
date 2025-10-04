@@ -1,7 +1,6 @@
-package com.sgdis.backend.dataInitializerDepartamentsAndCities.repositories;
+package com.sgdis.backend.data.departaments_cities.repositories;
 
-import com.sgdis.backend.dataInitializerDepartamentsAndCities.entity.CityEntity;
-import com.sgdis.backend.dataInitializerDepartamentsAndCities.entity.DepartamentEntity;
+import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

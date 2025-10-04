@@ -2,10 +2,10 @@ package com.sgdis.backend;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sgdis.backend.dataInitializerDepartamentsAndCities.entity.CityEntity;
-import com.sgdis.backend.dataInitializerDepartamentsAndCities.entity.DepartamentEntity;
-import com.sgdis.backend.dataInitializerDepartamentsAndCities.repositories.SpringDataCitiesRepository;
-import com.sgdis.backend.dataInitializerDepartamentsAndCities.repositories.SpringDataDepartamentsRepository;
+import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
+import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
+import com.sgdis.backend.data.departaments_cities.repositories.SpringDataCitiesRepository;
+import com.sgdis.backend.data.departaments_cities.repositories.SpringDataDepartamentsRepository;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
