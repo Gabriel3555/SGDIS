@@ -72,124 +72,352 @@ const data = [
 export default function Verification() {
   const [search, setSearch] = useState("");
 
+  const filteredData = data.filter(item =>
+    item.plate.toLowerCase().includes(search.toLowerCase()) ||
+    item.item.toLowerCase().includes(search.toLowerCase())
+  );
+
   const renderItem = ({ item }) => (
-    <View style={styles.row}>
-      <View style={styles.photoBox}>
-        {item.photo ? (
-          <Image source={{ uri: item.photo }} style={styles.photo} />
-        ) : (
-          <Ionicons name="image-outline" size={28} color="#aaa" />
-        )}
+    <View style={styles.verificationCard}>
+      <View style={styles.cardHeader}>
+        <View style={styles.itemImage}>
+          {item.photo ? (
+            <Image source={{ uri: item.photo }} style={styles.photo} />
+          ) : (
+            <View style={[styles.photoPlaceholder, { backgroundColor: '#f5f5f5' }]}>
+              <Ionicons name="image-outline" size={24} color="#ccc" />
+            </View>
+          )}
+        </View>
+        <View style={styles.cardContent}>
+          <View style={styles.cardTop}>
+            <View style={styles.plateSection}>
+              <Text style={styles.plateNumber}>{item.plate}</Text>
+              <View style={[styles.statusBadge, getStatusBadgeStyle(item.status)]}>
+                <Ionicons name={getStatusIcon(item.status)} size={14} color="#fff" />
+                <Text style={styles.statusText}>{item.status}</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.viewButton}>
+              <Ionicons name="eye-outline" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.itemName}>{item.item}</Text>
+          <View style={styles.detailsRow}>
+            <View style={styles.detailItem}>
+              <Ionicons name="scan-outline" size={14} color="#666" />
+              <Text style={styles.detailText}>{item.method}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Ionicons name="location-outline" size={14} color="#666" />
+              <Text style={styles.detailText}>{item.location}</Text>
+            </View>
+          </View>
+          <View style={styles.verifierRow}>
+            <Ionicons name="person-outline" size={14} color="#666" />
+            <Text style={styles.verifierText}>
+              Verificado por {item.verifiedBy} • {item.date}
+            </Text>
+          </View>
+        </View>
       </View>
-      <View style={styles.info}>
-        <Text style={styles.plate}>{item.plate}</Text>
-        <Text style={styles.item}>{item.item}</Text>
-        <Text style={[styles.status, getStatusStyle(item.status)]}>{item.status}</Text>
-        <Text style={styles.details}>
-          {item.method} · {item.location}
-        </Text>
-        <Text style={styles.details}>
-          Verified by {item.verifiedBy} · {item.date}
-        </Text>
-      </View>
-      <TouchableOpacity>
-        <Ionicons name="eye-outline" size={22} color="#333" />
-      </TouchableOpacity>
     </View>
   );
 
-  const getStatusStyle = (status) => {
+  const getStatusBadgeStyle = (status) => {
     switch (status) {
       case "Found":
-        return { color: "green" };
+        return { backgroundColor: "#4caf50" };
       case "Moved":
-        return { color: "blue" };
+        return { backgroundColor: "#2196f3" };
       case "Not Found":
-        return { color: "red" };
+        return { backgroundColor: "#f44336" };
       case "Damaged":
-        return { color: "orange" };
+        return { backgroundColor: "#ff9800" };
       default:
-        return { color: "#555" };
+        return { backgroundColor: "#666" };
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Found":
+        return "checkmark-circle";
+      case "Moved":
+        return "arrow-forward-circle";
+      case "Not Found":
+        return "close-circle";
+      case "Damaged":
+        return "warning";
+      default:
+        return "help-circle";
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Item Verification</Text>
-      <Text style={styles.subtitle}>Verify the location and status of items</Text>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.titleSection}>
+            <View style={[styles.headerIcon, { backgroundColor: '#e8f5e8' }]}>
+              <Ionicons name="checkmark-done-circle" size={24} color="#4caf50" />
+            </View>
+            <View>
+              <Text style={styles.headerTitle}>Verificación</Text>
+              <Text style={styles.headerSubtitle}>Verifica ubicación y estado de items</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.scanButton}>
+            <Ionicons name="scan" size={24} color="#666" />
+          </TouchableOpacity>
+        </View>
+      </View>
 
-      {/* Search box */}
-      <View style={styles.searchBox}>
-        <Ionicons name="search-outline" size={20} color="#777" />
-        <TextInput
-          style={styles.input}
-          placeholder="Enter Plate Number"
-          value={search}
-          onChangeText={setSearch}
-        />
-        <TouchableOpacity style={styles.searchButton}>
-          <Text style={styles.searchText}>Search</Text>
-        </TouchableOpacity>
+      {/* Search Section */}
+      <View style={styles.searchSection}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar por placa o item..."
+            placeholderTextColor="#999"
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch("")}>
+              <Ionicons name="close-circle" size={20} color="#666" />
+            </TouchableOpacity>
+          )}
+        </View>
         <TouchableOpacity style={styles.barcodeButton}>
           <Ionicons name="barcode-outline" size={20} color="#fff" />
+          <Text style={styles.barcodeText}>Escanear</Text>
         </TouchableOpacity>
       </View>
 
-      {/* List */}
-      <Text style={styles.sectionTitle}>Verification History</Text>
-      <FlatList
-        data={data}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-      />
+      {/* Verification List */}
+      <View style={styles.listSection}>
+        <Text style={styles.sectionTitle}>Historial de Verificación</Text>
+        <FlatList
+          data={filteredData}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f7f9fc", padding: 16 },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 4 },
-  subtitle: { fontSize: 14, color: "#555", marginBottom: 16 },
-  searchBox: {
-    flexDirection: "row",
+  container: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+  },
+
+  // Header Styles
+  header: {
     backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 8,
+    paddingTop: 50,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
-    elevation: 1,
+    paddingHorizontal: 20,
   },
-  input: { flex: 1, marginHorizontal: 8, fontSize: 14 },
-  searchButton: {
-    backgroundColor: "#000",
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginRight: 6,
+  titleSection: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  searchText: { color: "#fff", fontSize: 13 },
+  headerIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#666",
+  },
+  scanButton: {
+    padding: 8,
+  },
+
+  // Search Section
+  searchSection: {
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginRight: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+  },
   barcodeButton: {
-    backgroundColor: "#333",
-    padding: 6,
-    borderRadius: 6,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: "600", marginBottom: 8 },
-  list: { paddingBottom: 100 },
-  row: {
     flexDirection: "row",
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 10,
     alignItems: "center",
-    marginBottom: 10,
-    elevation: 1,
+    backgroundColor: "#28a745",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  photoBox: { width: 40, height: 40, justifyContent: "center", alignItems: "center" },
-  photo: { width: 40, height: 40, borderRadius: 20 },
-  info: { flex: 1, marginLeft: 10 },
-  plate: { fontSize: 12, fontWeight: "bold", color: "#333" },
-  item: { fontSize: 14, color: "#000", marginVertical: 2 },
-  status: { fontSize: 13, fontWeight: "600" },
-  details: { fontSize: 11, color: "#666" },
+  barcodeText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 8,
+  },
+
+  // List Section
+  listSection: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 16,
+  },
+  list: {
+    paddingBottom: 20,
+  },
+
+  // Verification Cards
+  verificationCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    marginBottom: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    padding: 16,
+  },
+  itemImage: {
+    marginRight: 16,
+  },
+  photo: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+  },
+  photoPlaceholder: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cardContent: {
+    flex: 1,
+  },
+  cardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  plateSection: {
+    flex: 1,
+  },
+  plateNumber: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+  statusText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+    marginLeft: 4,
+  },
+  viewButton: {
+    padding: 8,
+  },
+  itemName: {
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+  detailsRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+  },
+  detailItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  detailText: {
+    fontSize: 13,
+    color: "#666",
+    marginLeft: 4,
+  },
+  verifierRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  verifierText: {
+    fontSize: 12,
+    color: "#666",
+    marginLeft: 4,
+  },
 });
