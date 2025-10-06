@@ -1,4 +1,4 @@
-package com.sgdis.backend.dataInitializerDepartamentsAndCities.entity;
+package com.sgdis.backend.data.departaments_cities.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
