@@ -81,12 +81,12 @@ public final class UserMapper {
                 id,
                 null,
                 request.email(),
-                null,
+                request.fullName(),
                 null,
                 null,
                 null,
                 Role.valueOf(request.role().toUpperCase()),
-                true
+                request.status()
         );
     }
 }
