@@ -43,4 +43,17 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/admin/inventory")
+    @PreAuthorize("hasRole('ADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> inventoryManagement() throws IOException {
+        Resource resource = new ClassPathResource("static/views/inventory/inventory.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

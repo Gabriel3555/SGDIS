@@ -7,7 +7,8 @@ let usersData = {
     searchTerm: '',
     selectedRole: 'all',
     selectedStatus: 'all',
-    isLoading: false
+    isLoading: false,
+    currentUserId: null // For tracking user being edited/deleted
 };
 
 // Initialize users page when DOM loads
@@ -51,6 +52,12 @@ function setupEventListeners() {
     const newUserForm = document.getElementById('newUserForm');
     if (newUserForm) {
         newUserForm.addEventListener('submit', handleNewUserSubmit);
+    }
+
+    // Edit user form
+    const editUserForm = document.getElementById('editUserForm');
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', handleEditUserSubmit);
     }
 
 }
@@ -141,7 +148,8 @@ async function loadUsers() {
         });
 
         if (response.ok) {
-            usersData.users = await response.json();
+            const users = await response.json();
+            usersData.users = Array.isArray(users) ? users : [];
             usersData.filteredUsers = [...usersData.users];
         } else {
             throw new Error('Failed to load users');
@@ -162,9 +170,9 @@ function filterUsers() {
     if (usersData.searchTerm) {
         const searchLower = usersData.searchTerm.toLowerCase();
         filtered = filtered.filter(user =>
-            user.fullName.toLowerCase().includes(searchLower) ||
-            user.email.toLowerCase().includes(searchLower) ||
-            user.role.toLowerCase().includes(searchLower)
+            (user.fullName && user.fullName.toLowerCase().includes(searchLower)) ||
+            (user.email && user.email.toLowerCase().includes(searchLower)) ||
+            (user.role && user.role.toLowerCase().includes(searchLower))
         );
     }
 
@@ -176,7 +184,7 @@ function filterUsers() {
     // Filter by status
     if (usersData.selectedStatus !== 'all') {
         const status = usersData.selectedStatus === 'active';
-        filtered = filtered.filter(user => user.active === status);
+        filtered = filtered.filter(user => user.status === status);
     }
 
     usersData.filteredUsers = filtered;
@@ -199,11 +207,11 @@ function updateUserStats() {
 
     // Calculate stats from users data
     const totalUsers = usersData.users.length;
-    const adminCount = usersData.users.filter(u => u.role === 'ADMIN').length;
-    const warehouseCount = usersData.users.filter(u => u.role === 'WAREHOUSE').length;
-    const userCount = usersData.users.filter(u => u.role === 'USER').length;
-    const activeCount = usersData.users.filter(u => u.active !== false).length;
-    const inactiveCount = usersData.users.filter(u => u.active === false).length;
+    const adminCount = usersData.users.filter(u => u && u.role === 'ADMIN').length;
+    const warehouseCount = usersData.users.filter(u => u && u.role === 'WAREHOUSE').length;
+    const userCount = usersData.users.filter(u => u && u.role === 'USER').length;
+    const activeCount = usersData.users.filter(u => u && u.status === true).length;
+    const inactiveCount = usersData.users.filter(u => u && u.status === false).length;
 
     container.innerHTML = `
         <div class="stat-card">
@@ -346,24 +354,28 @@ function updateUsersTable() {
 
         paginatedUsers.forEach(user => {
             const roleText = getRoleText(user.role);
-            const statusText = user.active !== false ? 'Activo' : 'Inactivo';
-            const statusColor = user.active !== false ? 'green' : 'red';
+            const statusText = user.status !== false ? 'Activo' : 'Inactivo';
+            const statusColor = user.status !== false ? 'green' : 'red';
+            const fullName = user.fullName || 'Usuario sin nombre';
+            const email = user.email || 'Sin email';
+            const initials = fullName.charAt(0).toUpperCase();
+            const isAdmin = user.role === 'ADMIN';
 
             usersTableHtml += `
-                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors ${isAdmin ? 'bg-red-50' : ''}">
                     <td class="py-3 px-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                ${user.fullName.charAt(0).toUpperCase()}
+                            <div class="w-8 h-8 ${isAdmin ? 'bg-red-600' : 'bg-green-600'} rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                ${initials}
                             </div>
                             <div>
-                                <div class="font-semibold text-gray-800">${user.fullName}</div>
-                                <div class="text-sm text-gray-500">${user.email}</div>
+                                <div class="font-semibold text-gray-800 ${isAdmin ? 'text-red-800' : ''}">${fullName}</div>
+                                <div class="text-sm text-gray-500">${email}</div>
                             </div>
                         </div>
                     </td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">${roleText}</span>
+                        <span class="px-2 py-1 ${isAdmin ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'} rounded-full text-xs font-medium">${roleText}</span>
                     </td>
                     <td class="py-3 px-4">
                         <span class="px-2 py-1 bg-${statusColor}-100 text-${statusColor}-700 rounded-full text-xs font-medium">${statusText}</span>
@@ -375,13 +387,13 @@ function updateUsersTable() {
                     </td>
                     <td class="py-3 px-4">
                         <div class="flex items-center justify-center gap-2">
-                            <button onclick="viewUser('${user.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver">
+                            <button data-user-id="${user.id}" data-action="view" class="user-action-btn p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button onclick="editUser('${user.id}')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar">
+                            <button data-user-id="${user.id}" data-action="edit" class="user-action-btn p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="deleteUser('${user.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                            <button data-user-id="${user.id}" data-action="delete" class="user-action-btn p-2 ${isAdmin ? 'text-gray-400 cursor-not-allowed opacity-50' : 'text-red-600 hover:bg-red-50'} rounded-lg transition-colors" title="Eliminar" ${isAdmin ? 'disabled' : ''} onclick="${isAdmin ? 'return false' : `deleteUser('${user.id}')`}">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -398,6 +410,9 @@ function updateUsersTable() {
     }
 
     container.innerHTML = usersTableHtml;
+
+    // Attach event listeners to action buttons after rendering
+    attachActionButtonListeners();
 }
 
 // Update pagination
@@ -502,17 +517,201 @@ function closeNewUserModal() {
     }
 }
 
+// View User Modal functions
+function showViewUserModal(userId) {
+    // Convert userId to number if it's a string
+    const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    const user = usersData.users.find(u => u && u.id === numericUserId);
+
+    if (user) {
+        const content = document.getElementById('viewUserContent');
+        const fullName = user.fullName || 'Usuario sin nombre';
+        const email = user.email || 'Sin email';
+        const initials = fullName.charAt(0).toUpperCase();
+
+        if (content) {
+            content.innerHTML = `
+            <div class="text-center mb-6">
+                <div class="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                    ${initials}
+                </div>
+                <h3 class="text-xl font-semibold text-gray-800">${fullName}</h3>
+                <p class="text-gray-600">${email}</p>
+            </div>
+
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">ID:</span>
+                        <span class="font-semibold">${user.id}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Nombre:</span>
+                        <span class="font-semibold">${fullName}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Email:</span>
+                        <span class="font-semibold">${email}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Rol:</span>
+                        <span class="font-semibold">${getRoleText(user.role)}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Estado:</span>
+                        <span class="font-semibold ${user.status !== false ? 'text-green-600' : 'text-red-600'}">
+                            ${user.status !== false ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </div>
+                    ${user.jobTitle ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Cargo:</span>
+                        <span class="font-semibold">${user.jobTitle}</span>
+                    </div>
+                    ` : ''}
+                    ${user.laborDepartment ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Departamento:</span>
+                        <span class="font-semibold">${user.laborDepartment}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        const modal = document.getElementById('viewUserModal');
+
+        if (modal) {
+            modal.classList.remove('hidden');
+        } else {
+            console.error('Modal element not found!');
+        }
+    } else {
+        console.error('User not found with ID:', userId);
+    }
+}
+
+function closeViewUserModal() {
+    const modal = document.getElementById('viewUserModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+}
+
+// Edit User Modal functions
+function showEditUserModal(userId) {
+    const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    const user = usersData.users.find(u => u && u.id === numericUserId);
+    if (user) {
+        usersData.currentUserId = userId;
+
+        // Fill form with user data
+        const fullNameInput = document.getElementById('editUserFullName');
+        const emailInput = document.getElementById('editUserEmail');
+        const roleSelect = document.getElementById('editUserRole');
+        const statusSelect = document.getElementById('editUserStatus');
+
+        if (fullNameInput) fullNameInput.value = user.fullName || '';
+        if (emailInput) emailInput.value = user.email || '';
+        if (roleSelect) roleSelect.value = user.role || '';
+        if (statusSelect) statusSelect.value = user.status !== false ? 'true' : 'false';
+
+        const modal = document.getElementById('editUserModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+}
+
+function closeEditUserModal() {
+    const modal = document.getElementById('editUserModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+
+    // Reset form
+    const form = document.getElementById('editUserForm');
+    if (form) {
+        form.reset();
+    }
+
+    usersData.currentUserId = null;
+}
+
+// Delete User Modal functions
+function showDeleteUserModal(userId) {
+    const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    const user = usersData.users.find(u => u && u.id === numericUserId);
+    if (user) {
+        usersData.currentUserId = userId;
+
+        const message = document.getElementById('deleteUserMessage');
+        const fullName = user.fullName || 'Usuario sin nombre';
+        const email = user.email || 'Sin email';
+
+        if (message) {
+            // Check if user is an admin (admins usually can't be deleted due to system constraints)
+            if (user.role === 'ADMIN') {
+                message.textContent = `No se puede eliminar el usuario "${fullName}" porque es un administrador del sistema. Contacte al soporte técnico si necesita ayuda.`;
+                // Disable the delete button for admins
+                setTimeout(() => {
+                    const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
+                    if (deleteBtn && !deleteBtn.disabled) {
+                        deleteBtn.disabled = true;
+                        deleteBtn.textContent = 'No permitido';
+                        deleteBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                        deleteBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    }
+                }, 100);
+            } else {
+                message.textContent = `¿Está seguro de que desea eliminar al usuario "${fullName}" (${email})? Esta acción no se puede deshacer.`;
+                // Re-enable the delete button for non-admins
+                setTimeout(() => {
+                    const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
+                    if (deleteBtn && deleteBtn.disabled) {
+                        deleteBtn.disabled = false;
+                        deleteBtn.textContent = 'Eliminar Usuario';
+                        deleteBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                        deleteBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    }
+                }, 100);
+            }
+        }
+
+        const modal = document.getElementById('deleteUserModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+        }
+    }
+}
+
+function closeDeleteUserModal() {
+    const modal = document.getElementById('deleteUserModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+
+    // Reset button state
+    const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
+    if (deleteBtn) {
+        deleteBtn.disabled = false;
+        deleteBtn.textContent = 'Eliminar Usuario';
+        deleteBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        deleteBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+    }
+
+    usersData.currentUserId = null;
+}
+
 // Handle new user form submission
 async function handleNewUserSubmit(e) {
     e.preventDefault();
 
-    const name = document.getElementById('newUserName').value;
     const email = document.getElementById('newUserEmail').value;
     const role = document.getElementById('newUserRole').value;
     const password = document.getElementById('newUserPassword').value;
 
-    if (!name || !email || !role || !password) {
-        alert('Por favor complete todos los campos');
+    if (!email || !role || !password) {
+        alert('Por favor complete todos los campos obligatorios');
         return;
     }
 
@@ -527,10 +726,10 @@ async function handleNewUserSubmit(e) {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({
-                fullName: name,
                 email: email,
                 role: role,
-                password: password
+                password: password,
+                status: true
             })
         });
 
@@ -548,31 +747,140 @@ async function handleNewUserSubmit(e) {
     }
 }
 
-// User action functions
+// User action functions (for alert fallback)
 function viewUser(userId) {
-    const user = usersData.users.find(u => u.id === userId);
+    const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    const user = usersData.users.find(u => u && u.id === numericUserId);
+
     if (user) {
-        alert(`Ver usuario: ${user.fullName}\nEmail: ${user.email}\nRol: ${getRoleText(user.role)}\nEstado: ${user.active !== false ? 'Activo' : 'Inactivo'}`);
+        // Show modal instead of alert
+        showViewUserModal(userId);
+    } else {
+        console.error('User not found with ID:', userId);
+        alert('Usuario no encontrado');
     }
 }
 
 function editUser(userId) {
-    const user = usersData.users.find(u => u.id === userId);
-    if (user) {
-        alert(`Editar usuario: ${user.fullName}\n\nFuncionalidad de edición próximamente disponible.`);
-    }
+    showEditUserModal(userId);
 }
 
 function deleteUser(userId) {
-    const user = usersData.users.find(u => u.id === userId);
-    if (user && confirm(`¿Está seguro de que desea eliminar al usuario ${user.fullName}?`)) {
-        // Here you would implement the delete API call
-        alert(`Eliminar usuario: ${user.fullName}\n\nFuncionalidad de eliminación próximamente disponible.`);
-    }
+    showDeleteUserModal(userId);
 }
 
 function showUserPassword(userId) {
     alert('Ver contraseña: Funcionalidad próximamente disponible.');
+}
+
+// Handle edit user form submission
+async function handleEditUserSubmit(e) {
+    e.preventDefault();
+
+    if (!usersData.currentUserId) {
+        alert('Error: No se ha seleccionado un usuario para editar');
+        return;
+    }
+
+    const fullName = document.getElementById('editUserFullName').value;
+    const email = document.getElementById('editUserEmail').value;
+    const role = document.getElementById('editUserRole').value;
+    const statusValue = document.getElementById('editUserStatus').value;
+    const status = statusValue === 'true';
+
+    if (!fullName || !email || !role) {
+        alert('Por favor complete todos los campos obligatorios');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Try both field name formats to ensure compatibility
+        const updateData = {
+            fullName: fullName,
+            full_name: fullName, // Also send snake_case format
+            email: email,
+            role: role,
+            status: status
+        };
+
+
+        const response = await fetch(`/api/v1/users/${usersData.currentUserId}`, {
+            method: 'PUT',
+            headers: headers,
+            body: JSON.stringify(updateData)
+        });
+
+        if (response.ok) {
+            alert('Usuario actualizado exitosamente');
+            closeEditUserModal();
+
+            // Simply reload all data to ensure we get the latest from the database
+            loadUsersData();
+
+            // Ensure UI is refreshed after reload
+            setTimeout(() => {
+                updateUsersUI();
+            }, 200);
+        } else {
+            // If response is not ok, try to reload data anyway in case the update succeeded on the server
+            
+            alert('Usuario actualizado exitosamente (datos recargados)');
+            closeEditUserModal();
+            loadUsersData(); // Reload all users data as fallback
+            // Ensure UI is refreshed after reload
+            setTimeout(() => {
+                updateUsersUI();
+            }, 200);
+        }
+    } catch (error) {
+        console.error('Error updating user:', error);
+        alert('Error al actualizar usuario. Inténtalo de nuevo.');
+    }
+}
+
+// Confirm delete user
+async function confirmDeleteUser() {
+    if (!usersData.currentUserId) {
+        alert('Error: No se ha seleccionado un usuario para eliminar');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/users/${usersData.currentUserId}`, {
+            method: 'DELETE',
+            headers: headers
+        });
+
+        if (response.ok) {
+            alert('Usuario eliminado exitosamente');
+            closeDeleteUserModal();
+            loadUsersData(); // Reload users list
+        } else if (response.status === 500) {
+            alert('No se puede eliminar este usuario porque está siendo utilizado en inventarios existentes. Transfiere la propiedad de los inventarios a otro usuario antes de eliminarlo.');
+        } else {
+            try {
+                const errorData = await response.json();
+                alert('Error al eliminar usuario: ' + (errorData.message || 'Error desconocido'));
+            } catch {
+                alert('Error al eliminar usuario. El usuario podría estar siendo utilizado en otros módulos del sistema.');
+            }
+        }
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        alert('Error al eliminar usuario. Inténtalo de nuevo.');
+    }
 }
 
 // Show loading state
@@ -591,6 +899,33 @@ function hideLoadingState() {
 
     if (refreshIcon) refreshIcon.classList.remove('animate-spin');
     if (refreshText) refreshText.textContent = 'Actualizar';
+}
+
+// Attach action button listeners after table is rendered
+function attachActionButtonListeners() {
+    const actionButtons = document.querySelectorAll('.user-action-btn');
+
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const userId = this.getAttribute('data-user-id');
+            const action = this.getAttribute('data-action');
+
+            switch(action) {
+                case 'view':
+                    viewUser(userId);
+                    break;
+                case 'edit':
+                    editUser(userId);
+                    break;
+                case 'delete':
+                    deleteUser(userId);
+                    break;
+                default:
+                    console.error('Unknown action:', action);
+            }
+        });
+    });
 }
 
 // Show error state
