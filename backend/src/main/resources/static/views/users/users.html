@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/users-toast.css">
 </head>
 
 <body>
@@ -131,7 +132,7 @@
                     <h1 class="text-3xl font-bold text-gray-800 mb-1">Gestión de Usuarios</h1>
                     <p class="text-gray-600" id="usersWelcomeMessage">Administracion de Usuarios del Sistema</p>
                 </div>
-                <button onclick="loadUsersData()" class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                <button onclick="loadUsersData()" class="btn-update flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
                     <i class="fas fa-sync-alt animate-spin" id="refreshIcon"></i>
                     <span id="refreshText">Actualizar</span>
                 </button>
@@ -250,6 +251,28 @@
 
             <form id="newUserForm" class="space-y-4">
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Perfil</label>
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-2xl" id="newUserImagePreview">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <input type="file" id="newUserPhoto" accept="image/*" class="hidden">
+                            <button type="button" onclick="document.getElementById('newUserPhoto').click()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                                <i class="fas fa-camera mr-2"></i>
+                                Seleccionar Foto
+                            </button>
+                            <p class="text-xs text-gray-500 mt-1">JPG, PNG o GIF. Máx. 2MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
+                    <input type="text" id="newUserFullName" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Nombre completo del usuario" required>
+                </div>
+
+                <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
                     <input type="email" id="newUserEmail" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="usuario@ejemplo.com" required>
                 </div>
@@ -314,6 +337,24 @@
             </div>
 
             <form id="editUserForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Perfil</label>
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-2xl overflow-hidden" id="editUserImagePreview">
+                            <img id="editUserCurrentImage" src="" alt="Foto actual" class="w-full h-full object-cover" style="display: none;">
+                            <i class="fas fa-user" id="editUserImageIcon"></i>
+                        </div>
+                        <div>
+                            <input type="file" id="editUserPhoto" accept="image/*" class="hidden">
+                            <button type="button" onclick="document.getElementById('editUserPhoto').click()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                                <i class="fas fa-camera mr-2"></i>
+                                Cambiar Foto
+                            </button>
+                            <p class="text-xs text-gray-500 mt-1">JPG, PNG o GIF. Máx. 2MB</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
                     <input type="text" id="editUserFullName" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Nombre completo del usuario" required>
@@ -381,13 +422,86 @@
     </div>
 
     <script src="../../js/dashboard.js"></script>
-    <script src="../../js/users.js"></script>
+    <!-- Users module scripts -->
+    <script src="../../js/users/users-data.js"></script>
+    <script src="../../js/users/users-api.js"></script>
+    <script src="../../js/users/users-filters.js"></script>
+    <script src="../../js/users/users-ui.js"></script>
+    <script src="../../js/users/users-modals.js"></script>
+    <script src="../../js/users/users-forms.js"></script>
+    <script src="../../js/users/users-images.js"></script>
+    <script src="../../js/users/users-pagination.js"></script>
+    <script src="../../js/users/users-toast.js"></script>
+    <script src="../../js/users/users.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
         .main-content {
             margin-left: 280px;
             transition: margin-left 0.3s ease;
+        }
+
+        /* Profile image button styles */
+        .profile-image-btn {
+            position: relative;
+            border: none;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+            border-radius: 50%;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .profile-image-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .profile-image-btn.no-image .image-overlay {
+            opacity: 0.8;
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-image-btn:hover .image-overlay {
+            opacity: 1;
+        }
+
+        /* Image preview styles */
+        #newUserImagePreview.has-image,
+        #editUserImagePreview.has-image {
+            border: 2px solid #10b981;
+        }
+
+        /* Header user avatar styles */
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         /* Responsive adjustments */
