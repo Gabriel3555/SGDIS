@@ -1,31 +1,58 @@
-// Filtering functions for users management
-
-// Filter users based on search term, role, and status
 function filterUsers() {
-    let filtered = [...usersData.users];
-
-    // Filter by search term
-    if (usersData.searchTerm) {
-        const searchLower = usersData.searchTerm.toLowerCase();
-        filtered = filtered.filter(user =>
-            (user.fullName && user.fullName.toLowerCase().includes(searchLower)) ||
-            (user.email && user.email.toLowerCase().includes(searchLower)) ||
-            (user.role && user.role.toLowerCase().includes(searchLower))
-        );
+    if (!usersData.users || !Array.isArray(usersData.users)) {
+        return;
     }
 
-    // Filter by role
+    let filtered = [...usersData.users];
+
+    if (usersData.searchTerm && usersData.searchTerm.trim() !== '') {
+        const searchLower = usersData.searchTerm.toLowerCase().trim();
+
+        filtered = filtered.filter(user => {
+            let matches = false;
+
+            if (user.fullName && user.fullName.toLowerCase().includes(searchLower)) {
+                matches = true;
+            }
+
+            if (user.email && user.email.toLowerCase().includes(searchLower)) {
+                matches = true;
+            }
+
+            if (user.role) {
+                const roleText = getRoleText(user.role).toLowerCase();
+                if (roleText.includes(searchLower)) {
+                    matches = true;
+                }
+            }
+
+            return matches;
+        });
+    }
+
     if (usersData.selectedRole !== 'all') {
         filtered = filtered.filter(user => user.role === usersData.selectedRole);
     }
 
-    // Filter by status
     if (usersData.selectedStatus !== 'all') {
-        const status = usersData.selectedStatus === 'active';
-        filtered = filtered.filter(user => user.status === status);
+        const isActive = usersData.selectedStatus === 'active';
+        filtered = filtered.filter(user => {
+            const userStatus = user.status !== false;
+            return userStatus === isActive;
+        });
     }
 
     usersData.filteredUsers = filtered;
     usersData.currentPage = 1;
-    updateUsersUI();
+
+    setTimeout(() => {
+        if (typeof updateUsersUI === 'function') {
+            updateUsersUI();
+        }
+    }, 5);
 }
+
+window.filterUsers = filterUsers;
+window.setRoleFilter = setRoleFilter;
+window.setStatusFilter = setStatusFilter;
+window.applySearchFilter = applySearchFilter;

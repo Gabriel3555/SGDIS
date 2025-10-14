@@ -1,6 +1,3 @@
-// API interaction functions for users management
-
-// Load all users data
 async function loadUsersData() {
     if (usersData.isLoading) return;
 
@@ -8,19 +5,13 @@ async function loadUsersData() {
     showLoadingState();
 
     try {
-        // Load current user info
         await loadCurrentUserInfo();
-
-        // Load all users
         await loadUsers();
-
-        // Update UI
         updateUsersUI();
 
     } catch (error) {
         console.error('Error loading users data:', error);
         showErrorState('Error al cargar los datos de usuarios: ' + error.message);
-        // Still update UI even if there's an error to show empty state
         updateUsersUI();
     } finally {
         usersData.isLoading = false;
@@ -28,7 +19,6 @@ async function loadUsersData() {
     }
 }
 
-// Load current user information
 async function loadCurrentUserInfo() {
     try {
         const token = localStorage.getItem('jwt');
@@ -52,7 +42,6 @@ async function loadCurrentUserInfo() {
         }
     } catch (error) {
         console.error('Error loading current user info:', error);
-        // Set default values consistent with admin dashboard
         updateUserInfoDisplay({
             fullName: 'Super Admin',
             role: 'ADMIN',
@@ -61,7 +50,6 @@ async function loadCurrentUserInfo() {
     }
 }
 
-// Load users list
 async function loadUsers() {
     try {
         const token = localStorage.getItem('jwt');
@@ -82,16 +70,29 @@ async function loadUsers() {
         }
     } catch (error) {
         console.error('Error loading users:', error);
-        // Set empty array if API fails
         usersData.users = [];
         usersData.filteredUsers = [];
     }
 }
 
-// Confirm delete user
 async function confirmDeleteUser() {
     if (!usersData.currentUserId) {
-        alert('Error: No se ha seleccionado un usuario para eliminar');
+        showErrorToast('Error', 'No se ha seleccionado un usuario para eliminar');
+        return;
+    }
+
+    // Verificar que el usuario aún existe en la lista
+    const currentUser = usersData.users.find(u => u && u.id == usersData.currentUserId);
+    if (!currentUser) {
+        showErrorToast('Usuario no encontrado', 'El usuario ya no existe en la lista. Puede que ya haya sido eliminado.');
+        closeDeleteUserModal();
+        return;
+    }
+
+    // Verificar que no sea un administrador
+    if (currentUser.role === 'ADMIN') {
+        showErrorToast('No permitido', 'No se puede eliminar un usuario administrador.');
+        closeDeleteUserModal();
         return;
     }
 
@@ -108,24 +109,31 @@ async function confirmDeleteUser() {
         });
 
         if (response.ok) {
-            alert('Usuario eliminado exitosamente');
+            showSuccessToast('Usuario eliminado', 'Usuario eliminado exitosamente');
             closeDeleteUserModal();
-            await loadUsersData(); // Reload users list
+            await loadUsersData();
+        } else if (response.status === 404) {
+            showErrorToast('Usuario no encontrado', 'El usuario que intenta eliminar no existe o ya fue eliminado.');
+            closeDeleteUserModal();
+            await loadUsersData(); // Recargar la lista para reflejar cambios
         } else if (response.status === 500) {
-            alert('No se puede eliminar este usuario porque está siendo utilizado en inventarios existentes. Transfiere la propiedad de los inventarios a otro usuario antes de eliminarlo.');
+            showWarningToast('Usuario en uso', 'No se puede eliminar este usuario porque está siendo utilizado en inventarios existentes. Transfiere la propiedad de los inventarios a otro usuario antes de eliminarlo.');
+        } else if (response.status === 403) {
+            showErrorToast('Permisos insuficientes', 'No tienes permisos para eliminar este usuario.');
+        } else if (response.status === 401) {
+            showErrorToast('Sesión expirada', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
         } else {
             try {
                 const errorData = await response.json();
-                alert('Error al eliminar usuario: ' + (errorData.message || 'Error desconocido'));
+                showErrorToast('Error al eliminar usuario', errorData.message || 'Error desconocido');
             } catch {
-                alert('Error al eliminar usuario. El usuario podría estar siendo utilizado en otros módulos del sistema.');
+                showErrorToast('Error al eliminar usuario', 'El usuario podría estar siendo utilizado en otros módulos del sistema.');
             }
         }
     } catch (error) {
         console.error('Error deleting user:', error);
-        alert('Error al eliminar usuario. Inténtalo de nuevo.');
+        showErrorToast('Error al eliminar usuario', 'Inténtalo de nuevo.');
     }
 }
 
-// Make functions globally available
 window.confirmDeleteUser = confirmDeleteUser;

@@ -1,4 +1,3 @@
-// Users management data and state management
 let usersData = {
     users: [],
     filteredUsers: [],
@@ -8,10 +7,9 @@ let usersData = {
     selectedRole: 'all',
     selectedStatus: 'all',
     isLoading: false,
-    currentUserId: null // For tracking user being edited/deleted
+    currentUserId: null
 };
 
-// Helper functions for data management
 function getRoleText(role) {
     switch(role) {
         case 'ADMIN': return 'Super Admin';
@@ -33,6 +31,10 @@ function setStatusFilter(status) {
     filterUsers();
 }
 
+function applySearchFilter() {
+    filterUsers();
+}
+
 function changePage(page) {
     if (page >= 1 && page <= Math.ceil(usersData.filteredUsers.length / usersData.itemsPerPage)) {
         usersData.currentPage = page;
@@ -41,12 +43,13 @@ function changePage(page) {
     }
 }
 
-// Make functions globally available
+window.usersData = usersData;
 window.setRoleFilter = setRoleFilter;
 window.setStatusFilter = setStatusFilter;
 window.changePage = changePage;
+window.applySearchFilter = applySearchFilter;
+window.getRoleText = getRoleText;
 
-// Show loading state
 function showLoadingState() {
     const refreshIcon = document.getElementById('refreshIcon');
     const refreshText = document.getElementById('refreshText');
@@ -55,7 +58,6 @@ function showLoadingState() {
     if (refreshText) refreshText.textContent = 'Cargando...';
 }
 
-// Hide loading state
 function hideLoadingState() {
     const refreshIcon = document.getElementById('refreshIcon');
     const refreshText = document.getElementById('refreshText');
@@ -64,8 +66,6 @@ function hideLoadingState() {
     if (refreshText) refreshText.textContent = 'Actualizar';
 }
 
-// Show error state
 function showErrorState(message) {
-    console.error(message);
-    alert(message);
+    showErrorToast('Error', message);
 }

@@ -1,6 +1,3 @@
-// Modal management functions for users
-
-// Modal functions
 function showNewUserModal() {
     const modal = document.getElementById('newUserModal');
     if (modal) {
@@ -14,11 +11,9 @@ function closeNewUserModal() {
         modal.classList.add('hidden');
     }
 
-    // Reset form
     const form = document.getElementById('newUserForm');
     if (form) {
         form.reset();
-        // Reset image preview
         const imagePreview = document.getElementById('newUserImagePreview');
         if (imagePreview) {
             imagePreview.innerHTML = '<i class="fas fa-user"></i>';
@@ -26,9 +21,7 @@ function closeNewUserModal() {
     }
 }
 
-// View User Modal functions
 function showViewUserModal(userId) {
-    // Convert userId to number if it's a string
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
     const user = usersData.users.find(u => u && u.id === numericUserId);
 
@@ -39,11 +32,16 @@ function showViewUserModal(userId) {
         const initials = fullName.charAt(0).toUpperCase();
 
         if (content) {
+            let profileDisplay;
+            if (user.imgUrl) {
+                profileDisplay = `<img src="${user.imgUrl}" alt="${fullName}" class="w-20 h-20 rounded-full object-cover border-2 border-gray-200 mx-auto mb-4">`;
+            } else {
+                profileDisplay = `<div class="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">${initials}</div>`;
+            }
+
             content.innerHTML = `
             <div class="text-center mb-6">
-                <div class="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                    ${initials}
-                </div>
+                ${profileDisplay}
                 <h3 class="text-xl font-semibold text-gray-800">${fullName}</h3>
                 <p class="text-gray-600">${email}</p>
             </div>
@@ -91,11 +89,7 @@ function showViewUserModal(userId) {
 
         if (modal) {
             modal.classList.remove('hidden');
-        } else {
-            console.error('Modal element not found!');
         }
-    } else {
-        console.error('User not found with ID:', userId);
     }
 }
 
@@ -106,14 +100,12 @@ function closeViewUserModal() {
     }
 }
 
-// Edit User Modal functions
 function showEditUserModal(userId) {
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
     const user = usersData.users.find(u => u && u.id === numericUserId);
     if (user) {
         usersData.currentUserId = userId;
 
-        // Fill form with user data
         const fullNameInput = document.getElementById('editUserFullName');
         const emailInput = document.getElementById('editUserEmail');
         const roleSelect = document.getElementById('editUserRole');
@@ -124,7 +116,6 @@ function showEditUserModal(userId) {
         if (roleSelect) roleSelect.value = user.role || '';
         if (statusSelect) statusSelect.value = user.status !== false ? 'true' : 'false';
 
-        // Handle current user image
         const imagePreview = document.getElementById('editUserImagePreview');
         const currentImage = document.getElementById('editUserCurrentImage');
         const imageIcon = document.getElementById('editUserImageIcon');
@@ -153,11 +144,9 @@ function closeEditUserModal() {
         modal.classList.add('hidden');
     }
 
-    // Reset form
     const form = document.getElementById('editUserForm');
     if (form) {
         form.reset();
-        // Reset image preview
         const imagePreview = document.getElementById('editUserImagePreview');
         const currentImage = document.getElementById('editUserCurrentImage');
         const imageIcon = document.getElementById('editUserImageIcon');
@@ -172,7 +161,6 @@ function closeEditUserModal() {
     usersData.currentUserId = null;
 }
 
-// Make functions globally available
 window.showNewUserModal = showNewUserModal;
 window.closeNewUserModal = closeNewUserModal;
 window.showViewUserModal = showViewUserModal;
@@ -182,50 +170,50 @@ window.closeEditUserModal = closeEditUserModal;
 window.showDeleteUserModal = showDeleteUserModal;
 window.closeDeleteUserModal = closeDeleteUserModal;
 
-// Delete User Modal functions
 function showDeleteUserModal(userId) {
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
     const user = usersData.users.find(u => u && u.id === numericUserId);
-    if (user) {
-        usersData.currentUserId = userId;
 
-        const message = document.getElementById('deleteUserMessage');
-        const fullName = user.fullName || 'Usuario sin nombre';
-        const email = user.email || 'Sin email';
+    if (!user) {
+        showErrorToast('Usuario no encontrado', 'El usuario que intenta eliminar no existe o ya fue eliminado.');
+        return;
+    }
 
-        if (message) {
-            // Check if user is an admin (admins usually can't be deleted due to system constraints)
-            if (user.role === 'ADMIN') {
-                message.textContent = `No se puede eliminar el usuario "${fullName}" porque es un administrador del sistema. Contacte al soporte técnico si necesita ayuda.`;
-                // Disable the delete button for admins
-                setTimeout(() => {
-                    const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
-                    if (deleteBtn && !deleteBtn.disabled) {
-                        deleteBtn.disabled = true;
-                        deleteBtn.textContent = 'No permitido';
-                        deleteBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                        deleteBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
-                    }
-                }, 100);
-            } else {
-                message.textContent = `¿Está seguro de que desea eliminar al usuario "${fullName}" (${email})? Esta acción no se puede deshacer.`;
-                // Re-enable the delete button for non-admins
-                setTimeout(() => {
-                    const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
-                    if (deleteBtn && deleteBtn.disabled) {
-                        deleteBtn.disabled = false;
-                        deleteBtn.textContent = 'Eliminar Usuario';
-                        deleteBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                        deleteBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-                    }
-                }, 100);
-            }
+    usersData.currentUserId = userId;
+
+    const message = document.getElementById('deleteUserMessage');
+    const fullName = user.fullName || 'Usuario sin nombre';
+    const email = user.email || 'Sin email';
+
+    if (message) {
+        if (user.role === 'ADMIN') {
+            message.textContent = `No se puede eliminar el usuario "${fullName}" porque es un administrador del sistema. Contacte al soporte técnico si necesita ayuda.`;
+            setTimeout(() => {
+                const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
+                if (deleteBtn && !deleteBtn.disabled) {
+                    deleteBtn.disabled = true;
+                    deleteBtn.textContent = 'No permitido';
+                    deleteBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    deleteBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                }
+            }, 100);
+        } else {
+            message.textContent = `¿Está seguro de que desea eliminar al usuario "${fullName}" (${email})? Esta acción no se puede deshacer.`;
+            setTimeout(() => {
+                const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
+                if (deleteBtn && deleteBtn.disabled) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.textContent = 'Eliminar Usuario';
+                    deleteBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    deleteBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                }
+            }, 100);
         }
+    }
 
-        const modal = document.getElementById('deleteUserModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
+    const modal = document.getElementById('deleteUserModal');
+    if (modal) {
+        modal.classList.remove('hidden');
     }
 }
 
@@ -235,7 +223,6 @@ function closeDeleteUserModal() {
         modal.classList.add('hidden');
     }
 
-    // Reset button state
     const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
     if (deleteBtn) {
         deleteBtn.disabled = false;

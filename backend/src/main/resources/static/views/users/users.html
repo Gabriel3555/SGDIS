@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/users-toast.css">
 </head>
 
 <body>
@@ -131,7 +132,7 @@
                     <h1 class="text-3xl font-bold text-gray-800 mb-1">Gestión de Usuarios</h1>
                     <p class="text-gray-600" id="usersWelcomeMessage">Administracion de Usuarios del Sistema</p>
                 </div>
-                <button onclick="loadUsersData()" class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                <button onclick="loadUsersData()" class="btn-update flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
                     <i class="fas fa-sync-alt animate-spin" id="refreshIcon"></i>
                     <span id="refreshText">Actualizar</span>
                 </button>
@@ -257,7 +258,7 @@
                         </div>
                         <div>
                             <input type="file" id="newUserPhoto" accept="image/*" class="hidden">
-                            <button type="button" onclick="document.getElementById('newUserPhoto').click()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-colors">
+                            <button type="button" onclick="document.getElementById('newUserPhoto').click()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
                                 <i class="fas fa-camera mr-2"></i>
                                 Seleccionar Foto
                             </button>
@@ -424,12 +425,13 @@
     <!-- Users module scripts -->
     <script src="../../js/users/users-data.js"></script>
     <script src="../../js/users/users-api.js"></script>
+    <script src="../../js/users/users-filters.js"></script>
     <script src="../../js/users/users-ui.js"></script>
     <script src="../../js/users/users-modals.js"></script>
     <script src="../../js/users/users-forms.js"></script>
     <script src="../../js/users/users-images.js"></script>
-    <script src="../../js/users/users-filters.js"></script>
     <script src="../../js/users/users-pagination.js"></script>
+    <script src="../../js/users/users-toast.js"></script>
     <script src="../../js/users/users.js"></script>
 
     <style>

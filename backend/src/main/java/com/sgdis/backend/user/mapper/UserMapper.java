@@ -65,21 +65,21 @@ public final class UserMapper {
     public static User toDomain(CreateUserRequest request) {
         return new User(
                 null,
-                null,
+                request.password(),
                 request.email(),
-                null,
+                request.fullName(),
                 null,
                 null,
                 null,
                 Role.valueOf(request.role().toUpperCase()),
-                true
+                request.status()
         );
     }
 
     public static User toDomain(UpdateUserRequest request, Long id) {
         return new User(
                 id,
-                null,
+                request.password(),
                 request.email(),
                 request.fullName(),
                 null,
