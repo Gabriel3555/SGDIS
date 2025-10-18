@@ -32,9 +32,7 @@ public class DataInitializer implements CommandLineRunner {
     private final SpringDataInventoryRepository inventoryRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // ========= AQUI VA "EL OBJETO CITIES" EN EL MISMO ARCHIVO =========
-    // Pega TODA tu lista completa (departamentos + ciudades) dentro del JSON.
-    // Estructura: [{"departamento":"Antioquia","ciudades":["Medellín","Bello", ...]}, ...]
+
     private static final String SEED = """
 [
  {
@@ -1341,6 +1339,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+        createRegionalsIfNotExist();
         // Usuarios demo (opcional)
         createUserIfNotExists("gabriel@soy.sena.edu.co", "ayuda123", "Gabriel", "Desarrollador", "Tecnología", Role.USER);
         createUserIfNotExists("admin@soy.sena.edu.co", "admin123", "Admin", "Administrador", "Sistemas", Role.ADMIN);
@@ -1419,6 +1418,64 @@ public class DataInitializer implements CommandLineRunner {
             UserEntity entity = UserMapper.toEntity(user);
             userRepository.save(entity);
             System.out.println("Created default user: " + email + " with role: " + role);
+        }
+    }
+
+
+    private void createRegionalsIfNotExist() {
+        if (regionalRepository.count() == 0) {
+            createRegionalIfNotExists("Amazonas", "R01", 1L);
+            createRegionalIfNotExists("Antioquia", "R02", 2L);
+            createRegionalIfNotExists("Arauca", "R03", 3L);
+            createRegionalIfNotExists("Atlántico", "R04", 4L);
+            createRegionalIfNotExists("Bolívar", "R05", 5L);
+            createRegionalIfNotExists("Boyacá", "R06", 6L);
+            createRegionalIfNotExists("Caldas", "R07", 7L);
+            createRegionalIfNotExists("Caquetá", "R08", 8L);
+            createRegionalIfNotExists("Casanare", "R09", 9L);
+            createRegionalIfNotExists("Cauca", "R10", 10L);
+            createRegionalIfNotExists("Cesar", "R11", 11L);
+            createRegionalIfNotExists("Chocó", "R12", 12L);
+            createRegionalIfNotExists("Córdoba", "R13", 13L);
+            createRegionalIfNotExists("Cundinamarca", "R14", 14L);
+            createRegionalIfNotExists("Guainía", "R15", 15L);
+            createRegionalIfNotExists("Guaviare", "R16", 16L);
+            createRegionalIfNotExists("Huila", "R17", 17L);
+            createRegionalIfNotExists("La Guajira", "R18", 18L);
+            createRegionalIfNotExists("Magdalena", "R19", 19L);
+            createRegionalIfNotExists("Meta", "R20", 20L);
+            createRegionalIfNotExists("Nariño", "R21", 21L);
+            createRegionalIfNotExists("Norte de Santander", "R22", 22L);
+            createRegionalIfNotExists("Putumayo", "R23", 23L);
+            createRegionalIfNotExists("Quindío", "R24", 24L);
+            createRegionalIfNotExists("Risaralda", "R25", 25L);
+            createRegionalIfNotExists("San Andrés y Providencia", "R26", 26L);
+            createRegionalIfNotExists("Santander", "R27", 27L);
+            createRegionalIfNotExists("Sucre", "R28", 28L);
+            createRegionalIfNotExists("Tolima", "R29", 29L);
+            createRegionalIfNotExists("Valle del Cauca", "R30", 30L);
+            createRegionalIfNotExists("Vaupés", "R31", 31L);
+            createRegionalIfNotExists("Vichada", "R32", 32L);
+            createRegionalIfNotExists("Distrito Capital", "R33", 14L); // Bogotá pertenece a Cundinamarca
+        }
+    }
+
+    private void createRegionalIfNotExists(String name, String regionalCode, Long departamentId) {
+        DepartamentEntity departament = departamentRepository.findById(departamentId).orElse(null);
+        if (departament == null) return;
+
+        boolean exists = regionalRepository
+                .findAll()
+                .stream()
+                .anyMatch(r -> r.getName().equalsIgnoreCase(name));
+
+        if (!exists) {
+            RegionalEntity regional = RegionalEntity.builder()
+                    .name(name)
+                    .regionalCode(regionalCode)
+                    .departament(departament)
+                    .build();
+            regionalRepository.save(regional);
         }
     }
 

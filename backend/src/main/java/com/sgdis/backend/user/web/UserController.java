@@ -99,4 +99,25 @@ public class UserController {
         }
     }
 
+    @PostMapping("/{id}/image")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<String> uploadUserImageById(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        try {
+            User user = userRepository.findUserById(id);
+
+            if (user.getImgUrl() != null) {
+                fileUploadService.deleteFile(user.getImgUrl());
+            }
+
+            String imgUrl = fileUploadService.saveFile(file, user.getEmail());
+            user.setImgUrl(imgUrl);
+
+            UserEntity entity = UserMapper.toEntity(user);
+            springDataUserRepository.save(entity);
+            return ResponseEntity.ok("User image updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error updating user image: " + e.getMessage());
+        }
+    }
+
 }

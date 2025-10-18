@@ -52,7 +52,33 @@ public class UserService implements ListUserUseCase,GetUserByIdUseCase,CreateUse
 
     @Override
     public UserResponse updateUser(Long id, UpdateUserRequest updateUserRequest) {
+        // Get existing user to preserve current data
+        User existingUser = getUserByIdRepository.findUserById(id);
+
         User user = UserMapper.toDomain(updateUserRequest,id);
+
+        // Preserve existing password if new password is not provided
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            user.setPassword(existingUser.getPassword());
+        } else {
+            // Hash password only if it's being updated
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+
+        // Preserve existing image URL if not being updated
+        if (user.getImgUrl() == null) {
+            user.setImgUrl(existingUser.getImgUrl());
+        }
+
+        // Preserve other existing data if not provided
+        if (user.getJobTitle() == null) {
+            user.setJobTitle(existingUser.getJobTitle());
+        }
+
+        if (user.getLaborDepartment() == null) {
+            user.setLaborDepartment(existingUser.getLaborDepartment());
+        }
+
         User updated = updateUserRepository.updateUser(user);
         return UserMapper.toResponse(updated);
     }
