@@ -23,6 +23,7 @@ public class InventoryController {
     private final UpdateInventoryUseCase updateInventoryUseCase;
     private final AssignedInventoryUseCase assignedInventoryUseCase;
     private final AssignManagerInventoryUseCase assignManagerInventoryUseCase;
+    private final GetAllOwnedInventoriesUseCase getAllOwnedInventoriesUseCase;
 
     @PostMapping
     public CreateInventoryResponse createInventory(@RequestBody CreateInventoryRequest request) {
@@ -61,5 +62,10 @@ public class InventoryController {
     @PostMapping("/assignManager")
     public AssignManagerInventoryResponse assignManager(@RequestBody AssignManagerInventoryRequest request) {
         return assignManagerInventoryUseCase.assignManagerInventory(request);
+    }
+
+    @GetMapping("/owned")
+    public GetAllOwnedInventoriesResponse getAllOwnedInventories() {
+        return getAllOwnedInventoriesUseCase.getAllOwnedInventories();
     }
 }

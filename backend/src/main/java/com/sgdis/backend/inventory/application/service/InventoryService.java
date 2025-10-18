@@ -4,10 +4,13 @@ import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.application.port.in.*;
 import com.sgdis.backend.inventory.application.port.out.*;
 import com.sgdis.backend.inventory.domain.Inventory;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.user.application.port.out.GetUserByIdRepository;
 import com.sgdis.backend.user.domain.User;
+import com.sun.security.auth.UserPrincipal;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,8 +26,8 @@ public class InventoryService
         DeleteInventoryUseCase,
         GetInventoryByIdUseCase,
         AssignedInventoryUseCase,
-        AssignManagerInventoryUseCase
-{
+        AssignManagerInventoryUseCase,
+        GetAllOwnedInventoriesUseCase {
 
     private final CreateInventoryRepository createInventoryRepository;
     private final ListInventoryRepository  listInventoryRepository;
@@ -33,8 +36,8 @@ public class InventoryService
     private final UpdateInventoryRepository updateInventoryRepository;
     private final AssignedInventoryRepository assignedInventoryRepository;
     private final AssignManagerInventoryRepository assignManagerInventoryRepository;
+    private final GetAllOwnedInventoriesRepository getAllOwnedInventoriesRepository;
     private final GetUserByIdRepository getUserByIdRepository;
-    private final GetInventoryByIdRepository getByIdRepository;
 
     @Override
     public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
@@ -51,13 +54,10 @@ public class InventoryService
                 .collect(Collectors.toList());
     }
 
-
     @Override
     public InventoryResponse getInventoryById(Long id) {
         return InventoryMapper.toResponse(getInventoryByIdRepository.getInventoryById(id));
     }
-
-
 
     @Override
     public InventoryResponse deleteInventoryById(Long id) {
@@ -99,5 +99,15 @@ public class InventoryService
                 "Assigned Inventory",
                 true
         );
+    }
+
+    @Override
+    public GetAllOwnedInventoriesResponse getAllOwnedInventories() {
+        Long currentUserId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        List<Inventory> ownedInventoriesDomain = getAllOwnedInventoriesRepository.getAllOwnedInventories(currentUserId);
+        List<InventoryResponseWithoutOwnerAndManagers> ownedInventories = ownedInventoriesDomain.stream().map(inventory -> new InventoryResponseWithoutOwnerAndManagers(inventory.getId(), inventory.getUuid(), inventory.getLocation(), inventory.getName())).toList();
+
+        return new GetAllOwnedInventoriesResponse(ownedInventories);
     }
 }
