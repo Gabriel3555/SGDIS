@@ -22,7 +22,8 @@ public class JpaInventoryRepository implements
         UpdateInventoryRepository,
         DeleteInventoryRepository,
         AssignedInventoryRepository,
-        AssignManagerInventoryRepository {
+        AssignManagerInventoryRepository,
+        GetAllOwnedInventoriesRepository {
 
     private final SpringDataInventoryRepository springDataInventoryRepository;
 
@@ -85,5 +86,11 @@ public class JpaInventoryRepository implements
         InventoryEntity inventoryManager = springDataInventoryRepository.save(entity);
 
         return InventoryMapper.toDomain(inventoryManager);
+    }
+
+    @Override
+    public List<Inventory> getAllOwnedInventories(Long ownerId) {
+        List<InventoryEntity> entities = springDataInventoryRepository.findInventoryEntitiesByOwnerId(ownerId);
+        return entities.stream().map(InventoryMapper::toDomain).toList();
     }
 }

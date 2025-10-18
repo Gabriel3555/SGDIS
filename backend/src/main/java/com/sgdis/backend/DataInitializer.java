@@ -6,6 +6,8 @@ import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
 import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
 import com.sgdis.backend.data.departaments_cities.repositories.SpringDataCitiesRepository;
 import com.sgdis.backend.data.departaments_cities.repositories.SpringDataDepartamentsRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class DataInitializer implements CommandLineRunner {
     private final SpringDataUserRepository userRepository;
     private final SpringDataDepartamentsRepository departamentRepository;
     private final SpringDataCitiesRepository citiesRepository;
+    private final SpringDataInventoryRepository inventoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     // ========= AQUI VA "EL OBJETO CITIES" EN EL MISMO ARCHIVO =========
@@ -1338,9 +1342,31 @@ public class DataInitializer implements CommandLineRunner {
     @Transactional
     public void run(String... args) throws Exception {
         // Usuarios demo (opcional)
-        createUserIfNotExists("gabriel@soy.sena.edu.co", "1234", "Gabriel", "Desarrollador", "Tecnología", Role.USER);
+        createUserIfNotExists("gabriel@soy.sena.edu.co", "ayuda123", "Gabriel", "Desarrollador", "Tecnología", Role.USER);
         createUserIfNotExists("admin@soy.sena.edu.co", "admin123", "Admin", "Administrador", "Sistemas", Role.ADMIN);
         createUserIfNotExists("warehouse@soy.sena.edu.co", "wh123", "Warehouse", "Almacenista", "Logística", Role.WAREHOUSE);
+
+        // Create inventories with owners and managers
+        UserEntity gabriel = userRepository.findByEmail("gabriel@soy.sena.edu.co").get();
+        UserEntity warehouse = userRepository.findByEmail("warehouse@soy.sena.edu.co").get();
+
+        InventoryEntity inv1 = InventoryEntity.builder()
+                .uuid(UUID.randomUUID())
+                .name("Inventory 1")
+                .location("Location 1")
+                .owner(gabriel)
+                .managers(List.of(warehouse))
+                .build();
+        inventoryRepository.save(inv1);
+
+        InventoryEntity inv2 = InventoryEntity.builder()
+                .uuid(UUID.randomUUID())
+                .name("Inventory 2")
+                .location("Location 2")
+                .owner(gabriel)
+                .managers(List.of(warehouse))
+                .build();
+        inventoryRepository.save(inv2);
 
         // Parsear el objeto (en el MISMO archivo)
         ObjectMapper om = new ObjectMapper();
