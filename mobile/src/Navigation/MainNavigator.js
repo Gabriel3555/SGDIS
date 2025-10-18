@@ -7,6 +7,7 @@ import DashboardScreen from "../../Screens/Auth/ScreenUser/homeUser"; // tu dash
 import Inventary from "../../Screens/Auth/ScreenUser/InventaryUser";
 import Verification from "../../Screens/Auth/ScreenUser/VerificationUser";
 import Notifications from "../../Screens/Auth/ScreenUser/Notifications";
+import ProfileScreen from "../../Screens/Auth/ScreenUser/meUser";
 
 const Tab = createBottomTabNavigator();
 
@@ -23,6 +24,7 @@ export default function MainNavigator() {
           else if (route.name === "Inventarios") iconName = "cube-outline";
           else if (route.name === "Verificación") iconName = "checkmark-done-outline";
           else if (route.name === "Notificaciones") iconName = "notifications-outline";
+          else if (route.name === "Perfil") iconName = "person-outline";
           return <Ionicons name={iconName} size={size} color={color} />;
         },
       })}
@@ -31,6 +33,7 @@ export default function MainNavigator() {
       <Tab.Screen name="Inventarios" component={Inventary} />
       <Tab.Screen name="Verificación" component={Verification} />
       <Tab.Screen name="Notificaciones" component={Notifications} />
+      <Tab.Screen name="Perfil" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
