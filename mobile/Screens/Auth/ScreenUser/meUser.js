@@ -10,12 +10,14 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../../src/Navigation/Services/Connection";
+import api from "../../../src/Navigation/Services/Connection";
 
 export default function MeUserScreen() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchUserData();
@@ -41,6 +43,21 @@ export default function MeUserScreen() {
       Alert.alert("Error", "No se pudo cargar la información del usuario");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      // Clear all stored authentication data
+      await AsyncStorage.removeItem("userToken");
+      await AsyncStorage.removeItem("refreshToken");
+      await AsyncStorage.removeItem("userRole");
+
+      // Navigate back to Auth screen
+      navigation.navigate("Auth");
+    } catch (error) {
+      console.error("Error during logout:", error);
+      Alert.alert("Error", "No se pudo cerrar la sesión");
     }
   };
 
@@ -141,9 +158,9 @@ export default function MeUserScreen() {
             <Text style={styles.actionText}>Configuración</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="help-circle-outline" size={24} color="#28a745" />
-            <Text style={styles.actionText}>Ayuda</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#f44336" />
+            <Text style={[styles.actionText, styles.logoutText]}>Cerrar Sesión</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -325,5 +342,8 @@ const styles = StyleSheet.create({
     color: "#333",
     marginTop: 8,
     textAlign: "center",
+  },
+  logoutText: {
+    color: "#f44336",
   },
 });
