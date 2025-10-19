@@ -11,6 +11,13 @@ import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.JpaUserRepository;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.user.mapper.UserMapper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +32,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor
+@Tag(name = "Users", description = "User management endpoints")
+@SecurityRequirement(name = "bearerAuth")
 public class UserController {
 
     private final GetUserByIdUseCase getUserByIdUseCase;
@@ -36,6 +45,17 @@ public class UserController {
     private final SpringDataUserRepository springDataUserRepository;
     private final FileUploadService fileUploadService;
 
+    @Operation(
+            summary = "Get user by ID",
+            description = "Retrieves a specific user by their ID (Admin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "User found",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @GetMapping("/users/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse getUserById(@PathVariable Long id) {
@@ -43,18 +63,51 @@ public class UserController {
     }
 
 
+    @Operation(
+            summary = "List all users",
+            description = "Retrieves all users (Admin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Users retrieved successfully",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))
+    )
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @GetMapping()
     @PreAuthorize("hasRole('ADMIN')")
     public List<UserResponse> listUsers() {
         return listUserUseCase.listUsers();
     }
 
+    @Operation(
+            summary = "Create new user",
+            description = "Creates a new user (Admin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "User created successfully",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))
+    )
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(@RequestBody CreateUserRequest request) {
         return createUserUseCase.createUser(request);
     }
 
+    @Operation(
+            summary = "Update user",
+            description = "Updates an existing user (Admin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "User updated successfully",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse updateUser(
@@ -63,12 +116,33 @@ public class UserController {
         return updateUserUseCase.updateUser(id, request);
     }
 
+    @Operation(
+            summary = "Delete user",
+            description = "Deletes a user by their ID (Admin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "User deleted successfully",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse deleteUser(@PathVariable Long id) {
         return deleteUserUseCase.deleteUser(id);
     }
 
+    @Operation(
+            summary = "Get current user",
+            description = "Retrieves the currently authenticated user information"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Current user retrieved successfully",
+            content = @Content(schema = @Schema(implementation = UserResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
     @GetMapping("/me")
     public UserResponse getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -76,6 +150,13 @@ public class UserController {
         return getUserByIdUseCase.getUserById(userId);
     }
 
+    @Operation(
+            summary = "Upload profile image",
+            description = "Uploads a profile image for the current user"
+    )
+    @ApiResponse(responseCode = "200", description = "Profile image updated successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid file or request")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @PostMapping("/me/image")
     @PreAuthorize("hasRole('USER') or hasRole('WAREHOUSE')")
     public ResponseEntity<String> uploadProfileImage(@RequestParam("file") MultipartFile file) {
@@ -99,6 +180,14 @@ public class UserController {
         }
     }
 
+    @Operation(
+            summary = "Upload user image by ID",
+            description = "Uploads an image for a specific user by their ID (Admin only)"
+    )
+    @ApiResponse(responseCode = "200", description = "User image updated successfully")
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @ApiResponse(responseCode = "400", description = "Invalid file")
+    @ApiResponse(responseCode = "403", description = "Access denied")
     @PostMapping("/{id}/image")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> uploadUserImageById(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
