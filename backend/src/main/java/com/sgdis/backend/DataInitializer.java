@@ -6,6 +6,8 @@ import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
 import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
 import com.sgdis.backend.data.departaments_cities.repositories.SpringDataCitiesRepository;
 import com.sgdis.backend.data.departaments_cities.repositories.SpringDataDepartamentsRepository;
+import com.sgdis.backend.data.regional.RegionalEntity;
+import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.user.domain.Role;
@@ -31,7 +33,7 @@ public class DataInitializer implements CommandLineRunner {
     private final SpringDataCitiesRepository citiesRepository;
     private final SpringDataInventoryRepository inventoryRepository;
     private final PasswordEncoder passwordEncoder;
-
+    private final SpringDataRegionalRepository regionalRepository;
 
     private static final String SEED = """
 [
@@ -1349,23 +1351,29 @@ public class DataInitializer implements CommandLineRunner {
         UserEntity gabriel = userRepository.findByEmail("gabriel@soy.sena.edu.co").get();
         UserEntity warehouse = userRepository.findByEmail("warehouse@soy.sena.edu.co").get();
 
-        InventoryEntity inv1 = InventoryEntity.builder()
-                .uuid(UUID.randomUUID())
-                .name("Inventory 1")
-                .location("Location 1")
-                .owner(gabriel)
-                .managers(List.of(warehouse))
-                .build();
-        inventoryRepository.save(inv1);
+        // Create inventory 1 if it doesn't exist
+        if (inventoryRepository.findByNameAndOwner("Inventory 1", gabriel).isEmpty()) {
+            InventoryEntity inv1 = InventoryEntity.builder()
+                    .uuid(UUID.randomUUID())
+                    .name("Inventory 1")
+                    .location("Location 1")
+                    .owner(gabriel)
+                    .managers(List.of(warehouse))
+                    .build();
+            inventoryRepository.save(inv1);
+        }
 
-        InventoryEntity inv2 = InventoryEntity.builder()
-                .uuid(UUID.randomUUID())
-                .name("Inventory 2")
-                .location("Location 2")
-                .owner(gabriel)
-                .managers(List.of(warehouse))
-                .build();
-        inventoryRepository.save(inv2);
+        // Create inventory 2 if it doesn't exist
+        if (inventoryRepository.findByNameAndOwner("Inventory 2", gabriel).isEmpty()) {
+            InventoryEntity inv2 = InventoryEntity.builder()
+                    .uuid(UUID.randomUUID())
+                    .name("Inventory 2")
+                    .location("Location 2")
+                    .owner(gabriel)
+                    .managers(List.of(warehouse))
+                    .build();
+            inventoryRepository.save(inv2);
+        }
 
         // Parsear el objeto (en el MISMO archivo)
         ObjectMapper om = new ObjectMapper();
@@ -1375,28 +1383,31 @@ public class DataInitializer implements CommandLineRunner {
         for (DeptWithCities item : items) {
             if (item.getDepartamento() == null || item.getDepartamento().isBlank()) continue;
 
-            // Departamento (evita duplicados)
-            DepartamentEntity dep = departamentRepository
-                    .findByDepartamentIgnoreCase(item.getDepartamento())
-                    .orElseGet(() -> departamentRepository.save(
-                            DepartamentEntity.builder()
-                                    .departament(item.getDepartamento())
-                                    .build()
-                    ));
+            // Departamento - solo crear si no hay departamentos en la base de datos
+            DepartamentEntity dep;
+            if (departamentRepository.count() == 0) {
+                dep = departamentRepository.save(
+                        DepartamentEntity.builder()
+                                .departament(item.getDepartamento())
+                                .build()
+                );
+            } else {
+                dep = departamentRepository
+                        .findByDepartamentIgnoreCase(item.getDepartamento())
+                        .orElse(null);
+            }
 
-            // Ciudades (evita duplicados por ciudad + departamento)
-            if (item.getCiudades() != null) {
+            // Ciudades - solo insertar si no hay ninguna ciudad en la base de datos
+            if (citiesRepository.count() == 0 && item.getCiudades() != null) {
                 for (String cityName : item.getCiudades()) {
                     if (cityName == null || cityName.isBlank()) continue;
 
-                    if (!citiesRepository.existsByCityIgnoreCaseAndDepartament(cityName, dep)) {
-                        citiesRepository.save(
-                                CityEntity.builder()
-                                        .city(cityName)
-                                        .departament(dep)
-                                        .build()
-                        );
-                    }
+                    citiesRepository.save(
+                            CityEntity.builder()
+                                    .city(cityName)
+                                    .departament(dep)
+                                    .build()
+                    );
                 }
             }
         }
