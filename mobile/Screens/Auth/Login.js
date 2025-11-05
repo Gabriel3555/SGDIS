@@ -59,6 +59,21 @@ export default function LoginScreen({ navigation }) {
   const handleLogin = async () => {
     if (loading) return; // Prevent multiple presses
 
+    if (!email.trim()) {
+      Alert.alert("Error", "Necesitas ingresar un correo");
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert("Error", "Necesitas ingresar una contraseña");
+      return;
+    }
+
+    if (!email.endsWith('@sena.edu.co') && !email.endsWith('@soy.sena.edu.co')) {
+      Alert.alert("Error", "Solo se permiten correos electrónicos de @sena.edu.co o @soy.sena.edu.co");
+      return;
+    }
+
     animateButtonPress();
     setLoading(true);
 
