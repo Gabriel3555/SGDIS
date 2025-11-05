@@ -3,6 +3,7 @@ package com.sgdis.backend.user.web;
 import com.sgdis.backend.user.application.dto.CreateUserRequest;
 import com.sgdis.backend.user.application.dto.UpdateUserRequest;
 import com.sgdis.backend.user.application.dto.UserResponse;
+import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
 import com.sgdis.backend.user.application.port.in.*;
 import com.sgdis.backend.user.application.port.out.CreateUserRepository;
 import com.sgdis.backend.user.application.service.FileUploadService;
@@ -37,13 +38,14 @@ import java.util.List;
 public class UserController {
 
     private final GetUserByIdUseCase getUserByIdUseCase;
-    private final ListUserUseCase listUserUseCase;
-    private final CreateUserUseCase createUserUseCase;
-    private final UpdateUserUseCase updateUserUseCase;
-    private final DeleteUserUseCase deleteUserUseCase;
-    private final JpaUserRepository userRepository;
-    private final SpringDataUserRepository springDataUserRepository;
-    private final FileUploadService fileUploadService;
+        private final ListUserUseCase listUserUseCase;
+        private final CreateUserUseCase createUserUseCase;
+        private final UpdateUserUseCase updateUserUseCase;
+        private final DeleteUserUseCase deleteUserUseCase;
+        private final GetManagedInventoriesUseCase getManagedInventoriesUseCase;
+        private final JpaUserRepository userRepository;
+        private final SpringDataUserRepository springDataUserRepository;
+        private final FileUploadService fileUploadService;
 
     @Operation(
             summary = "Get user by ID",
@@ -207,6 +209,41 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error updating user image: " + e.getMessage());
         }
-    }
-
-}
+            }
+        
+            @Operation(
+                    summary = "Get managed inventories for current user",
+                    description = "Retrieves all inventories managed by the currently authenticated user"
+            )
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Managed inventories retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = ManagedInventoryResponse.class))
+            )
+            @ApiResponse(responseCode = "401", description = "Not authenticated")
+            @GetMapping("/me/inventories")
+            @PreAuthorize("hasRole('USER') or hasRole('WAREHOUSE') or hasRole('ADMIN')")
+            public List<ManagedInventoryResponse> getMyManagedInventories() {
+                Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                Long userId = (Long) authentication.getPrincipal();
+                return getManagedInventoriesUseCase.getManagedInventories(userId);
+            }
+        
+            @Operation(
+                    summary = "Get managed inventories by user ID",
+                    description = "Retrieves all inventories managed by a specific user (Admin only)"
+            )
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Managed inventories retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = ManagedInventoryResponse.class))
+            )
+            @ApiResponse(responseCode = "404", description = "User not found")
+            @ApiResponse(responseCode = "403", description = "Access denied")
+            @GetMapping("/{userId}/inventories")
+            @PreAuthorize("hasRole('ADMIN')")
+            public List<ManagedInventoryResponse> getManagedInventoriesByUserId(@PathVariable Long userId) {
+                return getManagedInventoriesUseCase.getManagedInventories(userId);
+            }
+        
+        }

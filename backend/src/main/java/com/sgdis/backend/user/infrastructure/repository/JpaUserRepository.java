@@ -5,6 +5,7 @@ import com.sgdis.backend.user.application.port.out.*;
 import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.mapper.UserMapper;
+import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -18,7 +19,8 @@ public class JpaUserRepository implements
         DeleteUserRepository,
         ListUserRepository,
         GetUserByIdRepository,
-        GetUserByEmailRepository  {
+        GetUserByEmailRepository,
+        GetManagedInventoriesRepository {
 
     private final SpringDataUserRepository repository;
 
@@ -61,5 +63,14 @@ public class JpaUserRepository implements
         return repository.findByEmail(email)
                 .map(UserMapper::toDomain)
                 .orElseThrow(()->new ResourceNotFoundException("No user found with email " + email));
+    }
+
+    @Override
+    public List<com.sgdis.backend.inventory.domain.Inventory> findManagedInventoriesByUserId(Long userId) {
+        return repository.findById(userId)
+                .map(userEntity -> userEntity.getInventories().stream()
+                        .map(InventoryMapper::toDomain)
+                        .toList())
+                .orElseThrow(() -> new ResourceNotFoundException("No user found with id " + userId));
     }
 }

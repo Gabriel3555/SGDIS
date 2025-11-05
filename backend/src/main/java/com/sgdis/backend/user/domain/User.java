@@ -14,8 +14,9 @@ public class User {
     private String imgUrl;
     private Role role;
     private boolean status;
-
-    public User(Long id, String password, String email, String fullName, String jobTitle, String laborDepartment, String imgUrl, Role role, boolean status) {
+    private List<Inventory> inventories;
+    
+    public User(Long id, String password, String email, String fullName, String jobTitle, String laborDepartment, String imgUrl, Role role, boolean status, List<Inventory> inventories) {
         this.id = id;
         this.password = password;
         this.email = email;
@@ -25,6 +26,7 @@ public class User {
         this.imgUrl = imgUrl;
         this.role = role;
         this.status = status;
+        this.inventories = inventories;
     }
 
     public User() {
@@ -100,5 +102,13 @@ public class User {
 
     public void setImgUrl(String imgUrl) {
         this.imgUrl = imgUrl;
+    }
+    
+    public List<Inventory> getInventories() {
+        return inventories;
+    }
+    
+    public void setInventories(List<Inventory> inventories) {
+        this.inventories = inventories;
     }
 }
