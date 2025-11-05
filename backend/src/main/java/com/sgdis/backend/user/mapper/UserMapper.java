@@ -1,5 +1,6 @@
 package com.sgdis.backend.user.mapper;
 
+import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.user.application.dto.CreateUserRequest;
 import com.sgdis.backend.user.application.dto.UpdateUserRequest;
 import com.sgdis.backend.user.application.dto.UserResponse;
@@ -23,7 +24,12 @@ public final class UserMapper {
                 entity.getLaborDepartment(),
                 entity.getImgUrl(),
                 entity.getRole(),
-                entity.isStatus()
+                entity.isStatus(),
+                // Convertir InventoryEntity a Inventory para el dominio
+                entity.getInventories() != null ?
+                        entity.getInventories().stream()
+                                .map(InventoryMapper::toDomain)
+                                .toList() : null
         );
     }
 
@@ -38,6 +44,11 @@ public final class UserMapper {
                 .imgUrl(user.getImgUrl())
                 .role(user.getRole())
                 .status(user.isStatus())
+                // Convertir Inventory a InventoryEntity para la entidad
+                .inventories(user.getInventories() != null ?
+                        user.getInventories().stream()
+                                .map(InventoryMapper::toEntity)
+                                .toList() : null)
                 .build();
     }
 
@@ -72,7 +83,8 @@ public final class UserMapper {
                 null,
                 null,
                 Role.valueOf(request.role().toUpperCase()),
-                request.status()
+                request.status(),
+                null  // Los nuevos usuarios no tienen inventarios asignados inicialmente
         );
     }
 
@@ -86,7 +98,8 @@ public final class UserMapper {
                 null,
                 null,
                 Role.valueOf(request.role().toUpperCase()),
-                request.status()
+                request.status(),
+                null  // Al actualizar, se mantienen los inventarios existentes
         );
     }
 }
