@@ -14,6 +14,7 @@ public final class UserMapper {
 
     private UserMapper() {}
 
+
     public static User toDomain(UserEntity entity) {
         return new User(
                 entity.getId(),
@@ -25,11 +26,12 @@ public final class UserMapper {
                 entity.getImgUrl(),
                 entity.getRole(),
                 entity.isStatus(),
-                // Convertir InventoryEntity a Inventory para el dominio
-                entity.getInventories() != null ?
-                        entity.getInventories().stream()
-                                .map(InventoryMapper::toDomain)
-                                .toList() : null
+                entity.getInventories() != null
+                        ? entity.getInventories().stream()
+                        // USAR SHALLOW para que NO vuelva a mapear users
+                        .map(InventoryMapper::toDomainShallow)
+                        .toList()
+                        : null
         );
     }
 
@@ -44,13 +46,15 @@ public final class UserMapper {
                 .imgUrl(user.getImgUrl())
                 .role(user.getRole())
                 .status(user.isStatus())
-                // Convertir Inventory a InventoryEntity para la entidad
-                .inventories(user.getInventories() != null ?
-                        user.getInventories().stream()
-                                .map(InventoryMapper::toEntity)
-                                .toList() : null)
+                // USAR SHALLOW para evitar que InventoryMapper vuelva a mapear owner -> user -> ...
+                .inventories(user.getInventories() != null
+                        ? user.getInventories().stream()
+                        .map(InventoryMapper::toEntityShallow)
+                        .toList()
+                        : null)
                 .build();
     }
+
 
     public static List<UserEntity> toEntityList(List<User> list) {
         return list.stream().map(UserMapper::toEntity).toList();
@@ -102,4 +106,37 @@ public final class UserMapper {
                 null  // Al actualizar, se mantienen los inventarios existentes
         );
     }
+
+    public static User toDomainShallow(UserEntity entity) {
+        if (entity == null) return null;
+        return new User(
+                entity.getId(),
+                null, // password
+                entity.getEmail(),
+                entity.getFullName(),
+                entity.getJobTitle(),
+                entity.getLaborDepartment(),
+                entity.getImgUrl(),
+                entity.getRole(),
+                entity.isStatus(),
+                null // inventories NO mapeados
+        );
+    }
+
+    public static UserEntity toEntityShallow(User user) {
+        if (user == null) return null;
+        return UserEntity.builder()
+                .id(user.getId())
+                .password(user.getPassword())
+                .email(user.getEmail())
+                .fullName(user.getFullName())
+                .jobTitle(user.getJobTitle())
+                .laborDepartment(user.getLaborDepartment())
+                .imgUrl(user.getImgUrl())
+                .role(user.getRole())
+                .status(user.isStatus())
+                .inventories(null) // NO mapeamos inventories
+                .build();
+    }
+
 }
