@@ -6,6 +6,6 @@ import com.sgdis.backend.data.regional.RegionalEntity;
 public record GetAllInstitutionResponse(
         Long institutionId,
         String name,
-        RegionalEntity regional,
-        CityEntity city
+        Long regionalId,
+        Long cityId
 ) {}

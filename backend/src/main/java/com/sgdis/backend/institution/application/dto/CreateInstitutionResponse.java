@@ -6,7 +6,6 @@ import com.sgdis.backend.data.regional.RegionalEntity;
 public record CreateInstitutionResponse(
         Long institutionId,
         String name,
-        RegionalEntity regional,
-        CityEntity city
-) {
-}
+        Long regionalId,
+        Long cityId
+) {}
