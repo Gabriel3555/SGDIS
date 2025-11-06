@@ -1,8 +1,9 @@
 package com.sgdis.backend.institution.application.port.in;
 
-import com.sgdis.backend.institution.domain.Institution;
-import com.sgdis.backend.user.application.dto.CreateUserRequest;
+import com.sgdis.backend.institution.application.dto.CreateInstitutionRequest;
+import com.sgdis.backend.institution.application.dto.InstitutionResponse;
+
 
 public interface CreateInstitutionUseCase {
-    Institution createInstitution(CreateUserRequest  createUserRequest);
+    InstitutionResponse createInstitution(CreateInstitutionRequest createInstitutionRequest);
 }

@@ -3,7 +3,7 @@ package com.sgdis.backend.institution.application.dto;
 import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
 import com.sgdis.backend.data.regional.RegionalEntity;
 
-public record GetByIdResponse(
+public record InstitutionResponse(
         Long id,
         String name,
         Long regionalId,

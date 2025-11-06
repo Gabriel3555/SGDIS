@@ -4,6 +4,7 @@ import com.sgdis.backend.institution.domain.Institution;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface CreateInstitutionRepository {
-    Institution createInstitution(Institution institution);
+public interface GetByIdInstitutionRepository {
+    Institution getById(Long id);
+
 }
