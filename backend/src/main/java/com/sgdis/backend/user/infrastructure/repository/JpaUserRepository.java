@@ -67,10 +67,11 @@ public class JpaUserRepository implements
 
     @Override
     public List<com.sgdis.backend.inventory.domain.Inventory> findManagedInventoriesByUserId(Long userId) {
-        return repository.findById(userId)
-                .map(userEntity -> userEntity.getInventories().stream()
-                        .map(InventoryMapper::toDomain)
-                        .toList())
-                .orElseThrow(() -> new ResourceNotFoundException("No user found with id " + userId));
+        if (!repository.existsById(userId)) {
+            throw new ResourceNotFoundException("No user found with id " + userId);
+        }
+        return repository.findManagedInventoriesByUserId(userId).stream()
+                .map(InventoryMapper::toDomain)
+                .toList();
     }
 }
