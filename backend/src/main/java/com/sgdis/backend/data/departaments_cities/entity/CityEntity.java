@@ -1,10 +1,13 @@
 package com.sgdis.backend.data.departaments_cities.entity;
 
+import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @Entity
@@ -28,4 +31,7 @@ public class CityEntity {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "departament_id", nullable = false)
     private DepartamentEntity departament;
+
+    @OneToMany(mappedBy = "city")
+    private List<InstitutionEntity> institutions;
 }
