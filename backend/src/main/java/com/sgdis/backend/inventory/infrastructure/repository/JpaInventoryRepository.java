@@ -23,7 +23,9 @@ public class JpaInventoryRepository implements
         DeleteInventoryRepository,
         AssignedInventoryRepository,
         AssignManagerInventoryRepository,
-        GetAllOwnedInventoriesRepository {
+        GetAllOwnedInventoriesRepository,
+        GetInventoryManagersRepository,
+        GetAllManagedInventoriesRepository {
 
     private final SpringDataInventoryRepository springDataInventoryRepository;
 
@@ -92,5 +94,23 @@ public class JpaInventoryRepository implements
     public List<Inventory> getAllOwnedInventories(Long ownerId) {
         List<InventoryEntity> entities = springDataInventoryRepository.findInventoryEntitiesByOwnerId(ownerId);
         return entities.stream().map(InventoryMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<User> findManagersByInventoryId(Long inventoryId) {
+        InventoryEntity inventory = springDataInventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
+
+        return inventory.getManagers().stream()
+                .map(UserMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<Inventory> getAllManagedInventories(Long managerId) {
+        return springDataInventoryRepository.findInventoryEntitiesByManagerId(managerId)
+                .stream()
+                .map(InventoryMapper::toDomain)
+                .toList();
     }
 }

@@ -6,6 +6,8 @@ import com.sgdis.backend.inventory.application.port.out.*;
 import com.sgdis.backend.inventory.domain.Inventory;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
+import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
+import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
 import com.sgdis.backend.user.application.port.out.GetUserByIdRepository;
 import com.sgdis.backend.user.domain.User;
 import com.sun.security.auth.UserPrincipal;
@@ -27,7 +29,9 @@ public class InventoryService
         GetInventoryByIdUseCase,
         AssignedInventoryUseCase,
         AssignManagerInventoryUseCase,
-        GetAllOwnedInventoriesUseCase {
+        GetAllOwnedInventoriesUseCase,
+        GetInventoryManagersUseCase,
+        GetAllManagedInventoriesUseCase {
 
     private final CreateInventoryRepository createInventoryRepository;
     private final ListInventoryRepository  listInventoryRepository;
@@ -38,6 +42,8 @@ public class InventoryService
     private final AssignManagerInventoryRepository assignManagerInventoryRepository;
     private final GetAllOwnedInventoriesRepository getAllOwnedInventoriesRepository;
     private final GetUserByIdRepository getUserByIdRepository;
+    private final GetInventoryManagersRepository getInventoryManagersRepository;
+    private final GetAllManagedInventoriesRepository getAllManagedInventoriesRepository;
 
     @Override
     public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
@@ -109,5 +115,36 @@ public class InventoryService
         List<InventoryResponseWithoutOwnerAndManagers> ownedInventories = ownedInventoriesDomain.stream().map(inventory -> new InventoryResponseWithoutOwnerAndManagers(inventory.getId(), inventory.getUuid(), inventory.getLocation(), inventory.getName())).toList();
 
         return new GetAllOwnedInventoriesResponse(ownedInventories);
+    }
+
+    @Override
+    public List<InventoryManagerResponse> getInventoryManagers(Long inventoryId) {
+        return getInventoryManagersRepository.findManagersByInventoryId(inventoryId)
+                .stream()
+                .map(manager -> new InventoryManagerResponse(
+                        manager.getId(),
+                        manager.getFullName(),
+                        manager.getEmail(),
+                        manager.getJobTitle(),
+                        manager.getLaborDepartment(),
+                        manager.getRole().name()
+                ))
+                .toList();
+    }
+
+    @Override
+    public List<ManagedInventoryResponse> getAllManagedInventories(Long userId) {
+        List<Inventory> managedInventories = getAllManagedInventoriesRepository.getAllManagedInventories(userId);
+        return managedInventories.stream()
+                .map(inventory -> new ManagedInventoryResponse(
+                        inventory.getId(),
+                        inventory.getUuid(),
+                        inventory.getName(),
+                        inventory.getLocation(),
+                        inventory.getOwner() != null ? inventory.getOwner().getId() : null,
+                        inventory.getOwner() != null ? inventory.getOwner().getFullName() : null,
+                        inventory.getOwner() != null ? inventory.getOwner().getEmail() : null
+                ))
+                .toList();
     }
 }

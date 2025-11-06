@@ -5,6 +5,9 @@ import com.sgdis.backend.inventory.application.port.in.AssignManagerInventoryUse
 import com.sgdis.backend.inventory.application.port.in.*;
 import com.sgdis.backend.inventory.application.service.InventoryService;
 import com.sgdis.backend.inventory.domain.Inventory;
+import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
+import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
+import com.sgdis.backend.user.application.port.in.GetManagedInventoriesUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,6 +35,8 @@ public class InventoryController {
     private final AssignedInventoryUseCase assignedInventoryUseCase;
     private final AssignManagerInventoryUseCase assignManagerInventoryUseCase;
     private final GetAllOwnedInventoriesUseCase getAllOwnedInventoriesUseCase;
+    private final GetInventoryManagersUseCase getInventoryManagersUseCase;
+    private final GetAllManagedInventoriesUseCase getAllManagedInventoriesUseCase;
 
     @Operation(
             summary = "Create new inventory",
@@ -154,5 +159,36 @@ public class InventoryController {
     @GetMapping("/owned")
     public GetAllOwnedInventoriesResponse getAllOwnedInventories() {
         return getAllOwnedInventoriesUseCase.getAllOwnedInventories();
+    }
+
+    @Operation(
+            summary = "Get inventory managers",
+            description = "Retrieves all managers of a specific inventory by its ID"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Managers retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryManagerResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @GetMapping("/{id}/managers")
+    public List<InventoryManagerResponse> getInventoryManagers(@PathVariable Long id) {
+        return getInventoryManagersUseCase.getInventoryManagers(id);
+    }
+
+    @Operation(
+            summary = "Get all inventories managed by a user",
+            description = "Retrieves all inventories managed by a specific user by their ID"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Managed inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = ManagedInventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @GetMapping("/managed/{userId}")
+    //@PreAuthorize("hasRole('ADMIN')")
+    public List<ManagedInventoryResponse> getAllManagedInventories(@PathVariable Long userId) {
+        return getAllManagedInventoriesUseCase.getAllManagedInventories(userId);
     }
 }
