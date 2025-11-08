@@ -72,7 +72,7 @@ function changeItemsPerPage(itemsPerPage) {
     if (inventoryData) {
         inventoryData.itemsPerPage = parseInt(itemsPerPage);
         inventoryData.currentPage = 1;
-        updateInventoryCards();
+        updateInventoryTable();
         updatePagination();
     }
 }
@@ -109,7 +109,7 @@ function jumpToPage(page) {
 
     if (inventoryData) {
         inventoryData.currentPage = targetPage;
-        updateInventoryCards();
+        updateInventoryTable();
         updatePagination();
     }
 }

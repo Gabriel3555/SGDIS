@@ -7,7 +7,8 @@ let inventoryData = {
     selectedLocation: 'all',
     selectedStatus: 'all',
     isLoading: false,
-    currentInventoryId: null
+    currentInventoryId: null,
+    viewMode: 'table' // 'table' or 'cards'
 };
 
 function getLocationText(location) {
@@ -46,9 +47,17 @@ function changePage(page) {
     }
 }
 
+function setViewMode(mode) {
+    if (inventoryData) {
+        inventoryData.viewMode = mode;
+        updateInventoryUI();
+    }
+}
+
 window.inventoryData = inventoryData;
 window.setLocationFilter = setLocationFilter;
 window.setStatusFilter = setStatusFilter;
+window.setViewMode = setViewMode;
 window.changePage = changePage;
 window.applySearchFilter = applySearchFilter;
 window.getLocationText = getLocationText;

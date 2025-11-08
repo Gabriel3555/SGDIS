@@ -4,6 +4,8 @@ async function handleNewUserSubmit(e) {
     const fullName = document.getElementById('newUserFullName').value;
     const email = document.getElementById('newUserEmail').value;
     const role = document.getElementById('newUserRole').value;
+    const jobTitle = document.getElementById('newUserJobTitle').value;
+    const laborDepartment = document.getElementById('newUserLaborDepartment').value;
     const password = document.getElementById('newUserPassword').value;
     const photoFile = document.getElementById('newUserPhoto').files[0];
 
@@ -26,6 +28,8 @@ async function handleNewUserSubmit(e) {
                 fullName: fullName,
                 email: email,
                 role: role,
+                jobTitle: jobTitle,
+                laborDepartment: laborDepartment,
                 password: password,
                 status: true
             })
@@ -66,6 +70,8 @@ async function handleEditUserSubmit(e) {
     const fullName = document.getElementById('editUserFullName').value;
     const email = document.getElementById('editUserEmail').value;
     const role = document.getElementById('editUserRole').value;
+    const jobTitle = document.getElementById('editUserJobTitle').value;
+    const laborDepartment = document.getElementById('editUserLaborDepartment').value;
     const statusValue = document.getElementById('editUserStatus').value;
     const status = statusValue === 'true';
     const photoFile = document.getElementById('editUserPhoto').files[0];
@@ -87,6 +93,8 @@ async function handleEditUserSubmit(e) {
             full_name: fullName,
             email: email,
             role: role,
+            jobTitle: jobTitle,
+            laborDepartment: laborDepartment,
             status: status
         };
 

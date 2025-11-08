@@ -84,7 +84,6 @@
         </div>
 
     </aside>
-
     <!-- Main Content -->
     <div class="main-content min-h-screen">
         <!-- Header -->
@@ -96,7 +95,7 @@
                     </button>
                     <div class="relative flex-1 max-w-xl">
                         <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" id="inventorySearch" placeholder="Buscar inventarios por nombre, ubicación o estado..." class="search-input">
+                        <input type="text" id="inventorySearch" placeholder="Buscar inventarios por nombre, ubicación o UUID..." class="search-input">
                     </div>
                 </div>
 
@@ -186,8 +185,13 @@
                 <!-- Dynamic content loaded by JavaScript -->
             </div>
 
-            <!-- Inventory Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6" id="inventoryCardsContainer">
+            <!-- View Mode Buttons -->
+            <div id="viewModeButtonsContainer">
+                <!-- Dynamic content loaded by JavaScript -->
+            </div>
+
+            <!-- Inventory Content -->
+            <div class="stat-card" id="inventoryTableContainer">
                 <!-- Dynamic content loaded by JavaScript -->
             </div>
 
@@ -338,11 +342,8 @@
             window.location.href = '/';
         }
 
-        // Inventory-specific functions
-        function loadInventoryData() {
-            // Implementation for loading inventory data
-            console.log('Loading inventory data...');
-        }
+        // Inventory-specific functions are now handled by inventory.js
+        // Removed loadInventoryData stub to allow inventory.js to handle it
 
         function showNewInventoryModal() {
             const modal = document.getElementById('newInventoryModal');

@@ -1,7 +1,12 @@
 function updateInventoryUI() {
     updateInventoryStats();
     updateSearchAndFilters();
-    updateInventoryCards();
+    updateViewModeButtons();
+    if (inventoryData.viewMode === 'table') {
+        updateInventoryTable();
+    } else {
+        updateInventoryCards();
+    }
     updatePagination();
 }
 
@@ -70,19 +75,6 @@ function updateInventoryStats() {
             </div>
             <p class="text-emerald-600 text-sm font-medium">Inventarios activos</p>
         </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Estado API</p>
-                    <h3 class="text-3xl font-bold text-gray-800">Activo</h3>
-                </div>
-                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-plug text-orange-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-orange-600 text-sm font-medium">API respondiendo</p>
-        </div>
     `;
 }
 
@@ -123,7 +115,7 @@ function updateSearchAndFilters() {
     container.innerHTML = `
         <div class="relative flex-1">
             <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="inventorySearch" value="${currentSearchTerm}" placeholder="Buscar inventarios por nombre, ubicación o UUID..." class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-all">
+            <input type="text" id="inventorySearch" value="${currentSearchTerm}" placeholder="Buscar inventarios por nombre, ubicación o UUID..." class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" oninput="handleInventorySearchInput(event)">
         </div>
         <div class="flex gap-2 flex-wrap">
             <div class="relative">
@@ -150,7 +142,13 @@ function updateSearchAndFilters() {
 
     const searchInput = document.getElementById('inventorySearch');
     if (searchInput && !searchInput._searchListeners) {
-        setupInventorySearchInputListeners(searchInput);
+        searchInput.addEventListener('keyup', function(e) {
+            handleInventorySearchKeyup(e);
+        });
+        searchInput.addEventListener('keypress', function(e) {
+            handleInventorySearchKeypress(e);
+        });
+        searchInput._searchListeners = true;
     }
 }
 
@@ -228,8 +226,34 @@ function handleInventorySearchKeypress(e) {
     }
 }
 
-function updateInventoryCards() {
-    const container = document.getElementById('inventoryCardsContainer');
+function updateViewModeButtons() {
+    const container = document.getElementById('viewModeButtonsContainer');
+    if (!container) return;
+
+    const isTableActive = inventoryData.viewMode === 'table';
+    const isCardsActive = inventoryData.viewMode === 'cards';
+
+    container.innerHTML = `
+        <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-boxes text-green-600 text-xl"></i>
+            <h2 class="text-xl font-bold text-gray-800">Inventarios del Sistema</h2>
+            <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${inventoryData ? inventoryData.filteredInventories.length : 0} inventarios</span>
+            <div class="flex items-center gap-2 ml-auto">
+                <button onclick="setViewMode('table')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isTableActive ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
+                    <i class="fas fa-list"></i>
+                    <span class="hidden sm:inline">Lista</span>
+                </button>
+                <button onclick="setViewMode('cards')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isCardsActive ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
+                    <i class="fas fa-th"></i>
+                    <span class="hidden sm:inline">Cards</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function updateInventoryTable() {
+    const container = document.getElementById('inventoryTableContainer');
     if (!container) return;
 
     if (!window.inventoryData) {
@@ -240,13 +264,151 @@ function updateInventoryCards() {
     const endIndex = startIndex + window.inventoryData.itemsPerPage;
     const paginatedInventories = window.inventoryData.filteredInventories.slice(startIndex, endIndex);
 
-    let cardsHtml = `
-        <div class="flex items-center gap-2 mb-4">
-            <i class="fas fa-boxes text-green-600 text-xl"></i>
-            <h2 class="text-xl font-bold text-gray-800">Inventarios del Sistema</h2>
-            <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${window.inventoryData ? window.inventoryData.filteredInventories.length : 0} inventarios</span>
-        </div>
-    `;
+    let inventoryTableHtml = ``;
+
+    if (paginatedInventories.length === 0) {
+        inventoryTableHtml += `
+            <div class="text-center py-8">
+                <i class="fas fa-box-open text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-500">No se encontraron inventarios</p>
+                <p class="text-sm text-gray-400 mt-2">Intenta ajustar los filtros de búsqueda</p>
+            </div>
+        `;
+    } else {
+        inventoryTableHtml += `
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Inventario</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Ubicación</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Estado</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">UUID</th>
+                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        paginatedInventories.forEach(inventory => {
+            const locationText = getLocationText(inventory.location);
+            const uuidDisplay = inventory.uuid ? inventory.uuid.toString().substring(0, 8) + '...' : 'No asignado';
+            const fullName = inventory.name || 'Inventario sin nombre';
+            const location = inventory.location || 'Sin ubicación';
+
+            inventoryTableHtml += `
+                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                <i class="fas fa-box"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-800">${fullName}</div>
+                                <div class="text-sm text-gray-500">ID: ${inventory.id}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">${locationText}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Activo</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="text-sm text-gray-600" title="${inventory.uuid || 'No asignado'}">${uuidDisplay}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="viewInventory('${inventory.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="editInventory('${inventory.id}')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar inventario">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="showInventoryAssignment('${inventory.id}')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Asignar usuario">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                            <button onclick="showInventoryManagerAssignment('${inventory.id}')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Asignar gerente">
+                                <i class="fas fa-user-tie"></i>
+                            </button>
+                            <button onclick="deleteInventory('${inventory.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar inventario">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        inventoryTableHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    container.innerHTML = inventoryTableHtml;
+}
+
+function updateUserInfoDisplay(userData) {
+    const headerUserName = document.getElementById('headerUserName');
+    const headerUserRole = document.getElementById('headerUserRole');
+    const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+    if (headerUserName) headerUserName.textContent = userData.fullName || 'Super Admin';
+    if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN';
+
+    if (headerUserAvatar) {
+        if (userData.imgUrl) {
+            headerUserAvatar.innerHTML = `<img src="${userData.imgUrl}" alt="${userData.fullName || 'Usuario'}" class="w-full h-full object-cover rounded-full">`;
+        } else {
+            headerUserAvatar.textContent = (userData.fullName || 'Super Admin').charAt(0).toUpperCase();
+        }
+    }
+}
+
+// Initialize search inputs when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    function checkDependenciesAndInitialize() {
+        if (typeof window.filterInventories === 'function' && window.inventoryData && document.readyState === 'complete') {
+            if (!window._inventorySearchInputsInitialized) {
+                const searchInput = document.getElementById('inventorySearch');
+                if (searchInput) {
+                    setupInventorySearchInputListeners(searchInput);
+                }
+                window._inventorySearchInputsInitialized = true;
+            }
+        } else {
+            setTimeout(checkDependenciesAndInitialize, 50);
+        }
+    }
+
+    setTimeout(checkDependenciesAndInitialize, 100);
+});
+
+window.updateInventoryUI = updateInventoryUI;
+window.updateInventoryStats = updateInventoryStats;
+window.updateSearchAndFilters = updateSearchAndFilters;
+window.updateInventoryTable = updateInventoryTable;
+window.updateUserInfoDisplay = updateUserInfoDisplay;
+window.setupInventorySearchInputListeners = setupInventorySearchInputListeners;
+window.handleInventorySearchInput = handleInventorySearchInput;
+window.handleInventorySearchKeyup = handleInventorySearchKeyup;
+window.handleInventorySearchKeypress = handleInventorySearchKeypress;
+function updateInventoryCards() {
+    const container = document.getElementById('inventoryTableContainer');
+    if (!container) return;
+
+    if (!window.inventoryData) {
+        return;
+    }
+
+    const startIndex = (window.inventoryData.currentPage - 1) * window.inventoryData.itemsPerPage;
+    const endIndex = startIndex + window.inventoryData.itemsPerPage;
+    const paginatedInventories = window.inventoryData.filteredInventories.slice(startIndex, endIndex);
+
+    let cardsHtml = ``;
 
     if (paginatedInventories.length === 0) {
         cardsHtml += `
@@ -257,6 +419,8 @@ function updateInventoryCards() {
             </div>
         `;
     } else {
+        cardsHtml += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+
         paginatedInventories.forEach(inventory => {
             const locationText = getLocationText(inventory.location);
             const uuidDisplay = inventory.uuid ? inventory.uuid.toString().substring(0, 8) + '...' : 'No asignado';
@@ -305,53 +469,22 @@ function updateInventoryCards() {
                 </div>
             `;
         });
+
+        cardsHtml += `</div>`;
     }
 
     container.innerHTML = cardsHtml;
 }
 
-function updateUserInfoDisplay(userData) {
-    const headerUserName = document.getElementById('headerUserName');
-    const headerUserRole = document.getElementById('headerUserRole');
-    const headerUserAvatar = document.getElementById('headerUserAvatar');
-
-    if (headerUserName) headerUserName.textContent = userData.fullName || 'Super Admin';
-    if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN';
-
-    if (headerUserAvatar) {
-        if (userData.imgUrl) {
-            headerUserAvatar.innerHTML = `<img src="${userData.imgUrl}" alt="${userData.fullName || 'Usuario'}" class="w-full h-full object-cover rounded-full">`;
-        } else {
-            headerUserAvatar.textContent = (userData.fullName || 'Super Admin').charAt(0).toUpperCase();
-        }
-    }
-}
-
-// Initialize search inputs when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    function checkDependenciesAndInitialize() {
-        if (typeof window.filterInventories === 'function' && window.inventoryData && document.readyState === 'complete') {
-            if (!window._inventorySearchInputsInitialized) {
-                const searchInput = document.getElementById('inventorySearch');
-                if (searchInput) {
-                    setupInventorySearchInputListeners(searchInput);
-                }
-                window._inventorySearchInputsInitialized = true;
-            }
-        } else {
-            setTimeout(checkDependenciesAndInitialize, 50);
-        }
-    }
-
-    setTimeout(checkDependenciesAndInitialize, 100);
-});
-
 window.updateInventoryUI = updateInventoryUI;
 window.updateInventoryStats = updateInventoryStats;
 window.updateSearchAndFilters = updateSearchAndFilters;
+window.updateInventoryTable = updateInventoryTable;
 window.updateInventoryCards = updateInventoryCards;
 window.updateUserInfoDisplay = updateUserInfoDisplay;
 window.setupInventorySearchInputListeners = setupInventorySearchInputListeners;
 window.handleInventorySearchInput = handleInventorySearchInput;
 window.handleInventorySearchKeyup = handleInventorySearchKeyup;
 window.handleInventorySearchKeypress = handleInventorySearchKeypress;
+window.updateViewModeButtons = updateViewModeButtons;
+window.setViewMode = setViewMode;

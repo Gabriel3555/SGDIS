@@ -224,8 +224,14 @@ async function handleAssignManagerSubmit(e) {
 
 // Load inventory data function
 async function loadInventoryData() {
-    if (typeof window.loadInventoryData === 'function') {
-        await window.loadInventoryData();
+    if (typeof window.loadCurrentUserInfo === 'function') {
+        await window.loadCurrentUserInfo();
+    }
+    if (typeof window.loadInventories === 'function') {
+        await window.loadInventories();
+    }
+    if (typeof window.updateInventoryUI === 'function') {
+        window.updateInventoryUI();
     }
 }
 
