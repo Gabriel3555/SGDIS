@@ -1,6 +1,10 @@
 package com.sgdis.backend.inventory.infrastructure.repository;
 
+import com.sgdis.backend.data.regional.RegionalEntity;
+import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 import com.sgdis.backend.exception.ResourceNotFoundException;
+import com.sgdis.backend.inventory.application.dto.AssignedRegionalRequest;
+import com.sgdis.backend.inventory.application.dto.InventoryRegionalDTO;
 import com.sgdis.backend.inventory.application.port.out.*;
 import com.sgdis.backend.inventory.domain.Inventory;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
@@ -12,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -28,6 +33,7 @@ public class JpaInventoryRepository implements
         GetAllManagedInventoriesRepository {
 
     private final SpringDataInventoryRepository springDataInventoryRepository;
+    private final SpringDataRegionalRepository  springDataRegionalRepository;
 
     @Override
     public Inventory createInventory(Inventory inventory) {

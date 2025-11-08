@@ -1,9 +1,7 @@
 package com.sgdis.backend.user.application.service;
 
 
-import com.sgdis.backend.user.application.dto.CreateUserRequest;
-import com.sgdis.backend.user.application.dto.UpdateUserRequest;
-import com.sgdis.backend.user.application.dto.UserResponse;
+import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
 import com.sgdis.backend.user.application.port.out.*;
 import com.sgdis.backend.user.domain.User;
@@ -18,13 +16,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class UserService implements ListUserUseCase,GetUserByIdUseCase,CreateUserUseCase,UpdateUserUseCase, DeleteUserUseCase {
+public class UserService implements ListUserUseCase,AssignRegionalUseCase,GetUserByIdUseCase,CreateUserUseCase,UpdateUserUseCase, DeleteUserUseCase {
 
     private final CreateUserRepository createUserRepository;
     private final UpdateUserRepository updateUserRepository;
     private final DeleteUserRepository deleteUserRepository;
     private final ListUserRepository listUserRepository;
     private final GetUserByIdRepository getUserByIdRepository;
+    private final AssignRegionalRepository assignRegionalRepository;
     private final SpringDataUserRepository springDataUserRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -90,4 +89,12 @@ public class UserService implements ListUserUseCase,GetUserByIdUseCase,CreateUse
         return UserMapper.toResponse(user);
     }
 
+    @Override
+    public AssignRegionalResponse assignRegional(AssignRegionalRequest request) {
+        UserRegionalDto userRegionalDto = assignRegionalRepository.assignRegional(request);
+        return new AssignRegionalResponse(
+                "Succesfull regional assigned",
+                userRegionalDto.user().getFullName()
+        );
+    }
 }
