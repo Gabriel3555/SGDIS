@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AuthNavegation from './src/Navigation/AuthNavegation';
 import MainNavigator from './src/Navigation/MainNavigator';
 import { navigationRef } from './src/Navigation/NavigationService';
+import ChangePasswordScreen from './Screens/Auth/ScreenUser/ChangePasswordScreen';
 
 
 
@@ -15,6 +16,7 @@ export default function App() {
       <Stack.Navigator initialRouteName="Auth" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Auth" component={AuthNavegation} />
         <Stack.Screen name="Main" component={MainNavigator} />
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,64 +1,44 @@
 // src/Screens/Inventary.js
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
-const data = [
-  {
-    id: "1",
-    title: "Oficina Principal",
-    location: "Edificio A - Piso 1",
-    description: "Inventario de la oficina administrativa principal",
-    responsable: "SENA Centro de Servicios Financieros",
-    totalItems: 45,
-    activos: 42,
-    mantenimiento: 2,
-    valor: "$125.000.000",
-    actualizado: "15/1/2024",
-  },
-  {
-    id: "2",
-    title: "Laboratorio de Sistemas",
-    location: "Edificio B - Piso 2",
-    description: "Equipos del laboratorio de sistemas y programación",
-    responsable: "SENA Centro de Servicios Financieros",
-    totalItems: 78,
-    activos: 75,
-    mantenimiento: 3,
-    valor: "$245.000.000",
-    actualizado: "15/1/2024",
-  },
-  {
-    id: "3",
-    title: "Biblioteca",
-    location: "Edificio C - Piso 1",
-    description: "Inventario de equipos y mobiliario de la biblioteca",
-    responsable: "SENA Centro de Servicios Financieros",
-    totalItems: 32,
-    activos: 30,
-    mantenimiento: 2,
-    valor: "$85.000.000",
-    actualizado: "14/1/2024",
-  },
-  {
-    id: "4",
-    title: "Oficina Coordinación",
-    location: "Edificio A - Piso 2 - Oficina 201",
-    description: "Inventario personal del coordinador académico",
-    responsable: "Dr. Juan Carlos Pérez",
-    totalItems: 15,
-    activos: 14,
-    mantenimiento: 1,
-    valor: "$35.000.000",
-    actualizado: "13/1/2024",
-  },
-];
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../../../src/Navigation/Services/Connection";
 
 export default function Inventary() {
+  const [inventories, setInventories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredData = data.filter(item =>
-    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  useEffect(() => {
+    fetchInventories();
+  }, []);
+
+  const fetchInventories = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        Alert.alert("Error", "No se encontró token de autenticación");
+        return;
+      }
+
+      const response = await api.get("api/v1/users/me/inventories", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setInventories(response.data);
+    } catch (error) {
+      console.error("Error fetching inventories:", error);
+      Alert.alert("Error", "No se pudo cargar los inventarios");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredData = inventories.filter(item =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -70,7 +50,7 @@ export default function Inventary() {
             <Ionicons name="business" size={20} color="#2196f3" />
           </View>
           <View style={styles.titleContent}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardTitle}>{item.name}</Text>
             <Text style={styles.cardLocation}>{item.location}</Text>
           </View>
         </View>
@@ -80,28 +60,28 @@ export default function Inventary() {
         </View>
       </View>
 
-      <Text style={styles.cardDescription}>{item.description}</Text>
+      <Text style={styles.cardDescription}>Inventario gestionado por {item.ownerName}</Text>
 
       <View style={styles.responsibleSection}>
         <Ionicons name="person-outline" size={14} color="#666" />
-        <Text style={styles.responsibleText}>{item.responsable}</Text>
+        <Text style={styles.responsibleText}>{item.ownerName}</Text>
       </View>
 
       <View style={styles.statsGrid}>
         <View style={[styles.statItem, { backgroundColor: '#f8f9fa' }]}>
-          <Text style={styles.statNumber}>{item.totalItems}</Text>
+          <Text style={styles.statNumber}>--</Text>
           <Text style={styles.statLabel}>Total</Text>
         </View>
         <View style={[styles.statItem, { backgroundColor: '#e8f5e8' }]}>
-          <Text style={[styles.statNumber, { color: '#4caf50' }]}>{item.activos}</Text>
+          <Text style={[styles.statNumber, { color: '#4caf50' }]}>--</Text>
           <Text style={styles.statLabel}>Activos</Text>
         </View>
         <View style={[styles.statItem, { backgroundColor: '#fff3e0' }]}>
-          <Text style={[styles.statNumber, { color: '#ff9800' }]}>{item.mantenimiento}</Text>
+          <Text style={[styles.statNumber, { color: '#ff9800' }]}>--</Text>
           <Text style={styles.statLabel}>Mantenimiento</Text>
         </View>
         <View style={[styles.statItem, { backgroundColor: '#f3e5f5' }]}>
-          <Text style={styles.statNumber}>{item.valor}</Text>
+          <Text style={styles.statNumber}>--</Text>
           <Text style={styles.statLabel}>Valor</Text>
         </View>
       </View>
@@ -109,7 +89,7 @@ export default function Inventary() {
       <View style={styles.cardFooter}>
         <View style={styles.updateInfo}>
           <Ionicons name="time-outline" size={14} color="#666" />
-          <Text style={styles.updateText}>Actualizado: {item.actualizado}</Text>
+          <Text style={styles.updateText}>ID: {item.id}</Text>
         </View>
         <View style={styles.actionButtons}>
           <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#e3f2fd' }]}>
@@ -126,6 +106,15 @@ export default function Inventary() {
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#28a745" />
+        <Text style={styles.loadingText}>Cargando inventarios...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -136,8 +125,8 @@ export default function Inventary() {
               <Ionicons name="cube" size={24} color="#2196f3" />
             </View>
             <View>
-              <Text style={styles.headerTitle}>Inventarios</Text>
-              <Text style={styles.headerSubtitle}>Gestiona los inventarios del sistema</Text>
+              <Text style={styles.headerTitle}>Mis Inventarios</Text>
+              <Text style={styles.headerSubtitle}>Gestiona tus inventarios asignados</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.filterButton}>
@@ -168,10 +157,16 @@ export default function Inventary() {
       {/* Inventory List */}
       <FlatList
         data={filteredData}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Ionicons name="cube-outline" size={64} color="#ccc" />
+            <Text style={styles.emptyText}>No tienes inventarios asignados</Text>
+          </View>
+        }
       />
 
       {/* Floating Action Button */}
@@ -186,6 +181,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f8fafc",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 50,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "#666",
+    marginTop: 10,
+    textAlign: "center",
   },
 
   // Header Styles
