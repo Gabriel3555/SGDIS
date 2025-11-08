@@ -332,7 +332,7 @@ function updateInventoryTable() {
                             <button onclick="showInventoryManagerAssignment('${inventory.id}')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Asignar gerente">
                                 <i class="fas fa-user-tie"></i>
                             </button>
-                            <button onclick="deleteInventory('${inventory.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar inventario">
+                            <button onclick="showDeleteInventoryModal('${inventory.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar inventario">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -460,9 +460,9 @@ function updateInventoryCards() {
                             </button>
                             <button onclick="showInventoryManagerAssignment('${inventory.id}')" class="text-purple-600 hover:text-purple-800 transition-colors" title="Asignar gerente">
                                 <i class="fas fa-user-tie text-lg"></i>
-                            </button>
-                            <button onclick="deleteInventory('${inventory.id}')" class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar inventario">
-                                <i class="fas fa-trash text-lg"></i>
+                           </button>
+                           <button onclick="showDeleteInventoryModal('${inventory.id}')" class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar inventario">
+                               <i class="fas fa-trash text-lg"></i>
                             </button>
                         </div>
                     </div>
