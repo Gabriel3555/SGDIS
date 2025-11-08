@@ -90,8 +90,7 @@ public class UserController {
     )
     @ApiResponse(responseCode = "400", description = "Invalid request")
     @ApiResponse(responseCode = "403", description = "Access denied")
-
-    @PostMapping
+    @PostMapping()
     public UserResponse createUser(@RequestBody CreateUserRequest request) {
         return createUserUseCase.createUser(request);
     }
