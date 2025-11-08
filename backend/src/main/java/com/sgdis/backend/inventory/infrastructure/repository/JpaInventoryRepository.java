@@ -76,8 +76,17 @@ public class JpaInventoryRepository implements
 
     @Override
     public Inventory asignedInventory(Inventory inventory) {
-        InventoryEntity entity = InventoryMapper.toEntity(inventory);
-        InventoryEntity saved =  springDataInventoryRepository.save(entity);
+        // Cargar la entidad existente para preservar los managers y otros datos
+        InventoryEntity existingEntity = springDataInventoryRepository.findById(inventory.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventory.getId()));
+        
+        // Actualizar solo el owner, preservando managers y otros campos
+        if (inventory.getOwner() != null) {
+            existingEntity.setOwner(UserMapper.toEntityShallow(inventory.getOwner()));
+        }
+        
+        // Guardar la entidad actualizada
+        InventoryEntity saved = springDataInventoryRepository.save(existingEntity);
         return InventoryMapper.toDomain(saved);
     }
 

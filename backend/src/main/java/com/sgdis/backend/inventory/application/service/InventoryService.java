@@ -88,26 +88,33 @@ public class InventoryService
     public AssignedInventoryResponse assignedInventory(AssignedInventoryRequest request) {
         Inventory inventory = getInventoryByIdRepository.getInventoryById(request.inventoryId());
 
-        //crear validacion para que la regional de registo sea la misma del usuario
+        // Validación de regional: verificar que la regional del usuario coincida con la del inventario
         Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
         UserEntity userEntity = springDataUserRepository.findById(userId).orElseThrow(()->new RuntimeException("User not found"));
 
-        boolean exist = false;
+        // Solo validar regional si ambos (usuario e inventario) tienen regionales asignadas
+        boolean shouldValidateRegional = userEntity.getRegionals() != null && !userEntity.getRegionals().isEmpty()
+                                        && inventory.getRegionalEntities() != null && !inventory.getRegionalEntities().isEmpty();
 
-        for(RegionalEntity regional: inventory.getRegionalEntities()) {
-            if(regional == userEntity.getRegionals().get(0)) {
-                exist = true;
+        if (shouldValidateRegional) {
+            RegionalEntity userRegional = userEntity.getRegionals().get(0);
+            boolean regionalMatch = false;
+            
+            // Comparar por ID en lugar de por referencia
+            for(RegionalEntity regional: inventory.getRegionalEntities()) {
+                if(regional.getId().equals(userRegional.getId())) {
+                    regionalMatch = true;
+                    break;
+                }
+            }
+
+            if(!regionalMatch) {
+                throw new RuntimeException("User's regional does not match inventory's regional. User regional ID: "
+                    + userRegional.getId() + ", Inventory regional ID: " + inventory.getRegionalEntities().get(0).getId());
             }
         }
 
-        if(!exist) {
-            return null;
-        }
-
-
         User owner = getUserByIdRepository.findUserById(request.userId());
-
         inventory.setOwner(owner);
 
         Inventory updated = assignedInventoryRepository.asignedInventory(inventory);
