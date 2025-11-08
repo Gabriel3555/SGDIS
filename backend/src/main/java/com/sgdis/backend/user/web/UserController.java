@@ -59,7 +59,6 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "403", description = "Access denied")
     @GetMapping("/users/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse getUserById(@PathVariable Long id) {
         return getUserByIdUseCase.getUserById(id);
     }
@@ -93,7 +92,6 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "Invalid request")
     @ApiResponse(responseCode = "403", description = "Access denied")
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse createUser(@RequestBody CreateUserRequest request) {
         return createUserUseCase.createUser(request);
     }
