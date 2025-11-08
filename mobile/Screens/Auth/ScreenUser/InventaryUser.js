@@ -22,89 +22,110 @@ export default function Inventary() {
         return;
       }
 
-      const response = await api.get("api/v1/users/me/inventories", {
+      const response = await api.get("api/v1/inventory/owned", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      setInventories(response.data);
+      let data = response.data.ownedInventories || [];
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+
+      console.log(data);
+
+      data = data.filter(item => item && typeof item === 'object' && item.id !== undefined);
+      setInventories(data);
     } catch (error) {
       console.error("Error fetching inventories:", error);
-      Alert.alert("Error", "No se pudo cargar los inventarios");
+      const status = error.response?.status;
+      if (status >= 500) {
+        // Handle server errors by assuming no inventories assigned
+        setInventories([]);
+      } else {
+        const message = error.response?.data?.message || error.message;
+        Alert.alert("Error", `No se pudo cargar los inventarios: ${status || 'Desconocido'} - ${message}`);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const filteredData = inventories.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.location.toLowerCase().includes(searchQuery.toLowerCase())
+    item && typeof item === 'object' &&
+    ((item.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (item.location?.toLowerCase() || '').includes(searchQuery.toLowerCase()))
   );
 
-  const renderItem = ({ item }) => (
-    <View style={styles.inventoryCard}>
-      <View style={styles.cardHeader}>
-        <View style={styles.titleSection}>
-          <View style={[styles.categoryIcon, { backgroundColor: '#e3f2fd' }]}>
-            <Ionicons name="business" size={20} color="#2196f3" />
+  const renderItem = ({ item }) => {
+    if (!item || typeof item !== 'object') {
+      return null;
+    }
+    return (
+      <View style={styles.inventoryCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleSection}>
+            <View style={[styles.categoryIcon, { backgroundColor: '#e3f2fd' }]}>
+              <Ionicons name="business" size={20} color="#2196f3" />
+            </View>
+            <View style={styles.titleContent}>
+              <Text style={styles.cardTitle}>{item.name || 'Sin nombre'}</Text>
+              <Text style={styles.cardLocation}>{item.location || 'Sin ubicación'}</Text>
+            </View>
           </View>
-          <View style={styles.titleContent}>
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            <Text style={styles.cardLocation}>{item.location}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: '#e8f5e8' }]}>
+            <Ionicons name="checkmark-circle" size={14} color="#4caf50" />
+            <Text style={styles.statusText}>Activo</Text>
           </View>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: '#e8f5e8' }]}>
-          <Ionicons name="checkmark-circle" size={14} color="#4caf50" />
-          <Text style={styles.statusText}>Activo</Text>
+
+        <Text style={styles.cardDescription}>Inventario gestionado por {item.ownerName || 'Sin propietario'}</Text>
+
+        <View style={styles.responsibleSection}>
+          <Ionicons name="person-outline" size={14} color="#666" />
+          <Text style={styles.responsibleText}>{item.ownerName || 'Sin propietario'}</Text>
+        </View>
+
+        <View style={styles.statsGrid}>
+          <View style={[styles.statItem, { backgroundColor: '#f8f9fa' }]}>
+            <Text style={styles.statNumber}>--</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
+          <View style={[styles.statItem, { backgroundColor: '#e8f5e8' }]}>
+            <Text style={[styles.statNumber, { color: '#4caf50' }]}>--</Text>
+            <Text style={styles.statLabel}>Activos</Text>
+          </View>
+          <View style={[styles.statItem, { backgroundColor: '#fff3e0' }]}>
+            <Text style={[styles.statNumber, { color: '#ff9800' }]}>--</Text>
+            <Text style={styles.statLabel}>Mantenimiento</Text>
+          </View>
+          <View style={[styles.statItem, { backgroundColor: '#f3e5f5' }]}>
+            <Text style={styles.statNumber}>--</Text>
+            <Text style={styles.statLabel}>Valor</Text>
+          </View>
+        </View>
+
+        <View style={styles.cardFooter}>
+          <View style={styles.updateInfo}>
+            <Ionicons name="time-outline" size={14} color="#666" />
+            <Text style={styles.updateText}>ID: {item.id || 'Sin ID'}</Text>
+          </View>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#e3f2fd' }]}>
+              <Ionicons name="eye-outline" size={18} color="#2196f3" />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#fff3e0' }]}>
+              <Ionicons name="create-outline" size={18} color="#ff9800" />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#ffebee' }]}>
+              <Ionicons name="trash-outline" size={18} color="#f44336" />
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
-
-      <Text style={styles.cardDescription}>Inventario gestionado por {item.ownerName}</Text>
-
-      <View style={styles.responsibleSection}>
-        <Ionicons name="person-outline" size={14} color="#666" />
-        <Text style={styles.responsibleText}>{item.ownerName}</Text>
-      </View>
-
-      <View style={styles.statsGrid}>
-        <View style={[styles.statItem, { backgroundColor: '#f8f9fa' }]}>
-          <Text style={styles.statNumber}>--</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-        <View style={[styles.statItem, { backgroundColor: '#e8f5e8' }]}>
-          <Text style={[styles.statNumber, { color: '#4caf50' }]}>--</Text>
-          <Text style={styles.statLabel}>Activos</Text>
-        </View>
-        <View style={[styles.statItem, { backgroundColor: '#fff3e0' }]}>
-          <Text style={[styles.statNumber, { color: '#ff9800' }]}>--</Text>
-          <Text style={styles.statLabel}>Mantenimiento</Text>
-        </View>
-        <View style={[styles.statItem, { backgroundColor: '#f3e5f5' }]}>
-          <Text style={styles.statNumber}>--</Text>
-          <Text style={styles.statLabel}>Valor</Text>
-        </View>
-      </View>
-
-      <View style={styles.cardFooter}>
-        <View style={styles.updateInfo}>
-          <Ionicons name="time-outline" size={14} color="#666" />
-          <Text style={styles.updateText}>ID: {item.id}</Text>
-        </View>
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#e3f2fd' }]}>
-            <Ionicons name="eye-outline" size={18} color="#2196f3" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#fff3e0' }]}>
-            <Ionicons name="create-outline" size={18} color="#ff9800" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#ffebee' }]}>
-            <Ionicons name="trash-outline" size={18} color="#f44336" />
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -157,7 +178,7 @@ export default function Inventary() {
       {/* Inventory List */}
       <FlatList
         data={filteredData}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => (item && item.id ? item.id.toString() : Math.random().toString())}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
@@ -169,10 +190,7 @@ export default function Inventary() {
         }
       />
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab}>
-        <Ionicons name="add" size={24} color="#fff" />
-      </TouchableOpacity>
+    
     </View>
   );
 }
