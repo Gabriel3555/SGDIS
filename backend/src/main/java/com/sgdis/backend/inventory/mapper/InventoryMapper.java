@@ -48,7 +48,9 @@ public class InventoryMapper {
                 // USAR SHALLOW para cortar ciclo
                 inventory.getOwner() != null ? UserMapper.toEntityShallow(inventory.getOwner()) : null,
                 null, // managers se cargan por separado si hace falta
-                null
+                inventory.getRegionalEntities() != null && !inventory.getRegionalEntities().isEmpty()
+                    ? inventory.getRegionalEntities().get(0)
+                    : null
         );
     }
 
@@ -66,7 +68,7 @@ public class InventoryMapper {
                         .map(UserMapper::toDomainShallow) // managers en shallow
                         .toList()
                         : null,
-                null
+                entity.getRegional() != null ? java.util.List.of(entity.getRegional()) : java.util.Collections.emptyList()
         );
     }
 
@@ -122,8 +124,8 @@ public class InventoryMapper {
                 entity.getLocation(),
                 entity.getName(),
                 null, // owner NO mapeado
-                null,  // managers NO mapeados,
-                null
+                null,  // managers NO mapeados
+                entity.getRegional() != null ? java.util.List.of(entity.getRegional()) : java.util.Collections.emptyList()
         );
     }
 
@@ -136,7 +138,9 @@ public class InventoryMapper {
                 inventory.getName(),
                 null, // owner NO mapeado
                 null,  // managers NO mapeados
-                null
+                inventory.getRegionalEntities() != null && !inventory.getRegionalEntities().isEmpty()
+                    ? inventory.getRegionalEntities().get(0)
+                    : null
         );
     }
 
