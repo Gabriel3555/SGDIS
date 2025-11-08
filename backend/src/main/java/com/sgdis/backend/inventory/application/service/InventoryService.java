@@ -51,6 +51,9 @@ public class InventoryService
 
     @Override
     public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
+
+        //Asignar regional al momento de crear el inventario
+
         Inventory inventory = InventoryMapper.toDomain(request);
         Inventory savedInventory = createInventoryRepository.createInventory(inventory);
         return InventoryMapper.toCreateResponse(savedInventory);
