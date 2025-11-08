@@ -18,6 +18,11 @@ function closeNewUserModal() {
         if (imagePreview) {
             imagePreview.innerHTML = '<i class="fas fa-user"></i>';
         }
+        // Clear job title and labor department fields
+        const jobTitleInput = document.getElementById('newUserJobTitle');
+        const laborDepartmentInput = document.getElementById('newUserLaborDepartment');
+        if (jobTitleInput) jobTitleInput.value = '';
+        if (laborDepartmentInput) laborDepartmentInput.value = '';
     }
 }
 
@@ -109,11 +114,15 @@ function showEditUserModal(userId) {
         const fullNameInput = document.getElementById('editUserFullName');
         const emailInput = document.getElementById('editUserEmail');
         const roleSelect = document.getElementById('editUserRole');
+        const jobTitleInput = document.getElementById('editUserJobTitle');
+        const laborDepartmentInput = document.getElementById('editUserLaborDepartment');
         const statusSelect = document.getElementById('editUserStatus');
 
         if (fullNameInput) fullNameInput.value = user.fullName || '';
         if (emailInput) emailInput.value = user.email || '';
         if (roleSelect) roleSelect.value = user.role || '';
+        if (jobTitleInput) jobTitleInput.value = user.jobTitle || '';
+        if (laborDepartmentInput) laborDepartmentInput.value = user.laborDepartment || '';
         if (statusSelect) statusSelect.value = user.status !== false ? 'true' : 'false';
 
         const imagePreview = document.getElementById('editUserImagePreview');
@@ -157,6 +166,12 @@ function closeEditUserModal() {
             imagePreview.classList.remove('has-image');
         }
     }
+
+    // Clear job title and labor department fields
+    const jobTitleInput = document.getElementById('editUserJobTitle');
+    const laborDepartmentInput = document.getElementById('editUserLaborDepartment');
+    if (jobTitleInput) jobTitleInput.value = '';
+    if (laborDepartmentInput) laborDepartmentInput.value = '';
 
     usersData.currentUserId = null;
 }

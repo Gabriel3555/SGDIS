@@ -1,7 +1,12 @@
 function updateUsersUI() {
     updateUserStats();
     updateSearchAndFilters();
-    updateUsersTable();
+    updateViewModeButtons();
+    if (usersData.viewMode === 'table') {
+        updateUsersTable();
+    } else {
+        updateUsersCards();
+    }
     updatePagination();
 
 }
@@ -296,6 +301,32 @@ function handleSearchButton() {
     }
 }
 
+function updateViewModeButtons() {
+    const container = document.getElementById('viewModeButtonsContainer');
+    if (!container) return;
+
+    const isTableActive = usersData.viewMode === 'table';
+    const isCardsActive = usersData.viewMode === 'cards';
+
+    container.innerHTML = `
+        <div class="flex items-center gap-2 mb-4">
+            <i class="fas fa-users text-green-600 text-xl"></i>
+            <h2 class="text-xl font-bold text-gray-800">Usuarios del Sistema</h2>
+            <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${usersData ? usersData.filteredUsers.length : 0} usuarios</span>
+            <div class="flex items-center gap-2 ml-auto">
+                <button onclick="setViewMode('table')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isTableActive ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
+                    <i class="fas fa-list"></i>
+                    <span class="hidden sm:inline">Lista</span>
+                </button>
+                <button onclick="setViewMode('cards')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isCardsActive ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
+                    <i class="fas fa-th"></i>
+                    <span class="hidden sm:inline">Cards</span>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
 function updateUsersTable() {
     const container = document.getElementById('usersTableContainer');
     if (!container) return;
@@ -307,13 +338,7 @@ function updateUsersTable() {
     const endIndex = startIndex + window.usersData.itemsPerPage;
     const paginatedUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
 
-    let usersTableHtml = `
-        <div class="flex items-center gap-2 mb-4">
-            <i class="fas fa-users text-green-600 text-xl"></i>
-            <h2 class="text-xl font-bold text-gray-800">Usuarios del Sistema</h2>
-            <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${window.usersData ? window.usersData.filteredUsers.length : 0} usuarios</span>
-        </div>
-    `;
+    let usersTableHtml = ``;
 
     if (paginatedUsers.length === 0) {
         usersTableHtml += `
@@ -552,11 +577,100 @@ window.syncSearchInputs = syncSearchInputs;
 window.filterUsers = filterUsers;
 window.resetSearchInputs = resetSearchInputs;
 window.checkSearchInputsStatus = checkSearchInputsStatus;
+function updateUsersCards() {
+    const container = document.getElementById('usersTableContainer');
+    if (!container) return;
+
+    if (!window.usersData) {
+        return;
+    }
+    const startIndex = (window.usersData.currentPage - 1) * window.usersData.itemsPerPage;
+    const endIndex = startIndex + window.usersData.itemsPerPage;
+    const paginatedUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
+
+    let usersCardsHtml = ``;
+
+    if (paginatedUsers.length === 0) {
+        usersCardsHtml += `
+            <div class="col-span-full text-center py-8">
+                <i class="fas fa-users text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-500">No se encontraron usuarios</p>
+                <p class="text-sm text-gray-400 mt-2">Intenta ajustar los filtros de búsqueda</p>
+            </div>
+        `;
+    } else {
+        usersCardsHtml += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">`;
+
+        paginatedUsers.forEach(user => {
+            const roleText = window.getRoleText ? window.getRoleText(user.role) : user.role;
+            const statusText = user.status !== false ? 'Activo' : 'Inactivo';
+            const statusColor = user.status !== false ? 'green' : 'red';
+            const fullName = user.fullName || 'Usuario sin nombre';
+            const email = user.email || 'Sin email';
+            const initials = fullName.charAt(0).toUpperCase();
+            const isAdmin = user.role === 'ADMIN';
+
+            const profileImage = user.imgUrl ?
+                `<img src="${user.imgUrl}" alt="${fullName}" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 mx-auto">` :
+                `<div class="w-16 h-16 ${isAdmin ? 'bg-red-600' : 'bg-green-600'} rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto">${initials}</div>`;
+
+            usersCardsHtml += `
+                <div class="stat-card">
+                    <div class="text-center mb-4">
+                        <button onclick="changeUserPhoto('${user.id}')" class="profile-image-btn ${user.imgUrl ? '' : 'no-image'} inline-block" title="Cambiar foto de perfil">
+                            ${profileImage}
+                            <div class="image-overlay">
+                                <i class="fas fa-camera text-white text-xs"></i>
+                            </div>
+                        </button>
+                        <h3 class="font-bold text-lg text-gray-800 mt-3 ${isAdmin ? 'text-red-800' : ''}">${fullName}</h3>
+                        <p class="text-gray-600 text-sm">${email}</p>
+                    </div>
+
+                    <div class="space-y-3 mb-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600 text-sm">Rol:</span>
+                            <span class="px-2 py-1 ${isAdmin ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'} rounded-full text-xs font-medium">${roleText}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-600 text-sm">Estado:</span>
+                            <span class="px-2 py-1 bg-${statusColor}-100 text-${statusColor}-700 rounded-full text-xs font-medium">${statusText}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <button onclick="showUserPassword('${user.id}')" class="text-green-600 hover:text-green-700 text-sm font-medium">
+                            Cambiar contraseña
+                        </button>
+                        <div class="flex gap-2">
+                            <button onclick="viewUser('${user.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="editUser('${user.id}')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar usuario">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteUser('${user.id}')" class="${isAdmin ? 'text-gray-400 cursor-not-allowed opacity-50' : 'text-red-600 hover:bg-red-50'} p-2 rounded-lg transition-colors" title="Eliminar usuario" ${isAdmin ? 'disabled' : ''}>
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        usersCardsHtml += `</div>`;
+    }
+
+    container.innerHTML = usersCardsHtml;
+}
+
 window.updateUsersUI = updateUsersUI;
 window.updateUsersTable = updateUsersTable;
+window.updateUsersCards = updateUsersCards;
 window.updateUserStats = updateUserStats;
 window.updatePagination = updatePagination;
 window.updateSearchAndFilters = updateSearchAndFilters;
+window.updateViewModeButtons = updateViewModeButtons;
 window.attachActionButtonListeners = attachActionButtonListeners;
 window.getRoleText = getRoleText;
 

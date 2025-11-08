@@ -68,8 +68,11 @@ function filterInventories() {
     inventoryData.currentPage = 1;
 
     setTimeout(() => {
-        if (typeof updateInventoryUI === 'function') {
-            updateInventoryUI();
+        if (typeof updateInventoryTable === 'function') {
+            updateInventoryTable();
+        }
+        if (typeof updatePagination === 'function') {
+            updatePagination();
         }
     }, 5);
 }

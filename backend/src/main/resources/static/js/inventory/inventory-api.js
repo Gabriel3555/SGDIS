@@ -70,12 +70,8 @@ async function loadInventories() {
         const token = localStorage.getItem('jwt');
         const headers = { 'Content-Type': 'application/json' };
 
-        console.log('JWT token available:', !!token);
         if (token) {
             headers['Authorization'] = `Bearer ${token}`;
-            console.log('Making authenticated request to /api/v1/inventory');
-        } else {
-            console.log('No JWT token found, making unauthenticated request');
         }
 
         const response = await fetch('/api/v1/inventory', {
@@ -83,27 +79,17 @@ async function loadInventories() {
             headers: headers
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
         if (response.ok) {
             const inventories = await response.json();
-            console.log('Loaded inventories:', inventories);
-            console.log('Number of inventories:', Array.isArray(inventories) ? inventories.length : 'Not an array');
 
             inventoryData.inventories = Array.isArray(inventories) ? inventories : [];
             inventoryData.filteredInventories = [...inventoryData.inventories];
 
             if (inventoryData.inventories.length === 0) {
-                console.log('No inventories found in database');
                 showInfoToast('Información', 'No hay inventarios registrados en el sistema. Crea el primero usando el botón "Nuevo Inventario".');
-            } else {
-                console.log(`Successfully loaded ${inventoryData.inventories.length} inventories`);
             }
         } else {
-            console.error('Failed to load inventories. Status:', response.status);
             const errorText = await response.text();
-            console.error('Error response:', errorText);
 
             if (response.status === 401) {
                 showErrorToast('Sesión expirada', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.');

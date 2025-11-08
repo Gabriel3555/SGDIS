@@ -7,7 +7,8 @@ let usersData = {
     selectedRole: 'all',
     selectedStatus: 'all',
     isLoading: false,
-    currentUserId: null
+    currentUserId: null,
+    viewMode: 'table' // 'table' or 'cards'
 };
 
 function getRoleText(role) {
@@ -43,9 +44,17 @@ function changePage(page) {
     }
 }
 
+function setViewMode(mode) {
+    if (usersData) {
+        usersData.viewMode = mode;
+        updateUsersUI();
+    }
+}
+
 window.usersData = usersData;
 window.setRoleFilter = setRoleFilter;
 window.setStatusFilter = setStatusFilter;
+window.setViewMode = setViewMode;
 window.changePage = changePage;
 window.applySearchFilter = applySearchFilter;
 window.getRoleText = getRoleText;
