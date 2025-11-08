@@ -1,5 +1,6 @@
 package com.sgdis.backend.inventory.application.service;
 
+import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.application.port.in.*;
 import com.sgdis.backend.inventory.application.port.out.*;
@@ -10,6 +11,8 @@ import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
 import com.sgdis.backend.user.application.port.out.GetUserByIdRepository;
 import com.sgdis.backend.user.domain.User;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sun.security.auth.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -44,6 +47,7 @@ public class InventoryService
     private final GetUserByIdRepository getUserByIdRepository;
     private final GetInventoryManagersRepository getInventoryManagersRepository;
     private final GetAllManagedInventoriesRepository getAllManagedInventoriesRepository;
+    private final SpringDataUserRepository  springDataUserRepository;
 
     @Override
     public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
@@ -83,6 +87,25 @@ public class InventoryService
     @Override
     public AssignedInventoryResponse assignedInventory(AssignedInventoryRequest request) {
         Inventory inventory = getInventoryByIdRepository.getInventoryById(request.inventoryId());
+
+        //crear validacion para que la regional de registo sea la misma del usuario
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        UserEntity userEntity = springDataUserRepository.findById(userId).orElseThrow(()->new RuntimeException("User not found"));
+
+        boolean exist = false;
+
+        for(RegionalEntity regional: inventory.getRegionalEntities()) {
+            if(regional == userEntity.getRegionals().get(0)) {
+                exist = true;
+            }
+        }
+
+        if(!exist) {
+            return null;
+        }
+
+
         User owner = getUserByIdRepository.findUserById(request.userId());
 
         inventory.setOwner(owner);

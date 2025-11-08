@@ -1,6 +1,10 @@
 package com.sgdis.backend.user.infrastructure.repository;
 
+import com.sgdis.backend.data.regional.RegionalEntity;
+import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 import com.sgdis.backend.exception.ResourceNotFoundException;
+import com.sgdis.backend.user.application.dto.AssignRegionalRequest;
+import com.sgdis.backend.user.application.dto.UserRegionalDto;
 import com.sgdis.backend.user.application.port.out.*;
 import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
@@ -10,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -20,9 +25,11 @@ public class JpaUserRepository implements
         ListUserRepository,
         GetUserByIdRepository,
         GetUserByEmailRepository,
-        GetManagedInventoriesRepository {
+        GetManagedInventoriesRepository,
+        AssignRegionalRepository{
 
     private final SpringDataUserRepository repository;
+    private final SpringDataRegionalRepository regionalRepository;
 
     @Override
     public User createUser(User user) {
@@ -73,5 +80,33 @@ public class JpaUserRepository implements
         return repository.findManagedInventoriesByUserId(userId).stream()
                 .map(InventoryMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public UserRegionalDto assignRegional(AssignRegionalRequest request) {
+        Optional<UserEntity> userEntity = repository.findById(request.userId());
+        Optional<RegionalEntity> regionalEntity = regionalRepository.findById(request.regionalId());
+
+        userEntity.ifPresent(userEntity1 -> {
+            regionalEntity.ifPresent(regionalEntity1 -> {
+
+                //User side
+                List<RegionalEntity> regionalEntities = userEntity1.getRegionals();
+                regionalEntities.add(regionalEntity1);
+                userEntity1.setRegionals(regionalEntities);
+                regionalRepository.save(regionalEntity1);
+
+                //Regionals side
+                List<UserEntity> userEntities = regionalEntity1.getUsers();
+                userEntities.add(userEntity1);
+                regionalEntity1.setUsers(userEntities);
+                regionalRepository.save(regionalEntity1);
+            });
+        });
+
+        UserEntity savedUser = repository.findById(request.userId()).orElseThrow();
+        RegionalEntity savedRegional = regionalRepository.findById(request.regionalId()).orElseThrow();
+
+        return new UserRegionalDto(savedUser, savedRegional);
     }
 }

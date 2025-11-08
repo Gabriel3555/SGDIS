@@ -1,9 +1,6 @@
 package com.sgdis.backend.user.web;
 
-import com.sgdis.backend.user.application.dto.CreateUserRequest;
-import com.sgdis.backend.user.application.dto.UpdateUserRequest;
-import com.sgdis.backend.user.application.dto.UserResponse;
-import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
+import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
 import com.sgdis.backend.user.application.port.out.CreateUserRepository;
 import com.sgdis.backend.user.application.service.FileUploadService;
@@ -24,6 +21,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Repository;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,6 +41,7 @@ public class UserController {
         private final UpdateUserUseCase updateUserUseCase;
         private final DeleteUserUseCase deleteUserUseCase;
         private final GetManagedInventoriesUseCase getManagedInventoriesUseCase;
+        private final AssignRegionalUseCase assignRegionalUseCase;
         private final JpaUserRepository userRepository;
         private final SpringDataUserRepository springDataUserRepository;
         private final FileUploadService fileUploadService;
@@ -91,6 +90,7 @@ public class UserController {
     )
     @ApiResponse(responseCode = "400", description = "Invalid request")
     @ApiResponse(responseCode = "403", description = "Access denied")
+
     @PostMapping
     public UserResponse createUser(@RequestBody CreateUserRequest request) {
         return createUserUseCase.createUser(request);
@@ -109,7 +109,6 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "Invalid request")
     @ApiResponse(responseCode = "403", description = "Access denied")
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse updateUser(
             @PathVariable Long id,
             @RequestBody UpdateUserRequest request) {
@@ -128,7 +127,6 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "403", description = "Access denied")
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     public UserResponse deleteUser(@PathVariable Long id) {
         return deleteUserUseCase.deleteUser(id);
     }
@@ -158,7 +156,6 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "Invalid file or request")
     @ApiResponse(responseCode = "403", description = "Access denied")
     @PostMapping("/me/image")
-    @PreAuthorize("hasRole('USER') or hasRole('WAREHOUSE')")
     public ResponseEntity<String> uploadProfileImage(@RequestParam("file") MultipartFile file) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -189,7 +186,6 @@ public class UserController {
     @ApiResponse(responseCode = "400", description = "Invalid file")
     @ApiResponse(responseCode = "403", description = "Access denied")
     @PostMapping("/{id}/image")
-    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> uploadUserImageById(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         try {
             User user = userRepository.findUserById(id);
@@ -243,5 +239,10 @@ public class UserController {
             public List<ManagedInventoryResponse> getManagedInventoriesByUserId(@PathVariable Long userId) {
                 return getManagedInventoriesUseCase.getManagedInventories(userId);
             }
+
+            @PostMapping("/assignRegional")
+            public AssignRegionalResponse assignRegional(AssignRegionalRequest assignRegionalRequest) {
+                return assignRegionalUseCase.assignRegional(assignRegionalRequest);
+             }
         
         }

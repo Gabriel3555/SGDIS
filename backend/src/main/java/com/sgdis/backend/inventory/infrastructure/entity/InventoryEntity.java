@@ -1,5 +1,6 @@
 package com.sgdis.backend.inventory.infrastructure.entity;
 
+import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -35,4 +36,8 @@ public class InventoryEntity {
 
     //@ManyToOne(fetch = FetchType.EAGER)
     //private UserEntity institucion;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "regional_id")
+    private RegionalEntity regional;
 }

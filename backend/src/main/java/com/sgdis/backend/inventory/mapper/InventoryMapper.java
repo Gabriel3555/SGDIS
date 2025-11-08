@@ -47,7 +47,8 @@ public class InventoryMapper {
                 inventory.getName(),
                 // USAR SHALLOW para cortar ciclo
                 inventory.getOwner() != null ? UserMapper.toEntityShallow(inventory.getOwner()) : null,
-                null // managers se cargan por separado si hace falta
+                null, // managers se cargan por separado si hace falta
+                null
         );
     }
 
@@ -64,7 +65,8 @@ public class InventoryMapper {
                         ? entity.getManagers().stream()
                         .map(UserMapper::toDomainShallow) // managers en shallow
                         .toList()
-                        : null
+                        : null,
+                null
         );
     }
 
@@ -120,7 +122,8 @@ public class InventoryMapper {
                 entity.getLocation(),
                 entity.getName(),
                 null, // owner NO mapeado
-                null  // managers NO mapeados
+                null,  // managers NO mapeados,
+                null
         );
     }
 
@@ -132,7 +135,8 @@ public class InventoryMapper {
                 inventory.getLocation(),
                 inventory.getName(),
                 null, // owner NO mapeado
-                null  // managers NO mapeados
+                null,  // managers NO mapeados
+                null
         );
     }
 

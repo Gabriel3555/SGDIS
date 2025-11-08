@@ -1,5 +1,6 @@
 package com.sgdis.backend.inventory.domain;
 
+import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.user.domain.User;
 
 import java.util.List;
@@ -12,14 +13,24 @@ public class Inventory {
     private String name;
     private User owner;
     private List<User> managers;
+    private List<RegionalEntity>  regionalEntities;
 
-    public Inventory(Long id, UUID uuid, String location, String name, User owner, List<User> managers) {
+    public List<RegionalEntity> getRegionalEntities() {
+        return regionalEntities;
+    }
+
+    public void setRegionalEntities(List<RegionalEntity> regionalEntities) {
+        this.regionalEntities = regionalEntities;
+    }
+
+    public Inventory(Long id, UUID uuid, String location, String name, User owner, List<User> managers, List<RegionalEntity> regionalEntities) {
         this.id = id;
         this.uuid = uuid;
         this.location = location;
         this.name = name;
         this.owner = owner;
         this.managers = managers;
+        this.regionalEntities = regionalEntities;
     }
 
     public Inventory() {}
