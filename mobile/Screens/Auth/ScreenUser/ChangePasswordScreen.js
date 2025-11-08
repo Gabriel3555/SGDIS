@@ -9,37 +9,12 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
+import api from "../../../src/Navigation/Services/Connection";
 
 export default function ChangePasswordScreen() {
-  const [userId, setUserId] = useState(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const API_URL = "https://tu-backend.com/api/v1/users"; // ⚠️ Cambia por tu URL real
-
-  // Trae el usuario actual al montar
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
-        const token = await AsyncStorage.getItem("token");
-        const response = await axios.get(`${API_URL}/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        setUserId(response.data.id);
-      } catch (error) {
-        Alert.alert("Error", "No se pudo obtener el usuario actual.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUser();
-  }, []);
 
   const handleUpdatePassword = async () => {
     if (!password || !confirmPassword) {
@@ -52,9 +27,9 @@ export default function ChangePasswordScreen() {
 
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem("token");
-      await axios.put(
-        `${API_URL}/${userId}`,
+      const token = await AsyncStorage.getItem("userToken");
+      await api.put(
+        "api/v1/users/me",
         { password },
         {
           headers: {

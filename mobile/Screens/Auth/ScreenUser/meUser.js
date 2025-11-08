@@ -148,7 +148,7 @@ export default function MeUserScreen() {
             <Text style={styles.actionText}>Cambiar Foto</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('ChangePassword')}>
             <Ionicons name="key-outline" size={24} color="#28a745" />
             <Text style={styles.actionText}>Cambiar Contraseña</Text>
           </TouchableOpacity>
