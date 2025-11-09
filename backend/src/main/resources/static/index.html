@@ -280,302 +280,301 @@
 </head>
 
 <body class="min-h-screen" style="background-color: #fdfdfd;">
-    <!-- SENA Loading Spinner Overlay -->
-    <div id="senaSpinner" class="spinner-overlay">
-        <div class="spinner-container">
-            <img src="svg/box.png" alt="Logo SGDIS" class="spinner-logo">
-            <div class="spinner">
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-                <div class="spinner-center"></div>
-            </div>
-            <div class="spinner-text">
-                Iniciando sesión
-                <div class="spinner-dots">
-                    <div class="spinner-dot"></div>
-                    <div class="spinner-dot"></div>
-                    <div class="spinner-dot"></div>
-                </div>
-            </div>
-            <div class="spinner-subtitle">
-                Cargando dashboard...
+<!-- SENA Loading Spinner Overlay -->
+<div id="senaSpinner" class="spinner-overlay">
+    <div class="spinner-container">
+        <img src="svg/box.png" alt="Logo SGDIS" class="spinner-logo">
+        <div class="spinner">
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-ring"></div>
+            <div class="spinner-center"></div>
+        </div>
+        <div class="spinner-text">
+            Iniciando sesión
+            <div class="spinner-dots">
+                <div class="spinner-dot"></div>
+                <div class="spinner-dot"></div>
+                <div class="spinner-dot"></div>
             </div>
         </div>
+        <div class="spinner-subtitle">
+            Cargando dashboard...
+        </div>
     </div>
+</div>
 
-    <div class="logo-sena">
-        <img src="svg/logoSena.png" alt="Logo SENA" class="h-16 w-auto">
-    </div>
+<div class="logo-sena">
+    <img src="svg/logoSena.png" alt="Logo SENA" class="h-16 w-auto">
+</div>
 
-    <div class="min-h-screen flex items-center justify-center p-4 relative z-10">
-        <div class="w-full max-w-md">
-            <div class="efecto-vidrio rounded-2xl shadow-2xl p-8 border border-white/20">
-                <div class="text-center mb-8">
-                    <div class="mb-4">
-                        <img src="svg/box.png" alt="Logo Caja"
-                            class="h-20 w-20 mx-auto rounded-2xl object-cover">
+<div class="min-h-screen flex items-center justify-center p-4 relative z-10">
+    <div class="w-full max-w-md">
+        <div class="efecto-vidrio rounded-2xl shadow-2xl p-8 border border-white/20">
+            <div class="text-center mb-8">
+                <div class="mb-4">
+                    <img src="svg/box.png" alt="Logo Caja"
+                         class="h-20 w-20 mx-auto rounded-2xl object-cover">
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">SGDIS</h1>
+                <h2 class="text-lg font-semibold text-sena-verde mb-1">Sistema de Gestión de Inventario</h2>
+                <p class="text-sm text-gray-600">Servicio Nacional de Aprendizaje - SENA</p>
+                <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-3"></div>
+            </div>
+
+            <!-- Cambio: sin onsubmit y botón submit -->
+            <form class="space-y-6" id="loginForm">
+                <div>
+                    <label for="usuario" class="block text-sm font-medium text-gray-700 mb-2">
+                        Correo Electrónico
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                            </svg>
+                        </div>
+                        <input type="email" id="usuario" name="usuario"
+                               class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                               placeholder="usuario@soy.sena.edu.co" required>
                     </div>
-                    <h1 class="text-2xl font-bold text-gray-800 mb-2">SGDIS</h1>
-                    <h2 class="text-lg font-semibold text-sena-verde mb-1">Sistema de Gestión de Inventario</h2>
-                    <p class="text-sm text-gray-600">Servicio Nacional de Aprendizaje - SENA</p>
-                    <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-3"></div>
                 </div>
 
-                <form class="space-y-6" id="loginForm" onsubmit="return false">
-                    <div>
-                        <label for="usuario" class="block text-sm font-medium text-gray-700 mb-2">
-                            Correo Electrónico
+                <div>
+                    <label for="contrasena" class="block text-sm font-medium text-gray-700 mb-2">
+                        Contraseña
+                    </label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                 viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <input type="password" id="contrasena" name="contrasena"
+                               class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                               placeholder="Ingresa tu contraseña" required>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="recordarme" name="recordarme" type="checkbox"
+                               class="h-4 w-4 text-sena-verde focus:ring-sena-verde border-gray-300 rounded">
+                        <label for="recordarme" class="ml-2 block text-sm text-gray-700">
+                            Recordarme
                         </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                                </svg>
-                            </div>
-                            <input type="email" id="usuario" name="usuario"
-                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
-                                placeholder="usuario@soy.sena.edu.co" required>
-                        </div>
                     </div>
+                    <a href="forgot_password.html"
+                       class="text-sm text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
+                        ¿Olvidaste tu contraseña?
+                    </a>
+                </div>
 
-                    <div>
-                        <label for="contrasena" class="block text-sm font-medium text-gray-700 mb-2">
-                            Contraseña
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                            </div>
-                            <input type="password" id="contrasena" name="contrasena"
-                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
-                                placeholder="Ingresa tu contraseña" required>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input id="recordarme" name="recordarme" type="checkbox"
-                                class="h-4 w-4 text-sena-verde focus:ring-sena-verde border-gray-300 rounded">
-                            <label for="recordarme" class="ml-2 block text-sm text-gray-700">
-                                Recordarme
-                            </label>
-                        </div>
-                        <a href="forgot_password.html"
-                            class="text-sm text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
-                            ¿Olvidaste tu contraseña?
-                        </a>
-                    </div>
-
-                    <button type="button" onclick="login()"
+                <!-- Cambio: botón de envío nativo -->
+                <button type="submit"
                         class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-sena-verde hover:bg-sena-verde-oscuro focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sena-verde transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                        </svg>
-                        Iniciar Sesión
-                    </button>
-                </form>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                    </svg>
+                    Iniciar Sesión
+                </button>
+            </form>
 
-                <div class="mt-6 text-center">
-                    <p class="text-sm text-gray-600 mb-3">
-                        ¿No tienes cuenta?
-                        <a href="register"
-                            class="text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
-                            Regístrate aquí
-                        </a>
-                    </p>
-                    <p class="text-xs text-gray-500 mb-3">
-                        ¿Necesitas ayuda?
-                        <a href="mailto:soporte@sena.edu.co"
-                            class="text-sena-verde hover:text-sena-verde-oscuro font-medium">
-                            Contacta soporte técnico
-                        </a>
-                    </p>
-                    <div class="flex items-center justify-center space-x-4 text-xs text-gray-400">
-                        <a href="#" class="hover:text-sena-verde transition-colors">Términos de uso</a>
-                        <span>•</span>
-                        <a href="#" class="hover:text-sena-verde transition-colors">Política de privacidad</a>
-                    </div>
-                </div>
-
-                <div class="text-center mt-6">
-                    <p class="text-sm text-gray-600">
-                        © 2025 SENA - Servicio Nacional de Aprendizaje
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1">
-                        Versión 0.0.1 - Centro Industrial de Mantenimiento y Manufactura - Sogamoso, Boyacá
-                    </p>
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600 mb-3">
+                    ¿No tienes cuenta?
+                    <a href="register"
+                       class="text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
+                        Regístrate aquí
+                    </a>
+                </p>
+                <p class="text-xs text-gray-500 mb-3">
+                    ¿Necesitas ayuda?
+                    <a href="mailto:soporte@sena.edu.co"
+                       class="text-sena-verde hover:text-sena-verde-oscuro font-medium">
+                        Contacta soporte técnico
+                    </a>
+                </p>
+                <div class="flex items-center justify-center space-x-4 text-xs text-gray-400">
+                    <a href="#" class="hover:text-sena-verde transition-colors">Términos de uso</a>
+                    <span>•</span>
+                    <a href="#" class="hover:text-sena-verde transition-colors">Política de privacidad</a>
                 </div>
             </div>
+
+            <div class="text-center mt-6">
+                <p class="text-sm text-gray-600">
+                    © 2025 SENA - Servicio Nacional de Aprendizaje
+                </p>
+                <p class="text-xs text-gray-500 mt-1">
+                    Versión 0.0.1 - Centro Industrial de Mantenimiento y Manufactura - Sogamoso, Boyacá
+                </p>
+            </div>
         </div>
+    </div>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const entradas = document.querySelectorAll('input[type="text"], input[type="password"]');
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const entradas = document.querySelectorAll('input[type="text"], input[type="password"]');
 
-                // --- Efecto suave en inputs ---
-                entradas.forEach(entrada => {
-                    entrada.addEventListener('focus', function () {
-                        this.parentElement.classList.add('scale-[1.02]');
+            // --- Efecto suave en inputs ---
+            entradas.forEach(entrada => {
+                entrada.addEventListener('focus', function () {
+                    this.parentElement.classList.add('scale-[1.02]');
+                });
+                entrada.addEventListener('blur', function () {
+                    this.parentElement.classList.remove('scale-[1.02]');
+                });
+            });
+
+            // --- Remember me functionality ---
+            const usuarioInput = document.getElementById('usuario');
+            const contrasenaInput = document.getElementById('contrasena');
+            const recordarCheckbox = document.getElementById('recordarme');
+            const form = document.getElementById('loginForm');
+
+            // Auto-fill form if credentials are saved
+            const savedEmail = localStorage.getItem('rememberedEmail');
+            const savedPassword = localStorage.getItem('rememberedPassword');
+
+            if (savedEmail && savedPassword) {
+                usuarioInput.value = savedEmail;
+                contrasenaInput.value = savedPassword;
+                recordarCheckbox.checked = true;
+            }
+
+            // --- Enter key functionality (dispara validación nativa) ---
+            usuarioInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    form.requestSubmit();
+                }
+            });
+
+            contrasenaInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    form.requestSubmit();
+                }
+            });
+
+            // --- Spinner functions ---
+            function showSenaSpinner() {
+                const spinner = document.getElementById('senaSpinner');
+                if (spinner) {
+                    spinner.style.display = 'flex';
+                    setTimeout(() => {
+                        spinner.style.opacity = '1';
+                    }, 10);
+                }
+            }
+
+            function hideSenaSpinner() {
+                const spinner = document.getElementById('senaSpinner');
+                if (spinner) {
+                    spinner.style.opacity = '0';
+                    setTimeout(() => {
+                        spinner.style.display = 'none';
+                    }, 300);
+                }
+            }
+
+            // Hide spinner when page loads
+            window.addEventListener('load', function () {
+                hideSenaSpinner();
+            });
+
+            // --- Envío del formulario con validación nativa ---
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                // Ejecuta validación HTML5 (required, type=email, etc.)
+                if (!form.reportValidity()) return;
+
+                const email = usuarioInput.value;
+                const contrasena = contrasenaInput.value;
+
+                console.log('Attempting login with email:', email);
+
+                try {
+                    const response = await fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            password: contrasena
+                        })
                     });
-                    entrada.addEventListener('blur', function () {
-                        this.parentElement.classList.remove('scale-[1.02]');
-                    });
-                });
 
+                    console.log('Response status:', response.status);
+                    console.log('Response ok:', response.ok);
 
-                // --- Remember me functionality ---
-                const usuarioInput = document.getElementById('usuario');
-                const contrasenaInput = document.getElementById('contrasena');
-                const recordarCheckbox = document.getElementById('recordarme');
+                    const data = await response.json();
+                    console.log('Response data:', data);
 
-                // Auto-fill form if credentials are saved
-                const savedEmail = localStorage.getItem('rememberedEmail');
-                const savedPassword = localStorage.getItem('rememberedPassword');
+                    if (response.ok && data.status) {
+                        console.log('Login successful, role:', data.role);
 
-                if (savedEmail && savedPassword) {
-                    usuarioInput.value = savedEmail;
-                    contrasenaInput.value = savedPassword;
-                    recordarCheckbox.checked = true;
-                }
+                        // Guardar tokens
+                        localStorage.setItem('jwt', data.jwt);
+                        localStorage.setItem('refreshToken', data.refreshToken);
 
-                // --- Enter key functionality ---
+                        // Set cookie para que el servidor pueda leer el JWT
+                        document.cookie = `jwt=${data.jwt}; path=/; max-age=900`; // 15 minutos
 
-                usuarioInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        login();
-                    }
-                });
-
-                contrasenaInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        login();
-                    }
-                });
-
-                // --- Spinner functions ---
-                function showSenaSpinner() {
-                    const spinner = document.getElementById('senaSpinner');
-                    if (spinner) {
-                        spinner.style.display = 'flex';
-                        // Add slight delay to ensure smooth transition
-                        setTimeout(() => {
-                            spinner.style.opacity = '1';
-                        }, 10);
-                    }
-                }
-
-                function hideSenaSpinner() {
-                    const spinner = document.getElementById('senaSpinner');
-                    if (spinner) {
-                        spinner.style.opacity = '0';
-                        setTimeout(() => {
-                            spinner.style.display = 'none';
-                        }, 300);
-                    }
-                }
-
-                // Hide spinner when page loads
-                window.addEventListener('load', function() {
-                    hideSenaSpinner();
-                });
-
-                // --- Función de login ---
-                window.login = async function () {
-                    const email = document.getElementById('usuario').value;
-                    const contrasena = document.getElementById('contrasena').value;
-
-                    console.log('Attempting login with email:', email);
-
-                    try {
-                        const response = await fetch('/api/v1/auth/login', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                email: email,
-                                password: contrasena
-                            })
-                        });
-
-                        console.log('Response status:', response.status);
-                        console.log('Response ok:', response.ok);
-
-                        const data = await response.json();
-                        console.log('Response data:', data);
-
-                        if (response.ok && data.status) {
-                             console.log('Login successful, role:', data.role);
-
-                             // Guardar tokens
-                             localStorage.setItem('jwt', data.jwt);
-                             localStorage.setItem('refreshToken', data.refreshToken);
-
-                             // Set cookie para que el servidor pueda leer el JWT
-                             document.cookie = `jwt=${data.jwt}; path=/; max-age=900`; // 15 minutos
-
-                             // Remember me functionality - save credentials if checkbox is checked
-                             if (recordarCheckbox.checked) {
-                                 localStorage.setItem('rememberedEmail', email);
-                                 localStorage.setItem('rememberedPassword', contrasena);
-                                 console.log('Credentials saved for future logins');
-                             } else {
-                                 // Clear any saved credentials if checkbox is not checked
-                                 localStorage.removeItem('rememberedEmail');
-                                 localStorage.removeItem('rememberedPassword');
-                                 console.log('Remember me not checked, credentials cleared');
-                             }
-
-                             // Redirección según el rol
-                             let redirectUrl = '/index.html';
-                             if (data.role === "ADMIN") redirectUrl = '/dashboard/admin';
-                             else if (data.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
-                             else if (data.role === "USER") redirectUrl = '/dashboard/user';
-
-                             console.log('Redirecting to:', redirectUrl);
-
-                             // Show SENA loading spinner before redirect
-                             showSenaSpinner();
-
-                             // Redirect after a short delay to show the spinner
-                             setTimeout(() => {
-                                 window.location.href = redirectUrl;
-                             }, 1500);
+                        // Remember me functionality - save credentials if checkbox is checked
+                        if (recordarCheckbox.checked) {
+                            localStorage.setItem('rememberedEmail', email);
+                            localStorage.setItem('rememberedPassword', contrasena);
+                            console.log('Credentials saved for future logins');
                         } else {
-                            console.error('Error en login:', data.message || 'Credenciales inválidas');
-                            // Hide spinner if it's showing
-                            hideSenaSpinner();
-
-                            // Clear saved credentials on login failure for security
+                            // Clear any saved credentials if checkbox is not checked
                             localStorage.removeItem('rememberedEmail');
                             localStorage.removeItem('rememberedPassword');
-                            recordarCheckbox.checked = false;
-
-                            alert('Error en login: ' + (data.message || 'Credenciales inválidas'));
+                            console.log('Remember me not checked, credentials cleared');
                         }
-                    } catch (error) {
-                        console.error('Error de conexión:', error);
 
-                        // Hide spinner if it's showing
+                        // Redirección según el rol
+                        let redirectUrl = '/index.html';
+                        if (data.role === "ADMIN") redirectUrl = '/dashboard/admin';
+                        else if (data.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
+                        else if (data.role === "USER") redirectUrl = '/dashboard/user';
+
+                        console.log('Redirecting to:', redirectUrl);
+
+                        // Show SENA loading spinner before redirect
+                        showSenaSpinner();
+
+                        // Redirect after a short delay to show the spinner
+                        setTimeout(() => {
+                            window.location.href = redirectUrl;
+                        }, 1500);
+                    } else {
+                        console.error('Error en login:', data.message || 'Credenciales inválidas');
                         hideSenaSpinner();
 
-                        alert('Error de conexión. Inténtalo de nuevo.');
+                        // Clear saved credentials on login failure for security
+                        localStorage.removeItem('rememberedEmail');
+                        localStorage.removeItem('rememberedPassword');
+                        recordarCheckbox.checked = false;
+
+                        alert('Error en login: ' + (data.message || 'Credenciales inválidas'));
                     }
-                };
+                } catch (error) {
+                    console.error('Error de conexión:', error);
+                    hideSenaSpinner();
+                    alert('Error de conexión. Inténtalo de nuevo.');
+                }
             });
-        </script>
-
-
+        });
+    </script>
 </body>
 </html>
