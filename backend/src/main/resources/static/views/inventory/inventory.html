@@ -251,6 +251,7 @@
     <script src="../../js/inventory/inventory-filters.js"></script>
     <script src="../../js/inventory/inventory-forms.js"></script>
     <script src="../../js/inventory/inventory-modals.js"></script>
+    <script src="../../js/inventory/inventory-modals.js"></script>
     <script src="../../js/inventory/inventory-pagination.js"></script>
     <script src="../../js/inventory/inventory-toast.js"></script>
     <script src="../../js/inventory/inventory-ui.js"></script>
@@ -359,6 +360,33 @@
             }
         }
     </script>
+
+    <!-- Delete Inventory Modal -->
+    <div id="deleteInventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-red-600">Eliminar Inventario</h2>
+                <button onclick="closeDeleteInventoryModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro?</h3>
+                <p class="text-gray-600" id="deleteInventoryMessage">Esta acción no se puede deshacer.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeDeleteInventoryModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmDeleteInventory()" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors">
+                    Eliminar Inventario
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

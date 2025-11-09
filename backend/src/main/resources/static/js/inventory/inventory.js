@@ -68,159 +68,32 @@ function setupEventListeners() {
 // These functions delegate to the appropriate modules
 
 // Modal functions
-function showNewInventoryModal() {
-    if (typeof window.showNewInventoryModal === 'function') {
-        window.showNewInventoryModal();
-    }
-}
-
-function closeNewInventoryModal() {
-    if (typeof window.closeNewInventoryModal === 'function') {
-        window.closeNewInventoryModal();
-    }
-}
-
-function showViewInventoryModal(inventoryId) {
-    if (typeof window.showViewInventoryModal === 'function') {
-        window.showViewInventoryModal(inventoryId);
-    }
-}
-
-function closeViewInventoryModal() {
-    if (typeof window.closeViewInventoryModal === 'function') {
-        window.closeViewInventoryModal();
-    }
-}
-
-function showEditInventoryModal(inventoryId) {
-    if (typeof window.showEditInventoryModal === 'function') {
-        window.showEditInventoryModal(inventoryId);
-    }
-}
-
-function closeEditInventoryModal() {
-    if (typeof window.closeEditInventoryModal === 'function') {
-        window.closeEditInventoryModal();
-    }
-}
-
-function showDeleteInventoryModal(inventoryId) {
-    if (typeof window.showDeleteInventoryModal === 'function') {
-        window.showDeleteInventoryModal(inventoryId);
-    }
-}
-
-function closeDeleteInventoryModal() {
-    if (typeof window.closeDeleteInventoryModal === 'function') {
-        window.closeDeleteInventoryModal();
-    }
-}
-
-function showAssignInventoryModal(inventoryId) {
-    if (typeof window.showAssignInventoryModal === 'function') {
-        window.showAssignInventoryModal(inventoryId);
-    }
-}
-
-function closeAssignInventoryModal() {
-    if (typeof window.closeAssignInventoryModal === 'function') {
-        window.closeAssignInventoryModal();
-    }
-}
-
-function showAssignManagerModal(inventoryId) {
-    if (typeof window.showAssignManagerModal === 'function') {
-        window.showAssignManagerModal(inventoryId);
-    }
-}
-
-function closeAssignManagerModal() {
-    if (typeof window.closeAssignManagerModal === 'function') {
-        window.closeAssignManagerModal();
-    }
-}
 
 // Action functions
-function viewInventory(inventoryId) {
-    if (typeof window.viewInventory === 'function') {
-        window.viewInventory(inventoryId);
-    }
-}
+async function deleteInventory(inventoryId) {
+    try {
+        //showDeleteInventoryModal(inventoryId);
+        //return;
 
-function editInventory(inventoryId) {
-    if (typeof window.editInventory === 'function') {
-        window.editInventory(inventoryId);
-    }
-}
+        // Call the deleteInventory function from inventory-api.js
+        await deleteInventoryFromApi(inventoryId);
 
-function deleteInventory(inventoryId) {
-    if (typeof window.showDeleteInventoryModal === 'function') {
-        window.showDeleteInventoryModal(inventoryId);
-    }
-}
+        // Optionally, reload the inventory data to update the UI
+        await loadInventoryData();
 
-function showInventoryAssignment(inventoryId) {
-    if (typeof window.showInventoryAssignment === 'function') {
-        window.showInventoryAssignment(inventoryId);
-    }
-}
-
-function showInventoryManagerAssignment(inventoryId) {
-    if (typeof window.showInventoryManagerAssignment === 'function') {
-        window.showInventoryManagerAssignment(inventoryId);
+        // Show a success message
+        showInfoToast('Inventario eliminado', 'El inventario se ha eliminado correctamente.');
+    } catch (error) {
+        console.error('Error deleting inventory:', error);
+        showErrorToast('Error al eliminar', error.message || 'No se pudo eliminar el inventario.');
     }
 }
 
 // Filter functions
-function setLocationFilter(location) {
-    if (typeof window.setLocationFilter === 'function') {
-        window.setLocationFilter(location);
-    }
-}
-
-function setStatusFilter(status) {
-    if (typeof window.setStatusFilter === 'function') {
-        window.setStatusFilter(status);
-    }
-}
-
-function applySearchFilter() {
-    if (typeof window.applySearchFilter === 'function') {
-        window.applySearchFilter();
-    }
-}
 
 // Pagination functions
-function changePage(page) {
-    if (typeof window.changePage === 'function') {
-        window.changePage(page);
-    }
-}
 
 // Form submission handlers
-async function handleNewInventorySubmit(e) {
-    if (typeof window.handleNewInventorySubmit === 'function') {
-        await window.handleNewInventorySubmit(e);
-    }
-}
-
-async function handleEditInventorySubmit(e) {
-    if (typeof window.handleEditInventorySubmit === 'function') {
-        await window.handleEditInventorySubmit(e);
-    }
-}
-
-async function handleAssignInventorySubmit(e) {
-    if (typeof window.handleAssignInventorySubmit === 'function') {
-        await window.handleAssignInventorySubmit(e);
-    }
-}
-
-async function handleAssignManagerSubmit(e) {
-    if (typeof window.handleAssignManagerSubmit === 'function') {
-        await window.handleAssignManagerSubmit(e);
-    }
-}
 
 // Load inventory data function
 async function loadInventoryData() {
@@ -244,34 +117,10 @@ function logout() {
 }
 
 // Make global functions available
-window.showNewInventoryModal = showNewInventoryModal;
-window.closeNewInventoryModal = closeNewInventoryModal;
-window.showViewInventoryModal = showViewInventoryModal;
-window.closeViewInventoryModal = closeViewInventoryModal;
-window.showEditInventoryModal = showEditInventoryModal;
-window.closeEditInventoryModal = closeEditInventoryModal;
-window.showDeleteInventoryModal = showDeleteInventoryModal;
-window.closeDeleteInventoryModal = closeDeleteInventoryModal;
-window.showAssignInventoryModal = showAssignInventoryModal;
-window.closeAssignInventoryModal = closeAssignInventoryModal;
-window.showAssignManagerModal = showAssignManagerModal;
-window.closeAssignManagerModal = closeAssignManagerModal;
 
-window.viewInventory = viewInventory;
-window.editInventory = editInventory;
 window.deleteInventory = deleteInventory;
-window.showInventoryAssignment = showInventoryAssignment;
-window.showInventoryManagerAssignment = showInventoryManagerAssignment;
 
-window.setLocationFilter = setLocationFilter;
-window.setStatusFilter = setStatusFilter;
-window.applySearchFilter = applySearchFilter;
-window.changePage = changePage;
 
-window.handleNewInventorySubmit = handleNewInventorySubmit;
-window.handleEditInventorySubmit = handleEditInventorySubmit;
-window.handleAssignInventorySubmit = handleAssignInventorySubmit;
-window.handleAssignManagerSubmit = handleAssignManagerSubmit;
 
 window.loadInventoryData = loadInventoryData;
 window.logout = logout;

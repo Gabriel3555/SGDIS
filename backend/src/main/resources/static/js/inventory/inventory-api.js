@@ -191,7 +191,7 @@ async function updateInventory(inventoryId, updateData) {
     }
 }
 
-async function deleteInventory(inventoryId) {
+async function deleteInventoryFromApi(inventoryId) {
     try {
         const token = localStorage.getItem('jwt');
         const headers = {
@@ -334,12 +334,59 @@ async function assignManager(managerData) {
     }
 }
 
+async function confirmDeleteInventory() {
+    if (!inventoryData.currentInventoryId) {
+        showErrorToast('Error', 'No se ha seleccionado un inventario para eliminar');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/inventory/${inventoryData.currentInventoryId}`, {
+            method: 'DELETE',
+            headers: headers
+        });
+
+        if (response.ok) {
+            showSuccessToast('Inventario eliminado', 'Inventario eliminado exitosamente');
+            closeDeleteInventoryModal();
+            await loadInventoryData();
+        } else if (response.status === 404) {
+            showErrorToast('Inventario no encontrado', 'El inventario que intenta eliminar no existe o ya fue eliminado.');
+            closeDeleteInventoryModal();
+            await loadInventoryData(); // Recargar la lista para reflejar cambios
+        } else if (response.status === 500) {
+            showErrorToast('Inventario en uso', 'No se puede eliminar este inventario porque contiene items asociados. Transfiere la propiedad de los inventarios a otro usuario antes de eliminarlo.');
+        } else if (response.status === 403) {
+            showErrorToast('Permisos insuficientes', 'No tienes permisos para eliminar este inventario.');
+        } else if (response.status === 401) {
+            showErrorToast('Sesión expirada', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+        } else {
+            try {
+                const errorData = await response.json();
+                showErrorToast('Error al eliminar inventario', errorData.message || 'Error desconocido');
+            } catch {
+                showErrorToast('Error al eliminar inventario', 'El inventario podría estar siendo utilizado en otros módulos del sistema.');
+            }
+        }
+    } catch (error) {
+        console.error('Error deleting inventory:', error);
+        showErrorToast('Error al eliminar inventario', 'Inténtalo de nuevo.');
+    }
+}
+
+window.confirmDeleteInventory = confirmDeleteInventory;
 window.loadInventoryData = loadInventoryData;
 window.loadCurrentUserInfo = loadCurrentUserInfo;
 window.loadInventories = loadInventories;
 window.createInventory = createInventory;
 window.updateInventory = updateInventory;
-window.deleteInventory = deleteInventory;
+window.deleteInventory = deleteInventoryFromApi;
 window.getInventoryById = getInventoryById;
 window.assignInventory = assignInventory;
 window.assignManager = assignManager;
