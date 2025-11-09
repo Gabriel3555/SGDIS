@@ -92,15 +92,25 @@ public class JpaInventoryRepository implements
 
     @Override
     public Inventory assignManagerInventory(Inventory inventory, User user) {
-        InventoryEntity entity = InventoryMapper.toEntity(inventory);
+        // Load the existing entity to preserve managers and other data
+        InventoryEntity existingEntity = springDataInventoryRepository.findById(inventory.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventory.getId()));
+        
         UserEntity manager = UserMapper.toEntity(user);
 
-        List<UserEntity> managers = entity.getManagers();
+        // Initialize managers list if null
+        List<UserEntity> managers = existingEntity.getManagers();
+        if (managers == null) {
+            managers = new java.util.ArrayList<>();
+            existingEntity.setManagers(managers);
+        }
 
-        managers.add(manager);
-        entity.setManagers(managers);
+        // Add manager only if not already present
+        if (!managers.contains(manager)) {
+            managers.add(manager);
+        }
 
-        InventoryEntity inventoryManager = springDataInventoryRepository.save(entity);
+        InventoryEntity inventoryManager = springDataInventoryRepository.save(existingEntity);
 
         return InventoryMapper.toDomain(inventoryManager);
     }
