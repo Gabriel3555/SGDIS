@@ -1,5 +1,6 @@
 package com.sgdis.backend.user.domain;
 
+import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.inventory.domain.Inventory;
 
 import java.util.List;
@@ -15,8 +16,9 @@ public class User {
     private Role role;
     private boolean status;
     private List<Inventory> inventories;
+    private List<RegionalEntity> regionals;
     
-    public User(Long id, String password, String email, String fullName, String jobTitle, String laborDepartment, String imgUrl, Role role, boolean status, List<Inventory> inventories) {
+    public User(Long id, String password, String email, String fullName, String jobTitle, String laborDepartment, String imgUrl, Role role, boolean status, List<Inventory> inventories, List<RegionalEntity> regionals) {
         this.id = id;
         this.password = password;
         this.email = email;
@@ -27,6 +29,7 @@ public class User {
         this.role = role;
         this.status = status;
         this.inventories = inventories;
+        this.regionals = regionals;
     }
 
     public User() {
@@ -111,4 +114,10 @@ public class User {
     public void setInventories(List<Inventory> inventories) {
         this.inventories = inventories;
     }
+
+    public List<RegionalEntity> getRegionals() {
+        return regionals;
+    }
+
+    public void setRegionals(List<RegionalEntity> regionals) {}
 }

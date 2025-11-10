@@ -83,7 +83,6 @@ public class SecurityConfig  {
                     http.requestMatchers("/dashboard/admin").hasRole("ADMIN");
                     http.requestMatchers("/dashboard/warehouse").hasRole("WAREHOUSE");
                     // API endpoints require authentication
-                    http.requestMatchers("/api/v1/users/**").authenticated();
                     http.anyRequest().permitAll();
                 });
 
