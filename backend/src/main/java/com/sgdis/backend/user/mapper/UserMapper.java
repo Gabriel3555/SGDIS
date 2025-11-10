@@ -28,10 +28,10 @@ public final class UserMapper {
                 entity.isStatus(),
                 entity.getInventories() != null
                         ? entity.getInventories().stream()
-                        // USAR SHALLOW para que NO vuelva a mapear users
                         .map(InventoryMapper::toDomainShallow)
                         .toList()
-                        : null
+                        : null,
+                entity.getRegionals()
         );
     }
 
@@ -73,7 +73,8 @@ public final class UserMapper {
                 user.getLaborDepartment(),
                 user.getImgUrl(),
                 user.getRole().name(),
-                user.isStatus()
+                user.isStatus(),
+                user.getRegionals()
         );
     }
 
@@ -88,7 +89,8 @@ public final class UserMapper {
                 null,
                 Role.valueOf(request.role().toUpperCase()),
                 request.status(),
-                null  // Los nuevos usuarios no tienen inventarios asignados inicialmente
+                null,  // Los nuevos usuarios no tienen inventarios asignados inicialmente
+                null
         );
     }
 
@@ -103,7 +105,8 @@ public final class UserMapper {
                 null,
                 Role.valueOf(request.role().toUpperCase()),
                 request.status(),
-                null  // Al actualizar, se mantienen los inventarios existentes
+                null,  // Al actualizar, se mantienen los inventarios existentes
+                null
         );
     }
 
@@ -119,7 +122,8 @@ public final class UserMapper {
                 entity.getImgUrl(),
                 entity.getRole(),
                 entity.isStatus(),
-                null // inventories NO mapeados
+                null, // inventories NO mapeados
+                null
         );
     }
 

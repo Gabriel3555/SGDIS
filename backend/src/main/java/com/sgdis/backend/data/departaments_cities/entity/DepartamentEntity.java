@@ -1,5 +1,6 @@
 package com.sgdis.backend.data.departaments_cities.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,6 +25,7 @@ public class DepartamentEntity {
     @Column(nullable = false)
     private String departament;
 
+    @JsonIgnore
     @Builder.Default
     @OneToMany(mappedBy = "departament", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CityEntity> cities = new ArrayList<>();

@@ -1,5 +1,6 @@
 package com.sgdis.backend.data.departaments_cities.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class CityEntity {
     @JoinColumn(name = "departament_id", nullable = false)
     private DepartamentEntity departament;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "city")
     private List<InstitutionEntity> institutions;
 }

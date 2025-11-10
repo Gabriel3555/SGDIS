@@ -18,7 +18,6 @@ public class InventoryMapper {
         return inventory;
     }
 
-    // Para cuando creas un inventario
     public static CreateInventoryResponse toCreateResponse(Inventory inventory) {
         return new CreateInventoryResponse(
                 inventory.getId(),
@@ -28,7 +27,6 @@ public class InventoryMapper {
         );
     }
 
-    // Para cuando lo devuelves en listados o consultas
     public static InventoryResponse toResponse(Inventory inventory) {
         return new InventoryResponse(
                 inventory.getId(),
@@ -45,9 +43,8 @@ public class InventoryMapper {
                 inventory.getUuid(),
                 inventory.getLocation(),
                 inventory.getName(),
-                // USAR SHALLOW para cortar ciclo
                 inventory.getOwner() != null ? UserMapper.toEntityShallow(inventory.getOwner()) : null,
-                null, // managers se cargan por separado si hace falta
+                null,
                 inventory.getRegionalEntities() != null && !inventory.getRegionalEntities().isEmpty()
                     ? inventory.getRegionalEntities().get(0)
                     : null
@@ -61,11 +58,10 @@ public class InventoryMapper {
                 entity.getUuid(),
                 entity.getLocation(),
                 entity.getName(),
-                // USAR SHALLOW para cortar ciclo
                 entity.getOwner() != null ? UserMapper.toDomainShallow(entity.getOwner()) : null,
                 entity.getManagers() != null
                         ? entity.getManagers().stream()
-                        .map(UserMapper::toDomainShallow) // managers en shallow
+                        .map(UserMapper::toDomainShallow)
                         .toList()
                         : null,
                 entity.getRegional() != null ? java.util.List.of(entity.getRegional()) : java.util.Collections.emptyList()
@@ -123,8 +119,8 @@ public class InventoryMapper {
                 entity.getUuid(),
                 entity.getLocation(),
                 entity.getName(),
-                null, // owner NO mapeado
-                null,  // managers NO mapeados
+                null,
+                null,
                 entity.getRegional() != null ? java.util.List.of(entity.getRegional()) : java.util.Collections.emptyList()
         );
     }
@@ -136,8 +132,8 @@ public class InventoryMapper {
                 inventory.getUuid(),
                 inventory.getLocation(),
                 inventory.getName(),
-                null, // owner NO mapeado
-                null,  // managers NO mapeados
+                null,
+                null,
                 inventory.getRegionalEntities() != null && !inventory.getRegionalEntities().isEmpty()
                     ? inventory.getRegionalEntities().get(0)
                     : null

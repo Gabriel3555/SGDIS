@@ -62,7 +62,6 @@ public class UserController {
         return getUserByIdUseCase.getUserById(id);
     }
 
-
     @Operation(
             summary = "List all users",
             description = "Retrieves all users (Admin only)"
@@ -73,8 +72,7 @@ public class UserController {
             content = @Content(schema = @Schema(implementation = UserResponse.class))
     )
     @ApiResponse(responseCode = "403", description = "Access denied")
-    @GetMapping()
-    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping
     public List<UserResponse> listUsers() {
         return listUserUseCase.listUsers();
     }
@@ -90,7 +88,7 @@ public class UserController {
     )
     @ApiResponse(responseCode = "400", description = "Invalid request")
     @ApiResponse(responseCode = "403", description = "Access denied")
-    @PostMapping()
+    @PostMapping
     public UserResponse createUser(@RequestBody CreateUserRequest request) {
         return createUserUseCase.createUser(request);
     }
@@ -215,7 +213,6 @@ public class UserController {
     )
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @GetMapping("/me/inventories")
-    @PreAuthorize("hasRole('USER') or hasRole('WAREHOUSE') or hasRole('ADMIN')")
     public List<ManagedInventoryResponse> getMyManagedInventories() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = (Long) authentication.getPrincipal();
@@ -234,7 +231,6 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "403", description = "Access denied")
     @GetMapping("/{userId}/inventories")
-    @PreAuthorize("hasRole('ADMIN')")
     public List<ManagedInventoryResponse> getManagedInventoriesByUserId(@PathVariable Long userId) {
         return getManagedInventoriesUseCase.getManagedInventories(userId);
     }

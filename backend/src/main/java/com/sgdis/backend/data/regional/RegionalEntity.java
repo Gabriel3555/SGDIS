@@ -1,5 +1,6 @@
 package com.sgdis.backend.data.regional;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
@@ -29,12 +30,15 @@ public class RegionalEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     private DepartamentEntity departament;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "regional")
     private List<InstitutionEntity> institutions;
 
+    @JsonIgnore
     @ManyToMany(mappedBy = "regionals")
     private List<UserEntity> users;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "regional")
     private  List<InventoryEntity>  inventory;
 }
