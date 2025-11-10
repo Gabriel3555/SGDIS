@@ -52,7 +52,7 @@ async function handleNewUserSubmit(e) {
             await loadUsersData();
         } else {
             const errorData = await response.json();
-            showErrorToast('Error al crear usuario', errorData.message || 'Error desconocido');
+            showErrorToast('Error al crear usuario', errorData.detail || 'Error desconocido');
         }
     } catch (error) {
         showErrorToast('Error al crear usuario', 'Inténtalo de nuevo.');
@@ -114,23 +114,25 @@ async function handleEditUserSubmit(e) {
                     showWarningToast('Imagen no subida', 'Usuario actualizado pero error al subir la imagen. Puedes subirla después desde el botón de cambiar foto.');
                 }
             } else {
-                showSuccessToast('Usuario actualizado', 'Usuario actualizado exitosamente');
+                showSuccessToast('Usuario actualizado', 'Usuario actualizado exitosamente (datos recargados)');
+                closeEditUserModal();
+                loadUsersData();
+                setTimeout(() => {
+                    updateUsersUI();
+                }, 200);
             }
 
             closeEditUserModal();
-
             await loadUsersData();
 
             setTimeout(() => {
                 updateUsersUI();
             }, 200);
         } else {
-            showSuccessToast('Usuario actualizado', 'Usuario actualizado exitosamente (datos recargados)');
+            const errorData = await response.json();
+            showErrorToast('Error al actualizar usuario', errorData.detail ||'Error del servidor');
             closeEditUserModal();
-            loadUsersData();
-            setTimeout(() => {
-                updateUsersUI();
-            }, 200);
+            await loadUsersData();
         }
     } catch (error) {
         showErrorToast('Error al actualizar usuario', 'Inténtalo de nuevo.');
@@ -152,7 +154,7 @@ function editUser(userId) {
     showEditUserModal(userId);
 }
 
-window.deleteUser = function(userId) {
+window.deleteUser = function (userId) {
     showDeleteUserModal(userId);
 }
 

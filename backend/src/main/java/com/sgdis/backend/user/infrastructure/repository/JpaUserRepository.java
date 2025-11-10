@@ -1,20 +1,34 @@
 package com.sgdis.backend.user.infrastructure.repository;
 
-import com.sgdis.backend.data.regional.RegionalEntity;
-import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
-import com.sgdis.backend.exception.ResourceNotFoundException;
+import com.sgdis.backend.exception.userExceptions.RegionalNotFoundException;
+import com.sgdis.backend.exception.userExceptions.UserAlreadyAssignedToRegionalException;
+import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
+import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.user.application.dto.AssignRegionalRequest;
 import com.sgdis.backend.user.application.dto.UserRegionalDto;
-import com.sgdis.backend.user.application.port.out.*;
+import com.sgdis.backend.user.application.port.out.AssignRegionalRepository;
+import com.sgdis.backend.user.application.port.out.CreateUserRepository;
+import com.sgdis.backend.user.application.port.out.DeleteUserRepository;
+import com.sgdis.backend.user.application.port.out.GetManagedInventoriesRepository;
+import com.sgdis.backend.user.application.port.out.GetUserByEmailRepository;
+import com.sgdis.backend.user.application.port.out.GetUserByIdRepository;
+import com.sgdis.backend.user.application.port.out.ListUserRepository;
+import com.sgdis.backend.user.application.port.out.UpdateUserRepository;
 import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.mapper.UserMapper;
-import com.sgdis.backend.inventory.mapper.InventoryMapper;
+
+
+// Infra de Regional
+import com.sgdis.backend.data.regional.RegionalEntity;
+import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
+
+// Spring y utilidades
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
@@ -26,7 +40,7 @@ public class JpaUserRepository implements
         GetUserByIdRepository,
         GetUserByEmailRepository,
         GetManagedInventoriesRepository,
-        AssignRegionalRepository{
+        AssignRegionalRepository {
 
     private final SpringDataUserRepository repository;
     private final SpringDataRegionalRepository regionalRepository;
@@ -46,7 +60,7 @@ public class JpaUserRepository implements
     @Override
     public void deleteById(Long id) {
         if (!repository.existsById(id)) {
-            throw new ResourceNotFoundException("No user found with id " + id);
+            throw new UserNotFoundException(id);
         }
         repository.deleteById(id);
     }
@@ -62,51 +76,55 @@ public class JpaUserRepository implements
     public User findUserById(Long id) {
         return repository.findById(id)
                 .map(UserMapper::toDomain)
-                .orElseThrow(()->new ResourceNotFoundException("No user found with id " + id));
+                .orElseThrow(() -> new UserNotFoundException(id));
     }
 
     @Override
     public User findUserByEmail(String email) {
         return repository.findByEmail(email)
                 .map(UserMapper::toDomain)
-                .orElseThrow(()->new ResourceNotFoundException("No user found with email " + email));
+                .orElseThrow(() -> new UserNotFoundException(email));
     }
 
     @Override
     public List<com.sgdis.backend.inventory.domain.Inventory> findManagedInventoriesByUserId(Long userId) {
         if (!repository.existsById(userId)) {
-            throw new ResourceNotFoundException("No user found with id " + userId);
+            throw new UserNotFoundException(userId);
         }
         return repository.findManagedInventoriesByUserId(userId).stream()
                 .map(InventoryMapper::toDomain)
                 .toList();
     }
 
+    /**
+     * Asigna una regional a un usuario.
+     * - Valida existencia de User y Regional (404 si no existen).
+     * - Evita duplicados (409 si ya está asignado).
+     * - Transacción para mantener consistencia en ambos lados de la relación.
+     */
     @Override
+    @Transactional
     public UserRegionalDto assignRegional(AssignRegionalRequest request) {
-        Optional<UserEntity> userEntity = repository.findById(request.userId());
-        Optional<RegionalEntity> regionalEntity = regionalRepository.findById(request.regionalId());
+        UserEntity user = repository.findById(request.userId())
+                .orElseThrow(() -> new UserNotFoundException(request.userId()));
 
-        userEntity.ifPresent(userEntity1 -> {
-            regionalEntity.ifPresent(regionalEntity1 -> {
+        RegionalEntity regional = regionalRepository.findById(request.regionalId())
+                .orElseThrow(() -> new RegionalNotFoundException(request.regionalId()));
 
-                //User side
-                List<RegionalEntity> regionalEntities = userEntity1.getRegionals();
-                regionalEntities.add(regionalEntity1);
-                userEntity1.setRegionals(regionalEntities);
-                regionalRepository.save(regionalEntity1);
+        boolean alreadyAssigned = user.getRegionals().stream()
+                .anyMatch(r -> r.getId().equals(regional.getId()));
+        if (alreadyAssigned) {
+            throw new UserAlreadyAssignedToRegionalException(request.userId(), request.regionalId());
+        }
 
-                //Regionals side
-                List<UserEntity> userEntities = regionalEntity1.getUsers();
-                userEntities.add(userEntity1);
-                regionalEntity1.setUsers(userEntities);
-                regionalRepository.save(regionalEntity1);
-            });
-        });
+        // Mantener consistencia en memoria (bidireccional)
+        user.getRegionals().add(regional);
+        regional.getUsers().add(user);
 
-        UserEntity savedUser = repository.findById(request.userId()).orElseThrow();
-        RegionalEntity savedRegional = regionalRepository.findById(request.regionalId()).orElseThrow();
+        // Guardar el lado propietario de la relación.
+        // Ajusta si en tu mapeo @ManyToMany el propietario es RegionalEntity (en ese caso guarda regionalRepository.save(regional)).
+        repository.save(user);
 
-        return new UserRegionalDto(savedUser, savedRegional);
+        return new UserRegionalDto(user, regional);
     }
 }
