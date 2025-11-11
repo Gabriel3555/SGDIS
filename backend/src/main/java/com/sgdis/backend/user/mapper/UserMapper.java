@@ -3,6 +3,7 @@ package com.sgdis.backend.user.mapper;
 import com.sgdis.backend.user.application.dto.CreateUserRequest;
 import com.sgdis.backend.user.application.dto.UpdateUserRequest;
 import com.sgdis.backend.user.application.dto.UserResponse;
+import com.sgdis.backend.user.application.dto.UserResponseWithoutRegionals;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 
@@ -23,6 +24,18 @@ public final class UserMapper {
                 entity.getRole().name(),
                 entity.isStatus(),
                 entity.getRegionals()
+        );
+    }
+
+    public static UserResponseWithoutRegionals toResponseWithoutRegional(UserEntity entity) {
+        return new UserResponseWithoutRegionals(
+                entity.getEmail(),
+                entity.getFullName(),
+                entity.getJobTitle(),
+                entity.getLaborDepartment(),
+                entity.getImgUrl(),
+                entity.getRole().name(),
+                entity.isStatus()
         );
     }
 
@@ -68,5 +81,4 @@ public final class UserMapper {
                 .inventories(null)
                 .build();
     }
-
 }

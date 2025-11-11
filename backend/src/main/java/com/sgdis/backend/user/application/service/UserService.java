@@ -40,7 +40,6 @@ public class UserService implements
     private final SpringDataRegionalRepository regionalRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // Política de email permitido
     private static final Pattern ALLOWED_EMAIL =
             Pattern.compile("^[A-Za-z0-9._%+-]+@(soy\\.sena\\.edu\\.co|sena\\.edu\\.co)$");
 
@@ -66,17 +65,14 @@ public class UserService implements
     @Override
     @Transactional
     public UserResponse createUser(CreateUserRequest createUserRequest) {
-        // 1) Validar dominio del email
         if (!isAllowedEmail(createUserRequest.email())) {
             throw new InvalidEmailDomainException(createUserRequest.email());
         }
 
-        // 2) Verificar que el email no exista
         if (userRepository.findByEmail(createUserRequest.email()).isPresent()) {
             throw new EmailAlreadyInUseException(createUserRequest.email());
         }
 
-        // 3) Mapear a entidad, hashear password, persistir
         UserEntity user = UserMapper.fromCreateRequest(createUserRequest);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
@@ -87,30 +83,24 @@ public class UserService implements
     @Override
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest updateUserRequest) {
-        // 0) Obtener el ID del usuario autenticado
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long currentUserId = (Long) authentication.getPrincipal();
-        
-        // 0.1) Cargar usuario actual para preservar campos
+
         UserEntity existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         
-        // 0.2) Validar que el usuario no pueda desactivar su propio estado
         if (currentUserId.equals(id) && updateUserRequest.status() != null && !updateUserRequest.status()) {
             throw new DomainValidationException("No puedes desactivar tu propio estado de usuario");
         }
 
-        // 1) Si viene email en el request y cambia, validar dominio y unicidad
         if (updateUserRequest.email() != null) {
             String newEmail = updateUserRequest.email();
             String oldEmail = existingUser.getEmail();
 
             if (!newEmail.equalsIgnoreCase(oldEmail)) {
-                // 1.a) Dominio permitido
                 if (!isAllowedEmail(newEmail)) {
                     throw new InvalidEmailDomainException(newEmail);
                 }
-                // 1.b) Unicidad (si otro usuario ya lo usa)
                 userRepository.findByEmail(newEmail).ifPresent(other -> {
                     if (!other.getId().equals(id)) {
                         throw new EmailAlreadyInUseException(newEmail);
@@ -119,10 +109,8 @@ public class UserService implements
             }
         }
 
-        // 2) Mapear cambios y preservar campos existentes
         UserEntity user = UserMapper.fromUpdateRequest(updateUserRequest, id);
 
-        // 2.a) Password: mantener si no viene, o hashear si sí
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
             user.setPassword(existingUser.getPassword());
         } else {
@@ -133,7 +121,6 @@ public class UserService implements
         if (user.getJobTitle() == null) user.setJobTitle(existingUser.getJobTitle());
         if (user.getLaborDepartment() == null) user.setLaborDepartment(existingUser.getLaborDepartment());
 
-        // 3) Persistir
         UserEntity updated = userRepository.save(user);
         return UserMapper.toResponse(updated);
     }
@@ -162,11 +149,9 @@ public class UserService implements
             throw new UserAlreadyAssignedToRegionalException(request.userId(), request.regionalId());
         }
 
-        // Mantener consistencia en memoria (bidireccional)
         user.getRegionals().add(regional);
         regional.getUsers().add(user);
 
-        // Guardar el lado propietario de la relación
         userRepository.save(user);
 
         return new AssignRegionalResponse(

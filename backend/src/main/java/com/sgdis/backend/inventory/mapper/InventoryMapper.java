@@ -2,6 +2,7 @@ package com.sgdis.backend.inventory.mapper;
 
 import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.user.mapper.UserMapper;
 
 import java.util.UUID;
 
@@ -30,7 +31,9 @@ public class InventoryMapper {
                 entity.getUuid(),
                 entity.getLocation(),
                 entity.getName(),
-                entity.getOwner()
+                entity.getOwner() != null
+                        ? UserMapper.toResponseWithoutRegional(entity.getOwner())
+                        : null
         );
     }
 
