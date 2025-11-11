@@ -13,12 +13,10 @@ import com.sgdis.backend.auth.application.port.RegisterUseCase;
 import com.sgdis.backend.auth.application.port.SearchUsernameUseCase;
 import com.sgdis.backend.auth.utils.JwtUtils;
 import com.sgdis.backend.user.domain.Role;
-import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
-import com.sgdis.backend.user.infrastructure.repository.JpaUserRepository;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
-import com.sgdis.backend.user.mapper.UserMapper;
 import com.sgdis.backend.user.application.service.FileUploadService;
+import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -43,8 +41,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase, SearchUsernameUseCase, RefreshTokenUseCase, RegisterUseCase, UserDetailsService {
 
-    private final JpaUserRepository userRepository;
-    private final SpringDataUserRepository springDataUserRepository;
+    private final SpringDataUserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final FileUploadService fileUploadService;
@@ -54,7 +51,8 @@ public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase,
         String email = authLoginRequest.email();
         String password = authLoginRequest.password();
 
-        User user = userRepository.findUserByEmail(email);
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
 
         if (!user.isStatus()) {
             throw new BadCredentialsException("Invalid email or password!");
@@ -71,7 +69,8 @@ public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase,
 
     @Override
     public Authentication authenticate(Long id, String password) {
-        User user = userRepository.findUserById(id);
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
         UserDetails userDetails = this.searchUserDetails(user.getEmail());
 
         if (userDetails == null) {
@@ -87,7 +86,8 @@ public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase,
 
     @Override
     public UserDetails searchUserDetails(String email) {
-        User user = userRepository.findUserByEmail(email);
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException(email));
 
         GrantedAuthority role = new SimpleGrantedAuthority("ROLE_".concat(user.getRole().name()));
 
@@ -100,7 +100,8 @@ public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase,
             DecodedJWT decodedJWT = jwtUtils.verifyToken(request.refreshToken());
             Long userId = decodedJWT.getClaim("userId").asLong();
 
-            User user = userRepository.findUserById(userId);
+            UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UserNotFoundException(userId));
 
             if (!user.isStatus()) {
                 throw new BadCredentialsException("Invalid username or password!");
@@ -127,26 +128,27 @@ public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase,
             throw new IllegalArgumentException("Email must be from @soy.sena.edu.co or @sena.edu.co domain");
         }
 
-        if (springDataUserRepository.findByEmail(request.email()).isPresent()) {
+        if (userRepository.findByEmail(request.email()).isPresent()) {
             throw new IllegalArgumentException("Email already exists");
         }
 
-        User user = new User();
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setEmail(request.email());
-        user.setFullName(request.fullName());
-        user.setJobTitle(request.jobTitle());
-        user.setLaborDepartment(request.laborDepartment());
-        user.setImgUrl(null);
-        user.setRole(Role.USER);
-        user.setStatus(true);
+        UserEntity user = UserEntity.builder()
+                .password(passwordEncoder.encode(request.password()))
+                .email(request.email())
+                .fullName(request.fullName())
+                .jobTitle(request.jobTitle())
+                .laborDepartment(request.laborDepartment())
+                .imgUrl(null)
+                .role(Role.USER)
+                .status(true)
+                .build();
 
-        UserEntity entity = UserMapper.toEntity(user);
-        springDataUserRepository.save(entity);
+        userRepository.save(user);
     }
 
     public void updateProfileImage(Long userId, MultipartFile file) throws IOException {
-        User user = userRepository.findUserById(userId);
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
 
         if (user.getImgUrl() != null) {
             fileUploadService.deleteFile(user.getImgUrl());
@@ -155,8 +157,7 @@ public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase,
         String imgUrl = fileUploadService.saveFile(file, user.getEmail());
         user.setImgUrl(imgUrl);
 
-        UserEntity entity = UserMapper.toEntity(user);
-        springDataUserRepository.save(entity);
+        userRepository.save(user);
     }
 
     @Override

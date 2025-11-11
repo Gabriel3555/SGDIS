@@ -2,13 +2,10 @@ package com.sgdis.backend.user.web;
 
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
-import com.sgdis.backend.user.application.port.out.CreateUserRepository;
 import com.sgdis.backend.user.application.service.FileUploadService;
-import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
-import com.sgdis.backend.user.infrastructure.repository.JpaUserRepository;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
-import com.sgdis.backend.user.mapper.UserMapper;
+import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -42,8 +39,7 @@ public class UserController {
     private final DeleteUserUseCase deleteUserUseCase;
     private final GetManagedInventoriesUseCase getManagedInventoriesUseCase;
     private final AssignRegionalUseCase assignRegionalUseCase;
-    private final JpaUserRepository userRepository;
-    private final SpringDataUserRepository springDataUserRepository;
+    private final SpringDataUserRepository userRepository;
     private final FileUploadService fileUploadService;
 
     @Operation(
@@ -157,7 +153,8 @@ public class UserController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Long userId = (Long) authentication.getPrincipal();
-            User user = userRepository.findUserById(userId);
+            UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new UserNotFoundException(userId));
 
             if (user.getImgUrl() != null) {
                 fileUploadService.deleteFile(user.getImgUrl());
@@ -166,8 +163,7 @@ public class UserController {
             String imgUrl = fileUploadService.saveFile(file, user.getEmail());
             user.setImgUrl(imgUrl);
 
-            UserEntity entity = UserMapper.toEntity(user);
-            springDataUserRepository.save(entity);
+            userRepository.save(user);
             return ResponseEntity.ok("Profile image updated successfully");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error updating profile image: " + e.getMessage());
@@ -185,7 +181,8 @@ public class UserController {
     @PostMapping("/{id}/image")
     public ResponseEntity<String> uploadUserImageById(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
         try {
-            User user = userRepository.findUserById(id);
+            UserEntity user = userRepository.findById(id)
+                    .orElseThrow(() -> new UserNotFoundException(id));
 
             if (user.getImgUrl() != null) {
                 fileUploadService.deleteFile(user.getImgUrl());
@@ -194,8 +191,7 @@ public class UserController {
             String imgUrl = fileUploadService.saveFile(file, user.getEmail());
             user.setImgUrl(imgUrl);
 
-            UserEntity entity = UserMapper.toEntity(user);
-            springDataUserRepository.save(entity);
+            userRepository.save(user);
             return ResponseEntity.ok("User image updated successfully");
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error updating user image: " + e.getMessage());

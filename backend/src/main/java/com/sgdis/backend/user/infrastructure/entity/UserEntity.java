@@ -1,5 +1,6 @@
 package com.sgdis.backend.user.infrastructure.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.user.domain.Role;
@@ -34,9 +35,11 @@ public class UserEntity {
     private Role role;
     private boolean status = true;
 
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER, mappedBy = "managers")
     private List<InventoryEntity> inventories;
 
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(name = "user_regionals",
             joinColumns = @JoinColumn(name = "user_id"),

@@ -11,10 +11,8 @@ import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.user.domain.Role;
-import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
-import com.sgdis.backend.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -139,18 +137,18 @@ public class DataInitializer implements CommandLineRunner {
     private void createUserIfNotExists(String email, String password, String fullName,
                                        String jobTitle, String laborDepartment, Role role) {
         if (userRepository.findByEmail(email).isEmpty()) {
-            User user = new User();
-            user.setEmail(email);
-            user.setPassword(passwordEncoder.encode(password));
-            user.setFullName(fullName);
-            user.setJobTitle(jobTitle);
-            user.setLaborDepartment(laborDepartment);
-            user.setRole(role);
-            user.setStatus(true);
-            user.setImgUrl(null);
+            UserEntity user = UserEntity.builder()
+                    .email(email)
+                    .password(passwordEncoder.encode(password))
+                    .fullName(fullName)
+                    .jobTitle(jobTitle)
+                    .laborDepartment(laborDepartment)
+                    .role(role)
+                    .status(true)
+                    .imgUrl(null)
+                    .build();
 
-            UserEntity entity = UserMapper.toEntity(user);
-            userRepository.save(entity);
+            userRepository.save(user);
             System.out.println("Created default user: " + email + " with role: " + role);
         }
     }
