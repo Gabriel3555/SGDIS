@@ -8,6 +8,9 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+
+
+//change password
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
