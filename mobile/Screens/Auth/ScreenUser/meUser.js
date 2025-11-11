@@ -10,18 +10,25 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
 
 export default function MeUserScreen() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [localImageUri, setLocalImageUri] = useState(null);
   const navigation = useNavigation();
 
   useEffect(() => {
     fetchUserData();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUserData();
+    }, [])
+  );
 
   const fetchUserData = async () => {
     try {
@@ -38,6 +45,10 @@ export default function MeUserScreen() {
       });
 
       setUser(response.data);
+
+      // Load local profile image
+      const localImage = await AsyncStorage.getItem(`userProfileImage_${response.data.email}`);
+      setLocalImageUri(localImage);
     } catch (error) {
       console.error("Error fetching user data:", error);
       Alert.alert("Error", "No se pudo cargar la información del usuario");
@@ -88,7 +99,9 @@ export default function MeUserScreen() {
       <View style={styles.header}>
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
-            {user.imgUrl ? (
+            {localImageUri ? (
+              <Image source={{ uri: localImageUri }} style={styles.avatar} />
+            ) : user.imgUrl ? (
               <Image source={{ uri: user.imgUrl }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
@@ -143,7 +156,7 @@ export default function MeUserScreen() {
       <View style={styles.actionsSection}>
         <Text style={styles.sectionTitle}>Acciones</Text>
         <View style={styles.actionsGrid}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('ChangePhoto', { userEmail: user.email })}>
             <Ionicons name="camera-outline" size={24} color="#28a745" />
             <Text style={styles.actionText}>Cambiar Foto</Text>
           </TouchableOpacity>
