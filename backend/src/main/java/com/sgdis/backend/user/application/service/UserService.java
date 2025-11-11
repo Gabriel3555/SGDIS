@@ -34,7 +34,9 @@ public class UserService implements
         GetUserByIdUseCase,
         CreateUserUseCase,
         UpdateUserUseCase,
-        DeleteUserUseCase {
+        DeleteUserUseCase,
+        ChangePasswordUseCase
+{
 
     private final SpringDataUserRepository userRepository;
     private final SpringDataRegionalRepository regionalRepository;
@@ -158,5 +160,25 @@ public class UserService implements
                 "Succesfull regional assigned",
                 user.getFullName()
         );
+    }
+
+
+    @Override
+    public ChangePasswordResponse changePassword(ChangePasswordRequest changePasswordRequest) {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        if (user.getPassword() == null || user.getPassword().isEmpty()) {
+            throw new InvalidEmailDomainException(user.getEmail());
+        }
+
+        if (passwordEncoder.matches(changePasswordRequest.oldPassword(), user.getPassword())) {
+            user.setPassword(passwordEncoder.encode(changePasswordRequest.newPassword()));
+        }
+
+        userRepository.save(user);
+        return new ChangePasswordResponse("Password changed successfully",user.getFullName());
     }
 }

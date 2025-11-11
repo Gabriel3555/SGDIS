@@ -58,7 +58,6 @@ public final class UserMapper {
     public static UserEntity fromUpdateRequest(UpdateUserRequest request, Long id) {
         return UserEntity.builder()
                 .id(id)
-                .password(request.password())
                 .email(request.email())
                 .fullName(request.fullName())
                 .role(Role.valueOf(request.role().toUpperCase()))

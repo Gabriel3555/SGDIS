@@ -6,6 +6,5 @@ public record UpdateUserRequest(
         String laborDepartment,
         String email,
         String role,
-        Boolean status,
-        String password
+        Boolean status
 ) {}

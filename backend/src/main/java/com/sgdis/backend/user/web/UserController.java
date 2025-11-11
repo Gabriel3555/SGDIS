@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,6 +38,7 @@ public class UserController {
     private final CreateUserUseCase createUserUseCase;
     private final UpdateUserUseCase updateUserUseCase;
     private final DeleteUserUseCase deleteUserUseCase;
+    private final ChangePasswordUseCase changePasswordUseCase;
     private final GetManagedInventoriesUseCase getManagedInventoriesUseCase;
     private final AssignRegionalUseCase assignRegionalUseCase;
     private final SpringDataUserRepository userRepository;
@@ -236,4 +238,8 @@ public class UserController {
         return assignRegionalUseCase.assignRegional(assignRegionalRequest);
     }
 
+    @PostMapping("/changePassword")
+    public ChangePasswordResponse changePassword(@RequestBody @Valid ChangePasswordRequest changePasswordRequest) {
+        return changePasswordUseCase.changePassword(changePasswordRequest);
+    }
 }
