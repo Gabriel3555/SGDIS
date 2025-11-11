@@ -124,6 +124,46 @@ function showEditUserModal(userId) {
         if (jobTitleInput) jobTitleInput.value = user.jobTitle || '';
         if (laborDepartmentInput) laborDepartmentInput.value = user.laborDepartment || '';
         if (statusSelect) statusSelect.value = user.status !== false ? 'true' : 'false';
+        
+        // Check if editing own user and disable status field if trying to deactivate
+        const isEditingOwnUser = usersData.currentLoggedInUserId && usersData.currentLoggedInUserId === numericUserId;
+        if (statusSelect && isEditingOwnUser) {
+            // Add warning message container if it doesn't exist
+            let warningContainer = document.getElementById('editUserStatusWarning');
+            if (!warningContainer) {
+                warningContainer = document.createElement('div');
+                warningContainer.id = 'editUserStatusWarning';
+                warningContainer.className = 'mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg';
+                statusSelect.parentElement.appendChild(warningContainer);
+            }
+            
+            // Show warning and disable inactive option
+            warningContainer.innerHTML = `
+                <div class="flex items-start gap-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+                    <p class="text-sm text-yellow-800">
+                        <strong>Nota:</strong> No puedes desactivar tu propio estado de usuario. Si necesitas desactivar esta cuenta, solicita a otro administrador que lo haga.
+                    </p>
+                </div>
+            `;
+            warningContainer.style.display = 'block';
+            
+            // Disable the "Inactivo" option
+            const inactiveOption = statusSelect.querySelector('option[value="false"]');
+            if (inactiveOption) {
+                inactiveOption.disabled = true;
+            }
+        } else if (statusSelect) {
+            // Remove warning if exists and enable all options
+            const warningContainer = document.getElementById('editUserStatusWarning');
+            if (warningContainer) {
+                warningContainer.style.display = 'none';
+            }
+            const inactiveOption = statusSelect.querySelector('option[value="false"]');
+            if (inactiveOption) {
+                inactiveOption.disabled = false;
+            }
+        }
 
         const imagePreview = document.getElementById('editUserImagePreview');
         const currentImage = document.getElementById('editUserCurrentImage');
