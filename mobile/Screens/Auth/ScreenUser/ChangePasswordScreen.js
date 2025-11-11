@@ -12,13 +12,14 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
 
 export default function ChangePasswordScreen() {
+  const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleUpdatePassword = async () => {
-    if (!password || !confirmPassword) {
-      return Alert.alert("Error", "Por favor ingresa la nueva contraseña.");
+    if (!oldPassword || !password || !confirmPassword) {
+      return Alert.alert("Error", "Por favor ingresa todas las contraseñas.");
     }
 
     if (password !== confirmPassword) {
@@ -28,9 +29,9 @@ export default function ChangePasswordScreen() {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem("userToken");
-      await api.put(
-        "api/v1/users/me",
-        { password },
+      await api.post(
+        "api/v1/users/changePassword",
+        { oldPassword, newPassword: password },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -38,6 +39,7 @@ export default function ChangePasswordScreen() {
         }
       );
       Alert.alert("Éxito", "Contraseña actualizada correctamente.");
+      setOldPassword("");
       setPassword("");
       setConfirmPassword("");
     } catch (error) {
@@ -61,6 +63,14 @@ export default function ChangePasswordScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Actualizar Contraseña</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Contraseña actual"
+        secureTextEntry
+        value={oldPassword}
+        onChangeText={setOldPassword}
+      />
 
       <TextInput
         style={styles.input}
