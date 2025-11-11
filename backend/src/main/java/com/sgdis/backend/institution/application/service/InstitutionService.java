@@ -1,17 +1,14 @@
 package com.sgdis.backend.institution.application.service;
 
+import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.institution.application.dto.*;
 import com.sgdis.backend.institution.application.port.in.CreateInstitutionUseCase;
 import com.sgdis.backend.institution.application.port.in.GetAllInstitutionUseCase;
 import com.sgdis.backend.institution.application.port.in.GetByIdInstitutionUseCase;
 import com.sgdis.backend.institution.application.port.in.UpdateInstitutionUseCase;
-import com.sgdis.backend.institution.application.port.out.CreateInstitutionRepository;
-import com.sgdis.backend.institution.application.port.out.GetAllInstitutionRepository;
-import com.sgdis.backend.institution.application.port.out.GetByIdInstitutionRepository;
-import com.sgdis.backend.institution.application.port.out.UpdateInstitutionRepository;
-import com.sgdis.backend.institution.domain.Institution;
+import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
+import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
 import com.sgdis.backend.institution.mapper.InstitutionMapper;
-import com.sgdis.backend.user.application.dto.CreateUserRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +17,6 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-
 public class InstitutionService implements
         CreateInstitutionUseCase,
         GetAllInstitutionUseCase,
@@ -28,15 +24,12 @@ public class InstitutionService implements
         UpdateInstitutionUseCase
 {
 
-    private final CreateInstitutionRepository createInstitutionRepository;
-    private final UpdateInstitutionRepository updateInstitutionRepository;
-    private final GetByIdInstitutionRepository getByIdInstitutionRepository;
-    private final GetAllInstitutionRepository getAllInstitutionRepository;
+    private final SpringDataInstitutionRepository institutionRepository;
 
 
     @Override
     public List<GetAllInstitutionResponse> getAllInstitution() {
-        return getAllInstitutionRepository.getAllInstitutions()
+        return institutionRepository.findAll()
                 .stream()
                 .map(InstitutionMapper::toGetAllResponse)
                 .collect(Collectors.toList());
@@ -44,21 +37,22 @@ public class InstitutionService implements
 
     @Override
     public GetByIdResponse getById(Long id) {
-        return InstitutionMapper.toGetByIdResponse(getByIdInstitutionRepository.getById(id));
+        InstitutionEntity institution = institutionRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Institution with id " + id + " not found"));
+        return InstitutionMapper.toGetByIdResponse(institution);
     }
 
     @Override
     public UpdateInstitutionResponse updateInstitution(Long id, UpdateInstitutionRequest request) {
-        Institution institution = InstitutionMapper.toDomain(request,id);
-        Institution updatedInstitution = updateInstitutionRepository.updateInstitution(institution);
+        InstitutionEntity institution = InstitutionMapper.fromUpdateRequest(request, id);
+        InstitutionEntity updatedInstitution = institutionRepository.save(institution);
         return InstitutionMapper.toUpdateResponse(updatedInstitution);
-
     }
 
     @Override
     public InstitutionResponse createInstitution(CreateInstitutionRequest createInstitutionRequest) {
-        Institution institution = InstitutionMapper.toDomain(createInstitutionRequest);
-        Institution saved = createInstitutionRepository.createInstitution(institution);
+        InstitutionEntity institution = InstitutionMapper.fromCreateRequest(createInstitutionRequest);
+        InstitutionEntity saved = institutionRepository.save(institution);
         return InstitutionMapper.toResponse(saved);
     }
 }

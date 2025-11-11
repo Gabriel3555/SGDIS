@@ -1,9 +1,10 @@
 package com.sgdis.backend.user.application.service;
 
+import com.sgdis.backend.data.regional.RegionalEntity;
+import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
-import com.sgdis.backend.user.application.port.out.*;
-import com.sgdis.backend.user.domain.User;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.user.mapper.UserMapper;
 // Excepciones
@@ -11,6 +12,8 @@ import com.sgdis.backend.exception.DomainValidationException;
 import com.sgdis.backend.exception.userExceptions.InvalidEmailDomainException;
 import com.sgdis.backend.exception.userExceptions.EmailAlreadyInUseException;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
+import com.sgdis.backend.exception.userExceptions.RegionalNotFoundException;
+import com.sgdis.backend.exception.userExceptions.UserAlreadyAssignedToRegionalException;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -33,16 +36,8 @@ public class UserService implements
         UpdateUserUseCase,
         DeleteUserUseCase {
 
-    private final CreateUserRepository createUserRepository;
-    private final UpdateUserRepository updateUserRepository;
-    private final DeleteUserRepository deleteUserRepository;
-    private final ListUserRepository listUserRepository;
-    private final GetUserByIdRepository getUserByIdRepository;
-    private final GetUserByEmailRepository getUserByEmailRepository;
-    private final AssignRegionalRepository assignRegionalRepository;
-
-    private final SpringDataUserRepository springDataUserRepository;
-
+    private final SpringDataUserRepository userRepository;
+    private final SpringDataRegionalRepository regionalRepository;
     private final PasswordEncoder passwordEncoder;
 
     // Política de email permitido
@@ -55,12 +50,14 @@ public class UserService implements
 
     @Override
     public UserResponse getUserById(Long id) {
-        return UserMapper.toResponse(getUserByIdRepository.findUserById(id));
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        return UserMapper.toResponse(user);
     }
 
     @Override
     public List<UserResponse> listUsers() {
-        return listUserRepository.findAll()
+        return userRepository.findAll()
                 .stream()
                 .map(UserMapper::toResponse)
                 .collect(Collectors.toList());
@@ -74,19 +71,16 @@ public class UserService implements
             throw new InvalidEmailDomainException(createUserRequest.email());
         }
 
-        try {
-            getUserByEmailRepository.findUserByEmail(createUserRequest.email());
-            // Si no lanza UserNotFoundException, el email ya existe
+        // 2) Verificar que el email no exista
+        if (userRepository.findByEmail(createUserRequest.email()).isPresent()) {
             throw new EmailAlreadyInUseException(createUserRequest.email());
-        } catch (UserNotFoundException ignore) {
-            // OK: no existe y podemos continuar
         }
 
-        // 3) Mapear a dominio, hashear password, persistir
-        User user = UserMapper.toDomain(createUserRequest);
+        // 3) Mapear a entidad, hashear password, persistir
+        UserEntity user = UserMapper.fromCreateRequest(createUserRequest);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        User saved = createUserRepository.createUser(user);
+        UserEntity saved = userRepository.save(user);
         return UserMapper.toResponse(saved);
     }
 
@@ -98,7 +92,8 @@ public class UserService implements
         Long currentUserId = (Long) authentication.getPrincipal();
         
         // 0.1) Cargar usuario actual para preservar campos
-        User existingUser = getUserByIdRepository.findUserById(id);
+        UserEntity existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
         
         // 0.2) Validar que el usuario no pueda desactivar su propio estado
         if (currentUserId.equals(id) && updateUserRequest.status() != null && !updateUserRequest.status()) {
@@ -116,19 +111,16 @@ public class UserService implements
                     throw new InvalidEmailDomainException(newEmail);
                 }
                 // 1.b) Unicidad (si otro usuario ya lo usa)
-                try {
-                    User other = getUserByEmailRepository.findUserByEmail(newEmail);
+                userRepository.findByEmail(newEmail).ifPresent(other -> {
                     if (!other.getId().equals(id)) {
                         throw new EmailAlreadyInUseException(newEmail);
                     }
-                } catch (UserNotFoundException ignore) {
-                    // OK: no existe otro con ese email
-                }
+                });
             }
         }
 
         // 2) Mapear cambios y preservar campos existentes
-        User user = UserMapper.toDomain(updateUserRequest, id);
+        UserEntity user = UserMapper.fromUpdateRequest(updateUserRequest, id);
 
         // 2.a) Password: mantener si no viene, o hashear si sí
         if (user.getPassword() == null || user.getPassword().isEmpty()) {
@@ -142,25 +134,44 @@ public class UserService implements
         if (user.getLaborDepartment() == null) user.setLaborDepartment(existingUser.getLaborDepartment());
 
         // 3) Persistir
-        User updated = updateUserRepository.updateUser(user);
+        UserEntity updated = userRepository.save(user);
         return UserMapper.toResponse(updated);
     }
 
     @Override
     @Transactional
     public UserResponse deleteUser(Long id) {
-        User user = getUserByIdRepository.findUserById(id);
-        deleteUserRepository.deleteById(id);
+        UserEntity user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException(id));
+        userRepository.deleteById(id);
         return UserMapper.toResponse(user);
     }
 
     @Override
     @Transactional
     public AssignRegionalResponse assignRegional(AssignRegionalRequest request) {
-        UserRegionalDto userRegionalDto = assignRegionalRepository.assignRegional(request);
+        UserEntity user = userRepository.findById(request.userId())
+                .orElseThrow(() -> new UserNotFoundException(request.userId()));
+
+        RegionalEntity regional = regionalRepository.findById(request.regionalId())
+                .orElseThrow(() -> new RegionalNotFoundException(request.regionalId()));
+
+        boolean alreadyAssigned = user.getRegionals().stream()
+                .anyMatch(r -> r.getId().equals(regional.getId()));
+        if (alreadyAssigned) {
+            throw new UserAlreadyAssignedToRegionalException(request.userId(), request.regionalId());
+        }
+
+        // Mantener consistencia en memoria (bidireccional)
+        user.getRegionals().add(regional);
+        regional.getUsers().add(user);
+
+        // Guardar el lado propietario de la relación
+        userRepository.save(user);
+
         return new AssignRegionalResponse(
                 "Succesfull regional assigned",
-                userRegionalDto.user().getFullName()
+                user.getFullName()
         );
     }
 }
