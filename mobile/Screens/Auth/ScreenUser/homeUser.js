@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,34 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../../../src/Navigation/Services/Connection";
 
 export default function DashboardScreen() {
+  const navigation = useNavigation();
+  const [inventoryCount, setInventoryCount] = useState(0);
+
+  useEffect(() => {
+    fetchInventoryCount();
+  }, []);
+
+  const fetchInventoryCount = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) return;
+      const response = await api.get("api/v1/inventory/owned", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = response.data.ownedInventories || [];
+      setInventoryCount(data.length);
+    } catch (error) {
+      console.error("Error fetching inventory count:", error);
+    }
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
@@ -62,12 +88,12 @@ export default function DashboardScreen() {
 
           <View style={[styles.statCard, { backgroundColor: '#fff3e0' }]}>
             <View style={[styles.statIcon, { backgroundColor: '#ff9800' }]}>
-              <Ionicons name="construct" size={24} color="#fff" />
+              <Ionicons name="cube" size={24} color="#fff" />
             </View>
             <View style={styles.statContent}>
-              <Text style={styles.statValue}>1</Text>
-              <Text style={styles.statLabel}>Mantenimiento</Text>
-              <Text style={styles.statSubtext}>25%</Text>
+              <Text style={styles.statValue}>{inventoryCount}</Text>
+              <Text style={styles.statLabel}>Inventarios</Text>
+              <Text style={styles.statSubtext}>Asignados</Text>
             </View>
           </View>
 
@@ -158,32 +184,44 @@ export default function DashboardScreen() {
       <View style={styles.actionsSection}>
         <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
         <View style={styles.actionsGrid}>
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#e3f2fd' }]}>
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#e3f2fd' }]}
+            onPress={() => navigation.navigate('Inventarios')}
+          >
             <View style={[styles.actionIcon, { backgroundColor: '#2196f3' }]}>
-              <Ionicons name="add" size={24} color="#fff" />
+              <Ionicons name="cube-outline" size={24} color="#fff" />
             </View>
-            <Text style={styles.actionText}>Nuevo Item</Text>
+            <Text style={styles.actionText}>Inventario</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#e8f5e8' }]}>
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#e8f5e8' }]}
+            onPress={() => navigation.navigate('Verificación')}
+          >
             <View style={[styles.actionIcon, { backgroundColor: '#4caf50' }]}>
-              <Ionicons name="checkmark-circle" size={24} color="#fff" />
+              <Ionicons name="checkmark-done-outline" size={24} color="#fff" />
             </View>
-            <Text style={styles.actionText}>Verificar</Text>
+            <Text style={styles.actionText}>Verificación</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#f3e5f5' }]}>
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#f3e5f5' }]}
+            onPress={() => navigation.navigate('Notificaciones')}
+          >
             <View style={[styles.actionIcon, { backgroundColor: '#9c27b0' }]}>
-              <Ionicons name="bar-chart" size={24} color="#fff" />
+              <Ionicons name="notifications-outline" size={24} color="#fff" />
             </View>
-            <Text style={styles.actionText}>Reportes</Text>
+            <Text style={styles.actionText}>Notificaciones</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.actionCard, { backgroundColor: '#fff3e0' }]}>
+          <TouchableOpacity
+            style={[styles.actionCard, { backgroundColor: '#fff3e0' }]}
+            onPress={() => navigation.navigate('Perfil')}
+          >
             <View style={[styles.actionIcon, { backgroundColor: '#ff9800' }]}>
-              <Ionicons name="search" size={24} color="#fff" />
+              <Ionicons name="person-outline" size={24} color="#fff" />
             </View>
-            <Text style={styles.actionText}>Buscar</Text>
+            <Text style={styles.actionText}>Perfil</Text>
           </TouchableOpacity>
         </View>
       </View>
