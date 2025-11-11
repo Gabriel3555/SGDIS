@@ -22,6 +22,7 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/users-toast.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -517,10 +518,16 @@
                     console.log('Response status:', response.status);
                     console.log('Response ok:', response.ok);
 
-                    const data = await response.json();
-                    console.log('Response data:', data);
+                    let data;
+                    try {
+                        data = await response.json();
+                        console.log('Response data:', data);
+                    } catch (parseError) {
+                        console.error('Error parsing response:', parseError);
+                        data = null;
+                    }
 
-                    if (response.ok && data.status) {
+                    if (response.ok && data && data.status) {
                         console.log('Login successful, role:', data.role);
 
                         // Guardar tokens
@@ -558,7 +565,6 @@
                             window.location.href = redirectUrl;
                         }, 1500);
                     } else {
-                        console.error('Error en login:', data.message || 'Credenciales inválidas');
                         hideSenaSpinner();
 
                         // Clear saved credentials on login failure for security
@@ -566,15 +572,27 @@
                         localStorage.removeItem('rememberedPassword');
                         recordarCheckbox.checked = false;
 
-                        alert('Error en login: ' + (data.message || 'Credenciales inválidas'));
+                        let errorMessage = 'Credenciales inválidas';
+                        if (data && data.detail) {
+                            errorMessage = data.detail;
+                        } else if (data && data.message) {
+                            errorMessage = data.message;
+                        } else if (response.status === 401) {
+                            errorMessage = 'Usuario o contraseña incorrectos';
+                        }
+
+                        console.error('Error en login:', errorMessage);
+                        showErrorToast('Error de autenticación', errorMessage);
                     }
                 } catch (error) {
                     console.error('Error de conexión:', error);
                     hideSenaSpinner();
-                    alert('Error de conexión. Inténtalo de nuevo.');
+                    showErrorToast('Error de conexión', 'Inténtalo de nuevo.');
                 }
             });
         });
     </script>
+    <script src="js/users/users-toast.js"></script>
 </body>
 </html>
+
