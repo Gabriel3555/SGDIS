@@ -80,6 +80,13 @@ async function handleEditUserSubmit(e) {
         showErrorToast('Campos obligatorios', 'Por favor complete todos los campos obligatorios');
         return;
     }
+    
+    // Prevent user from disabling their own status
+    const isEditingOwnUser = usersData.currentLoggedInUserId && usersData.currentLoggedInUserId === usersData.currentUserId;
+    if (isEditingOwnUser && !status) {
+        showErrorToast('Acción no permitida', 'No puedes desactivar tu propio estado de usuario');
+        return;
+    }
 
     try {
         const token = localStorage.getItem('jwt');

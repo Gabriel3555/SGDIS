@@ -7,11 +7,14 @@ import com.sgdis.backend.user.domain.User;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.user.mapper.UserMapper;
 // Excepciones
+import com.sgdis.backend.exception.DomainValidationException;
 import com.sgdis.backend.exception.userExceptions.InvalidEmailDomainException;
 import com.sgdis.backend.exception.userExceptions.EmailAlreadyInUseException;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,8 +93,17 @@ public class UserService implements
     @Override
     @Transactional
     public UserResponse updateUser(Long id, UpdateUserRequest updateUserRequest) {
-        // 0) Cargar usuario actual para preservar campos
+        // 0) Obtener el ID del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long currentUserId = (Long) authentication.getPrincipal();
+        
+        // 0.1) Cargar usuario actual para preservar campos
         User existingUser = getUserByIdRepository.findUserById(id);
+        
+        // 0.2) Validar que el usuario no pueda desactivar su propio estado
+        if (currentUserId.equals(id) && updateUserRequest.status() != null && !updateUserRequest.status()) {
+            throw new DomainValidationException("No puedes desactivar tu propio estado de usuario");
+        }
 
         // 1) Si viene email en el request y cambia, validar dominio y unicidad
         if (updateUserRequest.email() != null) {

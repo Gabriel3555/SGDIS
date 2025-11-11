@@ -371,6 +371,7 @@ function updateUsersTable() {
             const email = user.email || 'Sin email';
             const initials = fullName.charAt(0).toUpperCase();
             const isAdmin = user.role === 'ADMIN';
+            const isCurrentUser = window.usersData && window.usersData.currentLoggedInUserId === user.id;
 
             const profileImage = user.imgUrl ?
                 `<img src="${user.imgUrl}" alt="${fullName}" class="w-8 h-8 rounded-full object-cover border-2 border-gray-200">` :
@@ -387,7 +388,10 @@ function updateUsersTable() {
                                 </div>
                             </button>
                             <div>
-                                <div class="font-semibold text-gray-800 ${isAdmin ? 'text-red-800' : ''}">${fullName}</div>
+                                <div class="font-semibold text-gray-800 ${isAdmin ? 'text-red-800' : ''}">
+                                    ${fullName}
+                                    ${isCurrentUser ? '<span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Tú</span>' : ''}
+                                </div>
                                 <div class="text-sm text-gray-500">${email}</div>
                             </div>
                         </div>
@@ -609,6 +613,7 @@ function updateUsersCards() {
             const email = user.email || 'Sin email';
             const initials = fullName.charAt(0).toUpperCase();
             const isAdmin = user.role === 'ADMIN';
+            const isCurrentUser = window.usersData && window.usersData.currentLoggedInUserId === user.id;
 
             const profileImage = user.imgUrl ?
                 `<img src="${user.imgUrl}" alt="${fullName}" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 mx-auto">` :
@@ -623,7 +628,10 @@ function updateUsersCards() {
                                 <i class="fas fa-camera text-white text-xs"></i>
                             </div>
                         </button>
-                        <h3 class="font-bold text-lg text-gray-800 mt-3 ${isAdmin ? 'text-red-800' : ''}">${fullName}</h3>
+                        <h3 class="font-bold text-lg text-gray-800 mt-3 ${isAdmin ? 'text-red-800' : ''}">
+                            ${fullName}
+                            ${isCurrentUser ? '<span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Tú</span>' : ''}
+                        </h3>
                         <p class="text-gray-600 text-sm">${email}</p>
                     </div>
 

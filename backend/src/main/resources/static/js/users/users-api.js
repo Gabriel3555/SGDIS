@@ -36,6 +36,10 @@ async function loadCurrentUserInfo() {
 
         if (response.ok) {
             const userData = await response.json();
+            // Store current user ID globally
+            if (window.usersData) {
+                window.usersData.currentLoggedInUserId = userData.id;
+            }
             updateUserInfoDisplay(userData);
         } else {
             throw new Error('Failed to load user info');
