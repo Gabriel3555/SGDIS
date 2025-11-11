@@ -53,7 +53,7 @@ async function handleEditInventorySubmit(e) {
     e.preventDefault();
 
     if (!inventoryData.currentInventoryId) {
-        showErrorToast('Error', 'No se ha seleccionado un inventario para editar');
+        showEditErrorToast('No se ha seleccionado un inventario para editar');
         return;
     }
 
@@ -61,29 +61,29 @@ async function handleEditInventorySubmit(e) {
     const location = document.getElementById('editInventoryLocation').value;
 
     if (!name || !location) {
-        showErrorToast('Campos obligatorios', 'Por favor complete todos los campos obligatorios');
+        showEditErrorToast('Por favor complete todos los campos obligatorios');
         return;
     }
 
     // Validate inventory name length
     if (name.length < 3) {
-        showErrorToast('Nombre muy corto', 'El nombre del inventario debe tener al menos 3 caracteres');
+        showEditErrorToast('El nombre del inventario debe tener al menos 3 caracteres');
         return;
     }
 
     if (name.length > 100) {
-        showErrorToast('Nombre muy largo', 'El nombre del inventario no puede exceder 100 caracteres');
+        showEditErrorToast('El nombre del inventario no puede exceder 100 caracteres');
         return;
     }
 
     // Validate location
     if (location.length < 3) {
-        showErrorToast('Ubicación muy corta', 'La ubicación debe tener al menos 3 caracteres');
+        showEditErrorToast('La ubicación debe tener al menos 3 caracteres');
         return;
     }
 
     if (location.length > 100) {
-        showErrorToast('Ubicación muy larga', 'La ubicación no puede exceder 100 caracteres');
+        showEditErrorToast('La ubicación no puede exceder 100 caracteres');
         return;
     }
 
@@ -95,13 +95,27 @@ async function handleEditInventorySubmit(e) {
 
         const result = await updateInventory(inventoryData.currentInventoryId, updateData);
 
-        showSuccessToast('Inventario actualizado', 'Inventario actualizado exitosamente');
+        showEditSuccessToast();
         closeEditInventoryModal();
         await loadInventoryData();
 
     } catch (error) {
         console.error('Error updating inventory:', error);
-        showErrorToast('Error al actualizar inventario', error.message || 'Inténtalo de nuevo.');
+        
+        let errorMessage = error.message || 'Inténtalo de nuevo.';
+        
+        // Customize error messages based on the error
+        if (errorMessage.includes('401') || errorMessage.includes('expired')) {
+            errorMessage = 'Sesión expirada. Por favor inicia sesión nuevamente.';
+        } else if (errorMessage.includes('403') || errorMessage.includes('permission')) {
+            errorMessage = 'No tienes permisos para actualizar este inventario.';
+        } else if (errorMessage.includes('404')) {
+            errorMessage = 'Inventario no encontrado. Puede que haya sido eliminado.';
+        } else if (errorMessage.includes('400') && errorMessage.includes('validation')) {
+            errorMessage = 'Los datos ingresados no son válidos. Verifica el formato.';
+        }
+        
+        showEditErrorToast(errorMessage);
     }
 }
 
@@ -178,34 +192,62 @@ async function handleAssignInventorySubmit(e) {
     e.preventDefault();
 
     if (!inventoryData.currentInventoryId) {
-        showErrorToast('Error', 'No se ha seleccionado un inventario para asignar');
+        showAssignErrorToast('No se ha seleccionado un inventario para asignar');
         return;
     }
 
-    const userId = document.getElementById('assignUserId').value;
-    const assignmentType = document.getElementById('assignmentType').value;
+    // Validate form elements exist
+    const userIdElement = document.getElementById('assignUserId');
+    if (!userIdElement) {
+        showAssignErrorToast('Error del sistema: No se puede acceder al formulario');
+        return;
+    }
+
+    const userId = userIdElement.value;
 
     if (!userId) {
-        showErrorToast('Usuario requerido', 'Por favor selecciona un usuario para la asignación');
+        showAssignErrorToast('Por favor selecciona un usuario para la asignación');
+        return;
+    }
+
+    // Validate userId is a valid number
+    const numericUserId = parseInt(userId);
+    if (isNaN(numericUserId)) {
+        showAssignErrorToast('ID de usuario inválido');
         return;
     }
 
     try {
         const assignmentData = {
             inventoryId: inventoryData.currentInventoryId,
-            userId: parseInt(userId),
-            assignmentType: assignmentType
+            userId: numericUserId
         };
 
         const result = await assignInventory(assignmentData);
 
-        showSuccessToast('Inventario asignado', 'Inventario asignado exitosamente');
+        showAssignSuccessToast();
         closeAssignInventoryModal();
         await loadInventoryData();
 
     } catch (error) {
         console.error('Error assigning inventory:', error);
-        showErrorToast('Error al asignar inventario', error.message || 'Inténtalo de nuevo.');
+        
+        let errorMessage = error.message || 'Inténtalo de nuevo.';
+        
+        // Customize error messages based on the error
+        if (errorMessage.includes('401') || errorMessage.includes('expired')) {
+            errorMessage = 'Sesión expirada. Por favor inicia sesión nuevamente.';
+        } else if (errorMessage.includes('403') || errorMessage.includes('permission')) {
+            errorMessage = 'No tienes permisos para asignar este inventario.';
+        } else if (errorMessage.includes('404')) {
+            errorMessage = 'Usuario o inventario no encontrado.';
+        } else if (errorMessage.includes('400') && errorMessage.includes('validation')) {
+            errorMessage = 'Los datos de asignación no son válidos.';
+        } else if (errorMessage.includes('already assigned')) {
+            errorMessage = 'Este inventario ya está asignado a este usuario.';
+        }
+        
+        showAssignErrorToast(errorMessage);
     }
 }
 
@@ -213,32 +255,62 @@ async function handleAssignManagerSubmit(e) {
     e.preventDefault();
 
     if (!inventoryData.currentInventoryId) {
-        showErrorToast('Error', 'No se ha seleccionado un inventario para asignar gerente');
+        showAssignManagerErrorToast('No se ha seleccionado un inventario para asignar gerente');
         return;
     }
 
-    const managerId = document.getElementById('managerId').value;
+    // Validate form elements exist
+    const managerIdElement = document.getElementById('managerId');
+    if (!managerIdElement) {
+        showAssignManagerErrorToast('Error del sistema: No se puede acceder al formulario');
+        return;
+    }
+
+    const managerId = managerIdElement.value;
 
     if (!managerId) {
-        showErrorToast('Gerente requerido', 'Por favor selecciona un gerente para la asignación');
+        showAssignManagerErrorToast('Por favor selecciona un gerente para la asignación');
+        return;
+    }
+
+    // Validate managerId is a valid number
+    const numericManagerId = parseInt(managerId);
+    if (isNaN(numericManagerId)) {
+        showAssignManagerErrorToast('ID de gerente inválido');
         return;
     }
 
     try {
         const managerData = {
             inventoryId: inventoryData.currentInventoryId,
-            managerId: parseInt(managerId)
+            managerId: numericManagerId
         };
 
         const result = await assignManager(managerData);
 
-        showSuccessToast('Gerente asignado', 'Gerente asignado exitosamente');
+        showAssignManagerSuccessToast();
         closeAssignManagerModal();
         await loadInventoryData();
 
     } catch (error) {
         console.error('Error assigning manager:', error);
-        showErrorToast('Error al asignar gerente', error.message || 'Inténtalo de nuevo.');
+        
+        let errorMessage = error.message || 'Inténtalo de nuevo.';
+        
+        // Customize error messages based on the error
+        if (errorMessage.includes('401') || errorMessage.includes('expired')) {
+            errorMessage = 'Sesión expirada. Por favor inicia sesión nuevamente.';
+        } else if (errorMessage.includes('403') || errorMessage.includes('permission')) {
+            errorMessage = 'No tienes permisos para asignar gerentes a este inventario.';
+        } else if (errorMessage.includes('404')) {
+            errorMessage = 'Gerente o inventario no encontrado.';
+        } else if (errorMessage.includes('400') && errorMessage.includes('validation')) {
+            errorMessage = 'Los datos de asignación no son válidos.';
+        } else if (errorMessage.includes('already assigned')) {
+            errorMessage = 'Este inventario ya tiene este gerente asignado.';
+        }
+        
+        showAssignManagerErrorToast(errorMessage);
     }
 }
 
