@@ -39,6 +39,7 @@ public class UserController {
     private final UpdateUserUseCase updateUserUseCase;
     private final DeleteUserUseCase deleteUserUseCase;
     private final ChangePasswordUseCase changePasswordUseCase;
+    private final ChangePasswordToUserUseCase changePasswordToUserUseCase;
     private final GetManagedInventoriesUseCase getManagedInventoriesUseCase;
     private final AssignRegionalUseCase assignRegionalUseCase;
     private final SpringDataUserRepository userRepository;
@@ -241,5 +242,10 @@ public class UserController {
     @PostMapping("/changePassword")
     public ChangePasswordResponse changePassword(@RequestBody @Valid ChangePasswordRequest changePasswordRequest) {
         return changePasswordUseCase.changePassword(changePasswordRequest);
+    }
+
+    @PostMapping("/changePasswordToUser")
+    public ChangePasswordResponse changePasswordToUser(@RequestBody @Valid ChangePasswordToUserRequest changePasswordRequest) {
+        return changePasswordToUserUseCase.changePasswordToUser(changePasswordRequest);
     }
 }

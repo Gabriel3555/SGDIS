@@ -83,8 +83,4 @@ public class AuthController {
         }
     }
 
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<String> handleBadCredentialsException(BadCredentialsException e) {
-        return ResponseEntity.status(401).body(e.getMessage());
-    }
 }

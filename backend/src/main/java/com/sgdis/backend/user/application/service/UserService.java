@@ -35,7 +35,8 @@ public class UserService implements
         CreateUserUseCase,
         UpdateUserUseCase,
         DeleteUserUseCase,
-        ChangePasswordUseCase
+        ChangePasswordUseCase,
+        ChangePasswordToUserUseCase
 {
 
     private final SpringDataUserRepository userRepository;
@@ -180,5 +181,13 @@ public class UserService implements
 
         userRepository.save(user);
         return new ChangePasswordResponse("Password changed successfully",user.getFullName());
+    }
+
+    @Override
+    public ChangePasswordResponse changePasswordToUser(ChangePasswordToUserRequest request) {
+        UserEntity userEntity = userRepository.findById(request.id()).orElseThrow(() -> new UserNotFoundException(request.id()));
+        userEntity.setPassword(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(userEntity);
+        return new ChangePasswordResponse("Password changed successfully",userEntity.getFullName());
     }
 }
