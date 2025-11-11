@@ -27,7 +27,7 @@ public class SwaggerConfig {
                         .description("API documentation for SGDIS Backend with JWT authentication"))
                 .servers(Arrays.asList(
                         new Server().url("http://localhost:8080" + contextPath).description("Local Development Server"),
-                        new Server().url("http://sgdis.cloud/" + contextPath).description("Production Server")
+                        new Server().url("https://sgdis.cloud" + contextPath).description("Production Server")
                 ))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",
