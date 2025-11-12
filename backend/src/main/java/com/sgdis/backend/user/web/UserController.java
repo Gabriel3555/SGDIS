@@ -41,7 +41,6 @@ public class UserController {
     private final ChangePasswordUseCase changePasswordUseCase;
     private final ChangePasswordToUserUseCase changePasswordToUserUseCase;
     private final GetManagedInventoriesUseCase getManagedInventoriesUseCase;
-    private final AssignRegionalUseCase assignRegionalUseCase;
     private final SpringDataUserRepository userRepository;
     private final FileUploadService fileUploadService;
 
@@ -232,11 +231,6 @@ public class UserController {
     @GetMapping("/{userId}/inventories")
     public List<ManagedInventoryResponse> getManagedInventoriesByUserId(@PathVariable Long userId) {
         return getManagedInventoriesUseCase.getManagedInventories(userId);
-    }
-
-    @PostMapping("/assignRegional")
-    public AssignRegionalResponse assignRegional(AssignRegionalRequest assignRegionalRequest) {
-        return assignRegionalUseCase.assignRegional(assignRegionalRequest);
     }
 
     @PostMapping("/changePassword")

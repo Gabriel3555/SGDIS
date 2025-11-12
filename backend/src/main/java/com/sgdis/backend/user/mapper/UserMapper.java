@@ -7,7 +7,6 @@ import com.sgdis.backend.user.application.dto.UserResponseWithoutRegionals;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 
-import java.util.List;
 
 public final class UserMapper {
 
@@ -23,24 +22,9 @@ public final class UserMapper {
                 entity.getImgUrl(),
                 entity.getRole().name(),
                 entity.isStatus(),
-                entity.getRegionals()
-        );
-    }
+                entity.getInstitution() != null ? entity.getInstitution().getName() : null
 
-    public static UserResponseWithoutRegionals toResponseWithoutRegional(UserEntity entity) {
-        return new UserResponseWithoutRegionals(
-                entity.getEmail(),
-                entity.getFullName(),
-                entity.getJobTitle(),
-                entity.getLaborDepartment(),
-                entity.getImgUrl(),
-                entity.getRole().name(),
-                entity.isStatus()
         );
-    }
-
-    public static List<UserResponse> toResponseList(List<UserEntity> entities) {
-        return entities.stream().map(UserMapper::toResponse).toList();
     }
 
     public static UserEntity fromCreateRequest(CreateUserRequest request) {
@@ -65,19 +49,4 @@ public final class UserMapper {
                 .build();
     }
 
-    public static UserEntity toEntityShallow(UserEntity entity) {
-        if (entity == null) return null;
-        return UserEntity.builder()
-                .id(entity.getId())
-                .password(entity.getPassword())
-                .email(entity.getEmail())
-                .fullName(entity.getFullName())
-                .jobTitle(entity.getJobTitle())
-                .laborDepartment(entity.getLaborDepartment())
-                .imgUrl(entity.getImgUrl())
-                .role(entity.getRole())
-                .status(entity.isStatus())
-                .inventories(null)
-                .build();
-    }
 }

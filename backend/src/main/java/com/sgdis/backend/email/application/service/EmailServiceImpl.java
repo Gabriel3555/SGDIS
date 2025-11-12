@@ -324,10 +324,6 @@ public class EmailServiceImpl implements EmailService {
                     </div>
                     
                     <div class="footer">
-                        <p class="footer-text">
-                            ¿Necesitas ayuda?
-                            <a href="mailto:soporte@sena.edu.co" class="footer-link">Contacta soporte técnico</a>
-                        </p>
                         <p class="footer-text" style="margin-top: 16px;">
                             Este es un correo automático, por favor no respondas a este mensaje.
                         </p>

@@ -1,6 +1,5 @@
 package com.sgdis.backend.inventory.application.service;
 
-import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.application.port.in.*;
@@ -90,19 +89,6 @@ public class InventoryService
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
         // Solo validar regional si ambos (usuario e inventario) tienen regionales asignadas
-        boolean shouldValidateRegional = userEntity.getRegionals() != null && !userEntity.getRegionals().isEmpty()
-                                        && inventory.getRegional() != null;
-
-        if (shouldValidateRegional) {
-            RegionalEntity userRegional = userEntity.getRegionals().get(0);
-            RegionalEntity inventoryRegional = inventory.getRegional();
-            
-            // Comparar por ID en lugar de por referencia
-            if(!inventoryRegional.getId().equals(userRegional.getId())) {
-                throw new RuntimeException("User's regional does not match inventory's regional. User regional ID: "
-                    + userRegional.getId() + ", Inventory regional ID: " + inventoryRegional.getId());
-            }
-        }
 
         UserEntity owner = userRepository.findById(request.userId())
                 .orElseThrow(() -> new UserNotFoundException(request.userId()));

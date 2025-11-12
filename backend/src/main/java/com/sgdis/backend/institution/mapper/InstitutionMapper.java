@@ -1,9 +1,12 @@
 package com.sgdis.backend.institution.mapper;
 
 import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
-import com.sgdis.backend.data.regional.RegionalEntity;
+import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.institution.application.dto.*;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
+
+import java.util.List;
+import java.util.Objects;
 
 public final class InstitutionMapper {
 
@@ -95,4 +98,21 @@ public final class InstitutionMapper {
         }
         return builder.build();
     }
+
+    public static InstitutionResponseWithoutRegionalResponse toInstitutionWithoutRegional(InstitutionEntity entity) {
+        return new InstitutionResponseWithoutRegionalResponse(
+                entity.getId(),
+                entity.getName(),
+                entity.getCity().getId()
+        );
+    }
+
+    public static List<InstitutionResponseWithoutRegionalResponse> toInstitutionListWithoutRegional(List<InstitutionEntity> entities) {
+        if (entities == null || entities.isEmpty()) return List.of();
+        return entities.stream()
+                .map(InstitutionMapper::toInstitutionWithoutRegional)
+                .filter(Objects::nonNull) // opcional
+                .toList(); // si usas Java 16+, o Collectors.toList() en Java 8–15
+    }
+
 }

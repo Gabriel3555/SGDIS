@@ -1,11 +1,10 @@
 package com.sgdis.backend.institution.application.service;
 
+import com.sgdis.backend.data.regional.entity.RegionalEntity;
+import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.institution.application.dto.*;
-import com.sgdis.backend.institution.application.port.in.CreateInstitutionUseCase;
-import com.sgdis.backend.institution.application.port.in.GetAllInstitutionUseCase;
-import com.sgdis.backend.institution.application.port.in.GetByIdInstitutionUseCase;
-import com.sgdis.backend.institution.application.port.in.UpdateInstitutionUseCase;
+import com.sgdis.backend.institution.application.port.in.*;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
 import com.sgdis.backend.institution.mapper.InstitutionMapper;
@@ -21,10 +20,12 @@ public class InstitutionService implements
         CreateInstitutionUseCase,
         GetAllInstitutionUseCase,
         GetByIdInstitutionUseCase,
-        UpdateInstitutionUseCase
+        UpdateInstitutionUseCase,
+        GetAllInstitutionsByRegionalIdUseCase
 {
 
     private final SpringDataInstitutionRepository institutionRepository;
+    private final SpringDataRegionalRepository institutionRegionalRepository;
 
 
     @Override
@@ -54,5 +55,18 @@ public class InstitutionService implements
         InstitutionEntity institution = InstitutionMapper.fromCreateRequest(createInstitutionRequest);
         InstitutionEntity saved = institutionRepository.save(institution);
         return InstitutionMapper.toResponse(saved);
+    }
+
+    @Override
+    public List<InstitutionResponseWithoutRegionalResponse> getAllInstitutionsByRegionalId(Long id) {
+        // First validate that the regional exists
+        institutionRegionalRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Regional with id " + id + " not found"));
+        
+        // Use the more efficient method to find institutions by regional ID directly
+        List<InstitutionEntity> institutions = institutionRepository.findByRegionalId(id);
+        
+        // Map entities to DTO response without regional data
+        return InstitutionMapper.toInstitutionListWithoutRegional(institutions);
     }
 }

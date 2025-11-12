@@ -6,7 +6,7 @@ import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
 import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
 import com.sgdis.backend.data.departaments_cities.repositories.SpringDataCitiesRepository;
 import com.sgdis.backend.data.departaments_cities.repositories.SpringDataDepartamentsRepository;
-import com.sgdis.backend.data.regional.RegionalEntity;
+import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
