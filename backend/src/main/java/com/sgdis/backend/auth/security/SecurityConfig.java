@@ -75,8 +75,12 @@ public class SecurityConfig  {
                             "/index",
                             "/register",
                             "/error.html",
+                            "/forgot_password.html",
+                            "/reset-password.html",
                             "/svg/**",
-                            "/uploads/**"
+                            "/uploads/**",
+                            "/css/**",
+                            "/js/**"
                     ).permitAll();
                     // Dashboard endpoints require authentication and proper roles
                     http.requestMatchers("/dashboard/user").hasRole("USER");

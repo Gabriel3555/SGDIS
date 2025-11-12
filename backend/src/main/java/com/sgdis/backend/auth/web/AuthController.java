@@ -2,12 +2,15 @@ package com.sgdis.backend.auth.web;
 
 import com.sgdis.backend.auth.application.dto.AuthRequest;
 import com.sgdis.backend.auth.application.dto.AuthResponse;
+import com.sgdis.backend.auth.application.dto.ForgotPasswordRequest;
 import com.sgdis.backend.auth.application.dto.RefreshTokenRequest;
 import com.sgdis.backend.auth.application.dto.RefreshTokenResponse;
 import com.sgdis.backend.auth.application.dto.RegisterRequest;
+import com.sgdis.backend.auth.application.dto.ResetPasswordRequest;
 import com.sgdis.backend.auth.application.port.LoginUseCase;
 import com.sgdis.backend.auth.application.port.RefreshTokenUseCase;
 import com.sgdis.backend.auth.application.port.RegisterUseCase;
+import com.sgdis.backend.auth.application.service.PasswordResetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,6 +35,7 @@ public class AuthController {
     private final LoginUseCase loginUseCase;
     private final RefreshTokenUseCase refreshTokenUseCase;
     private final RegisterUseCase registerUseCase;
+    private final PasswordResetService passwordResetService;
 
     @Operation(
             summary = "Sign in",
@@ -81,6 +85,36 @@ public class AuthController {
         } catch (Exception e) {
             throw new BadCredentialsException("Invalid or expired refresh token");
         }
+    }
+
+    @Operation(
+            summary = "Request password reset",
+            description = "Sends a password reset email to the user (Public endpoint)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Password reset email sent successfully"
+    )
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody @Valid ForgotPasswordRequest request) {
+        passwordResetService.initiatePasswordReset(request);
+        return ResponseEntity.ok("Password reset email sent successfully");
+    }
+
+    @Operation(
+            summary = "Reset password",
+            description = "Resets the user password using a valid token (Public endpoint)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Password reset successfully"
+    )
+    @ApiResponse(responseCode = "400", description = "Invalid or expired token")
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request);
+        return ResponseEntity.ok("Password reset successfully");
     }
 
 }
