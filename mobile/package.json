@@ -19,6 +19,7 @@
     "axios": "^1.12.2",
     "expo": "~54.0.0",
     "expo-file-system": "^19.0.17",
+    "expo-image": "~2.0.3",
     "expo-image-picker": "^17.0.8",
     "expo-linear-gradient": "~14.1.5",
     "expo-status-bar": "~2.2.3",

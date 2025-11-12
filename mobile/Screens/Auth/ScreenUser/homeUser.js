@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
@@ -14,10 +17,58 @@ import api from "../../../src/Navigation/Services/Connection";
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const [inventoryCount, setInventoryCount] = useState(0);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [localImageUri, setLocalImageUri] = useState(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const imageTimeoutRef = useRef(null);
 
   useEffect(() => {
+    fetchUserData();
     fetchInventoryCount();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (imageTimeoutRef.current) {
+        clearTimeout(imageTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const fetchUserData = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        Alert.alert("Error", "No se encontró token de autenticación");
+        return;
+      }
+
+      const response = await api.get("api/v1/users/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setUser(response.data);
+      setImageError(false);
+      if (imageTimeoutRef.current) {
+        clearTimeout(imageTimeoutRef.current);
+        imageTimeoutRef.current = null;
+      }
+      setImageLoading(false);
+
+      // Load local profile image
+      const localImage = await AsyncStorage.getItem(`userProfileImage_${response.data.email}`);
+      setLocalImageUri(localImage);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      Alert.alert("Error", "No se pudo cargar la información del usuario");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchInventoryCount = async () => {
     try {
@@ -35,6 +86,15 @@ export default function DashboardScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#28a745" />
+        <Text style={styles.loadingText}>Cargando...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
@@ -42,12 +102,57 @@ export default function DashboardScreen() {
         <View style={styles.headerContent}>
           <View style={styles.userInfo}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={24} color="#fff" />
+              {localImageUri ? (
+                <Image
+                  source={{ uri: localImageUri }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
+                  priority="high"
+                />
+              ) : user?.imgUrl && !imageError ? (
+                <View style={styles.avatarWrapper}>
+                  <Image
+                    source={{ uri: `https://sgdis.cloud${user.imgUrl}` }}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                    priority="high"
+                    onLoadStart={() => {
+                      setImageLoading(true);
+                      imageTimeoutRef.current = setTimeout(() => {
+                        setImageLoading(false);
+                        imageTimeoutRef.current = null;
+                      }, 10000);
+                    }}
+                    onLoad={() => {
+                      if (imageTimeoutRef.current) {
+                        clearTimeout(imageTimeoutRef.current);
+                        imageTimeoutRef.current = null;
+                      }
+                      setImageLoading(false);
+                    }}
+                    onError={() => {
+                      if (imageTimeoutRef.current) {
+                        clearTimeout(imageTimeoutRef.current);
+                        imageTimeoutRef.current = null;
+                      }
+                      setImageLoading(false);
+                      setImageError(true);
+                    }}
+                  />
+                  {imageLoading && (
+                    <View style={styles.imageLoadingOverlay}>
+                      <ActivityIndicator size="small" color="#28a745" />
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <Ionicons name="person" size={24} color="#fff" />
+              )}
             </View>
             <View>
               <Text style={styles.welcomeText}>¡Bienvenido!</Text>
-              <Text style={styles.userName}>Usuario Normal</Text>
-              <Text style={styles.userRole}>Rol: USER</Text>
+              <Text style={styles.userName}>{user?.fullName || "Usuario"}</Text>
+              <Text style={styles.userRole}>Rol: {user?.role || "USER"}</Text>
             </View>
           </View>
           <TouchableOpacity style={styles.notificationButton}>
@@ -234,6 +339,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f8fafc",
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
+  },
 
   // Header Styles
   header: {
@@ -266,6 +382,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
+  },
+  avatarWrapper: {
+    position: 'relative',
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  imageLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 25,
   },
   welcomeText: {
     fontSize: 16,

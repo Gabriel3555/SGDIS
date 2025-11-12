@@ -1,24 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
 
 export default function MeUserScreen() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [localImageUri, setLocalImageUri] = useState(null);
-  const navigation = useNavigation();
+    const [user, setUser] = useState(null);
+     const [loading, setLoading] = useState(true);
+     const [localImageUri, setLocalImageUri] = useState(null);
+     const [imageLoading, setImageLoading] = useState(false);
+     const [imageError, setImageError] = useState(false);
+     const imageTimeoutRef = useRef(null);
+     const navigation = useNavigation();
 
   useEffect(() => {
     fetchUserData();
@@ -29,6 +32,15 @@ export default function MeUserScreen() {
       fetchUserData();
     }, [])
   );
+
+  useEffect(() => {
+    return () => {
+      if (imageTimeoutRef.current) {
+        clearTimeout(imageTimeoutRef.current);
+      }
+    };
+  }, []);
+
 
   const fetchUserData = async () => {
     try {
@@ -45,6 +57,12 @@ export default function MeUserScreen() {
       });
 
       setUser(response.data);
+      setImageError(false);
+      if (imageTimeoutRef.current) {
+        clearTimeout(imageTimeoutRef.current);
+        imageTimeoutRef.current = null;
+      }
+      setImageLoading(false);
 
       // Load local profile image
       const localImage = await AsyncStorage.getItem(`userProfileImage_${response.data.email}`);
@@ -100,9 +118,48 @@ export default function MeUserScreen() {
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
             {localImageUri ? (
-              <Image source={{ uri: localImageUri }} style={styles.avatar} />
-            ) : user.imgUrl ? (
-              <Image source={{ uri: user.imgUrl }} style={styles.avatar} />
+              <Image
+                source={{ uri: localImageUri }}
+                style={styles.avatar}
+                contentFit="cover"
+                priority="high"
+              />
+            ) : user?.imgUrl && !imageError ? (
+              <View style={styles.avatarWrapper}>
+                <Image
+                  source={{ uri: `https://sgdis.cloud${user.imgUrl}` }}
+                  style={styles.avatar}
+                  contentFit="cover"
+                  priority="high"
+                  onLoadStart={() => {
+                    setImageLoading(true);
+                    imageTimeoutRef.current = setTimeout(() => {
+                      setImageLoading(false);
+                      imageTimeoutRef.current = null;
+                    }, 10000);
+                  }}
+                  onLoad={() => {
+                    if (imageTimeoutRef.current) {
+                      clearTimeout(imageTimeoutRef.current);
+                      imageTimeoutRef.current = null;
+                    }
+                    setImageLoading(false);
+                  }}
+                  onError={() => {
+                    if (imageTimeoutRef.current) {
+                      clearTimeout(imageTimeoutRef.current);
+                      imageTimeoutRef.current = null;
+                    }
+                    setImageLoading(false);
+                    setImageError(true);
+                  }}
+                />
+                {imageLoading && (
+                  <View style={styles.imageLoadingOverlay}>
+                    <ActivityIndicator size="small" color="#28a745" />
+                  </View>
+                )}
+              </View>
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Ionicons name="person" size={40} color="#fff" />
@@ -242,9 +299,23 @@ const styles = StyleSheet.create({
   avatarContainer: {
     marginRight: 20,
   },
+  avatarWrapper: {
+    position: 'relative',
+  },
   avatar: {
     width: 80,
     height: 80,
+    borderRadius: 40,
+  },
+  imageLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 40,
   },
   avatarPlaceholder: {
