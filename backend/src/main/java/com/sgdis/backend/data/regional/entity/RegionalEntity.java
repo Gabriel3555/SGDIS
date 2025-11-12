@@ -1,10 +1,9 @@
-package com.sgdis.backend.data.regional;
+package com.sgdis.backend.data.regional.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
-import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

@@ -1,7 +1,6 @@
 package com.sgdis.backend.user.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.user.domain.Role;

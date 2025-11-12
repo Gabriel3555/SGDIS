@@ -1,7 +1,7 @@
 package com.sgdis.backend.institution.infrastructure.entity;
 
 import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
-import com.sgdis.backend.data.regional.RegionalEntity;
+import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.*;

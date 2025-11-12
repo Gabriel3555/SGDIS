@@ -1,6 +1,5 @@
 package com.sgdis.backend.inventory.application.service;
 
-import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.application.port.in.*;

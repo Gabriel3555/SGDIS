@@ -1,7 +1,5 @@
 package com.sgdis.backend.user.application.service;
 
-import com.sgdis.backend.data.regional.RegionalEntity;
-import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
 import com.sgdis.backend.user.application.dto.*;
@@ -14,8 +12,6 @@ import com.sgdis.backend.exception.DomainValidationException;
 import com.sgdis.backend.exception.userExceptions.InvalidEmailDomainException;
 import com.sgdis.backend.exception.userExceptions.EmailAlreadyInUseException;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
-import com.sgdis.backend.exception.userExceptions.RegionalNotFoundException;
-import com.sgdis.backend.exception.userExceptions.UserAlreadyAssignedToRegionalException;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
