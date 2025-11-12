@@ -32,7 +32,7 @@ public class InventoryMapper {
                 entity.getLocation(),
                 entity.getName(),
                 entity.getOwner() != null
-                        ? UserMapper.toResponseWithoutRegional(entity.getOwner())
+                        ? UserMapper.toResponse(entity.getOwner())
                         : null
         );
     }

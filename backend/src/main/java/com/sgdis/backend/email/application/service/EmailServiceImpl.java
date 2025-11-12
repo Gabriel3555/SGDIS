@@ -314,7 +314,7 @@ public class EmailServiceImpl implements EmailService {
                         </div>
                     </div>
                     
-                    <div class="footer">                       
+                    <div class="footer">
                         <p class="footer-text" style="margin-top: 16px;">
                             Este es un correo automático, por favor no respondas a este mensaje.
                         </p>

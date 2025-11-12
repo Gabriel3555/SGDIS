@@ -3,6 +3,7 @@ package com.sgdis.backend.institution.web;
 import com.sgdis.backend.institution.application.dto.*;
 import com.sgdis.backend.institution.application.port.in.CreateInstitutionUseCase;
 import com.sgdis.backend.institution.application.port.in.GetAllInstitutionUseCase;
+import com.sgdis.backend.institution.application.port.in.GetAllInstitutionsByRegionalIdUseCase;
 import com.sgdis.backend.institution.application.port.in.GetByIdInstitutionUseCase;
 import com.sgdis.backend.institution.application.port.in.UpdateInstitutionUseCase;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +30,7 @@ public class InstitutionController {
 
     private final CreateInstitutionUseCase createInstitutionUseCase;
     private final GetAllInstitutionUseCase getAllInstitutionUseCase;
+    private final GetAllInstitutionsByRegionalIdUseCase getAllInstitutionsByRegionalIdUseCase;
     private final GetByIdInstitutionUseCase getByIdInstitutionUseCase;
     private final UpdateInstitutionUseCase updateInstitutionUseCase;
 
@@ -137,5 +139,11 @@ public class InstitutionController {
     ) {
         var updated = updateInstitutionUseCase.updateInstitution(id, request);
         return ResponseEntity.ok(updated);
+    }
+
+    @GetMapping("/institutionsByRegionalId/{id}")
+    public ResponseEntity<List<InstitutionResponseWithoutRegionalResponse>> getAllInstitutionsByRegionalId(@PathVariable Long id){
+        List<InstitutionResponseWithoutRegionalResponse> list = getAllInstitutionsByRegionalIdUseCase.getAllInstitutionsByRegionalId(id);
+        return ResponseEntity.ok(list);
     }
 }
