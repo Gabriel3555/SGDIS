@@ -30,7 +30,7 @@ public class PasswordResetService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
     
-    @Value("${app.base-url:http://localhost:8080}")
+    @Value("${app.base-url:https://sgdis.cloud/}")
     private String baseUrl;
     
     @Transactional
