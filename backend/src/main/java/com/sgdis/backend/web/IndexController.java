@@ -14,13 +14,8 @@ import java.io.IOException;
 public class IndexController {
 
     @GetMapping("/")
-    public String root() {
-        return "redirect:/index";
-    }
-
-    @GetMapping("/index")
     @ResponseBody
-    public ResponseEntity<Resource> index() throws IOException {
+    public ResponseEntity<Resource> root() throws IOException {
         Resource resource = new ClassPathResource("static/index.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
