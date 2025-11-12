@@ -2,6 +2,8 @@ package com.sgdis.backend.user.application.service;
 
 import com.sgdis.backend.data.regional.RegionalEntity;
 import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
+import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
+import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
@@ -30,7 +32,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService implements
         ListUserUseCase,
-        AssignRegionalUseCase,
         GetUserByIdUseCase,
         CreateUserUseCase,
         UpdateUserUseCase,
@@ -40,7 +41,7 @@ public class UserService implements
 {
 
     private final SpringDataUserRepository userRepository;
-    private final SpringDataRegionalRepository regionalRepository;
+    private final SpringDataInstitutionRepository  institutionRepository;
     private final PasswordEncoder passwordEncoder;
 
     private static final Pattern ALLOWED_EMAIL =
@@ -76,8 +77,16 @@ public class UserService implements
             throw new EmailAlreadyInUseException(createUserRequest.email());
         }
 
+        InstitutionEntity institution = institutionRepository.getReferenceById(createUserRequest.institutionId());
+
         UserEntity user = UserMapper.fromCreateRequest(createUserRequest);
+        user.setInstitution(institution);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        List<UserEntity> users = institution.getUsers();
+        users.add(user);
+        institution.setUsers(users);
+        institutionRepository.save(institution);
 
         UserEntity saved = userRepository.save(user);
         return UserMapper.toResponse(saved);
@@ -135,32 +144,6 @@ public class UserService implements
                 .orElseThrow(() -> new UserNotFoundException(id));
         userRepository.deleteById(id);
         return UserMapper.toResponse(user);
-    }
-
-    @Override
-    @Transactional
-    public AssignRegionalResponse assignRegional(AssignRegionalRequest request) {
-        UserEntity user = userRepository.findById(request.userId())
-                .orElseThrow(() -> new UserNotFoundException(request.userId()));
-
-        RegionalEntity regional = regionalRepository.findById(request.regionalId())
-                .orElseThrow(() -> new RegionalNotFoundException(request.regionalId()));
-
-        boolean alreadyAssigned = user.getRegionals().stream()
-                .anyMatch(r -> r.getId().equals(regional.getId()));
-        if (alreadyAssigned) {
-            throw new UserAlreadyAssignedToRegionalException(request.userId(), request.regionalId());
-        }
-
-        user.getRegionals().add(regional);
-        regional.getUsers().add(user);
-
-        userRepository.save(user);
-
-        return new AssignRegionalResponse(
-                "Succesfull regional assigned",
-                user.getFullName()
-        );
     }
 
 

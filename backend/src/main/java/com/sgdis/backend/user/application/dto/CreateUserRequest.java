@@ -15,5 +15,6 @@ public record CreateUserRequest(
         String email,
         @NotBlank String role,
         @NotBlank String password,
-        Boolean status
+        Boolean status,
+        Long institutionId
 ){}
