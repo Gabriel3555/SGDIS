@@ -147,6 +147,17 @@ public class EmailServiceImpl implements EmailService {
                     }
                     .logo-container {
                         margin-bottom: 20px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-direction: column;
+                    }
+                    .logo-image {
+                        width: 64px;
+                        height: 64px;
+                        margin-bottom: 12px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                     }
                     .logo-text {
                         font-size: 32px;
@@ -270,51 +281,31 @@ public class EmailServiceImpl implements EmailService {
                 <div class="email-container">
                     <div class="header">
                         <div class="logo-container">
+                            <img src="https://sgdis.cloud/svg/box.png" alt="SGDIS Logo" class="logo-image">
                             <h1 class="logo-text">SGDIS</h1>
                         </div>
                         <p class="subtitle">Sistema de Gestión de Inventario</p>
                         <p class="subtitle" style="font-size: 14px; margin-top: 4px;">Servicio Nacional de Aprendizaje - SENA</p>
                         <div class="divider"></div>
-                    </div>
-                    
+                    </div>                    
                     <div class="content">
-                        <h2 class="greeting">¡Hola, %s!</h2>
-                        
+                        <h2 class="greeting">¡Hola, %s!</h2>                        
                         <p class="message">
                             Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en SGDIS.
-                        </p>
-                        
+                        </p>                        
                         <p class="message">
-                            Si realizaste esta solicitud, haz clic en el botón de abajo para crear una nueva contraseña:
-                        </p>
-                        
+                            Haz clic en el botón de abajo para crear una nueva contraseña:
+                        </p>                        
                         <div class="button-container">
                             <a href="%s" class="reset-button">
                                 🔐 Restablecer Contraseña
                             </a>
-                        </div>
-                        
-                        <div class="info-box">
-                            <p class="info-text">
-                                <strong>¿No puedes hacer clic en el botón?</strong><br>
-                                Copia y pega el siguiente enlace en tu navegador:
-                            </p>
-                        </div>
-                        
-                        <div class="url-box">
-                            <p class="url-text">%s</p>
-                        </div>
-                        
+                        </div>                                                                      
                         <div class="warning">
                             <p class="warning-text">
                                 ⏰ Este enlace expirará en 24 horas por seguridad.
                             </p>
-                        </div>
-                        
-                        <p class="message" style="margin-top: 24px;">
-                            Si no solicitaste restablecer tu contraseña, puedes ignorar este correo de forma segura. Tu contraseña actual permanecerá sin cambios.
-                        </p>
-                        
+                        </div>                                                                      
                         <div class="info-box" style="margin-top: 24px;">
                             <p class="info-text">
                                 <strong>💡 Consejo de seguridad:</strong><br>
@@ -323,18 +314,12 @@ public class EmailServiceImpl implements EmailService {
                         </div>
                     </div>
                     
-                    <div class="footer">
-                        <p class="footer-text">
-                            ¿Necesitas ayuda?
-                            <a href="mailto:soporte@sena.edu.co" class="footer-link">Contacta soporte técnico</a>
-                        </p>
+                    <div class="footer">                       
                         <p class="footer-text" style="margin-top: 16px;">
                             Este es un correo automático, por favor no respondas a este mensaje.
                         </p>
                         <p class="copyright">
-                            © 2025 SENA - Servicio Nacional de Aprendizaje<br>
-                            Centro Industrial de Mantenimiento y Manufactura - Sogamoso, Boyacá<br>
-                            Versión 0.0.1
+                            © 2025 SENA - Servicio Nacional de Aprendizaje<br>                            
                         </p>
                     </div>
                 </div>
@@ -352,7 +337,8 @@ public class EmailServiceImpl implements EmailService {
                 <style>
                     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background-color: #39A900; color: white; padding: 20px; text-align: center; }
+                    .header { background-color: #39A900; color: white; padding: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+                    .logo-image { width: 64px; height: 64px; margin-bottom: 12px; border-radius: 8px; }
                     .content { background-color: #f9f9f9; padding: 30px; border-radius: 5px; margin-top: 20px; }
                     .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
                     .feature { margin: 15px 0; padding: 10px; background-color: white; border-radius: 5px; }
@@ -361,6 +347,7 @@ public class EmailServiceImpl implements EmailService {
             <body>
                 <div class="container">
                     <div class="header">
+                        <img src="https://sgdis.cloud/svg/box.png" alt="SGDIS Logo" class="logo-image">
                         <h1>¡Bienvenido a SGDIS!</h1>
                     </div>
                     <div class="content">
@@ -401,7 +388,8 @@ public class EmailServiceImpl implements EmailService {
                 <style>
                     body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background-color: #39A900; color: white; padding: 20px; text-align: center; }
+                    .header { background-color: #39A900; color: white; padding: 20px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+                    .logo-image { width: 64px; height: 64px; margin-bottom: 12px; border-radius: 8px; }
                     .content { background-color: #f9f9f9; padding: 30px; border-radius: 5px; margin-top: 20px; }
                     .notification { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
                     .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
@@ -410,6 +398,7 @@ public class EmailServiceImpl implements EmailService {
             <body>
                 <div class="container">
                     <div class="header">
+                        <img src="https://sgdis.cloud/svg/box.png" alt="SGDIS Logo" class="logo-image">
                         <h1>SGDIS - Notificación de Inventario</h1>
                     </div>
                     <div class="content">
