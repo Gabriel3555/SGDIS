@@ -1,5 +1,5 @@
 package com.sgdis.backend;
-
+/*
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
 
 @Component
 @RequiredArgsConstructor
@@ -258,5 +259,7 @@ public class DataInitializer implements CommandLineRunner {
         private List<String> ciudades;
     }
 }
+
+ */
 
 
