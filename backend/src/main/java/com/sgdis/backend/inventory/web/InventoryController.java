@@ -30,6 +30,7 @@ public class InventoryController {
     private final UpdateInventoryUseCase updateInventoryUseCase;
     private final AssignedInventoryUseCase assignedInventoryUseCase;
     private final FindMyInventoryUseCase findMyInventoryUseCase;
+    private final QuitInventoryUseCase quitInventoryUseCase;
     private final AssignManagerInventoryUseCase assignManagerInventoryUseCase;
     private final DeleteManagerInventoryUseCase deleteManagerInventoryUseCase;
     private final GetInventoryManagersUseCase getInventoryManagersUseCase;
@@ -194,5 +195,10 @@ public class InventoryController {
     @GetMapping("/myInventory")
     public InventoryResponse getMyInventory() {
         return findMyInventoryUseCase.findMyInventory();
+    }
+
+    @PostMapping("/quitInventory/{inventoryId}")
+    public QuitInventoryResponse quitInventory(@PathVariable Long inventoryId) {
+        return quitInventoryUseCase.quitInventory(inventoryId);
     }
 }

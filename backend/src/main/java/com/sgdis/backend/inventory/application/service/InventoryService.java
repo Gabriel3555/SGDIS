@@ -16,6 +16,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.awt.desktop.QuitResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,7 @@ public class InventoryService
         DeleteInventoryUseCase,
         GetInventoryByIdUseCase,
         AssignedInventoryUseCase,
+        QuitInventoryUseCase,
         AssignManagerInventoryUseCase,
         DeleteManagerInventoryUseCase,
         GetInventoryManagersUseCase,
@@ -203,5 +205,33 @@ public class InventoryService
         }
         
         return InventoryMapper.toResponse(inventoryRepository.findInventoryEntityByOwner(user));
+    }
+
+    @Override
+    public QuitInventoryResponse quitInventory(Long inventoryId) {
+
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        InventoryEntity inventory = inventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
+
+        // Initialize managers list if null
+        List<UserEntity> managers = inventory.getManagers();
+        if (managers == null || !managers.contains(user)) {
+            throw new ResourceNotFoundException("Manager not found in inventory with id: " + inventoryId);
+        }
+
+        // Remove manager
+        managers.remove(user);
+        inventory.setManagers(managers);
+        inventoryRepository.save(inventory);
+
+        return new QuitInventoryResponse(
+                "Successfully quited inventory",
+                inventory.getName()
+        );
     }
 }
