@@ -4,6 +4,7 @@ import com.sgdis.backend.data.regional.dto.RegionalResponse;
 import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.data.regional.mapper.RegionalMapper;
 import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@Tag(name = "Regional")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/regional")

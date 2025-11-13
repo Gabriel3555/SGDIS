@@ -1,5 +1,6 @@
 package com.sgdis.backend.web;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 
+
+@Hidden
 @Controller
 public class AdminDashboardController {
 
