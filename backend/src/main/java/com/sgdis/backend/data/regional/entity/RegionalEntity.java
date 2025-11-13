@@ -33,8 +33,4 @@ public class RegionalEntity {
     @OneToMany(mappedBy = "regional")
     private List<InstitutionEntity> institutions;
 
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "regional")
-    private  List<InventoryEntity>  inventory;
 }

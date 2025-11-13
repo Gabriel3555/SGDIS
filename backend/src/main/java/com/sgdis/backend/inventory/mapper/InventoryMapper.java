@@ -80,17 +80,4 @@ public class InventoryMapper {
         );
     }
 
-    public static InventoryEntity toEntityShallow(InventoryEntity entity) {
-        if (entity == null) return null;
-        return InventoryEntity.builder()
-                .id(entity.getId())
-                .uuid(entity.getUuid())
-                .location(entity.getLocation())
-                .name(entity.getName())
-                .owner(null)
-                .managers(null)
-                .regional(entity.getRegional())
-                .build();
-    }
-
 }

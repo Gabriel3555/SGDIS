@@ -1,6 +1,8 @@
 package com.sgdis.backend.inventory.infrastructure.entity;
 
 import com.sgdis.backend.data.regional.entity.RegionalEntity;
+import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
+import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -34,10 +36,10 @@ public class InventoryEntity {
     @JoinTable(name = "managers_inventories", joinColumns = @JoinColumn(name = "inventory_id"), inverseJoinColumns = @JoinColumn(name = "manager_id"))
     private List<UserEntity> managers;
 
-    //@ManyToOne(fetch = FetchType.EAGER)
-    //private UserEntity institucion;
-
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "regional_id")
-    private RegionalEntity regional;
+    @JoinColumn(name = "institution_id")
+    private InstitutionEntity institution;
+
+    @OneToMany(mappedBy = "inventory")
+    private List<ItemEntity> items;
 }
