@@ -17,4 +17,6 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
 
     @Query("SELECT i FROM InventoryEntity i JOIN i.managers m WHERE m.id = :managerId")
     List<InventoryEntity> findInventoryEntitiesByManagerId(@Param("managerId") Long managerId);
+
+    InventoryEntity findInventoryEntityByOwner(UserEntity owner);
 }
