@@ -29,8 +29,8 @@ public class DashboardController {
     }
 
 
-    @GetMapping("/dashboard/admin")
-    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/dashboard/admin_institution")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminDashboard() throws IOException {
         Resource resource = new ClassPathResource("static/views/dashboard/admin/dashboard.html");

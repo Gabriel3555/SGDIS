@@ -14,8 +14,8 @@ import java.io.IOException;
 @Controller
 public class AdminDashboardController {
 
-    @GetMapping("/admin/dashboard")
-    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin_institution/dashboard")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminDashboard() throws IOException {
         Resource resource = new ClassPathResource("static/views/dashboard/admin/dashboard.html");
@@ -29,8 +29,8 @@ public class AdminDashboardController {
     }
 
 
-    @GetMapping("/admin/users")
-    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin_institution/users")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> usersManagement() throws IOException {
         Resource resource = new ClassPathResource("static/views/users/users.html");
@@ -43,8 +43,8 @@ public class AdminDashboardController {
         }
     }
 
-    @GetMapping("/admin/inventory")
-    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin_institution/inventory")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> inventoryManagement() throws IOException {
         Resource resource = new ClassPathResource("static/views/inventory/inventory.html");
