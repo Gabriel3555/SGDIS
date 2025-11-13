@@ -11,6 +11,6 @@ public record InventoryResponse(
         UUID uuid,
         String location,
         String name,
-        UserResponse user
-        //Institucion institucion
+        UserResponse owner,
+        Long quantityItems
 ) {}

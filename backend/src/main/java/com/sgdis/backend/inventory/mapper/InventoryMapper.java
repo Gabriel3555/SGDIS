@@ -33,7 +33,8 @@ public class InventoryMapper {
                 entity.getName(),
                 entity.getOwner() != null
                         ? UserMapper.toResponse(entity.getOwner())
-                        : null
+                        : null,
+                entity.getItems() != null ? (long) entity.getItems().size() : null
         );
     }
 

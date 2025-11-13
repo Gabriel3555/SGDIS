@@ -30,7 +30,7 @@ public class InventoryController {
     private final UpdateInventoryUseCase updateInventoryUseCase;
     private final AssignedInventoryUseCase assignedInventoryUseCase;
     private final AssignManagerInventoryUseCase assignManagerInventoryUseCase;
-    private final GetAllOwnedInventoriesUseCase getAllOwnedInventoriesUseCase;
+    private final DeleteManagerInventoryUseCase deleteManagerInventoryUseCase;
     private final GetInventoryManagersUseCase getInventoryManagersUseCase;
     private final GetAllManagedInventoriesUseCase getAllManagedInventoriesUseCase;
 
@@ -142,19 +142,21 @@ public class InventoryController {
     public AssignManagerInventoryResponse assignManager(@RequestBody AssignManagerInventoryRequest request) {
         return assignManagerInventoryUseCase.assignManagerInventory(request);
     }
-
+        
     @Operation(
-            summary = "Get owned inventories",
-            description = "Retrieves all inventories owned by the current user"
+            summary = "Delete manager from inventory",
+            description = "Removes a manager from an inventory item"
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Owned inventories retrieved successfully",
-            content = @Content(schema = @Schema(implementation = GetAllOwnedInventoriesResponse.class))
+            description = "Manager deleted successfully",
+            content = @Content(schema = @Schema(implementation = DeleteManagerInventoryResponse.class))
     )
-    @GetMapping("/owned")
-    public GetAllOwnedInventoriesResponse getAllOwnedInventories() {
-        return getAllOwnedInventoriesUseCase.getAllOwnedInventories();
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "404", description = "Manager not found in inventory")
+    @DeleteMapping("/deleteManager")
+    public DeleteManagerInventoryResponse deleteManager(@RequestBody DeleteManagerInventoryRequest request) {
+        return deleteManagerInventoryUseCase.deleteManagerInventory(request);
     }
 
     @Operation(

@@ -30,9 +30,10 @@ public class InventoryService
         GetInventoryByIdUseCase,
         AssignedInventoryUseCase,
         AssignManagerInventoryUseCase,
-        GetAllOwnedInventoriesUseCase,
+        DeleteManagerInventoryUseCase,
         GetInventoryManagersUseCase,
-        GetAllManagedInventoriesUseCase {
+        GetAllManagedInventoriesUseCase,
+        FindMyInventoryUseCase{
 
     private final SpringDataInventoryRepository inventoryRepository;
     private final SpringDataUserRepository userRepository;
@@ -80,15 +81,12 @@ public class InventoryService
     @Override
     @Transactional
     public AssignedInventoryResponse assignedInventory(AssignedInventoryRequest request) {
+        if (inventoryRepository.findInventoryEntitiesByOwnerId(request.userId()) != null) {
+            throw new RuntimeException("Este usuario ya tiene un inventorio asignado.");
+        }
+
         InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
-
-        // Validación de regional: verificar que la regional del usuario coincida con la del inventario
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity userEntity = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
-
-        // Solo validar regional si ambos (usuario e inventario) tienen regionales asignadas
 
         UserEntity owner = userRepository.findById(request.userId())
                 .orElseThrow(() -> new UserNotFoundException(request.userId()));
@@ -131,19 +129,34 @@ public class InventoryService
     }
 
     @Override
-    public GetAllOwnedInventoriesResponse getAllOwnedInventories() {
-        Long currentUserId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    @Transactional
+    public DeleteManagerInventoryResponse deleteManagerInventory(DeleteManagerInventoryRequest request) {
+        UserEntity user = userRepository.findById(request.managerId())
+                .orElseThrow(() -> new UserNotFoundException(request.managerId()));
+        
+        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
 
-        List<InventoryEntity> ownedInventories = inventoryRepository.findInventoryEntitiesByOwnerId(currentUserId);
-        List<InventoryResponseWithoutOwnerAndManagers> inventoryResponses = ownedInventories.stream()
-                .map(inventory -> new InventoryResponseWithoutOwnerAndManagers(
-                        inventory.getId(), 
-                        inventory.getUuid(), 
-                        inventory.getLocation(), 
-                        inventory.getName()))
-                .toList();
+        // Initialize managers list if null
+        List<UserEntity> managers = inventory.getManagers();
+        if (managers == null || !managers.contains(user)) {
+            throw new ResourceNotFoundException("Manager not found in inventory with id: " + request.inventoryId());
+        }
 
-        return new GetAllOwnedInventoriesResponse(inventoryResponses);
+        // Remove manager
+        managers.remove(user);
+        inventory.setManagers(managers);
+        inventoryRepository.save(inventory);
+
+        return new DeleteManagerInventoryResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                inventory.getId(),
+                inventory.getName(),
+                "Manager removed from inventory successfully",
+                true
+        );
     }
 
     @Override
@@ -177,5 +190,18 @@ public class InventoryService
                         inventory.getOwner() != null ? inventory.getOwner().getEmail() : null
                 ))
                 .toList();
+    }
+
+    @Override
+    public InventoryResponse findMyInventory() {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity user = userRepository.getReferenceById(userId);
+        InventoryEntity inventory = inventoryRepository.findInventoryEntityByOwner(user);
+
+        if(inventory == null) {
+            return null;
+        }
+        
+        return InventoryMapper.toResponse(inventoryRepository.findInventoryEntityByOwner(user));
     }
 }
