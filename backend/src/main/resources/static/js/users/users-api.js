@@ -141,3 +141,68 @@ async function confirmDeleteUser() {
 }
 
 window.confirmDeleteUser = confirmDeleteUser;
+
+// Function to load regionals for new user modal
+async function loadRegionalsForNewUser() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch('/api/v1/regional', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const regionals = await response.json();
+            const options = regionals.map(regional => ({
+                value: regional.id.toString(),
+                label: regional.name
+            }));
+
+            if (window.regionalSelect) {
+                window.regionalSelect.setOptions(options);
+            }
+        } else {
+            showErrorToast('Error', 'No se pudieron cargar las regionales');
+        }
+    } catch (error) {
+        console.error('Error loading regionals:', error);
+        showErrorToast('Error', 'Error al cargar las regionales');
+    }
+}
+
+// Function to load institutions by regional ID
+async function loadInstitutionsByRegional(regionalId) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const institutions = await response.json();
+            const options = institutions.map(institution => ({
+                value: institution.id.toString(),
+                label: institution.name
+            }));
+
+            if (window.institutionSelect) {
+                window.institutionSelect.setOptions(options);
+            }
+        } else {
+            showErrorToast('Error', 'No se pudieron cargar las instituciones');
+        }
+    } catch (error) {
+        console.error('Error loading institutions:', error);
+        showErrorToast('Error', 'Error al cargar las instituciones');
+    }
+}
+
+window.loadRegionalsForNewUser = loadRegionalsForNewUser;
+window.loadInstitutionsByRegional = loadInstitutionsByRegional;

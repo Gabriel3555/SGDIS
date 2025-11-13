@@ -1,30 +1,45 @@
-function showNewUserModal() {
-    const modal = document.getElementById('newUserModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-    }
-}
+async function showNewUserModal() {
+     const modal = document.getElementById('newUserModal');
+     if (modal) {
+         modal.classList.remove('hidden');
+     }
+
+     // Initialize custom selects if not already done
+     if (!window.regionalSelect || !window.institutionSelect) {
+         initializeCustomSelects();
+     }
+
+     // Load regionals
+     await loadRegionalsForNewUser();
+ }
 
 function closeNewUserModal() {
-    const modal = document.getElementById('newUserModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+     const modal = document.getElementById('newUserModal');
+     if (modal) {
+         modal.classList.add('hidden');
+     }
 
-    const form = document.getElementById('newUserForm');
-    if (form) {
-        form.reset();
-        const imagePreview = document.getElementById('newUserImagePreview');
-        if (imagePreview) {
-            imagePreview.innerHTML = '<i class="fas fa-user"></i>';
-        }
-        // Clear job title and labor department fields
-        const jobTitleInput = document.getElementById('newUserJobTitle');
-        const laborDepartmentInput = document.getElementById('newUserLaborDepartment');
-        if (jobTitleInput) jobTitleInput.value = '';
-        if (laborDepartmentInput) laborDepartmentInput.value = '';
-    }
-}
+     const form = document.getElementById('newUserForm');
+     if (form) {
+         form.reset();
+         const imagePreview = document.getElementById('newUserImagePreview');
+         if (imagePreview) {
+             imagePreview.innerHTML = '<i class="fas fa-user"></i>';
+         }
+         // Clear job title and labor department fields
+         const jobTitleInput = document.getElementById('newUserJobTitle');
+         const laborDepartmentInput = document.getElementById('newUserLaborDepartment');
+         if (jobTitleInput) jobTitleInput.value = '';
+         if (laborDepartmentInput) laborDepartmentInput.value = '';
+         // Clear custom selects
+         if (window.regionalSelect) {
+             window.regionalSelect.clear();
+         }
+         if (window.institutionSelect) {
+             window.institutionSelect.clear();
+         }
+     }
+ }
 
 function showViewUserModal(userId) {
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
@@ -224,6 +239,203 @@ window.showEditUserModal = showEditUserModal;
 window.closeEditUserModal = closeEditUserModal;
 window.showDeleteUserModal = showDeleteUserModal;
 window.closeDeleteUserModal = closeDeleteUserModal;
+
+// Custom Select Component
+class CustomSelect {
+    constructor(containerId, options = {}) {
+        this.container = document.getElementById(containerId);
+        if (!this.container) return;
+
+        this.trigger = this.container.querySelector('.custom-select-trigger');
+        this.dropdown = this.container.querySelector('.custom-select-dropdown');
+        this.searchInput = this.container.querySelector('.custom-select-search');
+        this.optionsContainer = this.container.querySelector('.custom-select-options');
+        this.textElement = this.container.querySelector('.custom-select-text');
+        this.hiddenInput = this.container.querySelector('input[type="hidden"]');
+
+        this.options = [];
+        this.filteredOptions = [];
+        this.selectedValue = '';
+        this.selectedText = '';
+        this.placeholder = options.placeholder || 'Seleccionar...';
+        this.searchable = options.searchable !== false;
+        this.onChange = options.onChange || null;
+
+        this.init();
+    }
+
+    init() {
+        // Set initial placeholder
+        this.textElement.textContent = this.placeholder;
+        this.textElement.classList.add('custom-select-placeholder');
+
+        // Event listeners
+        this.trigger.addEventListener('click', () => this.toggle());
+        this.searchInput.addEventListener('input', (e) => this.filterOptions(e.target.value));
+        this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (!this.container.contains(e.target)) {
+                this.close();
+            }
+        });
+    }
+
+    setOptions(options) {
+        this.options = options;
+        this.filteredOptions = [...options];
+        this.renderOptions();
+    }
+
+    renderOptions() {
+        this.optionsContainer.innerHTML = '';
+
+        if (this.filteredOptions.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'custom-select-option disabled';
+            noResults.textContent = 'No se encontraron resultados';
+            this.optionsContainer.appendChild(noResults);
+            return;
+        }
+
+        this.filteredOptions.forEach(option => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'custom-select-option';
+            optionElement.textContent = option.label;
+            optionElement.dataset.value = option.value;
+
+            if (option.value === this.selectedValue) {
+                optionElement.classList.add('selected');
+            }
+
+            optionElement.addEventListener('click', () => this.selectOption(option));
+            this.optionsContainer.appendChild(optionElement);
+        });
+    }
+
+    filterOptions(searchTerm) {
+        if (!searchTerm.trim()) {
+            this.filteredOptions = [...this.options];
+        } else {
+            this.filteredOptions = this.options.filter(option =>
+                option.label.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        this.renderOptions();
+    }
+
+    selectOption(option) {
+        this.selectedValue = option.value;
+        this.selectedText = option.label;
+
+        this.textElement.textContent = option.label;
+        this.textElement.classList.remove('custom-select-placeholder');
+
+        if (this.hiddenInput) {
+            this.hiddenInput.value = option.value;
+        }
+
+        this.close();
+
+        if (this.onChange) {
+            this.onChange(option);
+        }
+    }
+
+    toggle() {
+        const isOpen = this.container.classList.contains('open');
+
+        // Close all other selects
+        document.querySelectorAll('.custom-select.open').forEach(select => {
+            if (select !== this.container) {
+                select.classList.remove('open');
+            }
+        });
+
+        if (isOpen) {
+            this.close();
+        } else {
+            this.open();
+        }
+    }
+
+    open() {
+        this.container.classList.add('open');
+        if (this.searchable && this.searchInput) {
+            this.searchInput.focus();
+        }
+    }
+
+    close() {
+        this.container.classList.remove('open');
+        if (this.searchInput) {
+            this.searchInput.value = '';
+            this.filterOptions('');
+        }
+    }
+
+    handleKeydown(e) {
+        if (e.key === 'Escape') {
+            this.close();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const firstOption = this.optionsContainer.querySelector('.custom-select-option:not(.disabled)');
+            if (firstOption) {
+                const value = firstOption.dataset.value;
+                const option = this.options.find(opt => opt.value === value);
+                if (option) {
+                    this.selectOption(option);
+                }
+            }
+        }
+    }
+
+    getValue() {
+        return this.selectedValue;
+    }
+
+    setValue(value) {
+        const option = this.options.find(opt => opt.value === value);
+        if (option) {
+            this.selectOption(option);
+        }
+    }
+
+    clear() {
+        this.selectedValue = '';
+        this.selectedText = '';
+        this.textElement.textContent = this.placeholder;
+        this.textElement.classList.add('custom-select-placeholder');
+
+        if (this.hiddenInput) {
+            this.hiddenInput.value = '';
+        }
+
+        this.renderOptions();
+    }
+}
+
+// Initialize custom selects for new user modal
+function initializeCustomSelects() {
+    window.regionalSelect = new CustomSelect('newUserRegionalSelect', {
+        placeholder: 'Seleccionar regional',
+        onChange: function(option) {
+            // Clear institution when regional changes
+            if (window.institutionSelect) {
+                window.institutionSelect.clear();
+            }
+            // Load institutions for selected regional
+            loadInstitutionsByRegional(option.value);
+        }
+    });
+
+    window.institutionSelect = new CustomSelect('newUserInstitutionSelect', {
+        placeholder: 'Seleccionar institución'
+    });
+}
+
+window.initializeCustomSelects = initializeCustomSelects;
 
 function showDeleteUserModal(userId) {
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
