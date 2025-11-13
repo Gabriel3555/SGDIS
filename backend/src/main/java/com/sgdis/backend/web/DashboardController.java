@@ -33,7 +33,7 @@ public class DashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/admin/dashboard.html");
+        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -48,6 +48,34 @@ public class DashboardController {
     @ResponseBody
     public ResponseEntity<Resource> warehouseDashboard() throws IOException {
         Resource resource = new ClassPathResource("static/views/dashboard/warehouse/dashboard.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/dashboard/admin_regional")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalDashboard() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/dashboard/superadmin")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminDashboard() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

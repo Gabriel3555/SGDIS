@@ -395,11 +395,6 @@
                         Regístrate aquí
                     </a>
                 </p>
-                <div class="flex items-center justify-center space-x-4 text-xs text-gray-400">
-                    <a href="#" class="hover:text-sena-verde transition-colors">Términos de uso</a>
-                    <span>•</span>
-                    <a href="#" class="hover:text-sena-verde transition-colors">Política de privacidad</a>
-                </div>
             </div>
 
             <div class="text-center mt-6">
@@ -542,6 +537,8 @@
                         // Redirección según el rol
                         let redirectUrl = '/index.html';
                         if (data.role === "ADMIN_INSTITUTION") redirectUrl = '/dashboard/admin_institution';
+                        else if (data.role === "ADMIN_REGIONAL") redirectUrl = '/dashboard/admin_regional';
+                        else if (data.role === "SUPERADMIN") redirectUrl = '/dashboard/superadmin';
                         else if (data.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
                         else if (data.role === "USER") redirectUrl = '/dashboard/user';
 

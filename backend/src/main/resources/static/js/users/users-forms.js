@@ -1,18 +1,20 @@
 async function handleNewUserSubmit(e) {
-    e.preventDefault();
+     e.preventDefault();
 
-    const fullName = document.getElementById('newUserFullName').value;
-    const email = document.getElementById('newUserEmail').value;
-    const role = document.getElementById('newUserRole').value;
-    const jobTitle = document.getElementById('newUserJobTitle').value;
-    const laborDepartment = document.getElementById('newUserLaborDepartment').value;
-    const password = document.getElementById('newUserPassword').value;
-    const photoFile = document.getElementById('newUserPhoto').files[0];
+     const fullName = document.getElementById('newUserFullName').value;
+     const email = document.getElementById('newUserEmail').value;
+     const role = document.getElementById('newUserRole').value;
+     const regional = document.getElementById('newUserRegional').value;
+     const institution = document.getElementById('newUserInstitution').value;
+     const jobTitle = document.getElementById('newUserJobTitle').value;
+     const laborDepartment = document.getElementById('newUserLaborDepartment').value;
+     const password = document.getElementById('newUserPassword').value;
+     const photoFile = document.getElementById('newUserPhoto').files[0];
 
-    if (!fullName || !email || !role || !password) {
-        showErrorToast('Campos obligatorios', 'Por favor complete todos los campos obligatorios');
-        return;
-    }
+     if (!fullName || !email || !role || !regional || !institution || !password) {
+         showErrorToast('Campos obligatorios', 'Por favor complete todos los campos obligatorios');
+         return;
+     }
 
     try {
         const token = localStorage.getItem('jwt');
@@ -31,7 +33,8 @@ async function handleNewUserSubmit(e) {
                 jobTitle: jobTitle,
                 laborDepartment: laborDepartment,
                 password: password,
-                status: true
+                status: true,
+                institutionId: parseInt(institution)
             })
         });
 
