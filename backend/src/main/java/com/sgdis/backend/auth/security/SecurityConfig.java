@@ -84,7 +84,7 @@ public class SecurityConfig  {
                     ).permitAll();
                     // Dashboard endpoints require authentication and proper roles
                     http.requestMatchers("/dashboard/user").hasRole("USER");
-                    http.requestMatchers("/dashboard/admin").hasRole("ADMIN");
+                    http.requestMatchers("/dashboard/admin_institution").hasRole("ADMIN_INSTITUTION");
                     http.requestMatchers("/dashboard/warehouse").hasRole("WAREHOUSE");
                     // API endpoints require authentication
                     http.anyRequest().permitAll();

@@ -60,7 +60,7 @@ public class InventoryController {
     )
     @ApiResponse(responseCode = "404", description = "Inventory not found")
     @GetMapping("/{id}")
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     public InventoryResponse getInventoryById(@PathVariable Long id) {
         return getInventoryByIdUseCase.getInventoryById(id);
     }
@@ -75,7 +75,7 @@ public class InventoryController {
             content = @Content(schema = @Schema(implementation = InventoryResponse.class))
     )
     @GetMapping()
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     public List<InventoryResponse> listInventoryes() {
         return listInventoryUseCase.listInventoryes();
     }
@@ -92,7 +92,7 @@ public class InventoryController {
     @ApiResponse(responseCode = "404", description = "Inventory not found")
     @ApiResponse(responseCode = "400", description = "Invalid request")
     @PutMapping("/{id}")
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     public UpdateInventoryResponse updateInventory(@PathVariable Long id, @RequestBody UpdateInventoryRequest request) {
         return  updateInventoryUseCase.updateInventory(id, request);
     }
@@ -108,7 +108,7 @@ public class InventoryController {
     )
     @ApiResponse(responseCode = "404", description = "Inventory not found")
     @DeleteMapping("/{id}")
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     public InventoryResponse deleteInventoryById(@PathVariable Long id) {
         return deleteInventoryUseCase.deleteInventoryById(id);
     }
@@ -183,7 +183,7 @@ public class InventoryController {
     )
     @ApiResponse(responseCode = "404", description = "User not found")
     @GetMapping("/managed/{userId}")
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     public List<ManagedInventoryResponse> getAllManagedInventories(@PathVariable Long userId) {
         return getAllManagedInventoriesUseCase.getAllManagedInventories(userId);
     }

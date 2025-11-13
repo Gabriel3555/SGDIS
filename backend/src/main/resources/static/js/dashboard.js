@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Initialize dashboard if we're on a dashboard page
-    if (window.location.pathname.includes('/dashboard/')) {
+    if (window.location.pathname.includes('/dashboard/') || window.location.pathname.includes('/admin_institution/')) {
         initializeDashboard();
     }
 });
@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 function initializeDashboard() {
     const path = window.location.pathname;
 
-    if (path.includes('/admin')) {
+    if (path.includes('/admin_institution')) {
         dashboardData.dashboardType = 'admin';
         loadAdminDashboardData();
     } else if (path.includes('/user')) {
@@ -1146,7 +1146,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Initialize dashboard if we're on a dashboard page
-    if (window.location.pathname.includes('/dashboard/')) {
+    if (window.location.pathname.includes('/dashboard/') || window.location.pathname.includes('/admin_institution/')) {
         initializeDashboard();
     }
 });
