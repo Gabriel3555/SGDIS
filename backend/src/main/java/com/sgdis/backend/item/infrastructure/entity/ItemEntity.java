@@ -1,0 +1,59 @@
+package com.sgdis.backend.item.infrastructure.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sgdis.backend.category.infrastructure.entity.CategoryEntity;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.item.domain.Attribute;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@Data
+@Entity
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "items")
+public class ItemEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String irId;
+    private String productName;
+    private String wareHouseDescription;
+
+    @Column(unique = true)
+    private String licencePlateNumber;
+
+    private String consecutiveNumber;
+    private String skuDescription;
+    private String descriptionElement;
+    private LocalDate acquisitionDate;
+    private Double acquisitionValue;
+    private String ivId;
+
+    private String allAttributes;
+
+    @ElementCollection
+    @MapKeyEnumerated(EnumType.STRING)
+    @Column(name = "attribute_value")
+    private Map<Attribute, String> attributes;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "inventory_id")
+    private InventoryEntity inventory;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id")
+    private CategoryEntity category;
+}
