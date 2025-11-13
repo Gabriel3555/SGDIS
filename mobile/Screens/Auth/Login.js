@@ -9,6 +9,7 @@ import {
   Image,
   Animated,
   ActivityIndicator,
+  Linking,
 } from "react-native";
 import { login } from "../../src/Navigation/Services/AuthService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -190,7 +191,7 @@ export default function LoginScreen({ navigation }) {
 
         {/* Links extras */}
         <TouchableOpacity
-          onPress={() => navigation.navigate("ForgotPassword")}
+          onPress={() => Linking.openURL('https://sgdis.cloud/forgot_password.html')}
         >
           <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>

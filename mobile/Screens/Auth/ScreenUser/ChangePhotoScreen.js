@@ -14,6 +14,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
 
@@ -37,7 +38,7 @@ export default function ChangePhotoScreen() {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.8,
+      quality: 0.5,
     });
 
     if (!result.canceled) {
@@ -48,6 +49,13 @@ export default function ChangePhotoScreen() {
   const saveImage = async () => {
     if (!selectedImage) {
       Alert.alert("Error", "Selecciona una imagen primero");
+      return;
+    }
+
+    // Check file size (5MB limit)
+    const fileSizeMB = selectedImage.fileSize / (1024 * 1024);
+    if (fileSizeMB > 5) {
+      Alert.alert("Error", "La imagen es demasiado grande. Máximo 5MB permitido.");
       return;
     }
 
@@ -82,9 +90,18 @@ export default function ChangePhotoScreen() {
         },
       });
 
-      // Store the backend imgUrl in AsyncStorage
+      // Download and store the image locally
       if (userResponse.data.imgUrl) {
-        await AsyncStorage.setItem(`userProfileImage_${userEmail}`, userResponse.data.imgUrl);
+        const fullImageUrl = `https://sgdis.cloud${userResponse.data.imgUrl}`;
+        try {
+          const localUri = `${FileSystem.cacheDirectory}profile_${userEmail}.jpg`;
+          const downloadResult = await FileSystem.downloadAsync(fullImageUrl, localUri);
+          await AsyncStorage.setItem(`userProfileImage_${userEmail}`, downloadResult.uri);
+        } catch (downloadError) {
+          console.error("Error downloading image:", downloadError);
+          // Fallback to storing the URL if download fails
+          await AsyncStorage.setItem(`userProfileImage_${userEmail}`, fullImageUrl);
+        }
       }
 
       Alert.alert("Éxito", "Foto de perfil actualizada correctamente", [
