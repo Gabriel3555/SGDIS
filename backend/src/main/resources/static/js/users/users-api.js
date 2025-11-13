@@ -48,7 +48,7 @@ async function loadCurrentUserInfo() {
         console.error('Error loading current user info:', error);
         updateUserInfoDisplay({
             fullName: 'Super Admin',
-            role: 'ADMIN',
+            role: 'SUPERADMIN',
             email: 'admin@sena.edu.co'
         });
     }
@@ -94,7 +94,7 @@ async function confirmDeleteUser() {
     }
 
     // Verificar que no sea un administrador
-    if (currentUser.role === 'ADMIN') {
+    if (currentUser.role === 'SUPERADMIN' || currentUser.role === 'ADMIN_INSTITUTION' || currentUser.role === 'ADMIN_REGIONAL') {
         showErrorToast('No permitido', 'No se puede eliminar un usuario administrador.');
         closeDeleteUserModal();
         return;

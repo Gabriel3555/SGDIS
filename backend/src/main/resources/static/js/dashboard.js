@@ -100,7 +100,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Initialize dashboard if we're on a dashboard page
-    if (window.location.pathname.includes('/dashboard/') || window.location.pathname.includes('/admin_institution/')) {
+    if (window.location.pathname.includes('/dashboard/') ||
+        window.location.pathname.includes('/admin_institution/') ||
+        window.location.pathname.includes('/admin_regional/') ||
+        window.location.pathname.includes('/superadmin/')) {
         initializeDashboard();
     }
 });
@@ -109,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 function initializeDashboard() {
     const path = window.location.pathname;
 
-    if (path.includes('/admin_institution')) {
+    if (path.includes('/admin_institution') || path.includes('/admin_regional') || path.includes('/superadmin')) {
         dashboardData.dashboardType = 'admin';
         loadAdminDashboardData();
     } else if (path.includes('/user')) {
@@ -176,13 +179,37 @@ async function loadUserInfo() {
         console.error('Error loading user info:', error);
         // Set default user data based on dashboard type
         if (dashboardData.dashboardType === 'admin') {
-            dashboardData.user = {
-                fullName: 'Super Admin',
-                role: 'ADMIN',
-                email: 'admin@sena.edu.co'
-            };
-            // Also update header immediately with consistent values
-            updateHeaderProfile('Super Admin', 'Super Admin');
+            // Determine admin type based on URL path
+            const path = window.location.pathname;
+            if (path.includes('/superadmin')) {
+                dashboardData.user = {
+                    fullName: 'Super Admin',
+                    role: 'SUPERADMIN',
+                    email: 'admin@sena.edu.co'
+                };
+                updateHeaderProfile('Super Admin', 'SUPERADMIN');
+            } else if (path.includes('/admin_regional')) {
+                dashboardData.user = {
+                    fullName: 'Admin Regional',
+                    role: 'ADMIN_REGIONAL',
+                    email: 'admin@sena.edu.co'
+                };
+                updateHeaderProfile('Admin Regional', 'ADMIN_REGIONAL');
+            } else if (path.includes('/admin_institution')) {
+                dashboardData.user = {
+                    fullName: 'Admin Institución',
+                    role: 'ADMIN_INSTITUTION',
+                    email: 'admin@sena.edu.co'
+                };
+                updateHeaderProfile('Admin Institución', 'ADMIN_INSTITUTION');
+            } else {
+                dashboardData.user = {
+                    fullName: 'Super Admin',
+                    role: 'SUPERADMIN',
+                    email: 'admin@sena.edu.co'
+                };
+                updateHeaderProfile('Super Admin', 'SUPERADMIN');
+            }
         } else if (dashboardData.dashboardType === 'user') {
             dashboardData.user = {
                 fullName: 'Usuario',
@@ -212,8 +239,17 @@ function setZeroFallbacks() {
 // Get default user data based on dashboard type
 function getDefaultUserData() {
     const type = dashboardData.dashboardType;
+    const path = window.location.pathname;
+
     if (type === 'admin') {
-        return { fullName: 'Super Admin', role: 'ADMIN', email: 'admin@sena.edu.co' };
+        if (path.includes('/superadmin')) {
+            return { fullName: 'Super Admin', role: 'SUPERADMIN', email: 'admin@sena.edu.co' };
+        } else if (path.includes('/admin_regional')) {
+            return { fullName: 'Admin Regional', role: 'ADMIN_REGIONAL', email: 'admin@sena.edu.co' };
+        } else if (path.includes('/admin_institution')) {
+            return { fullName: 'Admin Institución', role: 'ADMIN_INSTITUTION', email: 'admin@sena.edu.co' };
+        }
+        return { fullName: 'Super Admin', role: 'SUPERADMIN', email: 'admin@sena.edu.co' };
     } else if (type === 'user') {
         return { fullName: 'Usuario', role: 'USER', email: 'user@sena.edu.co' };
     } else if (type === 'warehouse') {
@@ -883,7 +919,7 @@ async function loadAdminCharts() {
 
         if (response.ok) {
             const users = await response.json();
-            const roleCounts = { 'ADMIN': 0, 'WAREHOUSE': 0, 'USER': 0 };
+            const roleCounts = { 'SUPERADMIN': 0, 'ADMIN_INSTITUTION': 0, 'ADMIN_REGIONAL': 0, 'WAREHOUSE': 0, 'USER': 0 };
 
             users.forEach(user => {
                 if (roleCounts.hasOwnProperty(user.role)) {
@@ -893,7 +929,9 @@ async function loadAdminCharts() {
 
             dashboardData.chartData = {
                 usersByRole: [
-                    { role: 'Super Administradores', count: roleCounts.ADMIN, color: 'red' },
+                    { role: 'Super Admin', count: roleCounts.SUPERADMIN, color: 'red' },
+                    { role: 'Admin Institución', count: roleCounts.ADMIN_INSTITUTION, color: 'orange' },
+                    { role: 'Admin Regional', count: roleCounts.ADMIN_REGIONAL, color: 'purple' },
                     { role: 'Admin Almacén', count: roleCounts.WAREHOUSE, color: 'yellow' },
                     { role: 'Usuarios Normales', count: roleCounts.USER, color: 'green' }
                 ],
@@ -913,7 +951,9 @@ async function loadAdminCharts() {
         console.error('Error loading admin charts:', error);
         dashboardData.chartData = {
             usersByRole: [
-                { role: 'Super Administradores', count: 0, color: 'red' },
+                { role: 'Super Admin', count: 0, color: 'red' },
+                { role: 'Admin Institución', count: 0, color: 'orange' },
+                { role: 'Admin Regional', count: 0, color: 'purple' },
                 { role: 'Admin Almacén', count: 0, color: 'yellow' },
                 { role: 'Usuarios Normales', count: 0, color: 'green' }
             ],

@@ -453,7 +453,7 @@ function showDeleteUserModal(userId) {
     const email = user.email || 'Sin email';
 
     if (message) {
-        if (user.role === 'ADMIN') {
+        if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_INSTITUTION' || user.role === 'ADMIN_REGIONAL') {
             message.textContent = `No se puede eliminar el usuario "${fullName}" porque es un administrador del sistema. Contacte al soporte técnico si necesita ayuda.`;
             setTimeout(() => {
                 const deleteBtn = document.querySelector('#deleteUserModal button:last-child');

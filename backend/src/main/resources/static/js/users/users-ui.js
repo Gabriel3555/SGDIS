@@ -19,7 +19,9 @@ function updateUserStats() {
         return;
     }
     const totalUsers = window.usersData.users.length;
-    const adminCount = window.usersData.users.filter(u => u && u.role === 'ADMIN').length;
+    const superadminCount = window.usersData.users.filter(u => u && u.role === 'SUPERADMIN').length;
+    const adminInstitutionCount = window.usersData.users.filter(u => u && u.role === 'ADMIN_INSTITUTION').length;
+    const adminRegionalCount = window.usersData.users.filter(u => u && u.role === 'ADMIN_REGIONAL').length;
     const warehouseCount = window.usersData.users.filter(u => u && u.role === 'WAREHOUSE').length;
     const userCount = window.usersData.users.filter(u => u && u.role === 'USER').length;
     const activeCount = window.usersData.users.filter(u => u && u.status === true).length;
@@ -30,13 +32,39 @@ function updateUserStats() {
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Super Admin</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${adminCount}</h3>
+                    <h3 class="text-3xl font-bold text-gray-800">${superadminCount}</h3>
                 </div>
                 <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
                     <i class="fas fa-user-shield text-red-600 text-xl"></i>
                 </div>
             </div>
             <p class="text-red-600 text-sm font-medium">Administradores del sistema</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Admin Institución</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${adminInstitutionCount}</h3>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-building text-purple-600 text-xl"></i>
+                </div>
+            </div>
+            <p class="text-purple-600 text-sm font-medium">Administradores de institución</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Admin Regional</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${adminRegionalCount}</h3>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-map-marker-alt text-orange-600 text-xl"></i>
+                </div>
+            </div>
+            <p class="text-orange-600 text-sm font-medium">Administradores regionales</p>
         </div>
 
         <div class="stat-card">
@@ -116,7 +144,9 @@ function updateSearchAndFilters() {
             <div class="relative">
                 <select onchange="setRoleFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-green-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
                     <option value="all" ${window.usersData && window.usersData.selectedRole === 'all' ? 'selected' : ''}>Todos los roles</option>
-                    <option value="ADMIN" ${window.usersData && window.usersData.selectedRole === 'ADMIN' ? 'selected' : ''}>Super Admin</option>
+                    <option value="SUPERADMIN" ${window.usersData && window.usersData.selectedRole === 'SUPERADMIN' ? 'selected' : ''}>Super Admin</option>
+                    <option value="ADMIN_INSTITUTION" ${window.usersData && window.usersData.selectedRole === 'ADMIN_INSTITUTION' ? 'selected' : ''}>Admin Institución</option>
+                    <option value="ADMIN_REGIONAL" ${window.usersData && window.usersData.selectedRole === 'ADMIN_REGIONAL' ? 'selected' : ''}>Admin Regional</option>
                     <option value="WAREHOUSE" ${window.usersData && window.usersData.selectedRole === 'WAREHOUSE' ? 'selected' : ''}>Almacén</option>
                     <option value="USER" ${window.usersData && window.usersData.selectedRole === 'USER' ? 'selected' : ''}>Usuario</option>
                 </select>
@@ -370,7 +400,7 @@ function updateUsersTable() {
             const fullName = user.fullName || 'Usuario sin nombre';
             const email = user.email || 'Sin email';
             const initials = fullName.charAt(0).toUpperCase();
-            const isAdmin = user.role === 'ADMIN';
+            const isAdmin = user.role === 'SUPERADMIN' || user.role === 'ADMIN_INSTITUTION' || user.role === 'ADMIN_REGIONAL';
             const isCurrentUser = window.usersData && window.usersData.currentLoggedInUserId === user.id;
 
             const profileImage = user.imgUrl ?
@@ -612,7 +642,7 @@ function updateUsersCards() {
             const fullName = user.fullName || 'Usuario sin nombre';
             const email = user.email || 'Sin email';
             const initials = fullName.charAt(0).toUpperCase();
-            const isAdmin = user.role === 'ADMIN';
+            const isAdmin = user.role === 'SUPERADMIN' || user.role === 'ADMIN_INSTITUTION' || user.role === 'ADMIN_REGIONAL';
             const isCurrentUser = window.usersData && window.usersData.currentLoggedInUserId === user.id;
 
             const profileImage = user.imgUrl ?
