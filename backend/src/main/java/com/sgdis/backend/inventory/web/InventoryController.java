@@ -29,6 +29,7 @@ public class InventoryController {
     private final ListInventoryUseCase listInventoryUseCase;
     private final UpdateInventoryUseCase updateInventoryUseCase;
     private final AssignedInventoryUseCase assignedInventoryUseCase;
+    private final FindMyInventoryUseCase findMyInventoryUseCase;
     private final AssignManagerInventoryUseCase assignManagerInventoryUseCase;
     private final DeleteManagerInventoryUseCase deleteManagerInventoryUseCase;
     private final GetInventoryManagersUseCase getInventoryManagersUseCase;
@@ -188,5 +189,10 @@ public class InventoryController {
     //@PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     public List<ManagedInventoryResponse> getAllManagedInventories(@PathVariable Long userId) {
         return getAllManagedInventoriesUseCase.getAllManagedInventories(userId);
+    }
+
+    @GetMapping("/myInventory")
+    public InventoryResponse getMyInventory() {
+        return findMyInventoryUseCase.findMyInventory();
     }
 }
