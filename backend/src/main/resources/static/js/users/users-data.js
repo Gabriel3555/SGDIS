@@ -13,9 +13,11 @@ let usersData = {
 
 function getRoleText(role) {
     switch(role) {
-        case 'ADMIN': return 'Super Admin';
+        case 'SUPERADMIN': return 'Super Admin';
+        case 'ADMIN_INSTITUTION': return 'Admin Institución';
+        case 'ADMIN_REGIONAL': return 'Admin Regional';
         case 'WAREHOUSE': return 'Almacén';
-        case 'USER': return 'Usuario';
+        case 'USER': return 'Usuario Normal';
         default: return role;
     }
 }
