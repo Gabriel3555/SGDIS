@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
@@ -114,7 +115,12 @@ export default function MeUserScreen() {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header con información básica */}
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#28a745', '#4CAF50', '#66BB6A']}
+        style={styles.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
         <View style={styles.profileSection}>
           <View style={styles.avatarContainer}>
             {localImageUri ? (
@@ -156,7 +162,7 @@ export default function MeUserScreen() {
                 />
                 {imageLoading && (
                   <View style={styles.imageLoadingOverlay}>
-                    <ActivityIndicator size="small" color="#28a745" />
+                    <ActivityIndicator size="small" color="#fff" />
                   </View>
                 )}
               </View>
@@ -174,7 +180,7 @@ export default function MeUserScreen() {
             </View>
           </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {/* Información detallada */}
       <View style={styles.detailsSection}>
@@ -280,32 +286,37 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   header: {
-    backgroundColor: "#fff",
     paddingTop: 50,
     paddingBottom: 30,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    elevation: 4,
+    elevation: 6,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   profileSection: {
-    flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 20,
   },
   avatarContainer: {
-    marginRight: 20,
+    marginBottom: 20,
   },
   avatarWrapper: {
     position: 'relative',
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 4,
+    borderColor: '#fff',
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   imageLoadingOverlay: {
     position: 'absolute',
@@ -316,41 +327,58 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    borderRadius: 40,
+    borderRadius: 50,
   },
   avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: "#28a745",
     justifyContent: "center",
     alignItems: "center",
+    borderWidth: 4,
+    borderColor: '#fff',
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   userInfo: {
-    flex: 1,
+    alignItems: "center",
   },
   userName: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: "#fff",
     marginBottom: 4,
+    textAlign: "center",
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   userEmail: {
     fontSize: 16,
-    color: "#666",
+    color: "#f0f0f0",
     marginBottom: 8,
+    textAlign: "center",
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   roleBadge: {
-    backgroundColor: "#e8f5e8",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 16,
-    alignSelf: "flex-start",
+    alignSelf: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   roleText: {
     fontSize: 12,
     fontWeight: "bold",
-    color: "#28a745",
+    color: "#fff",
   },
   detailsSection: {
     padding: 20,
@@ -358,18 +386,20 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: "#2c3e50",
     marginBottom: 16,
   },
   detailCard: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    elevation: 2,
+    borderRadius: 20,
+    padding: 24,
+    elevation: 6,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   detailRow: {
     flexDirection: "row",
@@ -405,25 +435,27 @@ const styles = StyleSheet.create({
   actionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
+    justifyContent: "space-around",
   },
   actionButton: {
-    width: "48%",
+    width: "45%",
     backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 12,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 16,
     alignItems: "center",
-    elevation: 3,
+    elevation: 6,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
   },
   actionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
+    color: "#2c3e50",
     marginTop: 8,
     textAlign: "center",
   },
