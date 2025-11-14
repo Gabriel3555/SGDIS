@@ -421,6 +421,12 @@ function initializeCustomSelects() {
     window.regionalSelect = new CustomSelect('newUserRegionalSelect', {
         placeholder: 'Seleccionar regional',
         onChange: function(option) {
+            // Clear error highlighting
+            const trigger = document.getElementById('newUserRegionalSelect')?.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.classList.remove('border-red-500');
+            }
+            
             // Clear institution when regional changes
             if (window.institutionSelect) {
                 window.institutionSelect.clear();
@@ -431,13 +437,20 @@ function initializeCustomSelects() {
     });
 
     window.institutionSelect = new CustomSelect('newUserInstitutionSelect', {
-        placeholder: 'Seleccionar institución'
+        placeholder: 'Seleccionar institución',
+        onChange: function(option) {
+            // Clear error highlighting
+            const trigger = document.getElementById('newUserInstitutionSelect')?.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.classList.remove('border-red-500');
+            }
+        }
     });
 }
 
 window.initializeCustomSelects = initializeCustomSelects;
 
-function showDeleteUserModal(userId) {
+async function showDeleteUserModal(userId) {
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
     const user = usersData.users.find(u => u && u.id === numericUserId);
 
@@ -456,25 +469,77 @@ function showDeleteUserModal(userId) {
         if (user.role === 'SUPERADMIN' || user.role === 'ADMIN_INSTITUTION' || user.role === 'ADMIN_REGIONAL') {
             message.textContent = `No se puede eliminar el usuario "${fullName}" porque es un administrador del sistema. Contacte al soporte técnico si necesita ayuda.`;
             setTimeout(() => {
-                const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
-                if (deleteBtn && !deleteBtn.disabled) {
-                    deleteBtn.disabled = true;
-                    deleteBtn.textContent = 'No permitido';
-                    deleteBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-                    deleteBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                const deleteBtn = document.getElementById('deleteUserButton');
+                if (deleteBtn) {
+                    deleteBtn.style.display = 'none';
                 }
             }, 100);
         } else {
-            message.textContent = `¿Está seguro de que desea eliminar al usuario "${fullName}" (${email})? Esta acción no se puede deshacer.`;
-            setTimeout(() => {
-                const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
-                if (deleteBtn && deleteBtn.disabled) {
-                    deleteBtn.disabled = false;
-                    deleteBtn.textContent = 'Eliminar Usuario';
-                    deleteBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                    deleteBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            // Check if user has managed inventories (both owned and managed)
+            try {
+                const token = localStorage.getItem('jwt');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                const response = await fetch(`/api/v1/users/${numericUserId}/inventories`, {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (response.ok) {
+                    const inventories = await response.json();
+                    if (inventories && inventories.length > 0) {
+                        message.innerHTML = `
+                            <div class="space-y-2">
+                                <p><strong>No se puede eliminar el usuario "${fullName}"</strong></p>
+                                <p class="text-sm">Este usuario tiene <strong>${inventories.length} inventario(s)</strong> asignado(s) como propietario o gestor:</p>
+                                <ul class="text-sm list-disc list-inside max-h-32 overflow-y-auto bg-yellow-50 p-2 rounded">
+                                    ${inventories.slice(0, 5).map(inv => `<li>${inv.name || 'Inventario sin nombre'}</li>`).join('')}
+                                    ${inventories.length > 5 ? `<li class="font-semibold">... y ${inventories.length - 5} más</li>` : ''}
+                                </ul>
+                                <p class="text-sm text-yellow-800">Por favor, transfiere la propiedad y gestión de todos los inventarios a otro usuario antes de eliminarlo.</p>
+                            </div>
+                        `;
+                        setTimeout(() => {
+                            const deleteBtn = document.getElementById('deleteUserButton');
+                            if (deleteBtn) {
+                                deleteBtn.style.display = 'none';
+                            }
+                        }, 100);
+                    } else {
+                        // No inventories, can delete
+                        message.textContent = `¿Está seguro de que desea eliminar al usuario "${fullName}" (${email})? Esta acción no se puede deshacer.`;
+                        setTimeout(() => {
+                            const deleteBtn = document.getElementById('deleteUserButton');
+                            if (deleteBtn) {
+                                deleteBtn.style.display = '';
+                                deleteBtn.disabled = false;
+                            }
+                        }, 100);
+                    }
+                } else {
+                    // If API call fails, show warning but allow deletion
+                    message.textContent = `¿Está seguro de que desea eliminar al usuario "${fullName}" (${email})? Esta acción no se puede deshacer.`;
+                    setTimeout(() => {
+                        const deleteBtn = document.getElementById('deleteUserButton');
+                        if (deleteBtn) {
+                            deleteBtn.style.display = '';
+                            deleteBtn.disabled = false;
+                        }
+                    }, 100);
                 }
-            }, 100);
+            } catch (error) {
+                console.error('Error checking user inventories:', error);
+                // If error occurs, show default message and allow deletion attempt
+                message.textContent = `¿Está seguro de que desea eliminar al usuario "${fullName}" (${email})? Esta acción no se puede deshacer.`;
+                setTimeout(() => {
+                    const deleteBtn = document.getElementById('deleteUserButton');
+                    if (deleteBtn) {
+                        deleteBtn.style.display = '';
+                        deleteBtn.disabled = false;
+                    }
+                }, 100);
+            }
         }
     }
 
@@ -490,12 +555,32 @@ function closeDeleteUserModal() {
         modal.classList.add('hidden');
     }
 
-    const deleteBtn = document.querySelector('#deleteUserModal button:last-child');
+    // Restore the delete button to its default state
+    const deleteBtn = document.getElementById('deleteUserButton');
+    const cancelBtn = document.querySelector('#deleteUserModalActions button:first-child');
+    
     if (deleteBtn) {
+        deleteBtn.style.display = '';
         deleteBtn.disabled = false;
-        deleteBtn.textContent = 'Eliminar Usuario';
-        deleteBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-        deleteBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        deleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        deleteBtn.innerHTML = 'Eliminar Usuario';
+    }
+    
+    if (cancelBtn) {
+        cancelBtn.disabled = false;
+        cancelBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+
+    // Reset the message
+    const message = document.getElementById('deleteUserMessage');
+    if (message) {
+        message.textContent = 'Esta acción no se puede deshacer.';
+        message.innerHTML = 'Esta acción no se puede deshacer.';
+    }
+
+    // Reset delete flag if modal is being closed
+    if (window.isDeletingUser !== undefined) {
+        window.isDeletingUser = false;
     }
 
     usersData.currentUserId = null;

@@ -10,6 +10,10 @@ import java.util.Optional;
 
 public interface SpringDataUserRepository extends JpaRepository<UserEntity, Long> {
     Optional<UserEntity> findByEmail(String email);
+
     @Query("SELECT i FROM InventoryEntity i JOIN i.managers m WHERE m.id = :userId")
     List<InventoryEntity> findManagedInventoriesByUserId(Long userId);
+
+    @Query("SELECT i FROM InventoryEntity i WHERE i.owner.id = :userId")
+    List<InventoryEntity> findInventoriesByOwnerId(Long userId);
 }

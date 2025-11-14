@@ -1,20 +1,82 @@
 async function handleNewUserSubmit(e) {
      e.preventDefault();
 
-     const fullName = document.getElementById('newUserFullName').value;
-     const email = document.getElementById('newUserEmail').value;
-     const role = document.getElementById('newUserRole').value;
-     const regional = document.getElementById('newUserRegional').value;
-     const institution = document.getElementById('newUserInstitution').value;
-     const jobTitle = document.getElementById('newUserJobTitle').value;
-     const laborDepartment = document.getElementById('newUserLaborDepartment').value;
-     const password = document.getElementById('newUserPassword').value;
-     const photoFile = document.getElementById('newUserPhoto').files[0];
+     const fullName = document.getElementById('newUserFullName')?.value?.trim();
+     const email = document.getElementById('newUserEmail')?.value?.trim();
+     const role = document.getElementById('newUserRole')?.value;
+     const regionalInput = document.getElementById('newUserRegional');
+     const institutionInput = document.getElementById('newUserInstitution');
+     
+     // Get values from hidden inputs, also check CustomSelect objects if available
+     let regional = regionalInput?.value?.trim();
+     let institution = institutionInput?.value?.trim();
+     
+     // Fallback: check CustomSelect objects directly
+     if (!regional && window.regionalSelect) {
+         regional = window.regionalSelect.getValue();
+     }
+     if (!institution && window.institutionSelect) {
+         institution = window.institutionSelect.getValue();
+     }
+     
+     const jobTitle = document.getElementById('newUserJobTitle')?.value?.trim();
+     const laborDepartment = document.getElementById('newUserLaborDepartment')?.value?.trim();
+     const password = document.getElementById('newUserPassword')?.value?.trim();
+     const photoFile = document.getElementById('newUserPhoto')?.files[0];
 
-     if (!fullName || !email || !role || !regional || !institution || !password) {
-         showErrorToast('Campos obligatorios', 'Por favor complete todos los campos obligatorios');
+     // Validate required fields with specific error messages
+     const missingFields = [];
+     
+     if (!fullName) missingFields.push('Nombre Completo');
+     if (!email) missingFields.push('Email');
+     if (!role || role === '') missingFields.push('Rol');
+     if (!regional || regional === '') missingFields.push('Regional');
+     if (!institution || institution === '') missingFields.push('Institución');
+     if (!password) missingFields.push('Contraseña');
+
+     if (missingFields.length > 0) {
+         const fieldsList = missingFields.join(', ');
+         showErrorToast('Campos obligatorios', `Por favor complete los siguientes campos: ${fieldsList}`);
+         
+         // Highlight missing fields visually
+         if (!fullName) document.getElementById('newUserFullName')?.classList.add('border-red-500');
+         if (!email) document.getElementById('newUserEmail')?.classList.add('border-red-500');
+         if (!role) document.getElementById('newUserRole')?.classList.add('border-red-500');
+         if (!regional) {
+             const regionalSelect = document.getElementById('newUserRegionalSelect');
+             if (regionalSelect) {
+                 regionalSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
+             }
+         }
+         if (!institution) {
+             const institutionSelect = document.getElementById('newUserInstitutionSelect');
+             if (institutionSelect) {
+                 institutionSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
+             }
+         }
+         if (!password) document.getElementById('newUserPassword')?.classList.add('border-red-500');
+         
          return;
      }
+     
+     // Remove error highlighting
+     document.getElementById('newUserFullName')?.classList.remove('border-red-500');
+     document.getElementById('newUserEmail')?.classList.remove('border-red-500');
+     document.getElementById('newUserRole')?.classList.remove('border-red-500');
+     document.getElementById('newUserRegionalSelect')?.querySelector('.custom-select-trigger')?.classList.remove('border-red-500');
+     document.getElementById('newUserInstitutionSelect')?.querySelector('.custom-select-trigger')?.classList.remove('border-red-500');
+     document.getElementById('newUserPassword')?.classList.remove('border-red-500');
+
+    // Validate that institution is a valid number
+    const institutionId = parseInt(institution);
+    if (isNaN(institutionId) || institutionId <= 0) {
+        showErrorToast('Institución inválida', 'Por favor seleccione una institución válida');
+        const institutionSelect = document.getElementById('newUserInstitutionSelect');
+        if (institutionSelect) {
+            institutionSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
+        }
+        return;
+    }
 
     try {
         const token = localStorage.getItem('jwt');
@@ -30,11 +92,11 @@ async function handleNewUserSubmit(e) {
                 fullName: fullName,
                 email: email,
                 role: role,
-                jobTitle: jobTitle,
-                laborDepartment: laborDepartment,
+                jobTitle: jobTitle || null,
+                laborDepartment: laborDepartment || null,
                 password: password,
                 status: true,
-                institutionId: parseInt(institution)
+                institutionId: institutionId
             })
         });
 

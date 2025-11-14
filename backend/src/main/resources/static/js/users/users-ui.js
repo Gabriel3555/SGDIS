@@ -364,9 +364,20 @@ function updateUsersTable() {
     if (!window.usersData) {
         return;
     }
-    const startIndex = (window.usersData.currentPage - 1) * window.usersData.itemsPerPage;
-    const endIndex = startIndex + window.usersData.itemsPerPage;
-    const paginatedUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
+    
+    // Check if we have filters active (need local pagination)
+    const hasFilters = window.usersData.searchTerm || window.usersData.selectedRole !== 'all' || window.usersData.selectedStatus !== 'all';
+    
+    let paginatedUsers;
+    if (hasFilters) {
+        // Local pagination for filtered results
+        const startIndex = (window.usersData.currentPage - 1) * window.usersData.itemsPerPage;
+        const endIndex = startIndex + window.usersData.itemsPerPage;
+        paginatedUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
+    } else {
+        // Users are already paginated from backend
+        paginatedUsers = window.usersData.filteredUsers;
+    }
 
     let usersTableHtml = ``;
 
@@ -473,20 +484,25 @@ function updatePagination() {
     if (!window.usersData) {
         return;
     }
-    const totalPages = Math.ceil(window.usersData.filteredUsers.length / window.usersData.itemsPerPage);
+    
+    // Use backend totalPages instead of calculating locally
+    const totalPages = window.usersData.totalPages || 0;
+    const totalUsers = window.usersData.totalUsers || 0;
+    
+    // Calculate items being shown on current page
     const startItem = (window.usersData.currentPage - 1) * window.usersData.itemsPerPage + 1;
-    const endItem = Math.min(window.usersData.currentPage * window.usersData.itemsPerPage, window.usersData.filteredUsers.length);
+    const endItem = Math.min(window.usersData.currentPage * window.usersData.itemsPerPage, totalUsers);
 
     let paginationHtml = `
         <div class="text-sm text-gray-600">
-            Mostrando ${startItem}-${endItem} de ${window.usersData ? window.usersData.filteredUsers.length : 0} usuarios
+            Mostrando ${startItem}-${endItem} de ${totalUsers} usuarios
         </div>
         <div class="flex items-center gap-2">
     `;
 
-    if (window.usersData) {
+    if (window.usersData && totalPages > 0) {
         paginationHtml += `
-            <button onclick="changePage(${window.usersData.currentPage - 1})" ${window.usersData.currentPage === 1 ? 'disabled' : ''} class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onclick="changePage(${window.usersData.currentPage - 1})" ${window.usersData.currentPage === 1 ? 'disabled' : ''} class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 <i class="fas fa-chevron-left"></i>
             </button>
         `;
@@ -508,7 +524,7 @@ function updatePagination() {
         }
 
         paginationHtml += `
-            <button onclick="changePage(${window.usersData.currentPage + 1})" ${window.usersData.currentPage === totalPages ? 'disabled' : ''} class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button onclick="changePage(${window.usersData.currentPage + 1})" ${window.usersData.currentPage === totalPages ? 'disabled' : ''} class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                 <i class="fas fa-chevron-right"></i>
             </button>
         `;
@@ -618,9 +634,20 @@ function updateUsersCards() {
     if (!window.usersData) {
         return;
     }
-    const startIndex = (window.usersData.currentPage - 1) * window.usersData.itemsPerPage;
-    const endIndex = startIndex + window.usersData.itemsPerPage;
-    const paginatedUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
+    
+    // Check if we have filters active (need local pagination)
+    const hasFilters = window.usersData.searchTerm || window.usersData.selectedRole !== 'all' || window.usersData.selectedStatus !== 'all';
+    
+    let paginatedUsers;
+    if (hasFilters) {
+        // Local pagination for filtered results
+        const startIndex = (window.usersData.currentPage - 1) * window.usersData.itemsPerPage;
+        const endIndex = startIndex + window.usersData.itemsPerPage;
+        paginatedUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
+    } else {
+        // Users are already paginated from backend
+        paginatedUsers = window.usersData.filteredUsers;
+    }
 
     let usersCardsHtml = ``;
 

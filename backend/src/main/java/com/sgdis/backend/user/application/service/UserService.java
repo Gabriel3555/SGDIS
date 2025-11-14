@@ -12,8 +12,12 @@ import com.sgdis.backend.exception.DomainValidationException;
 import com.sgdis.backend.exception.userExceptions.InvalidEmailDomainException;
 import com.sgdis.backend.exception.userExceptions.EmailAlreadyInUseException;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
+import com.sgdis.backend.exception.userExceptions.UserHasAssignedInventoriesException;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,6 +64,26 @@ public class UserService implements
                 .stream()
                 .map(UserMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public PagedUserResponse listUsers(Pageable pageable) {
+        Page<UserEntity> userPage = userRepository.findAll(pageable);
+        
+        List<UserResponse> userResponses = userPage.getContent()
+                .stream()
+                .map(UserMapper::toResponse)
+                .collect(Collectors.toList());
+
+        return PagedUserResponse.builder()
+                .users(userResponses)
+                .currentPage(userPage.getNumber())
+                .totalPages(userPage.getTotalPages())
+                .totalUsers(userPage.getTotalElements())
+                .pageSize(userPage.getSize())
+                .first(userPage.isFirst())
+                .last(userPage.isLast())
+                .build();
     }
 
     @Override
@@ -138,8 +162,31 @@ public class UserService implements
     public UserResponse deleteUser(Long id) {
         UserEntity user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
-        userRepository.deleteById(id);
-        return UserMapper.toResponse(user);
+        
+        // Verify user has no assigned inventories before deleting
+        // Check both owned inventories and managed inventories
+        List<InventoryEntity> ownedInventories = userRepository.findInventoriesByOwnerId(id);
+        List<InventoryEntity> managedInventories = userRepository.findManagedInventoriesByUserId(id);
+        
+        int ownedCount = ownedInventories.size();
+        int managedCount = managedInventories.size();
+        int totalCount = ownedCount + managedCount;
+        
+        if (totalCount > 0) {
+            if (ownedCount > 0 && managedCount > 0) {
+                throw new UserHasAssignedInventoriesException(id, ownedCount, managedCount);
+            } else {
+                throw new UserHasAssignedInventoriesException(id, totalCount);
+            }
+        }
+        
+        try {
+            userRepository.deleteById(id);
+            return UserMapper.toResponse(user);
+        } catch (Exception e) {
+            // Catch any database constraint violations
+            throw new UserHasAssignedInventoriesException(id, totalCount);
+        }
     }
 
 

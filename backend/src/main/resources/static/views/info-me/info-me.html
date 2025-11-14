@@ -8,7 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/jpeg" href="../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
     <style>
         .profile-card {
@@ -113,10 +114,13 @@
 
 <body>
     <!-- Overlay for mobile -->
-    <div class="overlay" id="overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
+    <div class="overlay" id="overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+    </div>
 
     <!-- Sidebar -->
-    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar" style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar"
+        style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
         <!-- Sidebar header -->
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
@@ -125,7 +129,7 @@
                 </div>
                 <div class="text-gray-800">
                     <div class="font-bold text-lg">SGDIS</div>
-                    <div class="text-xs opacity-70">Mi Perfil</div>
+                    <div class="text-xs opacity-70">Inventario</div>
                 </div>
             </div>
         </div>
@@ -173,7 +177,8 @@
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>
-            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active" onclick="handleSidebarClick(event, '/info-me')">
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
             </a>
@@ -181,7 +186,8 @@
 
         <!-- Logout button -->
         <div class="p-4 border-t border-gray-200 mt-auto">
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl">
+            <button onclick="logout()"
+                class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl">
                 <i class="fas fa-sign-out-alt text-lg"></i>
                 <span>Cerrar Sesión</span>
             </button>
@@ -209,7 +215,8 @@
                         <span class="notification-badge">0</span>
                     </div>
 
-                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='/info-me'">
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        onclick="window.location.href='/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
                         <div class="hidden sm:block">
                             <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
@@ -236,11 +243,13 @@
                 <div class="profile-card mb-6">
                     <div class="flex flex-col md:flex-row items-center gap-6">
                         <div class="relative profile-avatar-container">
-                            <img id="profileAvatar" src="" alt="Avatar" class="profile-avatar-large cursor-pointer" onclick="changeProfilePhoto()" title="Click para cambiar foto">
+                            <img id="profileAvatar" src="" alt="Avatar" class="profile-avatar-large cursor-pointer"
+                                onclick="changeProfilePhoto()" title="Click para cambiar foto">
                             <div class="photo-overlay" onclick="changeProfilePhoto()">
                                 <i class="fas fa-camera text-white text-2xl"></i>
                             </div>
-                            <div class="absolute bottom-0 right-0 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center border-4 border-white">
+                            <div
+                                class="absolute bottom-0 right-0 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center border-4 border-white">
                                 <i class="fas fa-check text-white"></i>
                             </div>
                         </div>
@@ -252,7 +261,8 @@
                                     <i class="fas fa-circle text-xs"></i>
                                     <span>Estado</span>
                                 </span>
-                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold" id="profileRoleBadge">
+                                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold"
+                                    id="profileRoleBadge">
                                     <i class="fas fa-user-shield mr-1"></i>
                                     <span>Rol</span>
                                 </span>
@@ -346,7 +356,8 @@
                 <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
                 <h3 class="text-xl font-semibold text-gray-800 mb-2">Error al cargar la información</h3>
                 <p class="text-gray-600 mb-4" id="errorMessage">Ha ocurrido un error al cargar tu perfil.</p>
-                <button onclick="window.location.reload()" class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                <button onclick="window.location.reload()"
+                    class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
                     <i class="fas fa-redo mr-2"></i>
                     Reintentar
                 </button>
@@ -419,7 +430,7 @@
             const overlay = document.getElementById('overlay');
 
             if (menuToggle && sidebar && overlay) {
-                menuToggle.addEventListener('click', function() {
+                menuToggle.addEventListener('click', function () {
                     const isHidden = sidebar.style.transform === 'translateX(-100%)';
 
                     if (isHidden) {
@@ -431,7 +442,7 @@
                     }
                 });
 
-                overlay.addEventListener('click', function() {
+                overlay.addEventListener('click', function () {
                     sidebar.style.transform = 'translateX(-100%)';
                     overlay.style.display = 'none';
                 });
@@ -439,7 +450,7 @@
         }
 
         // Initialize mobile menu toggle when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
         });
 

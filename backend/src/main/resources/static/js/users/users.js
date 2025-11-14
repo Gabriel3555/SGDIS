@@ -32,6 +32,26 @@ function setupEventListeners() {
     const newUserForm = document.getElementById('newUserForm');
     if (newUserForm) {
         newUserForm.addEventListener('submit', handleNewUserSubmit);
+        
+        // Clear error highlighting when user interacts with fields
+        const fieldsToWatch = [
+            'newUserFullName',
+            'newUserEmail',
+            'newUserRole',
+            'newUserPassword'
+        ];
+        
+        fieldsToWatch.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', function() {
+                    field.classList.remove('border-red-500');
+                });
+                field.addEventListener('change', function() {
+                    field.classList.remove('border-red-500');
+                });
+            }
+        });
     }
 
     const editUserForm = document.getElementById('editUserForm');

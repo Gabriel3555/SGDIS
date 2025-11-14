@@ -2,13 +2,16 @@ let usersData = {
     users: [],
     filteredUsers: [],
     currentPage: 1,
-    itemsPerPage: 5,
+    itemsPerPage: 6,
     searchTerm: '',
     selectedRole: 'all',
     selectedStatus: 'all',
     isLoading: false,
     currentUserId: null,
-    viewMode: 'table' // 'table' or 'cards'
+    viewMode: 'table', // 'table' or 'cards'
+    totalPages: 0,
+    totalUsers: 0,
+    backendPage: 0 // Backend uses 0-indexed pages
 };
 
 function getRoleText(role) {
@@ -38,11 +41,42 @@ function applySearchFilter() {
     filterUsers();
 }
 
-function changePage(page) {
-    if (page >= 1 && page <= Math.ceil(usersData.filteredUsers.length / usersData.itemsPerPage)) {
+async function changePage(page) {
+    // Check if we have filters active
+    const hasFilters = usersData.searchTerm || usersData.selectedRole !== 'all' || usersData.selectedStatus !== 'all';
+    
+    if (hasFilters) {
+        // Local pagination for filtered results
+        const totalPages = Math.ceil(usersData.filteredUsers.length / usersData.itemsPerPage);
+        if (page < 1 || page > totalPages) {
+            return;
+        }
         usersData.currentPage = page;
-        updateUsersTable();
-        updatePagination();
+        updateUsersUI();
+    } else {
+        // Backend pagination
+        // Validate page number
+        if (page < 1 || (usersData.totalPages > 0 && page > usersData.totalPages)) {
+            return;
+        }
+        
+        // Convert to 0-indexed for backend
+        const backendPage = page - 1;
+        
+        // Show loading state
+        showLoadingState();
+        
+        try {
+            // Load users for the new page
+            await loadUsers(backendPage);
+            // Update UI with new data
+            updateUsersUI();
+        } catch (error) {
+            console.error('Error changing page:', error);
+            showErrorToast('Error', 'Error al cambiar de página');
+        } finally {
+            hideLoadingState();
+        }
     }
 }
 
