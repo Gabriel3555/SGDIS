@@ -43,7 +43,7 @@ function updatePagination() {
         for (let i = startPage; i <= endPage; i++) {
             paginationHtml += `
                 <button onclick="changePage(${i})"
-                        class="px-3 py-2 border ${inventoryData.currentPage === i ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 text-gray-700'} rounded-lg hover:bg-gray-50 transition-colors">
+                        class="px-3 py-2 border ${inventoryData.currentPage === i ? 'bg-[#00AF00] text-white border-[#00AF00]' : 'border-gray-300 text-gray-700'} rounded-lg hover:bg-gray-50 transition-colors">
                     ${i}
                 </button>
             `;

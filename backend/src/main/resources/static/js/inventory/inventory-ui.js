@@ -44,10 +44,10 @@ function updateInventoryStats() {
                     <h3 class="text-3xl font-bold text-gray-800">${uniqueLocations}</h3>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-map-marker-alt text-green-600 text-xl"></i>
+                    <i class="fas fa-map-marker-alt text-[#00AF00] text-xl"></i>
                 </div>
             </div>
-            <p class="text-green-600 text-sm font-medium">Ubicaciones diferentes</p>
+            <p class="text-[#00AF00] text-sm font-medium">Ubicaciones diferentes</p>
         </div>
 
         <div class="stat-card">
@@ -115,26 +115,26 @@ function updateSearchAndFilters() {
     container.innerHTML = `
         <div class="relative flex-1">
             <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="inventorySearch" value="${currentSearchTerm}" placeholder="Buscar inventarios por nombre, ubicación o UUID..." class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 transition-all" oninput="handleInventorySearchInput(event)">
+            <input type="text" id="inventorySearch" value="${currentSearchTerm}" placeholder="Buscar inventarios por nombre, ubicación o UUID..." class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] transition-all" oninput="handleInventorySearchInput(event)">
         </div>
         <div class="flex gap-2 flex-wrap">
             <div class="relative">
-                <select onchange="setLocationFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-green-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
+                <select onchange="setLocationFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
                     <option value="all">Todas las ubicaciones</option>
                     ${getLocationFilterOptions()}
                 </select>
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <i class="fas fa-chevron-down text-green-500 text-sm"></i>
+                    <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
                 </div>
             </div>
             <div class="relative">
-                <select onchange="setStatusFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-green-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
+                <select onchange="setStatusFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
                     <option value="all">Todos los estados</option>
                     <option value="active">Activos</option>
                     <option value="inactive">Inactivos</option>
                 </select>
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <i class="fas fa-chevron-down text-green-500 text-sm"></i>
+                    <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
                 </div>
             </div>
         </div>
@@ -235,15 +235,15 @@ function updateViewModeButtons() {
 
     container.innerHTML = `
         <div class="flex items-center gap-2 mb-4">
-            <i class="fas fa-boxes text-green-600 text-xl"></i>
+            <i class="fas fa-boxes text-[#00AF00] text-xl"></i>
             <h2 class="text-xl font-bold text-gray-800">Inventarios del Sistema</h2>
             <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${inventoryData ? inventoryData.filteredInventories.length : 0} inventarios</span>
             <div class="flex items-center gap-2 ml-auto">
-                <button onclick="setViewMode('table')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isTableActive ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
+                <button onclick="setViewMode('table')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isTableActive ? 'bg-[#00AF00] text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
                     <i class="fas fa-list"></i>
                     <span class="hidden sm:inline">Lista</span>
                 </button>
-                <button onclick="setViewMode('cards')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isCardsActive ? 'bg-green-600 text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
+                <button onclick="setViewMode('cards')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isCardsActive ? 'bg-[#00AF00] text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}">
                     <i class="fas fa-th"></i>
                     <span class="hidden sm:inline">Cards</span>
                 </button>
@@ -314,7 +314,7 @@ function updateInventoryTable() {
                         <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">${locationText}</span>
                     </td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Activo</span>
+                        <span class="px-2 py-1 bg-[#00AF00]/20 text-[#00AF00] rounded-full text-xs font-medium">Activo</span>
                     </td>
                     <td class="py-3 px-4">
                         <div class="flex items-center justify-center gap-2">

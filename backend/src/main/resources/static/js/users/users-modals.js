@@ -5,7 +5,7 @@ async function showNewUserModal() {
      }
 
      // Initialize custom selects if not already done
-     if (!window.regionalSelect || !window.institutionSelect) {
+     if (!window.roleSelect || !window.regionalSelect || !window.institutionSelect) {
          initializeCustomSelects();
      }
 
@@ -31,13 +31,16 @@ function closeNewUserModal() {
          const laborDepartmentInput = document.getElementById('newUserLaborDepartment');
          if (jobTitleInput) jobTitleInput.value = '';
          if (laborDepartmentInput) laborDepartmentInput.value = '';
-         // Clear custom selects
-         if (window.regionalSelect) {
-             window.regionalSelect.clear();
-         }
-         if (window.institutionSelect) {
-             window.institutionSelect.clear();
-         }
+        // Clear custom selects
+        if (window.roleSelect) {
+            window.roleSelect.clear();
+        }
+        if (window.regionalSelect) {
+            window.regionalSelect.clear();
+        }
+        if (window.institutionSelect) {
+            window.institutionSelect.clear();
+        }
      }
  }
 
@@ -56,7 +59,7 @@ function showViewUserModal(userId) {
             if (user.imgUrl) {
                 profileDisplay = `<img src="${user.imgUrl}" alt="${fullName}" class="w-20 h-20 rounded-full object-cover border-2 border-gray-200 mx-auto mb-4">`;
             } else {
-                profileDisplay = `<div class="w-20 h-20 bg-green-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">${initials}</div>`;
+                profileDisplay = `<div class="w-20 h-20 bg-[#00AF00] rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">${initials}</div>`;
             }
 
             content.innerHTML = `
@@ -85,7 +88,7 @@ function showViewUserModal(userId) {
                     </div>
                     <div class="flex justify-between">
                         <span class="text-gray-600">Estado:</span>
-                        <span class="font-semibold ${user.status !== false ? 'text-green-600' : 'text-red-600'}">
+                        <span class="font-semibold ${user.status !== false ? 'text-[#00AF00]' : 'text-red-600'}">
                             ${user.status !== false ? 'Activo' : 'Inactivo'}
                         </span>
                     </div>
@@ -128,20 +131,98 @@ function showEditUserModal(userId) {
 
         const fullNameInput = document.getElementById('editUserFullName');
         const emailInput = document.getElementById('editUserEmail');
-        const roleSelect = document.getElementById('editUserRole');
         const jobTitleInput = document.getElementById('editUserJobTitle');
         const laborDepartmentInput = document.getElementById('editUserLaborDepartment');
         const statusSelect = document.getElementById('editUserStatus');
 
         if (fullNameInput) fullNameInput.value = user.fullName || '';
         if (emailInput) emailInput.value = user.email || '';
-        if (roleSelect) roleSelect.value = user.role || '';
         if (jobTitleInput) jobTitleInput.value = user.jobTitle || '';
         if (laborDepartmentInput) laborDepartmentInput.value = user.laborDepartment || '';
         if (statusSelect) statusSelect.value = user.status !== false ? 'true' : 'false';
         
-        // Check if editing own user and disable status field if trying to deactivate
+        // Initialize role select for edit modal
+        const roleOptions = [
+            { value: 'SUPERADMIN', label: 'Super Admin' },
+            { value: 'ADMIN_INSTITUTION', label: 'Admin Institución' },
+            { value: 'ADMIN_REGIONAL', label: 'Admin Regional' },
+            { value: 'WAREHOUSE', label: 'Admin Almacén' },
+            { value: 'USER', label: 'Usuario' }
+        ];
+        
+        if (!window.editRoleSelect) {
+            window.editRoleSelect = new CustomSelect('editUserRoleSelect', {
+                placeholder: 'Seleccionar rol',
+                onChange: function(option) {
+                    // Clear error highlighting
+                    const trigger = document.getElementById('editUserRoleSelect')?.querySelector('.custom-select-trigger');
+                    if (trigger) {
+                        trigger.classList.remove('border-red-500');
+                    }
+                }
+            });
+        }
+        window.editRoleSelect.setOptions(roleOptions);
+        
+        // Set the selected role
+        if (user.role) {
+            window.editRoleSelect.setValue(user.role);
+        }
+        
+        // Check if editing own user
         const isEditingOwnUser = usersData.currentLoggedInUserId && usersData.currentLoggedInUserId === numericUserId;
+        const currentLoggedInUserRole = usersData.currentLoggedInUserRole;
+        const isAdmin = currentLoggedInUserRole === 'SUPERADMIN' || 
+                       currentLoggedInUserRole === 'ADMIN_INSTITUTION' || 
+                       currentLoggedInUserRole === 'ADMIN_REGIONAL';
+        
+        // Check if editing own user and is admin - disable role field
+        const roleSelectContainer = document.getElementById('editUserRoleSelect');
+        if (roleSelectContainer && isEditingOwnUser && isAdmin) {
+            // Disable role select trigger
+            const trigger = roleSelectContainer.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.style.pointerEvents = 'none';
+                trigger.style.opacity = '0.6';
+                trigger.style.cursor = 'not-allowed';
+            }
+            
+            // Add warning message container if it doesn't exist
+            let roleWarningContainer = document.getElementById('editUserRoleWarning');
+            if (!roleWarningContainer) {
+                roleWarningContainer = document.createElement('div');
+                roleWarningContainer.id = 'editUserRoleWarning';
+                roleWarningContainer.className = 'mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg';
+                roleSelectContainer.parentElement.appendChild(roleWarningContainer);
+            }
+            
+            // Show warning message
+            roleWarningContainer.innerHTML = `
+                <div class="flex items-start gap-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+                    <p class="text-sm text-yellow-800">
+                        <strong>Nota:</strong> No puedes cambiar tu propio rol. Si necesitas cambiar tu rol, solicita a otro administrador que lo haga.
+                    </p>
+                </div>
+            `;
+            roleWarningContainer.style.display = 'block';
+        } else if (roleSelectContainer) {
+            // Enable role select if not editing own user or not admin
+            const trigger = roleSelectContainer.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.style.pointerEvents = '';
+                trigger.style.opacity = '';
+                trigger.style.cursor = '';
+            }
+            
+            // Remove warning if exists
+            const roleWarningContainer = document.getElementById('editUserRoleWarning');
+            if (roleWarningContainer) {
+                roleWarningContainer.style.display = 'none';
+            }
+        }
+        
+        // Check if editing own user and disable status field if trying to deactivate
         if (statusSelect && isEditingOwnUser) {
             // Add warning message container if it doesn't exist
             let warningContainer = document.getElementById('editUserStatusWarning');
@@ -220,6 +301,28 @@ function closeEditUserModal() {
             imageIcon.style.display = 'block';
             imagePreview.classList.remove('has-image');
         }
+    }
+
+    // Restore role select to enabled state
+    const roleSelectContainer = document.getElementById('editUserRoleSelect');
+    if (roleSelectContainer) {
+        const trigger = roleSelectContainer.querySelector('.custom-select-trigger');
+        if (trigger) {
+            trigger.style.pointerEvents = '';
+            trigger.style.opacity = '';
+            trigger.style.cursor = '';
+        }
+    }
+    
+    // Clear role select
+    if (window.editRoleSelect) {
+        window.editRoleSelect.clear();
+    }
+    
+    // Hide role warning if exists
+    const roleWarningContainer = document.getElementById('editUserRoleWarning');
+    if (roleWarningContainer) {
+        roleWarningContainer.style.display = 'none';
     }
 
     // Clear job title and labor department fields
@@ -418,6 +521,28 @@ class CustomSelect {
 
 // Initialize custom selects for new user modal
 function initializeCustomSelects() {
+    // Role select
+    const roleOptions = [
+        { value: 'SUPERADMIN', label: 'Super Admin' },
+        { value: 'ADMIN_INSTITUTION', label: 'Admin Institución' },
+        { value: 'ADMIN_REGIONAL', label: 'Admin Regional' },
+        { value: 'WAREHOUSE', label: 'Admin Almacén' },
+        { value: 'USER', label: 'Usuario' }
+    ];
+    
+    window.roleSelect = new CustomSelect('newUserRoleSelect', {
+        placeholder: 'Seleccionar rol',
+        onChange: function(option) {
+            // Clear error highlighting
+            const trigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.classList.remove('border-red-500');
+            }
+        }
+    });
+    window.roleSelect.setOptions(roleOptions);
+
+    // Regional select
     window.regionalSelect = new CustomSelect('newUserRegionalSelect', {
         placeholder: 'Seleccionar regional',
         onChange: function(option) {
@@ -436,6 +561,7 @@ function initializeCustomSelects() {
         }
     });
 
+    // Institution select
     window.institutionSelect = new CustomSelect('newUserInstitutionSelect', {
         placeholder: 'Seleccionar institución',
         onChange: function(option) {

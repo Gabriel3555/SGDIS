@@ -182,8 +182,8 @@ body {
 }
 
 .btn-update {
-    background: #16a34a; /* bg-green-600 */
-    border: 1px solid #16a34a; /* border-green-600 */
+    background: #00AF00; /* bg-[#00AF00] */
+    border: 1px solid #00AF00; /* border-[#00AF00] */
     color: white; /* text-white */
     padding: 10px 20px;
     border-radius: 10px;
@@ -193,9 +193,9 @@ body {
 }
 
 .btn-update:hover {
-    background: #f9fafb; /* hover:bg-gray-50 */
-    border-color: #d1d5db; /* hover:border-gray-300 */
-    color: #374151; /* hover:text-gray-700 */
+    background: #008800; /* hover:bg-[#008800] */
+    border-color: #008800; /* hover:border-[#008800] */
+    color: white; /* hover:text-white */
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(57, 169, 0, 0.3);
 }

@@ -1,0 +1,630 @@
+/**
+ * Dark Mode Styles for SGDIS
+ * Estilos personalizados para modo oscuro que complementan el verde #00AF00
+ */
+
+/* Variables de color para modo oscuro */
+:root {
+    /* Colores base oscuros */
+    --dark-bg-primary: #0F172A;        /* slate-900 - fondo principal */
+    --dark-bg-secondary: #1E293B;     /* slate-800 - contenedores */
+    --dark-bg-tertiary: #334155;      /* slate-700 - elementos elevados */
+    
+    /* Colores de texto */
+    --dark-text-primary: #F1F5F9;     /* slate-100 - texto principal */
+    --dark-text-secondary: #CBD5E1;   /* slate-300 - texto secundario */
+    --dark-text-muted: #94A3B8;       /* slate-400 - texto deshabilitado */
+    
+    /* Verde SENA adaptado para modo oscuro - basado en #00AF00 */
+    --dark-sena-verde: #00AF00;       /* verde brillante para modo oscuro */
+    --dark-sena-verde-hover: #00AF00;  /* color base SENA */
+    --dark-sena-verde-dark: #00AF00;  /* verde oscuro */
+    --dark-sena-verde-light: #00AF00; /* verde claro */
+    --dark-sena-verde-bg: rgba(0, 175, 0, 0.1); /* fondo verde suave */
+    
+    /* Colores de borde */
+    --dark-border: #334155;           /* slate-700 */
+    --dark-border-light: #475569;     /* slate-600 */
+    
+    /* Efectos de vidrio para modo oscuro */
+    --dark-glass: rgba(30, 41, 59, 0.95); /* slate-800 con opacidad */
+    --dark-glass-border: rgba(148, 163, 184, 0.2); /* slate-400 con opacidad */
+}
+
+/* Aplicar estilos cuando el modo oscuro está activo */
+.dark {
+    /* Fondo principal */
+    background-color: var(--dark-bg-primary) !important;
+    color: var(--dark-text-primary);
+}
+
+/* Body en modo oscuro - debe sobrescribir estilos inline */
+html.dark body,
+html.dark body[style],
+body.dark,
+.dark body {
+    background-color: var(--dark-bg-primary) !important;
+    background-image: none !important;
+    background-repeat: no-repeat !important;
+    background-size: auto !important;
+    background-position: 0 0 !important;
+    background-attachment: fixed !important;
+    color: var(--dark-text-primary) !important;
+}
+
+/* HTML en modo oscuro */
+html.dark,
+.dark html {
+    background-color: var(--dark-bg-primary) !important;
+}
+
+/* Efecto vidrio en modo oscuro */
+.dark .efecto-vidrio {
+    backdrop-filter: blur(10px);
+    background: var(--dark-glass) !important;
+    border-color: var(--dark-glass-border) !important;
+}
+
+/* Textos en modo oscuro */
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+    color: var(--dark-text-primary);
+}
+
+.dark p,
+.dark span,
+.dark label {
+    color: var(--dark-text-secondary);
+}
+
+.dark .text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .text-gray-700 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark .text-gray-600 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark .text-gray-500 {
+    color: var(--dark-text-muted) !important;
+}
+
+/* Contenedores y cards en modo oscuro */
+.dark .bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark .bg-gray-50 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark .bg-gray-100 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* Contenedor principal en modo oscuro */
+.dark .min-h-screen,
+html.dark .min-h-screen {
+    background-color: var(--dark-bg-primary) !important;
+    background-image: none !important;
+}
+
+/* Todos los divs principales en modo oscuro */
+.dark > *,
+html.dark > * {
+    background-color: transparent !important;
+}
+
+/* Logo SENA en modo oscuro - agregar filtro si es necesario */
+.dark .logo-sena img {
+    filter: brightness(1.1);
+}
+
+/* Bordes en modo oscuro */
+.dark .border-gray-300 {
+    border-color: var(--dark-border) !important;
+}
+
+.dark .border-gray-200 {
+    border-color: var(--dark-border) !important;
+}
+
+.dark .border-white\/20 {
+    border-color: var(--dark-glass-border) !important;
+}
+
+/* Inputs en modo oscuro */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark textarea,
+.dark select {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark .entrada-focus:focus {
+    border-color: var(--dark-sena-verde) !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+/* Botones en modo oscuro */
+.dark .bg-sena-verde {
+    background-color: var(--dark-sena-verde) !important;
+}
+
+.dark .bg-sena-verde:hover {
+    background-color: var(--dark-sena-verde-hover) !important;
+}
+
+.dark .bg-sena-verde-oscuro {
+    background-color: var(--dark-sena-verde-dark) !important;
+}
+
+.dark .text-sena-verde {
+    color: var(--dark-sena-verde) !important;
+}
+
+.dark .text-sena-verde-oscuro {
+    color: var(--dark-sena-verde-hover) !important;
+}
+
+.dark .bg-sena-verde-claro {
+    background-color: var(--dark-sena-verde-bg) !important;
+}
+
+.dark .border-red-200 {
+    border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.dark .bg-red-50 {
+    background-color: rgba(127, 29, 29, 0.3) !important;
+}
+
+.dark .bg-red-100 {
+    background-color: rgba(127, 29, 29, 0.4) !important;
+}
+
+.dark .text-red-600 {
+    color: #F87171 !important; /* red-400 */
+}
+
+.dark .text-red-700 {
+    color: #FCA5A5 !important; /* red-300 */
+}
+
+.dark .text-red-800 {
+    color: #FCA5A5 !important; /* red-300 */
+}
+
+.dark .bg-green-100 {
+    background-color: rgba(20, 83, 45, 0.3) !important;
+}
+
+.dark .text-green-600 {
+    color: var(--dark-sena-verde) !important;
+}
+
+/* Iconos en modo oscuro */
+.dark svg.text-gray-400 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark svg.text-gray-500 {
+    color: var(--dark-text-muted) !important;
+}
+
+/* Scrollbar en modo oscuro */
+.dark ::-webkit-scrollbar-track {
+    background: rgba(30, 41, 59, 0.3) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--dark-sena-verde) 0%, var(--dark-sena-verde-dark) 100%) !important;
+    border: 2px solid rgba(30, 41, 59, 0.3) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, var(--dark-sena-verde-hover) 0%, var(--dark-sena-verde-dark) 100%) !important;
+    border: 2px solid rgba(0, 175, 0, 0.2) !important;
+}
+
+.dark ::-webkit-scrollbar-corner {
+    background: rgba(30, 41, 59, 0.3) !important;
+}
+
+.dark * {
+    scrollbar-color: var(--dark-sena-verde) rgba(30, 41, 59, 0.3) !important;
+}
+
+/* Spinner en modo oscuro */
+.dark .spinner-overlay {
+    background: rgba(15, 23, 42, 0.8) !important;
+}
+
+.dark .spinner-container {
+    background: var(--dark-glass) !important;
+    border-color: var(--dark-glass-border) !important;
+}
+
+.dark .spinner-text {
+    color: var(--dark-sena-verde) !important;
+}
+
+.dark .spinner-subtitle {
+    color: var(--dark-text-muted) !important;
+}
+
+/* Typewriter en modo oscuro */
+.dark .typewriter {
+    border-right-color: var(--dark-sena-verde) !important;
+}
+
+/* Password requirements en modo oscuro */
+.dark .password-requirement {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark .password-requirement.met {
+    color: var(--dark-sena-verde) !important;
+}
+
+.dark .password-strength {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* Checkboxes en modo oscuro */
+.dark input[type="checkbox"] {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.dark input[type="checkbox"]:checked {
+    background-color: var(--dark-sena-verde) !important;
+    border-color: var(--dark-sena-verde) !important;
+}
+
+/* Enlaces en modo oscuro */
+.dark a {
+    color: var(--dark-sena-verde) !important;
+}
+
+.dark a:hover {
+    color: var(--dark-sena-verde-hover) !important;
+}
+
+/* Sombras en modo oscuro */
+.dark .shadow-2xl {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.dark .shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Imágenes en modo oscuro - ajustar brillo si es necesario */
+.dark img {
+    opacity: 0.95;
+}
+
+/* Divider/separador en modo oscuro */
+.dark .w-16.h-1.bg-sena-verde {
+    background-color: var(--dark-sena-verde) !important;
+}
+
+/* Botón de toggle de modo oscuro */
+#darkModeToggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #00AF00 0%, #008800 100%);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 175, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: white;
+}
+
+#darkModeToggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(0, 175, 0, 0.5);
+}
+
+#darkModeToggle:active {
+    transform: scale(0.95);
+}
+
+#darkModeToggle .sun-icon,
+#darkModeToggle .moon-icon {
+    width: 24px;
+    height: 24px;
+    transition: all 0.3s ease;
+}
+
+.dark #darkModeToggle {
+    background: linear-gradient(135deg, #00AF00 0%, #008800 100%);
+    box-shadow: 0 4px 20px rgba(0, 175, 0, 0.3);
+}
+
+.dark #darkModeToggle:hover {
+    box-shadow: 0 6px 25px rgba(0, 175, 0, 0.5);
+}
+
+/* Forzar fondo oscuro en todos los elementos principales */
+html.dark,
+html.dark * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Asegurar que el body tenga fondo oscuro incluso con estilos inline */
+html.dark body[style*="background-color"] {
+    background-color: var(--dark-bg-primary) !important;
+}
+
+/* Excepciones para elementos que no deben tener transición */
+html.dark input,
+html.dark textarea,
+html.dark select,
+html.dark button {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Tablas en modo oscuro */
+.dark table {
+    background-color: var(--dark-bg-secondary) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark thead {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark thead th {
+    color: var(--dark-text-primary) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.dark tbody tr {
+    border-color: var(--dark-border) !important;
+}
+
+.dark tbody tr:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark tbody td {
+    color: var(--dark-text-secondary) !important;
+    border-color: var(--dark-border) !important;
+}
+
+/* Cards en modo oscuro */
+.dark .stat-card,
+.dark .profile-card,
+.dark .action-card,
+.dark .month-card {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .stat-card h3,
+.dark .stat-card p,
+.dark .profile-card h2,
+.dark .profile-card h3,
+.dark .action-card h3 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .stat-card .text-gray-600,
+.dark .profile-card .text-gray-600,
+.dark .action-card .text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Sidebar en modo oscuro */
+.dark .sidebar {
+    background-color: var(--dark-bg-secondary) !important;
+    border-right-color: var(--dark-border) !important;
+}
+
+.dark .sidebar-item {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark .sidebar-item:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark .sidebar-item.active {
+    background-color: var(--dark-sena-verde-bg) !important;
+    color: var(--dark-sena-verde) !important;
+}
+
+/* Header en modo oscuro */
+.dark header {
+    background-color: var(--dark-bg-secondary) !important;
+    border-bottom-color: var(--dark-border) !important;
+}
+
+.dark header h1,
+.dark header h2,
+.dark header h3 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark header p,
+.dark header span {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Logos e imágenes en modo oscuro */
+.dark img {
+    opacity: 0.95;
+}
+
+.dark .logo-sena img,
+.dark img[src*="logoSena"],
+.dark img[src*="box"] {
+    filter: brightness(1.1);
+}
+
+/* Info rows en modo oscuro */
+.dark .info-row {
+    border-bottom-color: var(--dark-border) !important;
+}
+
+.dark .info-label {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark .info-value {
+    color: var(--dark-text-primary) !important;
+}
+
+/* Status badges en modo oscuro */
+.dark .status-badge {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .status-active {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: var(--dark-sena-verde) !important;
+}
+
+.dark .status-inactive {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: #FCA5A5 !important;
+}
+
+/* Custom select en modo oscuro */
+.dark .custom-select-trigger {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .custom-select-dropdown {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-sena-verde) !important;
+}
+
+.dark .custom-select-option {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .custom-select-option:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark .custom-select-option.selected {
+    background-color: var(--dark-sena-verde) !important;
+    color: white !important;
+}
+
+.dark .custom-select-search {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-primary) !important;
+    border-bottom-color: var(--dark-border) !important;
+}
+
+/* Modales en modo oscuro */
+.dark .modal,
+.dark [id$="Modal"] {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark .modal h2,
+.dark .modal h3 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .modal p {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Overlay de modales en modo oscuro - más transparente y con blur */
+.dark [id$="Modal"].bg-black,
+.dark [id$="Modal"][class*="bg-black"],
+.dark .fixed.inset-0.bg-black.bg-opacity-50,
+.dark .fixed.inset-0[id$="Modal"] {
+    background-color: rgba(0, 0, 0, 0.25) !important;
+    backdrop-filter: blur(6px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(6px) saturate(180%) !important;
+}
+
+/* Contenedor del modal en modo oscuro */
+.dark [id$="Modal"] > div.bg-white,
+.dark [id$="Modal"] .bg-white,
+.dark [id$="Modal"] > div[class*="bg-white"] {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Asegurar que el contenido del modal sea visible */
+.dark [id$="Modal"] > div.bg-white h2,
+.dark [id$="Modal"] > div.bg-white h3,
+.dark [id$="Modal"] .bg-white h2,
+.dark [id$="Modal"] .bg-white h3 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark [id$="Modal"] > div.bg-white p,
+.dark [id$="Modal"] > div.bg-white span,
+.dark [id$="Modal"] .bg-white p,
+.dark [id$="Modal"] .bg-white span {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark [id$="Modal"] > div.bg-white label,
+.dark [id$="Modal"] .bg-white label {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Progress bars en modo oscuro */
+.dark .progress-bar {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark .progress-fill {
+    background-color: var(--dark-sena-verde) !important;
+}
+
+/* Search input en modo oscuro */
+.dark .search-input {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .search-input::placeholder {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark .search-input:focus {
+    border-color: var(--dark-sena-verde) !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+}
+
