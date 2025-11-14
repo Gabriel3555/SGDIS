@@ -277,6 +277,38 @@
         .spinner-container {
             animation: fade-in 0.3s ease-out;
         }
+
+        /* Typewriter Animation */
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid #39A900;
+            white-space: nowrap;
+            margin: 0 auto;
+            animation: blink-caret 0.75s step-end infinite;
+            display: inline-block;
+            min-height: 1.75rem;
+        }
+
+        .typewriter.typing {
+            animation: blink-caret 0.75s step-end infinite;
+        }
+
+        .typewriter.finished {
+            border-right: none;
+            animation: none;
+        }
+
+        @keyframes blink-caret {
+            from, to { border-color: transparent; }
+            50% { border-color: #39A900; }
+        }
+
+        .typewriter-container {
+            min-height: 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 
@@ -319,7 +351,9 @@
                          class="h-20 w-20 mx-auto rounded-2xl object-cover">
                 </div>
                 <h1 class="text-2xl font-bold text-gray-800 mb-2">SGDIS</h1>
-                <h2 class="text-lg font-semibold text-sena-verde mb-1">Sistema de Gestión de Inventario</h2>
+                <div class="typewriter-container mb-1">
+                    <h2 class="text-lg font-semibold text-sena-verde typewriter typing" id="typewriterText"></h2>
+                </div>
                 <p class="text-sm text-gray-600">Servicio Nacional de Aprendizaje - SENA</p>
                 <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-3"></div>
             </div>
@@ -407,6 +441,32 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // --- Typewriter Effect ---
+            const typewriterElement = document.getElementById('typewriterText');
+            const fullText = 'Sistema de Gestión de Inventario';
+            let charIndex = 0;
+            const typingSpeed = 80; // milliseconds per character
+            const pauseBeforeRemovingCursor = 2000; // pause 2 seconds before removing cursor
+
+            function typeWriter() {
+                if (charIndex < fullText.length) {
+                    typewriterElement.textContent = fullText.substring(0, charIndex + 1);
+                    charIndex++;
+                    setTimeout(typeWriter, typingSpeed);
+                } else {
+                    // Finished typing, remove cursor after a pause
+                    setTimeout(() => {
+                        typewriterElement.classList.remove('typing');
+                        typewriterElement.classList.add('finished');
+                    }, pauseBeforeRemovingCursor);
+                }
+            }
+
+            // Start typewriter effect after a small delay
+            setTimeout(() => {
+                typeWriter();
+            }, 500);
+
             const entradas = document.querySelectorAll('input[type="text"], input[type="password"]');
 
             // --- Efecto suave en inputs ---

@@ -283,6 +283,7 @@ function updateInventoryTable() {
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Inventario</th>
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Ubicación</th>
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Estado</th>
+                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Cantidad de Items</th>
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">UUID</th>
                             <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Acciones</th>
                         </tr>
@@ -314,6 +315,12 @@ function updateInventoryTable() {
                     </td>
                     <td class="py-3 px-4">
                         <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">Activo</span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center justify-center gap-2">
+                            <i class="fas fa-cubes text-blue-500 text-sm"></i>
+                            <span class="text-sm font-semibold text-gray-800">${inventory.quantityItems || 0}</span>
+                        </div>
                     </td>
                     <td class="py-3 px-4">
                         <span class="text-sm text-gray-600" title="${inventory.uuid || 'No asignado'}">${uuidDisplay}</span>
@@ -435,10 +442,17 @@ function updateInventoryCards() {
                         <span class="badge bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">Activo</span>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="grid grid-cols-3 gap-4 mb-4">
                         <div>
                             <p class="text-gray-600 text-sm mb-1">ID</p>
                             <p class="font-bold text-xl text-gray-800">${inventory.id || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-600 text-sm mb-1">Items</p>
+                            <div class="flex items-center gap-1">
+                                <i class="fas fa-cubes text-blue-500 text-sm"></i>
+                                <p class="font-bold text-xl text-gray-800">${inventory.quantityItems || 0}</p>
+                            </div>
                         </div>
                         <div class="text-right">
                             <p class="text-gray-600 text-sm mb-1">UUID</p>

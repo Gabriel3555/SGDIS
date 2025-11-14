@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -62,17 +64,20 @@ public class UserController {
 
     @Operation(
             summary = "List all users",
-            description = "Retrieves all users (Admin only)"
+            description = "Retrieves all users with pagination (Admin only)"
     )
     @ApiResponse(
             responseCode = "200",
             description = "Users retrieved successfully",
-            content = @Content(schema = @Schema(implementation = UserResponse.class))
+            content = @Content(schema = @Schema(implementation = PagedUserResponse.class))
     )
     @ApiResponse(responseCode = "403", description = "Access denied")
     @GetMapping
-    public List<UserResponse> listUsers() {
-        return listUserUseCase.listUsers();
+    public PagedUserResponse listUsers(
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "6") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return listUserUseCase.listUsers(pageable);
     }
 
     @Operation(

@@ -74,11 +74,13 @@ function populateViewInventoryModal(inventory) {
     const idElement = document.getElementById('viewInventoryId');
     const uuidElement = document.getElementById('viewInventoryUuid');
     const locationElement = document.getElementById('viewInventoryLocation');
+    const quantityItemsElement = document.getElementById('viewInventoryQuantityItems');
     
     if (nameElement) nameElement.textContent = inventory.name || 'Sin nombre';
     if (idElement) idElement.textContent = inventory.id || 'N/A';
     if (uuidElement) uuidElement.textContent = inventory.uuid || 'No asignado';
     if (locationElement) locationElement.textContent = getLocationText(inventory.location) || 'Sin ubicación';
+    if (quantityItemsElement) quantityItemsElement.textContent = inventory.quantityItems || 0;
     
     // Populate owner details
     const ownerName = document.getElementById('viewInventoryOwnerName');

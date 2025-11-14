@@ -143,4 +143,18 @@ public class AdminDashboardController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/info-me")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION', 'WAREHOUSE', 'USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userProfile() throws IOException {
+        Resource resource = new ClassPathResource("static/views/info-me/info-me.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

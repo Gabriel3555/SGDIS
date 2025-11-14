@@ -887,15 +887,19 @@ async function loadAdminStats() {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const usersResponse = await fetch('/api/v1/users/list', { method: 'GET', headers });
+        // Use large page size to get all users for stats
+        const usersResponse = await fetch('/api/v1/users?page=0&size=10000', { method: 'GET', headers });
         const inventoryResponse = await fetch('/api/v1/inventory/list', { method: 'GET', headers });
 
         if (usersResponse.ok && inventoryResponse.ok) {
-            const usersData = await usersResponse.json();
+            const usersPagedData = await usersResponse.json();
             const inventoryData = await inventoryResponse.json();
 
+            // Extract users array from paged response
+            const usersData = usersPagedData.users || [];
+
             dashboardData.stats = {
-                totalUsers: usersData.length || 0,
+                totalUsers: usersPagedData.totalUsers || usersData.length || 0,
                 totalInventory: inventoryData.length || 0,
                 pendingVerifications: Math.floor(Math.random() * 15),
                 reportsGenerated: Math.floor(Math.random() * 50) + 10
@@ -915,10 +919,12 @@ async function loadAdminCharts() {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch('/api/v1/users/list', { method: 'GET', headers });
+        // Use large page size to get all users for charts
+        const response = await fetch('/api/v1/users?page=0&size=10000', { method: 'GET', headers });
 
         if (response.ok) {
-            const users = await response.json();
+            const pagedData = await response.json();
+            const users = pagedData.users || [];
             const roleCounts = { 'SUPERADMIN': 0, 'ADMIN_INSTITUTION': 0, 'ADMIN_REGIONAL': 0, 'WAREHOUSE': 0, 'USER': 0 };
 
             users.forEach(user => {
