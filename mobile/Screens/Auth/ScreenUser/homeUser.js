@@ -13,9 +13,11 @@ import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { useTheme } from "../../../src/ThemeContext";
 
 export default function DashboardScreen() {
   const navigation = useNavigation();
+  const { colors } = useTheme();
   const [inventoryCount, setInventoryCount] = useState(0);
   const [inventories, setInventories] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
@@ -45,6 +47,8 @@ export default function DashboardScreen() {
       }
     };
   }, []);
+
+  const styles = getStyles(colors);
 
   const fetchUserData = async () => {
     try {
@@ -210,7 +214,7 @@ export default function DashboardScreen() {
         <Text style={styles.sectionTitle}>Estadísticas del Sistema</Text>
 
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: '#e3f2fd' }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.statCard1 }]}>
             <View style={[styles.statIcon, { backgroundColor: '#2196f3' }]}>
               <Ionicons name="cube" size={24} color="#fff" />
             </View>
@@ -220,7 +224,7 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-          <View style={[styles.statCard, { backgroundColor: '#e8f5e8' }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.statCard2 }]}>
             <View style={[styles.statIcon, { backgroundColor: '#4caf50' }]}>
               <Ionicons name="checkmark-circle" size={24} color="#fff" />
             </View>
@@ -231,7 +235,7 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-          <View style={[styles.statCard, { backgroundColor: '#fff3e0' }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.statCard3 }]}>
             <View style={[styles.statIcon, { backgroundColor: '#ff9800' }]}>
               <Ionicons name="cube" size={24} color="#fff" />
             </View>
@@ -242,7 +246,7 @@ export default function DashboardScreen() {
             </View>
           </View>
 
-          <View style={[styles.statCard, { backgroundColor: '#f3e5f5' }]}>
+          <View style={[styles.statCard, { backgroundColor: colors.statCard4 }]}>
             <View style={[styles.statIcon, { backgroundColor: '#9c27b0' }]}>
               <Ionicons name="cash" size={24} color="#fff" />
             </View>
@@ -259,19 +263,19 @@ export default function DashboardScreen() {
       <View style={styles.categoriesSection}>
         <Text style={styles.sectionTitle}>Categorías de Items</Text>
         <View style={styles.categoriesGrid}>
-          <View style={[styles.categoryCard, { backgroundColor: '#ffebee' }]}>
+          <View style={[styles.categoryCard, { backgroundColor: colors.categoryCard1 }]}>
             <Ionicons name="desktop" size={20} color="#f44336" />
             <Text style={styles.categoryText}>Cómputo</Text>
           </View>
-          <View style={[styles.categoryCard, { backgroundColor: '#fff3e0' }]}>
+          <View style={[styles.categoryCard, { backgroundColor: colors.categoryCard2 }]}>
             <Ionicons name="videocam" size={20} color="#ff9800" />
             <Text style={styles.categoryText}>Audiovisual</Text>
           </View>
-          <View style={[styles.categoryCard, { backgroundColor: '#e8f5e8' }]}>
+          <View style={[styles.categoryCard, { backgroundColor: colors.categoryCard3 }]}>
             <Ionicons name="flask" size={20} color="#4caf50" />
             <Text style={styles.categoryText}>Laboratorio</Text>
           </View>
-          <View style={[styles.categoryCard, { backgroundColor: '#e3f2fd' }]}>
+          <View style={[styles.categoryCard, { backgroundColor: colors.categoryCard4 }]}>
             <Ionicons name="phone-portrait" size={20} color="#2196f3" />
             <Text style={styles.categoryText}>Móviles</Text>
           </View>
@@ -330,7 +334,7 @@ export default function DashboardScreen() {
         <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
         <View style={styles.actionsGrid}>
           <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#e3f2fd' }]}
+            style={[styles.actionCard, { backgroundColor: colors.actionCard1 }]}
             onPress={() => navigation.navigate('Inventarios')}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#2196f3' }]}>
@@ -340,7 +344,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#e8f5e8' }]}
+            style={[styles.actionCard, { backgroundColor: colors.actionCard2 }]}
             onPress={() => navigation.navigate('Verificación')}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#4caf50' }]}>
@@ -350,7 +354,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#f3e5f5' }]}
+            style={[styles.actionCard, { backgroundColor: colors.actionCard3 }]}
             onPress={() => navigation.navigate('Notificaciones')}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#9c27b0' }]}>
@@ -360,7 +364,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: '#fff3e0' }]}
+            style={[styles.actionCard, { backgroundColor: colors.actionCard4 }]}
             onPress={() => navigation.navigate('Perfil')}
           >
             <View style={[styles.actionIcon, { backgroundColor: '#ff9800' }]}>
@@ -374,26 +378,26 @@ export default function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: "#666",
+    color: colors.text,
   },
 
   // Header Styles
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     paddingTop: 50,
     paddingBottom: 20,
     borderBottomLeftRadius: 20,
@@ -445,16 +449,16 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
+    color: colors.text,
   },
   userName: {
     fontSize: 14,
     fontWeight: "bold",
-    color: "#28a745",
+    color: colors.subtitle,
   },
   userRole: {
     fontSize: 12,
-    color: "#666",
+    color: colors.institution,
   },
   notificationButton: {
     position: "relative",
@@ -483,7 +487,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
     marginBottom: 16,
   },
   statsGrid: {
@@ -516,11 +520,11 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   statLabel: {
     fontSize: 14,
-    color: "#666",
+    color: colors.institution,
     marginTop: 4,
   },
   statChange: {
@@ -531,14 +535,14 @@ const styles = StyleSheet.create({
   },
   statSubtext: {
     fontSize: 12,
-    color: "#888",
+    color: colors.footer,
     marginTop: 2,
   },
 
   // Categories Section
   categoriesSection: {
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     marginHorizontal: 20,
     marginBottom: 20,
     borderRadius: 16,
@@ -565,7 +569,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginLeft: 8,
-    color: "#333",
+    color: colors.text,
   },
   statusList: {
     marginTop: 16,
@@ -583,7 +587,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 14,
-    color: "#333",
+    color: colors.text,
   },
 
   // Monthly Section
@@ -594,7 +598,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   monthCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginRight: 12,
@@ -612,16 +616,16 @@ const styles = StyleSheet.create({
   monthName: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   monthItems: {
     fontSize: 14,
-    color: "#666",
+    color: colors.institution,
     marginTop: 4,
   },
   monthValue: {
     fontSize: 12,
-    color: "#28a745",
+    color: colors.subtitle,
     fontWeight: "600",
     marginTop: 2,
   },
@@ -670,6 +674,6 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
+    color: colors.text,
   },
 });

@@ -19,14 +19,18 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { useTheme } from "../../../src/ThemeContext";
 
 export default function ChangePhotoScreen() {
+  const { colors, isDarkMode } = useTheme();
   const [selectedImage, setSelectedImage] = useState(null);
   const [currentImageUri, setCurrentImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const route = useRoute();
   const { userEmail } = route.params;
+
+  const styles = getStyles(colors);
 
   useEffect(() => {
     loadCurrentImage();
@@ -149,7 +153,7 @@ export default function ChangePhotoScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <LinearGradient
-        colors={['#28a745', '#4CAF50', '#66BB6A']}
+        colors={isDarkMode ? ['#1a1a1a', '#2a2a2a', '#3a3a3a'] : ['#28a745', '#4CAF50', '#66BB6A']}
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -184,7 +188,7 @@ export default function ChangePhotoScreen() {
         <Text style={styles.sectionTitle}>Nueva Foto</Text>
         <View style={styles.changePhotoCard}>
           <TouchableOpacity style={styles.selectButton} onPress={pickImage}>
-            <Ionicons name="images-outline" size={48} color="#28a745" />
+            <Ionicons name="images-outline" size={48} color={colors.buttonBackground} />
             <Text style={styles.selectText}>Seleccionar de Galería</Text>
           </TouchableOpacity>
 
@@ -202,10 +206,10 @@ export default function ChangePhotoScreen() {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.buttonText} />
               ) : (
                 <>
-                  <Ionicons name="checkmark-outline" size={24} color="#fff" />
+                  <Ionicons name="checkmark-outline" size={24} color={colors.buttonText} />
                   <Text style={styles.saveText}>Guardar Foto</Text>
                 </>
               )}
@@ -217,10 +221,10 @@ export default function ChangePhotoScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 50,
@@ -254,11 +258,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2c3e50",
+    color: colors.text,
     marginBottom: 16,
   },
   currentPhotoCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     elevation: 6,
@@ -267,7 +271,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.inputBorder,
     alignItems: "center",
   },
   avatarContainer: {
@@ -278,7 +282,7 @@ const styles = StyleSheet.create({
     height: 120,
     borderRadius: 60,
     borderWidth: 4,
-    borderColor: '#fff',
+    borderColor: colors.card,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -289,11 +293,11 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#28a745",
+    backgroundColor: colors.buttonBackground,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
-    borderColor: '#fff',
+    borderColor: colors.card,
     elevation: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -301,7 +305,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
   },
   changePhotoCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     elevation: 6,
@@ -310,11 +314,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.inputBorder,
     alignItems: "center",
   },
   selectButton: {
-    backgroundColor: "#f8f9fa",
+    backgroundColor: colors.inputBackground,
     borderRadius: 16,
     padding: 40,
     alignItems: "center",
@@ -325,12 +329,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     marginBottom: 20,
     borderWidth: 2,
-    borderColor: "#e9ecef",
+    borderColor: colors.inputBorder,
     borderStyle: "dashed",
   },
   selectText: {
     fontSize: 16,
-    color: "#28a745",
+    color: colors.buttonBackground,
     fontWeight: "600",
     marginTop: 10,
   },
@@ -340,7 +344,7 @@ const styles = StyleSheet.create({
   },
   previewLabel: {
     fontSize: 14,
-    color: "#666",
+    color: colors.placeholder,
     fontWeight: "600",
     marginBottom: 10,
     textTransform: "uppercase",
@@ -350,10 +354,10 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 75,
     borderWidth: 3,
-    borderColor: "#28a745",
+    borderColor: colors.buttonBackground,
   },
   saveButton: {
-    backgroundColor: "#28a745",
+    backgroundColor: colors.buttonBackground,
     borderRadius: 16,
     padding: 16,
     flexDirection: "row",
@@ -371,7 +375,7 @@ const styles = StyleSheet.create({
   },
   saveText: {
     fontSize: 16,
-    color: "#fff",
+    color: colors.buttonText,
     fontWeight: "600",
     marginLeft: 8,
   },

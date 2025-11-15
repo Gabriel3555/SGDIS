@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,13 +10,16 @@ import {
   Animated,
   ActivityIndicator,
   Linking,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { login } from "../../src/Navigation/Services/AuthService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { navigationRef } from "../../src/Navigation/NavigationService";
+import { useTheme } from "../../src/ThemeContext";
 
 export default function LoginScreen({ navigation }) {
+  const { isDarkMode, toggleDarkMode, colors } = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -25,6 +28,26 @@ export default function LoginScreen({ navigation }) {
   const emailBorderAnim = useRef(new Animated.Value(0)).current;
   const passwordBorderAnim = useRef(new Animated.Value(0)).current;
   const buttonScaleAnim = useRef(new Animated.Value(1)).current;
+
+  // Check if user is already logged in on component mount
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem("userToken");
+        if (token) {
+          // User is logged in, navigate to Main
+          navigationRef.current?.reset({
+            index: 0,
+            routes: [{ name: "Main" }],
+          });
+        }
+      } catch (error) {
+        console.error("Error checking login status:", error);
+      }
+    };
+
+    checkLoginStatus();
+  }, []);
 
   // Animation functions
   const animateInputFocus = (animValue) => {
@@ -114,8 +137,11 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.container}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       {/* Card */}
       <View style={styles.card}>
         <Text style={styles.appTitle}>SGDIS</Text>
@@ -138,16 +164,16 @@ export default function LoginScreen({ navigation }) {
           {
             borderColor: emailBorderAnim.interpolate({
               inputRange: [0, 1],
-              outputRange: ['#ccc', '#28a745']
+              outputRange: [colors.inputBorder, colors.inputBorderFocus]
             })
           }
         ]}>
           <View style={styles.inputWrapper}>
-            <Ionicons name="mail-outline" size={20} color="#999" style={styles.icon} />
+            <Ionicons name="mail-outline" size={20} color={colors.icon} style={styles.icon} />
             <TextInput
               style={[styles.input, { flex: 1 }]}
               placeholder="Correo electrónico"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.placeholder}
               value={email}
               onChangeText={setEmail}
               onFocus={() => animateInputFocus(emailBorderAnim)}
@@ -162,16 +188,16 @@ export default function LoginScreen({ navigation }) {
           {
             borderColor: passwordBorderAnim.interpolate({
               inputRange: [0, 1],
-              outputRange: ['#ccc', '#28a745']
+              outputRange: [colors.inputBorder, colors.inputBorderFocus]
             })
           }
         ]}>
           <View style={styles.inputWrapper}>
-            <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.icon} />
+            <Ionicons name="lock-closed-outline" size={20} color={colors.icon} style={styles.icon} />
             <TextInput
               style={[styles.input, { flex: 1 }]}
               placeholder="Contraseña"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.placeholder}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -200,11 +226,11 @@ export default function LoginScreen({ navigation }) {
         <TouchableOpacity
           onPress={() => Linking.openURL('https://sgdis.cloud/forgot_password.html')}
         >
-          <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
+          <Text style={[styles.link, { color: colors.link }]}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={() => navigation.navigate("Register")}>
-          <Text style={styles.registerText}>
+          <Text style={[styles.registerText, { color: colors.registerText }]}>
             ¿No tienes cuenta?{" "}
             <Text style={{ color: "#28a745", fontWeight: "bold" }}>
               Regístrate aquí
@@ -212,7 +238,22 @@ export default function LoginScreen({ navigation }) {
           </Text>
         </TouchableOpacity>
 
-        <Text style={styles.footer}>
+        {/* Dark Mode Toggle */}
+        <TouchableOpacity
+          style={styles.themeToggle}
+          onPress={toggleDarkMode}
+        >
+          <Ionicons
+            name={isDarkMode ? "sunny-outline" : "moon-outline"}
+            size={24}
+            color={colors.icon}
+          />
+          <Text style={[styles.themeToggleText, { color: colors.text }]}>
+            {isDarkMode ? "Modo Claro" : "Modo Oscuro"}
+          </Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.footer, { color: colors.footer }]}>
           © 2025 SENA - Servicio Nacional de Aprendizaje
         </Text>
       </View>
@@ -220,10 +261,10 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
     padding: 20,
@@ -235,7 +276,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     padding: 30,
     borderRadius: 16,
     elevation: 5,
@@ -247,26 +288,27 @@ const styles = StyleSheet.create({
   appTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#222",
+    color: colors.text,
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#28a745",
+    color: colors.subtitle,
     marginBottom: 10,
   },
   institution: {
     fontSize: 14,
-    color: "#555",
+    color: colors.institution,
     marginBottom: 25,
   },
   inputContainer: {
     width: "100%",
     borderWidth: 1,
+    borderColor: colors.inputBorder,
     borderRadius: 8,
     marginBottom: 20,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: colors.inputBackground,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -275,13 +317,15 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 10,
+    color: colors.icon,
   },
   input: {
     fontSize: 14,
+    color: colors.text,
   },
   loginButton: {
     width: "100%",
-    backgroundColor: "#28a745",
+    backgroundColor: colors.buttonBackground,
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
@@ -295,24 +339,33 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   loginText: {
-    color: "#fff",
+    color: colors.buttonText,
     fontSize: 16,
     fontWeight: "bold",
   },
   link: {
     fontSize: 13,
-    color: "#28a745",
+    color: colors.link,
     marginBottom: 20,
   },
   registerText: {
     fontSize: 13,
-    color: "#333",
+    color: colors.registerText,
     marginBottom: 25,
     textAlign: "center",
   },
+  themeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  themeToggleText: {
+    fontSize: 14,
+    marginLeft: 10,
+  },
   footer: {
     fontSize: 10,
-    color: "#999",
+    color: colors.footer,
     marginTop: 15,
     textAlign: "center",
   },

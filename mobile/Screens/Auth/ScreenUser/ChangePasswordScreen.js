@@ -15,8 +15,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
 import senaLogo from "../../../assets/sena-logo.png";
+import { useTheme } from "../../../src/ThemeContext";
 
 export default function ChangePasswordScreen() {
+  const { colors, isDarkMode } = useTheme();
   const navigation = useNavigation();
   const [oldPassword, setOldPassword] = useState("");
   const [password, setPassword] = useState("");
@@ -64,28 +66,30 @@ export default function ChangePasswordScreen() {
     }
   };
 
+  const styles = getStyles(colors);
+
   if (loading) {
     return (
       <LinearGradient
-        colors={['#f5f7fa', '#c8e6c9', '#a5d6a7']}
+        colors={isDarkMode ? ['#1a1a1a', '#2a2a2a', '#3a3a3a'] : ['#f5f7fa', '#c8e6c9', '#a5d6a7']}
         style={styles.center}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <ActivityIndicator size="large" color="#28a745" />
+        <ActivityIndicator size="large" color={colors.buttonBackground} />
       </LinearGradient>
     );
   }
 
   return (
     <LinearGradient
-      colors={['#f5f7fa', '#c8e6c9', '#a5d6a7']}
+      colors={isDarkMode ? ['#1a1a1a', '#2a2a2a', '#3a3a3a'] : ['#f5f7fa', '#c8e6c9', '#a5d6a7']}
       style={styles.container}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
       <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-        <Ionicons name="close" size={24} color="#000" />
+        <Ionicons name="close" size={24} color={colors.text} />
       </TouchableOpacity>
 
       <View style={styles.card}>
@@ -100,44 +104,47 @@ export default function ChangePasswordScreen() {
         <Text style={styles.title}>Actualizar Contraseña</Text>
 
         <View style={styles.inputContainer}>
-          <Ionicons name="lock-closed-outline" size={20} color="#28a745" style={styles.inputIcon} />
+          <Ionicons name="lock-closed-outline" size={20} color={colors.buttonBackground} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Contraseña actual"
+            placeholderTextColor={colors.placeholder}
             secureTextEntry={!showOldPassword}
             value={oldPassword}
             onChangeText={setOldPassword}
           />
           <TouchableOpacity onPress={() => setShowOldPassword(!showOldPassword)}>
-            <Ionicons name={showOldPassword ? "eye-off" : "eye"} size={20} color="#666" />
+            <Ionicons name={showOldPassword ? "eye-off" : "eye"} size={20} color={colors.icon} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.inputContainer}>
-          <Ionicons name="key-outline" size={20} color="#28a745" style={styles.inputIcon} />
+          <Ionicons name="key-outline" size={20} color={colors.buttonBackground} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Nueva contraseña"
+            placeholderTextColor={colors.placeholder}
             secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#666" />
+            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color={colors.icon} />
           </TouchableOpacity>
         </View>
 
         <View style={styles.inputContainer}>
-          <Ionicons name="checkmark-circle-outline" size={20} color="#28a745" style={styles.inputIcon} />
+          <Ionicons name="checkmark-circle-outline" size={20} color={colors.buttonBackground} style={styles.inputIcon} />
           <TextInput
             style={styles.input}
             placeholder="Confirmar contraseña"
+            placeholderTextColor={colors.placeholder}
             secureTextEntry={!showConfirmPassword}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
           />
           <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-            <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#666" />
+            <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color={colors.icon} />
           </TouchableOpacity>
         </View>
 
@@ -149,7 +156,7 @@ export default function ChangePasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
@@ -160,7 +167,7 @@ const styles = StyleSheet.create({
     top: 40,
     right: 20,
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 20,
     elevation: 5,
     shadowColor: "#000",
@@ -170,7 +177,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 30,
     elevation: 8,
@@ -179,7 +186,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.inputBorder,
     alignItems: 'center',
   },
   logoContainer: {
@@ -196,17 +203,17 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 20,
-    color: "#2c3e50",
+    color: colors.text,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#e0e0e0",
+    borderColor: colors.inputBorder,
     borderRadius: 15,
     paddingHorizontal: 15,
     marginBottom: 20,
-    backgroundColor: "#fafafa",
+    backgroundColor: colors.inputBackground,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -220,9 +227,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 15,
     fontSize: 16,
+    color: colors.text,
   },
   button: {
-    backgroundColor: "#28a745",
+    backgroundColor: colors.buttonBackground,
     borderRadius: 15,
     paddingVertical: 15,
     alignItems: "center",
@@ -234,7 +242,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   buttonText: {
-    color: "#fff",
+    color: colors.buttonText,
     fontWeight: "bold",
     fontSize: 16,
   },
@@ -242,6 +250,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f5f7fa",
+    backgroundColor: colors.background,
   },
 });

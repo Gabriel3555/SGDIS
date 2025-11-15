@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
 import { register } from "../../src/Navigation/Services/AuthService";
+import { useTheme } from "../../src/ThemeContext";
 
 export default function RegisterScreen({ navigation }) {
+  const { colors } = useTheme();
   const [nombre, setNombre] = useState("");
   const [correo, setCorreo] = useState("");
   const [cargo, setCargo] = useState("");
@@ -25,6 +27,8 @@ export default function RegisterScreen({ navigation }) {
     }
   };
 
+  const styles = getStyles(colors);
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.titulo}>Registro</Text>
@@ -34,6 +38,7 @@ export default function RegisterScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Nombre Completo"
+        placeholderTextColor={colors.placeholder}
         value={nombre}
         onChangeText={setNombre}
       />
@@ -41,6 +46,7 @@ export default function RegisterScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Correo Electrónico"
+        placeholderTextColor={colors.placeholder}
         value={correo}
         onChangeText={setCorreo}
         keyboardType="email-address"
@@ -49,6 +55,7 @@ export default function RegisterScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Cargo Laboral"
+        placeholderTextColor={colors.placeholder}
         value={cargo}
         onChangeText={setCargo}
       />
@@ -56,6 +63,7 @@ export default function RegisterScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Departamento Laboral"
+        placeholderTextColor={colors.placeholder}
         value={departamento}
         onChangeText={setDepartamento}
       />
@@ -63,6 +71,7 @@ export default function RegisterScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Contraseña"
+        placeholderTextColor={colors.placeholder}
         secureTextEntry
         value={password}
         onChangeText={setPassword}
@@ -71,6 +80,7 @@ export default function RegisterScreen({ navigation }) {
       <TextInput
         style={styles.input}
         placeholder="Confirmar Contraseña"
+        placeholderTextColor={colors.placeholder}
         secureTextEntry
         value={confirmPassword}
         onChangeText={setConfirmPassword}
@@ -89,60 +99,61 @@ export default function RegisterScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
   titulo: {
     fontSize: 26,
     fontWeight: "bold",
-    color: "#111",
+    color: colors.text,
     marginBottom: 5,
   },
   subtitulo: {
     fontSize: 16,
-    color: "green",
+    color: colors.subtitle,
     fontWeight: "600",
   },
   subSena: {
     fontSize: 14,
     marginBottom: 20,
-    color: "#555",
+    color: colors.institution,
   },
   input: {
     width: "100%",
     height: 50,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.inputBorder,
     borderRadius: 10,
     paddingHorizontal: 15,
     marginBottom: 15,
-    backgroundColor: "#f9f9f9",
+    backgroundColor: colors.inputBackground,
+    color: colors.text,
   },
   boton: {
     width: "100%",
-    backgroundColor: "green",
+    backgroundColor: colors.buttonBackground,
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
     marginTop: 10,
   },
   textoBoton: {
-    color: "#fff",
+    color: colors.buttonText,
     fontSize: 16,
     fontWeight: "bold",
   },
   textoLink: {
     marginTop: 15,
     fontSize: 14,
-    color: "#555",
+    color: colors.registerText,
   },
   link: {
-    color: "green",
+    color: colors.link,
     fontWeight: "600",
   },
 });
