@@ -8,11 +8,9 @@ import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventory
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
-import com.sgdis.backend.user.application.dto.UserResponse;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
-import com.sgdis.backend.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
