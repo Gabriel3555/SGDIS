@@ -43,4 +43,8 @@ public class UserEntity {
     @ManyToOne
     @JoinColumn(name = "institution_id")
     private InstitutionEntity institution;
+
+    @ManyToOne
+    @JoinColumn(name = "signatorie_id")
+    private InventoryEntity inventory;
 }
