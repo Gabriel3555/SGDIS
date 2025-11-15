@@ -37,9 +37,10 @@ async function loadCurrentUserInfo() {
 
         if (response.ok) {
             const userData = await response.json();
-            // Store current user ID globally
+            // Store current user ID and role globally
             if (window.usersData) {
                 window.usersData.currentLoggedInUserId = userData.id;
+                window.usersData.currentLoggedInUserRole = userData.role;
             }
             updateUserInfoDisplay(userData);
         } else {

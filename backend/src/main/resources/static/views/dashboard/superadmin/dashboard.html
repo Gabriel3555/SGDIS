@@ -5,6 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Admin - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'sena-verde': '#00AF00',
+                        'sena-verde-oscuro': '#008800'
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
     <img src="" alt="" class="icon">
@@ -12,6 +25,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="../../../css/dashboard.css">
+    <link rel="stylesheet" href="../../../css/dark-mode.css">
+    <script>
+        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
+        (function() {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -99,7 +122,7 @@
         <!-- Logout button -->
         <div class="p-4 border-t border-gray-200 mt-auto">
             <button onclick="logout()"
-                class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl">
+                class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
                 <i class="fas fa-sign-out-alt text-lg"></i>
                 <span>Cerrar Sesión</span>
             </button>
@@ -394,8 +417,24 @@
         }
 
 
-        // Logout function
+        // Logout function - shows confirmation modal
         function logout() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        // Close logout modal
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Confirm logout - actually logs out
+        function confirmLogout() {
             localStorage.removeItem('jwt');
             window.location.href = '/';
         }
@@ -471,6 +510,33 @@
             loadCurrentUserInfo(); // Load user info for header
         });
     </script>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-sign-out-alt text-green-600 text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeLogoutModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmLogout()" class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
 
 </body>
 

@@ -5,12 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Usuarios - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'sena-verde': '#00AF00',
+                        'sena-verde-oscuro': '#008800'
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/jpeg" href="../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
     <link rel="stylesheet" href="../../css/users-toast.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <script>
+        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
+        (function() {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -83,7 +106,7 @@
 
         <!-- Logout button -->
         <div class="p-4 border-t border-gray-200 mt-auto">
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
                 <i class="fas fa-sign-out-alt text-lg"></i>
                 <span>Cerrar Sesión</span>
             </button>
@@ -97,19 +120,19 @@
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <button class="sidebar-toggle text-gray-600 hover:text-green-600 transition-colors" id="menuToggle">
+                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <button onclick="showNewUserModal()" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
+                    <button onclick="showNewUserModal()" class="bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
                         <i class="fas fa-user-plus mr-2"></i>
                         Nuevo Usuario
                     </button>
 
                     <div class="relative cursor-pointer">
-                        <i class="fas fa-bell text-gray-600 text-xl hover:text-green-600 transition-colors"></i>
+                        <i class="fas fa-bell text-gray-600 text-xl hover:text-[#00AF00] transition-colors"></i>
                         <span class="notification-badge">5</span>
                     </div>
 
@@ -245,7 +268,7 @@
     </div>
 
     <!-- New User Modal -->
-    <div id="newUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden overflow-y-auto p-4">
+    <div id="newUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4" style="z-index: 9999;">
         <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Nuevo Usuario</h2>
@@ -264,7 +287,7 @@
                         </div>
                         <div>
                             <input type="file" id="newUserPhoto" accept="image/*" class="hidden">
-                            <button type="button" onclick="document.getElementById('newUserPhoto').click()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                            <button type="button" onclick="document.getElementById('newUserPhoto').click()" class="px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
                                 <i class="fas fa-camera mr-2"></i>
                                 Seleccionar Foto
                             </button>
@@ -277,29 +300,36 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-                        <input type="text" id="newUserFullName" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Nombre completo del usuario" required>
+                        <input type="text" id="newUserFullName" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Nombre completo del usuario" required>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                        <input type="email" id="newUserEmail" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="usuario@ejemplo.com" required>
+                        <input type="email" id="newUserEmail" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="usuario@ejemplo.com" required>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Rol *</label>
-                        <select id="newUserRole" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" required>
-                            <option value="">Seleccionar rol</option>
-                            <option value="SUPERADMIN">Super Admin</option>
-                            <option value="ADMIN_INSTITUTION">Admin Institución</option>
-                            <option value="ADMIN_REGIONAL">Admin Regional</option>
-                            <option value="WAREHOUSE">Admin Almacén</option>
-                            <option value="USER">Usuario Normal</option>
-                        </select>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="newUserRoleSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar rol</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar rol...">
+                                    <div class="custom-select-options" id="newUserRoleOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="newUserRole" name="role" required>
+                        </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña *</label>
-                        <input type="password" id="newUserPassword" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Contraseña temporal" required>
+                        <input type="password" id="newUserPassword" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Contraseña temporal" required>
                     </div>
 
                     <div>
@@ -342,12 +372,12 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
-                        <input type="text" id="newUserJobTitle" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Cargo del usuario">
+                        <input type="text" id="newUserJobTitle" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Cargo del usuario">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Área</label>
-                        <input type="text" id="newUserLaborDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Área o departamento">
+                        <input type="text" id="newUserLaborDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Área o departamento">
                     </div>
                 </div>
 
@@ -355,7 +385,7 @@
                     <button type="button" onclick="closeNewUserModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                         Cancelar
                     </button>
-                    <button type="submit" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                    <button type="submit" class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
                         Crear Usuario
                     </button>
                 </div>
@@ -364,7 +394,7 @@
     </div>
 
     <!-- View User Modal -->
-    <div id="viewUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div id="viewUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 9999;">
         <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Ver Usuario</h2>
@@ -386,7 +416,7 @@
     </div>
 
     <!-- Edit User Modal -->
-    <div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden overflow-y-auto p-4">
+    <div id="editUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4" style="z-index: 9999;">
         <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Editar Usuario</h2>
@@ -406,7 +436,7 @@
                         </div>
                         <div>
                             <input type="file" id="editUserPhoto" accept="image/*" class="hidden">
-                            <button type="button" onclick="document.getElementById('editUserPhoto').click()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                            <button type="button" onclick="document.getElementById('editUserPhoto').click()" class="px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
                                 <i class="fas fa-camera mr-2"></i>
                                 Cambiar Foto
                             </button>
@@ -419,28 +449,36 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
-                        <input type="text" id="editUserFullName" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Nombre completo del usuario" required>
+                        <input type="text" id="editUserFullName" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Nombre completo del usuario" required>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                        <input type="email" id="editUserEmail" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" required>
+                        <input type="email" id="editUserEmail" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" required>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
-                        <select id="editUserRole" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" required>
-                            <option value="SUPERADMIN">Super Admin</option>
-                            <option value="ADMIN_INSTITUTION">Admin Institución</option>
-                            <option value="ADMIN_REGIONAL">Admin Regional</option>
-                            <option value="WAREHOUSE">Admin Almacén</option>
-                            <option value="USER">Usuario Normal</option>
-                        </select>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="editUserRoleSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar rol</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar rol...">
+                                    <div class="custom-select-options" id="editUserRoleOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="editUserRole" name="role" required>
+                        </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
-                        <select id="editUserStatus" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <select id="editUserStatus" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
                             <option value="true">Activo</option>
                             <option value="false">Inactivo</option>
                         </select>
@@ -448,12 +486,12 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
-                        <input type="text" id="editUserJobTitle" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Cargo del usuario">
+                        <input type="text" id="editUserJobTitle" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Cargo del usuario">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Área</label>
-                        <input type="text" id="editUserLaborDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Área o departamento">
+                        <input type="text" id="editUserLaborDepartment" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Área o departamento">
                     </div>
                 </div>
 
@@ -461,7 +499,7 @@
                     <button type="button" onclick="closeEditUserModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                         Cancelar
                     </button>
-                    <button type="submit" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                    <button type="submit" class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
                         Actualizar Usuario
                     </button>
                 </div>
@@ -469,8 +507,35 @@
         </div>
     </div>
 
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeLogoutModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmLogout()" class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Delete User Modal -->
-    <div id="deleteUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div id="deleteUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 9999;">
         <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-red-600">Eliminar Usuario</h2>
@@ -767,8 +832,24 @@
             setupMobileMenuToggle();
         });
 
-        // Logout function
+        // Logout function - shows confirmation modal
         function logout() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        // Close logout modal
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Confirm logout - actually logs out
+        function confirmLogout() {
             localStorage.removeItem('jwt');
             window.location.href = '/';
         }

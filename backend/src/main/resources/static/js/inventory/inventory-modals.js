@@ -1,3 +1,184 @@
+// Custom Select Component (copied from users-modals.js for use in inventory modals)
+class CustomSelect {
+    constructor(containerId, options = {}) {
+        this.container = document.getElementById(containerId);
+        if (!this.container) return;
+
+        this.trigger = this.container.querySelector('.custom-select-trigger');
+        this.dropdown = this.container.querySelector('.custom-select-dropdown');
+        this.searchInput = this.container.querySelector('.custom-select-search');
+        this.optionsContainer = this.container.querySelector('.custom-select-options');
+        this.textElement = this.container.querySelector('.custom-select-text');
+        this.hiddenInput = this.container.querySelector('input[type="hidden"]');
+
+        this.options = [];
+        this.filteredOptions = [];
+        this.selectedValue = '';
+        this.selectedText = '';
+        this.placeholder = options.placeholder || 'Seleccionar...';
+        this.searchable = options.searchable !== false;
+        this.onChange = options.onChange || null;
+
+        this.init();
+    }
+
+    init() {
+        // Set initial placeholder
+        this.textElement.textContent = this.placeholder;
+        this.textElement.classList.add('custom-select-placeholder');
+
+        // Event listeners
+        this.trigger.addEventListener('click', () => this.toggle());
+        this.searchInput.addEventListener('input', (e) => this.filterOptions(e.target.value));
+        this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (!this.container.contains(e.target)) {
+                this.close();
+            }
+        });
+    }
+
+    setOptions(options) {
+        this.options = options;
+        this.filteredOptions = [...options];
+        this.renderOptions();
+    }
+
+    renderOptions() {
+        this.optionsContainer.innerHTML = '';
+
+        if (this.filteredOptions.length === 0) {
+            const noResults = document.createElement('div');
+            noResults.className = 'custom-select-option disabled';
+            noResults.textContent = 'No se encontraron resultados';
+            this.optionsContainer.appendChild(noResults);
+            return;
+        }
+
+        this.filteredOptions.forEach(option => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'custom-select-option';
+            if (option.disabled) {
+                optionElement.classList.add('disabled');
+            }
+            optionElement.textContent = option.label;
+            optionElement.dataset.value = option.value;
+
+            if (option.value === this.selectedValue) {
+                optionElement.classList.add('selected');
+            }
+
+            if (!option.disabled) {
+                optionElement.addEventListener('click', () => this.selectOption(option));
+            }
+            this.optionsContainer.appendChild(optionElement);
+        });
+    }
+
+    filterOptions(searchTerm) {
+        if (!searchTerm.trim()) {
+            this.filteredOptions = [...this.options];
+        } else {
+            this.filteredOptions = this.options.filter(option =>
+                option.label.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+        this.renderOptions();
+    }
+
+    selectOption(option) {
+        this.selectedValue = option.value;
+        this.selectedText = option.label;
+
+        this.textElement.textContent = option.label;
+        this.textElement.classList.remove('custom-select-placeholder');
+
+        if (this.hiddenInput) {
+            this.hiddenInput.value = option.value;
+        }
+
+        this.close();
+
+        if (this.onChange) {
+            this.onChange(option);
+        }
+    }
+
+    toggle() {
+        const isOpen = this.container.classList.contains('open');
+
+        // Close all other selects
+        document.querySelectorAll('.custom-select.open').forEach(select => {
+            if (select !== this.container) {
+                select.classList.remove('open');
+            }
+        });
+
+        if (isOpen) {
+            this.close();
+        } else {
+            this.open();
+        }
+    }
+
+    open() {
+        this.container.classList.add('open');
+        if (this.searchable && this.searchInput) {
+            this.searchInput.focus();
+        }
+    }
+
+    close() {
+        this.container.classList.remove('open');
+        if (this.searchInput) {
+            this.searchInput.value = '';
+            this.filterOptions('');
+        }
+    }
+
+    handleKeydown(e) {
+        if (e.key === 'Escape') {
+            this.close();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const firstOption = this.optionsContainer.querySelector('.custom-select-option:not(.disabled)');
+            if (firstOption) {
+                const value = firstOption.dataset.value;
+                const option = this.options.find(opt => opt.value === value);
+                if (option) {
+                    this.selectOption(option);
+                }
+            }
+        }
+    }
+
+    getValue() {
+        return this.selectedValue;
+    }
+
+    setValue(value) {
+        const option = this.options.find(opt => opt.value === value);
+        if (option) {
+            this.selectOption(option);
+        }
+    }
+
+    clear() {
+        this.selectedValue = '';
+        this.selectedText = '';
+        this.textElement.textContent = this.placeholder;
+        this.textElement.classList.add('custom-select-placeholder');
+
+        if (this.hiddenInput) {
+            this.hiddenInput.value = '';
+        }
+
+        this.renderOptions();
+    }
+}
+
 function showDeleteInventoryModal(inventoryId) {
     inventoryData.currentInventoryId = inventoryId;
 
@@ -135,7 +316,7 @@ function showInventoryLoadingModal() {
             content.innerHTML = `
                 <div class="flex items-center justify-center py-8">
                     <div class="text-center">
-                        <i class="fas fa-spinner fa-spin text-2xl text-green-600 mb-4"></i>
+                        <i class="fas fa-spinner fa-spin text-2xl text-[#00AF00] mb-4"></i>
                         <p class="text-gray-600">Cargando detalles del inventario...</p>
                     </div>
                 </div>
@@ -303,9 +484,9 @@ function closeAssignInventoryModal() {
     }
     
     // Clear form
-    const userSelect = document.getElementById('assignUserId');
-    
-    if (userSelect) userSelect.value = '';
+    if (window.assignUserSelect) {
+        window.assignUserSelect.clear();
+    }
     
     inventoryData.currentInventoryId = null;
 }
@@ -404,27 +585,19 @@ async function loadManagersForAssignment() {
 }
 
 function populateManagerSelect(users) {
-    const managerSelect = document.getElementById('managerId');
-    if (!managerSelect) {
-        console.warn('Manager select element not found');
-        return;
+    // Initialize CustomSelect if not already done
+    if (!window.managerSelect) {
+        window.managerSelect = new CustomSelect('managerIdSelect', {
+            placeholder: 'Seleccionar gerente...',
+            searchable: true
+        });
     }
 
-    // Clear existing options
-    managerSelect.innerHTML = '';
-
-    // Add default option
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'Seleccionar gerente...';
-    managerSelect.appendChild(defaultOption);
-
-    // Add users to select
+    // Format users as options
+    const managerOptions = [];
+    
     if (users && users.length > 0) {
         users.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.userId || user.id;
-            
             // Format display name
             let displayName = '';
             if (user.fullName && user.fullName.trim()) {
@@ -440,38 +613,38 @@ function populateManagerSelect(users) {
                 displayName += ` (${user.jobTitle})`;
             }
             
-            option.textContent = displayName;
-            managerSelect.appendChild(option);
+            managerOptions.push({
+                value: String(user.userId || user.id),
+                label: displayName
+            });
         });
     } else {
-        // Add no managers option
-        const noManagersOption = document.createElement('option');
-        noManagersOption.value = '';
-        noManagersOption.textContent = 'No hay usuarios disponibles';
-        noManagersOption.disabled = true;
-        managerSelect.appendChild(noManagersOption);
+        // Add no managers option (will be shown as disabled in CustomSelect)
+        managerOptions.push({
+            value: '',
+            label: 'No hay usuarios disponibles',
+            disabled: true
+        });
     }
+    
+    window.managerSelect.setOptions(managerOptions);
 }
 
 function showManagerSelectLoading() {
-    const managerSelect = document.getElementById('managerId');
-    if (!managerSelect) {
-        console.warn('Manager select element not found for loading state');
-        return;
+    // Initialize CustomSelect if not already done
+    if (!window.managerSelect) {
+        window.managerSelect = new CustomSelect('managerIdSelect', {
+            placeholder: 'Cargando gerentes...',
+            searchable: true
+        });
     }
-
-    managerSelect.innerHTML = '<option value="">Cargando gerentes...</option>';
-    managerSelect.disabled = true;
+    window.managerSelect.setOptions([{ value: '', label: 'Cargando gerentes...', disabled: true }]);
 }
 
 function hideManagerSelectLoading() {
-    const managerSelect = document.getElementById('managerId');
-    if (!managerSelect) {
-        console.warn('Manager select element not found for loading state');
-        return;
-    }
-
-    managerSelect.disabled = false;
+    // Loading state is cleared when populateManagerSelect is called
+    // This function is kept for compatibility but doesn't need to do anything
+    // as the CustomSelect will be updated by populateManagerSelect
 }
 
 function closeAssignManagerModal() {
@@ -481,8 +654,9 @@ function closeAssignManagerModal() {
     }
     
     // Clear form
-    const managerSelect = document.getElementById('managerId');
-    if (managerSelect) managerSelect.value = '';
+    if (window.managerSelect) {
+        window.managerSelect.clear();
+    }
     
     inventoryData.currentInventoryId = null;
 }
@@ -525,29 +699,21 @@ async function fetchUsers() {
     }
 }
 
-// Function to populate user select
+// Function to populate user select using CustomSelect
 function populateUserSelect(users) {
-    const userSelect = document.getElementById('assignUserId');
-    if (!userSelect) {
-        console.warn('User select element not found');
-        return;
+    // Initialize CustomSelect if not already done
+    if (!window.assignUserSelect) {
+        window.assignUserSelect = new CustomSelect('assignUserIdSelect', {
+            placeholder: 'Seleccionar usuario...',
+            searchable: true
+        });
     }
 
-    // Clear existing options
-    userSelect.innerHTML = '';
-
-    // Add default option
-    const defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'Seleccionar usuario...';
-    userSelect.appendChild(defaultOption);
-
-    // Add users to select
+    // Format users as options
+    const userOptions = [];
+    
     if (users && users.length > 0) {
         users.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.userId || user.id;
-            
             // Format display name
             let displayName = '';
             if (user.fullName && user.fullName.trim()) {
@@ -563,38 +729,38 @@ function populateUserSelect(users) {
                 displayName += ` (${user.jobTitle})`;
             }
             
-            option.textContent = displayName;
-            userSelect.appendChild(option);
+            userOptions.push({
+                value: String(user.userId || user.id),
+                label: displayName
+            });
         });
     } else {
-        // Add no users option
-        const noUsersOption = document.createElement('option');
-        noUsersOption.value = '';
-        noUsersOption.textContent = 'No hay usuarios disponibles';
-        noUsersOption.disabled = true;
-        userSelect.appendChild(noUsersOption);
+        // Add no users option (will be shown as disabled in CustomSelect)
+        userOptions.push({
+            value: '',
+            label: 'No hay usuarios disponibles',
+            disabled: true
+        });
     }
+    
+    window.assignUserSelect.setOptions(userOptions);
 }
 
 // Function to show loading state in user select
 function showUserSelectLoading() {
-    const userSelect = document.getElementById('assignUserId');
-    if (!userSelect) {
-        console.warn('User select element not found for loading state');
-        return;
+    // Initialize CustomSelect if not already done
+    if (!window.assignUserSelect) {
+        window.assignUserSelect = new CustomSelect('assignUserIdSelect', {
+            placeholder: 'Cargando usuarios...',
+            searchable: true
+        });
     }
-
-    userSelect.innerHTML = '<option value="">Cargando usuarios...</option>';
-    userSelect.disabled = true;
+    window.assignUserSelect.setOptions([{ value: '', label: 'Cargando usuarios...', disabled: true }]);
 }
 
 // Function to hide loading state in user select
 function hideUserSelectLoading() {
-    const userSelect = document.getElementById('assignUserId');
-    if (!userSelect) {
-        console.warn('User select element not found for loading state');
-        return;
-    }
-
-    userSelect.disabled = false;
+    // Loading state is cleared when populateUserSelect is called
+    // This function is kept for compatibility but doesn't need to do anything
+    // as the CustomSelect will be updated by populateUserSelect
 }

@@ -37,7 +37,6 @@ function setupEventListeners() {
         const fieldsToWatch = [
             'newUserFullName',
             'newUserEmail',
-            'newUserRole',
             'newUserPassword'
         ];
         
@@ -52,6 +51,8 @@ function setupEventListeners() {
                 });
             }
         });
+        
+        // Clear error highlighting for role CustomSelect (handled in users-modals.js onChange)
     }
 
     const editUserForm = document.getElementById('editUserForm');

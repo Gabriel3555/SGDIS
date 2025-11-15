@@ -889,7 +889,7 @@ async function loadAdminStats() {
 
         // Use large page size to get all users for stats
         const usersResponse = await fetch('/api/v1/users?page=0&size=10000', { method: 'GET', headers });
-        const inventoryResponse = await fetch('/api/v1/inventory/list', { method: 'GET', headers });
+        const inventoryResponse = await fetch('/api/v1/inventory', { method: 'GET', headers });
 
         if (usersResponse.ok && inventoryResponse.ok) {
             const usersPagedData = await usersResponse.json();
@@ -1093,7 +1093,7 @@ async function loadWarehouseStats() {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch('/api/v1/inventory/list', { method: 'GET', headers });
+        const response = await fetch('/api/v1/inventory', { method: 'GET', headers });
 
         if (response.ok) {
             const inventoryData = await response.json();
@@ -1121,7 +1121,7 @@ async function loadWarehouseCharts() {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch('/api/v1/inventory/list', { method: 'GET', headers });
+        const response = await fetch('/api/v1/inventory', { method: 'GET', headers });
 
         if (response.ok) {
             const inventoryData = await response.json();

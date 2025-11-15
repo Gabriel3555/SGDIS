@@ -3,7 +3,9 @@ async function handleNewUserSubmit(e) {
 
      const fullName = document.getElementById('newUserFullName')?.value?.trim();
      const email = document.getElementById('newUserEmail')?.value?.trim();
-     const role = document.getElementById('newUserRole')?.value;
+     // Get role from hidden input (CustomSelect)
+    const roleInput = document.getElementById('newUserRole');
+    const role = roleInput?.value || (window.roleSelect ? window.roleSelect.getValue() : '');
      const regionalInput = document.getElementById('newUserRegional');
      const institutionInput = document.getElementById('newUserInstitution');
      
@@ -41,7 +43,12 @@ async function handleNewUserSubmit(e) {
          // Highlight missing fields visually
          if (!fullName) document.getElementById('newUserFullName')?.classList.add('border-red-500');
          if (!email) document.getElementById('newUserEmail')?.classList.add('border-red-500');
-         if (!role) document.getElementById('newUserRole')?.classList.add('border-red-500');
+         if (!role) {
+            const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
+            if (roleSelectTrigger) {
+                roleSelectTrigger.classList.add('border-red-500');
+            }
+        }
          if (!regional) {
              const regionalSelect = document.getElementById('newUserRegionalSelect');
              if (regionalSelect) {
@@ -62,7 +69,10 @@ async function handleNewUserSubmit(e) {
      // Remove error highlighting
      document.getElementById('newUserFullName')?.classList.remove('border-red-500');
      document.getElementById('newUserEmail')?.classList.remove('border-red-500');
-     document.getElementById('newUserRole')?.classList.remove('border-red-500');
+     const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
+    if (roleSelectTrigger) {
+        roleSelectTrigger.classList.remove('border-red-500');
+    }
      document.getElementById('newUserRegionalSelect')?.querySelector('.custom-select-trigger')?.classList.remove('border-red-500');
      document.getElementById('newUserInstitutionSelect')?.querySelector('.custom-select-trigger')?.classList.remove('border-red-500');
      document.getElementById('newUserPassword')?.classList.remove('border-red-500');
@@ -134,7 +144,9 @@ async function handleEditUserSubmit(e) {
 
     const fullName = document.getElementById('editUserFullName').value;
     const email = document.getElementById('editUserEmail').value;
-    const role = document.getElementById('editUserRole').value;
+    // Get role from hidden input (CustomSelect)
+    const roleInput = document.getElementById('editUserRole');
+    const role = roleInput?.value || (window.editRoleSelect ? window.editRoleSelect.getValue() : '');
     const jobTitle = document.getElementById('editUserJobTitle').value;
     const laborDepartment = document.getElementById('editUserLaborDepartment').value;
     const statusValue = document.getElementById('editUserStatus').value;
@@ -151,6 +163,23 @@ async function handleEditUserSubmit(e) {
     if (isEditingOwnUser && !status) {
         showErrorToast('Acción no permitida', 'No puedes desactivar tu propio estado de usuario');
         return;
+    }
+    
+    // Prevent admin from changing their own role
+    const currentLoggedInUserRole = usersData.currentLoggedInUserRole;
+    const isAdmin = currentLoggedInUserRole === 'SUPERADMIN' || 
+                   currentLoggedInUserRole === 'ADMIN_INSTITUTION' || 
+                   currentLoggedInUserRole === 'ADMIN_REGIONAL';
+    
+    if (isEditingOwnUser && isAdmin) {
+        // Get the original user role from the users list
+        const originalUser = usersData.users.find(u => u && u.id === usersData.currentUserId);
+        // Get current role from CustomSelect or hidden input
+        const currentRole = role || (window.editRoleSelect ? window.editRoleSelect.getValue() : '');
+        if (originalUser && originalUser.role !== currentRole) {
+            showErrorToast('Acción no permitida', 'No puedes cambiar tu propio rol. Solicita a otro administrador que lo haga.');
+            return;
+        }
     }
 
     try {
@@ -262,19 +291,19 @@ function showChangePasswordModal(userId) {
                 <form id="changePasswordForm" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Nueva Contraseña *</label>
-                        <input type="password" id="newPassword" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Ingrese la nueva contraseña" required>
+                        <input type="password" id="newPassword" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Ingrese la nueva contraseña" required>
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Confirmar Nueva Contraseña *</label>
-                        <input type="password" id="confirmPassword" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Confirme la nueva contraseña" required>
+                        <input type="password" id="confirmPassword" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Confirme la nueva contraseña" required>
                     </div>
 
                     <div class="flex gap-3 pt-4">
                         <button type="button" onclick="closeChangePasswordModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                             Cancelar
                         </button>
-                        <button type="submit" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                        <button type="submit" class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
                             Cambiar Contraseña
                         </button>
                     </div>
