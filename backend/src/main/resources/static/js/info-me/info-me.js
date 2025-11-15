@@ -79,9 +79,9 @@ function populateUserProfile(userData) {
     if (profileRoleBadge) {
         const roleText = getRoleDisplayName(userData.role);
         const roleColor = getRoleColor(userData.role);
-        profileRoleBadge.className = `px-3 py-1 rounded-full text-sm font-semibold ${roleColor}`;
+        profileRoleBadge.className = `px-3 py-1.5 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5 ${roleColor}`;
         profileRoleBadge.innerHTML = `
-            <i class="fas fa-user-shield mr-1"></i>
+            <i class="fas fa-user-shield"></i>
             <span>${roleText}</span>
         `;
     }

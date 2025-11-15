@@ -61,6 +61,8 @@ window.setViewMode = setViewMode;
 window.changePage = changePage;
 window.applySearchFilter = applySearchFilter;
 window.getLocationText = getLocationText;
+window.showLoadingState = showLoadingState;
+window.hideLoadingState = hideLoadingState;
 
 function showLoadingState() {
     const refreshIcon = document.getElementById('refreshIcon');

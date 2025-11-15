@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
+        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
+        (function() {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -26,15 +35,6 @@
         rel="stylesheet">
     <link rel="stylesheet" href="../../../css/dashboard.css">
     <link rel="stylesheet" href="../../../css/dark-mode.css">
-    <script>
-        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
-        (function() {
-            const saved = localStorage.getItem('sgdis-dark-mode');
-            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
 </head>
 
 <body>
@@ -59,7 +59,7 @@
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+            <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
@@ -132,7 +132,7 @@
                     <p class="text-gray-600" id="welcomeMessage">Cargando información del usuario...</p>
                 </div>
                 <button onclick="loadDashboardData()" class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                    <i class="fas fa-sync-alt animate-spin" id="refreshIcon"></i>
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
                     <span id="refreshText">Actualizar</span>
                 </button>
             </div>

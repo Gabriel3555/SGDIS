@@ -347,14 +347,20 @@ window.closeDeleteUserModal = closeDeleteUserModal;
 class CustomSelect {
     constructor(containerId, options = {}) {
         this.container = document.getElementById(containerId);
-        if (!this.container) return;
+        if (!this.container) {
+            console.error(`CustomSelect: Container with id "${containerId}" not found`);
+            // Don't return undefined - throw error or create a dummy object
+            throw new Error(`CustomSelect: Container with id "${containerId}" not found`);
+        }
 
         this.trigger = this.container.querySelector('.custom-select-trigger');
         this.dropdown = this.container.querySelector('.custom-select-dropdown');
         this.searchInput = this.container.querySelector('.custom-select-search');
         this.optionsContainer = this.container.querySelector('.custom-select-options');
         this.textElement = this.container.querySelector('.custom-select-text');
-        this.hiddenInput = this.container.querySelector('input[type="hidden"]');
+        // Look for hidden input in container first, then in parent
+        this.hiddenInput = this.container.querySelector('input[type="hidden"]') || 
+                          this.container.parentElement?.querySelector('input[type="hidden"]');
 
         this.options = [];
         this.filteredOptions = [];
@@ -368,21 +374,43 @@ class CustomSelect {
     }
 
     init() {
+        // Validate required elements
+        if (!this.trigger || !this.dropdown || !this.searchInput || !this.optionsContainer || !this.textElement) {
+            console.error('CustomSelect: Required elements not found', {
+                trigger: !!this.trigger,
+                dropdown: !!this.dropdown,
+                searchInput: !!this.searchInput,
+                optionsContainer: !!this.optionsContainer,
+                textElement: !!this.textElement
+            });
+            return;
+        }
+
         // Set initial placeholder
         this.textElement.textContent = this.placeholder;
         this.textElement.classList.add('custom-select-placeholder');
 
         // Event listeners
-        this.trigger.addEventListener('click', () => this.toggle());
-        this.searchInput.addEventListener('input', (e) => this.filterOptions(e.target.value));
-        this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+        if (this.trigger) {
+            this.trigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                this.toggle();
+            });
+        }
+        
+        if (this.searchInput) {
+            this.searchInput.addEventListener('input', (e) => this.filterOptions(e.target.value));
+            this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+        }
 
-        // Close on outside click
-        document.addEventListener('click', (e) => {
+        // Close on outside click - use a unique identifier to avoid conflicts
+        this._outsideClickHandler = (e) => {
             if (!this.container.contains(e.target)) {
                 this.close();
             }
-        });
+        };
+        document.addEventListener('click', this._outsideClickHandler);
     }
 
     setOptions(options) {
@@ -447,6 +475,8 @@ class CustomSelect {
     }
 
     toggle() {
+        if (!this.container) return;
+        
         const isOpen = this.container.classList.contains('open');
 
         // Close all other selects
@@ -464,9 +494,14 @@ class CustomSelect {
     }
 
     open() {
+        if (!this.container) return;
         this.container.classList.add('open');
         if (this.searchable && this.searchInput) {
-            this.searchInput.focus();
+            setTimeout(() => {
+                if (this.searchInput) {
+                    this.searchInput.focus();
+                }
+            }, 10);
         }
     }
 
@@ -575,6 +610,7 @@ function initializeCustomSelects() {
 }
 
 window.initializeCustomSelects = initializeCustomSelects;
+window.CustomSelect = CustomSelect;
 
 async function showDeleteUserModal(userId) {
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;

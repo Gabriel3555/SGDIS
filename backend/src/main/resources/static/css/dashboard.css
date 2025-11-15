@@ -38,9 +38,9 @@ body {
 }
 
 .sidebar-item.active {
-    background: rgba(57, 169, 0, 0.15);
-    box-shadow: 0 4px 12px rgba(57, 169, 0, 0.2);
-    color: #39A900;
+    background: rgba(0, 175, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 175, 0, 0.2);
+    color: #00AF00;
 }
 
 .stat-card {
