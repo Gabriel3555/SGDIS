@@ -21,7 +21,8 @@ public class InventoryMapper {
                 entity.getId(),
                 entity.getUuid(),
                 entity.getName(),
-                entity.getLocation()
+                entity.getLocation(),
+                entity.getImgUrl()
         );
     }
 
@@ -34,7 +35,8 @@ public class InventoryMapper {
                 entity.getOwner() != null
                         ? UserMapper.toResponse(entity.getOwner())
                         : null,
-                entity.getItems() != null ? (long) entity.getItems().size() : null
+                entity.getItems() != null ? (long) entity.getItems().size() : null,
+                entity.getImgUrl()
         );
     }
 
@@ -52,7 +54,8 @@ public class InventoryMapper {
                 entity.getId(),
                 entity.getUuid(),
                 entity.getName(),
-                entity.getLocation()
+                entity.getLocation(),
+                entity.getImgUrl()
         );
     }
 

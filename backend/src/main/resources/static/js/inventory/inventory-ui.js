@@ -297,13 +297,22 @@ function updateInventoryTable() {
             const fullName = inventory.name || 'Inventario sin nombre';
             const location = inventory.location || 'Sin ubicación';
 
+            const inventoryImage = inventory.imgUrl ?
+                `<img src="${inventory.imgUrl}" alt="${fullName}" class="w-10 h-10 rounded-lg object-cover border-2 border-gray-200">` :
+                `<div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm font-bold">
+                    <i class="fas fa-box"></i>
+                </div>`;
+
             inventoryTableHtml += `
                 <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td class="py-3 px-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                                <i class="fas fa-box"></i>
-                            </div>
+                            <button onclick="changeInventoryPhoto('${inventory.id}')" class="profile-image-btn ${inventory.imgUrl ? '' : 'no-image'}" title="Cambiar imagen del inventario">
+                                ${inventoryImage}
+                                <div class="image-overlay">
+                                    <i class="fas fa-camera text-white text-xs"></i>
+                                </div>
+                            </button>
                             <div>
                                 <div class="font-semibold text-gray-800">${fullName}</div>
                                 <div class="text-sm text-gray-500">ID: ${inventory.id}</div>
@@ -431,13 +440,27 @@ function updateInventoryCards() {
         paginatedInventories.forEach(inventory => {
             const locationText = getLocationText(inventory.location);
             const uuidDisplay = inventory.uuid ? inventory.uuid.toString().substring(0, 8) + '...' : 'No asignado';
+            
+            const inventoryImage = inventory.imgUrl ?
+                `<img src="${inventory.imgUrl}" alt="${inventory.name || 'Inventario'}" class="w-16 h-16 rounded-lg object-cover border-2 border-gray-200">` :
+                `<div class="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white text-xl font-bold">
+                    <i class="fas fa-box"></i>
+                </div>`;
 
             cardsHtml += `
                 <div class="stat-card">
                     <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <h3 class="font-bold text-lg text-gray-800 mb-1">${inventory.name || 'Sin nombre'}</h3>
-                            <p class="text-gray-600 text-sm">${locationText}</p>
+                        <div class="flex items-center gap-3">
+                            <button onclick="changeInventoryPhoto('${inventory.id}')" class="profile-image-btn ${inventory.imgUrl ? '' : 'no-image'} inline-block" title="Cambiar imagen del inventario">
+                                ${inventoryImage}
+                                <div class="image-overlay">
+                                    <i class="fas fa-camera text-white text-xs"></i>
+                                </div>
+                            </button>
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-800 mb-1">${inventory.name || 'Sin nombre'}</h3>
+                                <p class="text-gray-600 text-sm">${locationText}</p>
+                            </div>
                         </div>
                         <span class="badge bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">Activo</span>
                     </div>

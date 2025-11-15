@@ -628,3 +628,64 @@ html.dark button {
     box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
 }
 
+/* Estilos para sección de propietario en modal de inventario */
+.dark #viewInventoryModal .bg-blue-50 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #viewInventoryModal .bg-blue-50 h3,
+.dark #viewInventoryModal .bg-blue-50 label {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #viewInventoryModal .bg-blue-50 p,
+.dark #viewInventoryModal .bg-blue-50 span {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #viewInventoryModal .bg-blue-100 {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #viewInventoryModal .text-blue-600 {
+    color: var(--dark-sena-verde) !important;
+}
+
+.dark #viewInventoryModal .bg-gray-50 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #viewInventoryModal .bg-gray-50 h3,
+.dark #viewInventoryModal .bg-gray-50 label {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #viewInventoryModal .bg-gray-50 p {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #viewInventoryModal .border-gray-200 {
+    border-color: var(--dark-border) !important;
+}
+
+/* Modal de imagen grande en modo oscuro */
+.dark #inventoryImageModal {
+    background-color: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.dark #inventoryImageModal .bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #inventoryImageModal img {
+    border: 2px solid var(--dark-border) !important;
+}
+
+.dark #inventoryImageModal .flex.items-center.justify-center {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+

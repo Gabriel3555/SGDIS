@@ -9,5 +9,6 @@ public record CreateInventoryResponse(
         Long id,
         UUID uuid,
         String name,
-        String location
+        String location,
+        String imgUrl
 ) {}

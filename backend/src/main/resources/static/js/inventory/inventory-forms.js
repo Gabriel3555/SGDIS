@@ -39,6 +39,17 @@ async function handleNewInventorySubmit(e) {
 
         const result = await createInventory(inventoryDataToCreate);
 
+        // Upload image if selected
+        const imageInput = document.getElementById('newInventoryPhoto');
+        if (imageInput && imageInput.files && imageInput.files.length > 0) {
+            try {
+                await window.uploadInventoryPhotoById(imageInput.files[0], result.id);
+            } catch (imageError) {
+                console.error('Error uploading inventory image:', imageError);
+                // Don't fail the whole operation if image upload fails
+            }
+        }
+
         showSuccessToast('Inventario creado', 'Inventario creado exitosamente');
         closeNewInventoryModal();
         await loadInventoryData();
@@ -196,16 +207,22 @@ async function handleAssignInventorySubmit(e) {
         return;
     }
 
-    // Validate form elements exist
-    const userIdElement = document.getElementById('assignUserId');
-    if (!userIdElement) {
-        showAssignErrorToast('Error del sistema: No se puede acceder al formulario');
-        return;
+    // Try to get value from CustomSelect first, then fallback to hidden input
+    let userId = '';
+    
+    if (window.assignUserSelect && window.assignUserSelect.getValue) {
+        userId = window.assignUserSelect.getValue();
+    }
+    
+    // Fallback to hidden input if CustomSelect value is empty
+    if (!userId) {
+        const userIdElement = document.getElementById('assignUserId');
+        if (userIdElement) {
+            userId = userIdElement.value;
+        }
     }
 
-    const userId = userIdElement.value;
-
-    if (!userId) {
+    if (!userId || userId.trim() === '') {
         showAssignErrorToast('Por favor selecciona un usuario para la asignación');
         return;
     }
@@ -243,8 +260,10 @@ async function handleAssignInventorySubmit(e) {
             errorMessage = 'Usuario o inventario no encontrado.';
         } else if (errorMessage.includes('400') && errorMessage.includes('validation')) {
             errorMessage = 'Los datos de asignación no son válidos.';
-        } else if (errorMessage.includes('already assigned')) {
-            errorMessage = 'Este inventario ya está asignado a este usuario.';
+        } else if (errorMessage.includes('ya tiene un inventario') || 
+                   errorMessage.includes('ya tiene un inventorio') ||
+                   errorMessage.includes('already assigned')) {
+            errorMessage = 'Este usuario ya tiene un inventario asignado.';
         }
         
         showAssignErrorToast(errorMessage);
@@ -259,16 +278,22 @@ async function handleAssignManagerSubmit(e) {
         return;
     }
 
-    // Validate form elements exist
-    const managerIdElement = document.getElementById('managerId');
-    if (!managerIdElement) {
-        showAssignManagerErrorToast('Error del sistema: No se puede acceder al formulario');
-        return;
+    // Try to get value from CustomSelect first, then fallback to hidden input
+    let managerId = '';
+    
+    if (window.managerSelect && window.managerSelect.getValue) {
+        managerId = window.managerSelect.getValue();
+    }
+    
+    // Fallback to hidden input if CustomSelect value is empty
+    if (!managerId) {
+        const managerIdElement = document.getElementById('managerId');
+        if (managerIdElement) {
+            managerId = managerIdElement.value;
+        }
     }
 
-    const managerId = managerIdElement.value;
-
-    if (!managerId) {
+    if (!managerId || managerId.trim() === '') {
         showAssignManagerErrorToast('Por favor selecciona un gerente para la asignación');
         return;
     }
