@@ -18,362 +18,236 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.awt.desktop.QuitResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class InventoryService
-        implements
-        CreateInventoryUseCase,
-        ListInventoryUseCase,
-        UpdateInventoryUseCase,
-        DeleteInventoryUseCase,
-        GetInventoryByIdUseCase,
-        AssignedInventoryUseCase,
-        QuitInventoryUseCase,
-        GetAllSignatoriesUseCase,
-        AssignManagerInventoryUseCase,
-        DeleteManagerInventoryUseCase,
-        GetInventoryManagersUseCase,
-        GetAllManagedInventoriesUseCase,
-        FindMyInventoryUseCase,
-        AssignSignatoryInventoryUseCase,
-        GetMySignatoryInventoriesUseCase,
-        QuitSignatoryInventoryUseCase,
-        DeleteSignatoryInventoryUseCase{
+                implements
+                CreateInventoryUseCase,
+                ListInventoryUseCase,
+                UpdateInventoryUseCase,
+                DeleteInventoryUseCase,
+                GetInventoryByIdUseCase,
+                AssignedInventoryUseCase,
+                QuitInventoryUseCase,
+                AssignManagerInventoryUseCase,
+                DeleteManagerInventoryUseCase,
+                GetInventoryManagersUseCase,
+                GetAllManagedInventoriesUseCase,
+                FindMyInventoryUseCase {
 
-    private final SpringDataInventoryRepository inventoryRepository;
-    private final SpringDataUserRepository userRepository;
+        private final SpringDataInventoryRepository inventoryRepository;
+        private final SpringDataUserRepository userRepository;
 
-    @Override
-    @Transactional
-    public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
-        InventoryEntity inventory = InventoryMapper.fromCreateRequest(request);
-        InventoryEntity savedInventory = inventoryRepository.save(inventory);
-        return InventoryMapper.toCreateResponse(savedInventory);
-    }
-
-    @Override
-    public List<InventoryResponse> listInventoryes() {
-        return inventoryRepository.findAll()
-                .stream()
-                .map(InventoryMapper::toResponse)
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public InventoryResponse getInventoryById(Long id) {
-        InventoryEntity inventory = inventoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + id));
-        return InventoryMapper.toResponse(inventory);
-    }
-
-    @Override
-    @Transactional
-    public InventoryResponse deleteInventoryById(Long id) {
-        InventoryEntity inventory = inventoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + id));
-        inventoryRepository.deleteById(id);
-        return InventoryMapper.toResponse(inventory);
-    }
-
-    @Override
-    @Transactional
-    public UpdateInventoryResponse updateInventory(Long id, UpdateInventoryRequest request) {
-        InventoryEntity inventory = InventoryMapper.fromUpdateRequest(request, id);
-        InventoryEntity updatedInventory = inventoryRepository.save(inventory);
-        return InventoryMapper.toUpdateResponse(updatedInventory);
-    }
-
-    @Override
-    @Transactional
-    public AssignedInventoryResponse assignedInventory(AssignedInventoryRequest request) {
-        if (inventoryRepository.findInventoryEntitiesByOwnerId(request.userId()) != null) {
-            throw new RuntimeException("Este usuario ya tiene un inventorio asignado.");
+        @Override
+        @Transactional
+        public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
+                InventoryEntity inventory = InventoryMapper.fromCreateRequest(request);
+                InventoryEntity savedInventory = inventoryRepository.save(inventory);
+                return InventoryMapper.toCreateResponse(savedInventory);
         }
 
-        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
-
-        UserEntity owner = userRepository.findById(request.userId())
-                .orElseThrow(() -> new UserNotFoundException(request.userId()));
-        inventory.setOwner(owner);
-
-        InventoryEntity updated = inventoryRepository.save(inventory);
-
-        return InventoryMapper.toAssignedResponse(updated);
-    }
-
-    @Override
-    @Transactional
-    public AssignManagerInventoryResponse assignManagerInventory(AssignManagerInventoryRequest request) {
-        UserEntity user = userRepository.findById(request.managerId())
-                .orElseThrow(() -> new UserNotFoundException(request.managerId()));
-        
-        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
-
-        // Initialize managers list if null
-        List<UserEntity> managers = inventory.getManagers();
-        if (managers == null) {
-            managers = new java.util.ArrayList<>();
-            inventory.setManagers(managers);
+        @Override
+        public List<InventoryResponse> listInventoryes() {
+                return inventoryRepository.findAll()
+                                .stream()
+                                .map(InventoryMapper::toResponse)
+                                .collect(Collectors.toList());
         }
 
-        // Add manager only if not already present
-        if (!managers.contains(user)) {
-            managers.add(user);
+        @Override
+        public InventoryResponse getInventoryById(Long id) {
+                InventoryEntity inventory = inventoryRepository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + id));
+                return InventoryMapper.toResponse(inventory);
         }
 
-        inventoryRepository.save(inventory);
-
-        return new AssignManagerInventoryResponse(
-                new AssignManagerInventoryUserResponse(user.getId(), user.getFullName(), user.getEmail()),
-                inventory.getUuid(),
-                "Assigned Inventory",
-                true
-        );
-    }
-
-    @Override
-    @Transactional
-    public DeleteManagerInventoryResponse deleteManagerInventory(DeleteManagerInventoryRequest request) {
-        UserEntity user = userRepository.findById(request.managerId())
-                .orElseThrow(() -> new UserNotFoundException(request.managerId()));
-        
-        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
-
-        // Initialize managers list if null
-        List<UserEntity> managers = inventory.getManagers();
-        if (managers == null || !managers.contains(user)) {
-            throw new ResourceNotFoundException("Manager not found in inventory with id: " + request.inventoryId());
+        @Override
+        @Transactional
+        public InventoryResponse deleteInventoryById(Long id) {
+                InventoryEntity inventory = inventoryRepository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + id));
+                inventoryRepository.deleteById(id);
+                return InventoryMapper.toResponse(inventory);
         }
 
-        // Remove manager
-        managers.remove(user);
-        inventory.setManagers(managers);
-        inventoryRepository.save(inventory);
-
-        return new DeleteManagerInventoryResponse(
-                user.getId(),
-                user.getFullName(),
-                user.getEmail(),
-                inventory.getId(),
-                inventory.getName(),
-                "Manager removed from inventory successfully",
-                true
-        );
-    }
-
-    @Override
-    public List<InventoryManagerResponse> getInventoryManagers(Long inventoryId) {
-        InventoryEntity inventory = inventoryRepository.findById(inventoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
-
-        return inventory.getManagers().stream()
-                .map(manager -> new InventoryManagerResponse(
-                        manager.getId(),
-                        manager.getFullName(),
-                        manager.getEmail(),
-                        manager.getJobTitle(),
-                        manager.getLaborDepartment(),
-                        manager.getRole().name()
-                ))
-                .toList();
-    }
-
-    @Override
-    public List<ManagedInventoryResponse> getAllManagedInventories(Long userId) {
-        List<InventoryEntity> managedInventories = inventoryRepository.findInventoryEntitiesByManagerId(userId);
-        return managedInventories.stream()
-                .map(inventory -> new ManagedInventoryResponse(
-                        inventory.getId(),
-                        inventory.getUuid(),
-                        inventory.getName(),
-                        inventory.getLocation(),
-                        inventory.getOwner() != null ? inventory.getOwner().getId() : null,
-                        inventory.getOwner() != null ? inventory.getOwner().getFullName() : null,
-                        inventory.getOwner() != null ? inventory.getOwner().getEmail() : null
-                ))
-                .toList();
-    }
-
-    @Override
-    public InventoryResponse findMyInventory() {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity user = userRepository.getReferenceById(userId);
-        InventoryEntity inventory = inventoryRepository.findInventoryEntityByOwner(user);
-
-        if(inventory == null) {
-            return null;
+        @Override
+        @Transactional
+        public UpdateInventoryResponse updateInventory(Long id, UpdateInventoryRequest request) {
+                InventoryEntity inventory = InventoryMapper.fromUpdateRequest(request, id);
+                InventoryEntity updatedInventory = inventoryRepository.save(inventory);
+                return InventoryMapper.toUpdateResponse(updatedInventory);
         }
 
-        return InventoryMapper.toResponse(inventoryRepository.findInventoryEntityByOwner(user));
-    }
+        @Override
+        @Transactional
+        public AssignedInventoryResponse assignedInventory(AssignedInventoryRequest request) {
+                InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Inventory not found with id: " + request.inventoryId()));
 
-    @Override
-    public List<InventoryResponse> getMySignatoryInventories() {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+                UserEntity owner = userRepository.findById(request.userId())
+                                .orElseThrow(() -> new UserNotFoundException(request.userId()));
 
-        if (user.getInventory() != null) {
-            return List.of(InventoryMapper.toResponse(user.getInventory()));
+                // Check if user already has an inventory assigned (excluding the current
+                // inventory being assigned)
+                List<InventoryEntity> existingInventories = inventoryRepository
+                                .findInventoryEntitiesByOwnerId(request.userId());
+                if (existingInventories != null && !existingInventories.isEmpty()) {
+                        // Check if the user has a different inventory assigned (not the one being
+                        // assigned now)
+                        boolean hasOtherInventory = existingInventories.stream()
+                                        .anyMatch(inv -> !inv.getId().equals(request.inventoryId()));
+
+                        if (hasOtherInventory) {
+                                throw new RuntimeException("This user already has an assigned inventory.");
+                        }
+                        // If the user already owns this inventory, allow the assignment (no error)
+                }
+
+                inventory.setOwner(owner);
+                InventoryEntity updated = inventoryRepository.save(inventory);
+
+                return InventoryMapper.toAssignedResponse(updated);
         }
 
-        return List.of();
-    }
+        @Override
+        @Transactional
+        public AssignManagerInventoryResponse assignManagerInventory(AssignManagerInventoryRequest request) {
+                UserEntity user = userRepository.findById(request.managerId())
+                                .orElseThrow(() -> new UserNotFoundException(request.managerId()));
 
-    @Override
-    public QuitInventoryResponse quitInventory(Long inventoryId) {
+                InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Inventory not found with id: " + request.inventoryId()));
 
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                // Initialize managers list if null
+                List<UserEntity> managers = inventory.getManagers();
+                if (managers == null) {
+                        managers = new java.util.ArrayList<>();
+                        inventory.setManagers(managers);
+                }
 
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+                // Add manager only if not already present
+                if (!managers.contains(user)) {
+                        managers.add(user);
+                }
 
-        InventoryEntity inventory = inventoryRepository.findById(inventoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
+                inventoryRepository.save(inventory);
 
-        // Initialize managers list if null
-        List<UserEntity> managers = inventory.getManagers();
-        if (managers == null || !managers.contains(user)) {
-            throw new ResourceNotFoundException("Manager not found in inventory with id: " + inventoryId);
+                return new AssignManagerInventoryResponse(
+                                new AssignManagerInventoryUserResponse(user.getId(), user.getFullName(),
+                                                user.getEmail()),
+                                inventory.getUuid(),
+                                "Assigned Inventory",
+                                true);
         }
 
-        // Remove manager
-        managers.remove(user);
-        inventory.setManagers(managers);
-        inventoryRepository.save(inventory);
+        @Override
+        @Transactional
+        public DeleteManagerInventoryResponse deleteManagerInventory(DeleteManagerInventoryRequest request) {
+                UserEntity user = userRepository.findById(request.managerId())
+                                .orElseThrow(() -> new UserNotFoundException(request.managerId()));
 
-        return new QuitInventoryResponse(
-                "Successfully quited inventory",
-                inventory.getName()
-        );
-    }
+                InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Inventory not found with id: " + request.inventoryId()));
 
+                // Initialize managers list if null
+                List<UserEntity> managers = inventory.getManagers();
+                if (managers == null || !managers.contains(user)) {
+                        throw new ResourceNotFoundException(
+                                        "Manager not found in inventory with id: " + request.inventoryId());
+                }
 
-    @Override
-    public GetAllSignatoriesResponse getAllSignatories(GetAllSignatoriesRequest request) {
-        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + request.inventoryId()));
+                // Remove manager
+                managers.remove(user);
+                inventory.setManagers(managers);
+                inventoryRepository.save(inventory);
 
-        List<UserResponse> signatories = inventory.getSignatories() != null
-                ? inventory.getSignatories().stream()
-                    .map(UserMapper::toResponse)
-                    .collect(Collectors.toList())
-                : List.of();
-
-        return new GetAllSignatoriesResponse(
-                InventoryMapper.toResponse(inventory),
-                signatories
-        );
-    }
-
-    @Override
-    @Transactional
-    public AssignSignatoryInventoryResponse assignSignatoryInventory(AssignSignatoryInventoryRequest request) {
-        UserEntity user = userRepository.findById(request.signatoryId())
-                .orElseThrow(() -> new UserNotFoundException(request.signatoryId()));
-
-        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
-
-        // Initialize signatories list if null
-        List<UserEntity> signatories = inventory.getSignatories();
-        if (signatories == null) {
-            signatories = new java.util.ArrayList<>();
-            inventory.setSignatories(signatories);
+                return new DeleteManagerInventoryResponse(
+                                user.getId(),
+                                user.getFullName(),
+                                user.getEmail(),
+                                inventory.getId(),
+                                inventory.getName(),
+                                "Manager removed from inventory successfully",
+                                true);
         }
 
-        // Add signatory only if not already present
-        if (!signatories.contains(user)) {
-            signatories.add(user);
-            user.setInventory(inventory); // Set the bidirectional relationship
-            userRepository.save(user); // Save the user to update the foreign key
+        @Override
+        public List<InventoryManagerResponse> getInventoryManagers(Long inventoryId) {
+                InventoryEntity inventory = inventoryRepository.findById(inventoryId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Inventory not found with id: " + inventoryId));
+
+                return inventory.getManagers().stream()
+                                .map(manager -> new InventoryManagerResponse(
+                                                manager.getId(),
+                                                manager.getFullName(),
+                                                manager.getEmail(),
+                                                manager.getJobTitle(),
+                                                manager.getLaborDepartment(),
+                                                manager.getRole().name()))
+                                .toList();
         }
 
-        inventoryRepository.save(inventory);
-
-        return new AssignSignatoryInventoryResponse(
-                new AssignSignatoryInventoryUserResponse(user.getId(), user.getFullName(), user.getEmail()),
-                inventory.getUuid(),
-                "Assigned Signatory",
-                true
-        );
-    }
-
-    @Override
-    @Transactional
-    public QuitInventoryResponse quitSignatoryInventory(Long inventoryId) {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
-
-        InventoryEntity inventory = inventoryRepository.findById(inventoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
-
-        // Check if user is actually a signatory for this inventory
-        if (user.getInventory() == null || !user.getInventory().getId().equals(inventoryId)) {
-            throw new ResourceNotFoundException("User is not a signatory for inventory with id: " + inventoryId);
+        @Override
+        public List<ManagedInventoryResponse> getAllManagedInventories(Long userId) {
+                List<InventoryEntity> managedInventories = inventoryRepository.findInventoryEntitiesByManagerId(userId);
+                return managedInventories.stream()
+                                .map(inventory -> new ManagedInventoryResponse(
+                                                inventory.getId(),
+                                                inventory.getUuid(),
+                                                inventory.getName(),
+                                                inventory.getLocation(),
+                                                inventory.getOwner() != null ? inventory.getOwner().getId() : null,
+                                                inventory.getOwner() != null ? inventory.getOwner().getFullName()
+                                                                : null,
+                                                inventory.getOwner() != null ? inventory.getOwner().getEmail() : null))
+                                .toList();
         }
 
-        // Remove user from inventory's signatories list
-        List<UserEntity> signatories = inventory.getSignatories();
-        if (signatories != null) {
-            signatories.remove(user);
-            inventory.setSignatories(signatories);
-            inventoryRepository.save(inventory);
+        @Override
+        public InventoryResponse findMyInventory() {
+                Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                UserEntity user = userRepository.getReferenceById(userId);
+                InventoryEntity inventory = inventoryRepository.findInventoryEntityByOwner(user);
+
+                if (inventory == null) {
+                        return null;
+                }
+
+                return InventoryMapper.toResponse(inventoryRepository.findInventoryEntityByOwner(user));
         }
 
-        // Clear the user's inventory reference
-        user.setInventory(null);
-        userRepository.save(user);
+        @Override
+        public QuitInventoryResponse quitInventory(Long inventoryId) {
 
-        return new QuitInventoryResponse(
-                "Successfully quit as signatory",
-                inventory.getName()
-        );
-    }
+                Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-    @Override
-    @Transactional
-    public DeleteSignatoryInventoryResponse deleteSignatoryInventory(DeleteSignatoryInventoryRequest request) {
-        UserEntity user = userRepository.findById(request.signatoryId())
-                .orElseThrow(() -> new UserNotFoundException(request.signatoryId()));
+                UserEntity user = userRepository.findById(userId)
+                                .orElseThrow(() -> new UserNotFoundException(userId));
 
-        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
+                InventoryEntity inventory = inventoryRepository.findById(inventoryId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Inventory not found with id: " + inventoryId));
 
-        // Check if user is actually a signatory for this inventory
-        if (user.getInventory() == null || !user.getInventory().getId().equals(request.inventoryId())) {
-            throw new ResourceNotFoundException("User is not a signatory for inventory with id: " + request.inventoryId());
+                // Initialize managers list if null
+                List<UserEntity> managers = inventory.getManagers();
+                if (managers == null || !managers.contains(user)) {
+                        throw new ResourceNotFoundException("Manager not found in inventory with id: " + inventoryId);
+                }
+
+                // Remove manager
+                managers.remove(user);
+                inventory.setManagers(managers);
+                inventoryRepository.save(inventory);
+
+                return new QuitInventoryResponse(
+                                "Successfully quited inventory",
+                                inventory.getName());
         }
-
-        // Remove user from inventory's signatories list
-        List<UserEntity> signatories = inventory.getSignatories();
-        if (signatories != null) {
-            signatories.remove(user);
-            inventory.setSignatories(signatories);
-            inventoryRepository.save(inventory);
-        }
-
-        // Clear the user's inventory reference
-        user.setInventory(null);
-        userRepository.save(user);
-
-        return new DeleteSignatoryInventoryResponse(
-                user.getId(),
-                user.getFullName(),
-                user.getEmail(),
-                inventory.getId(),
-                inventory.getName(),
-                "Signatory removed from inventory successfully",
-                true
-        );
-    }
 }

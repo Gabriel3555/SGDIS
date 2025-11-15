@@ -24,6 +24,9 @@ public class FileUploadService {
 
     public String saveFile(MultipartFile file, String email) throws IOException {
         String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be null or empty");
+        }
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         String filename = "profile" + extension;
         Path userDir = rootLocation.resolve(email);
@@ -34,9 +37,35 @@ public class FileUploadService {
     }
 
     public void deleteFile(String imgUrl) throws IOException {
-        if (imgUrl != null) {
-            Path filePath = Paths.get("uploads" + imgUrl.substring(8));
+        if (imgUrl != null && imgUrl.startsWith("/uploads/")) {
+            // Remove the leading "/uploads/" to get the relative path
+            String relativePath = imgUrl.substring(8);
+            Path filePath = rootLocation.resolve(relativePath);
             Files.deleteIfExists(filePath);
+            
+            // Try to delete the parent directory if it's empty (for inventories)
+            Path parentDir = filePath.getParent();
+            if (parentDir != null && Files.exists(parentDir)) {
+                try {
+                    Files.deleteIfExists(parentDir);
+                } catch (Exception e) {
+                    // Ignore if directory is not empty
+                }
+            }
         }
+    }
+
+    public String saveInventoryFile(MultipartFile file, String inventoryUuid) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be null or empty");
+        }
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String filename = "inventory" + extension;
+        Path inventoryDir = rootLocation.resolve("inventories").resolve(inventoryUuid);
+        Files.createDirectories(inventoryDir);
+        Path targetFile = inventoryDir.resolve(filename);
+        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        return "/uploads/inventories/" + inventoryUuid + "/" + filename;
     }
 }

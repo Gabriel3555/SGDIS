@@ -1,5 +1,7 @@
 // Custom Select Component (copied from users-modals.js for use in inventory modals)
-class CustomSelect {
+// Solo declarar si no existe ya (para evitar conflictos si se carga users-modals.js)
+if (typeof CustomSelect === 'undefined' && typeof window.CustomSelect === 'undefined') {
+    var CustomSelect = class CustomSelect {
     constructor(containerId, options = {}) {
         this.container = document.getElementById(containerId);
         if (!this.container) return;
@@ -9,7 +11,12 @@ class CustomSelect {
         this.searchInput = this.container.querySelector('.custom-select-search');
         this.optionsContainer = this.container.querySelector('.custom-select-options');
         this.textElement = this.container.querySelector('.custom-select-text');
+        
+        // Try to find hidden input inside container first, then in parent container
         this.hiddenInput = this.container.querySelector('input[type="hidden"]');
+        if (!this.hiddenInput && this.container.parentElement) {
+            this.hiddenInput = this.container.parentElement.querySelector('input[type="hidden"]');
+        }
 
         this.options = [];
         this.filteredOptions = [];
@@ -177,7 +184,10 @@ class CustomSelect {
 
         this.renderOptions();
     }
-}
+};
+    // Hacer disponible globalmente
+    window.CustomSelect = CustomSelect;
+} // Fin del if (typeof CustomSelect === 'undefined')
 
 function showDeleteInventoryModal(inventoryId) {
     inventoryData.currentInventoryId = inventoryId;
@@ -250,6 +260,40 @@ async function showViewInventoryModal(inventoryId) {
 }
 
 function populateViewInventoryModal(inventory) {
+    // Populate inventory image
+    const imageElement = document.getElementById('viewInventoryImage');
+    const imageButton = document.getElementById('viewInventoryImageButton');
+    const imagePlaceholder = document.getElementById('viewInventoryImagePlaceholder');
+    
+    if (inventory.imgUrl) {
+        // Show button with image
+        if (imageButton && imageElement) {
+            imageButton.style.display = 'block';
+            imageElement.innerHTML = `<img src="${inventory.imgUrl}" alt="${inventory.name || 'Inventario'}" class="w-full h-full object-cover rounded-xl">`;
+            // Store image URL for the full size modal
+            imageButton.setAttribute('data-image-url', inventory.imgUrl);
+            
+            // Add click event listener as backup
+            imageButton.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                showInventoryImageModal();
+                return false;
+            };
+        }
+        if (imagePlaceholder) {
+            imagePlaceholder.style.display = 'none';
+        }
+    } else {
+        // Show placeholder
+        if (imageButton) {
+            imageButton.style.display = 'none';
+        }
+        if (imagePlaceholder) {
+            imagePlaceholder.style.display = 'flex';
+        }
+    }
+    
     // Populate inventory details
     const nameElement = document.getElementById('viewInventoryName');
     const idElement = document.getElementById('viewInventoryId');
@@ -280,7 +324,7 @@ function populateViewInventoryModal(inventory) {
         if (ownerDepartment) ownerDepartment.textContent = inventory.owner.laborDepartment || 'Sin departamento';
         if (ownerStatus) {
             ownerStatus.textContent = inventory.owner.status ? 'Activo' : 'Inactivo';
-            ownerStatus.className = `px-2 py-1 rounded-full text-xs font-medium ${inventory.owner.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            ownerStatus.className = `px-3 py-1 rounded-full text-xs font-medium ${inventory.owner.status ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`;
         }
         
         // Set owner avatar
@@ -300,7 +344,7 @@ function populateViewInventoryModal(inventory) {
         if (ownerDepartment) ownerDepartment.textContent = 'N/A';
         if (ownerStatus) {
             ownerStatus.textContent = 'Sin asignar';
-            ownerStatus.className = 'px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800';
+            ownerStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
         }
         if (ownerAvatar) {
             ownerAvatar.textContent = 'U';
@@ -333,8 +377,79 @@ function closeViewInventoryModal() {
     inventoryData.currentInventoryId = null;
 }
 
+// Inventory Image Modal Functions
+function showInventoryImageModal() {
+    const imageButton = document.getElementById('viewInventoryImageButton');
+    const imageElement = document.getElementById('viewInventoryImage');
+    
+    // Try to get image URL from button attribute or from the img element inside
+    let imageUrl = null;
+    if (imageButton) {
+        imageUrl = imageButton.getAttribute('data-image-url');
+    }
+    
+    // If not found in attribute, try to get from the img element
+    if (!imageUrl && imageElement) {
+        const img = imageElement.querySelector('img');
+        if (img && img.src) {
+            imageUrl = img.src;
+        }
+    }
+    
+    if (!imageUrl) {
+        return;
+    }
+    
+    const imageModal = document.getElementById('inventoryImageModal');
+    const fullSizeImage = document.getElementById('inventoryImageFullSize');
+    
+    if (imageModal && fullSizeImage) {
+        fullSizeImage.src = imageUrl;
+        imageModal.classList.remove('hidden');
+        
+        // Prevent body scroll when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeInventoryImageModal() {
+    const imageModal = document.getElementById('inventoryImageModal');
+    
+    if (imageModal) {
+        imageModal.classList.add('hidden');
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+    }
+}
+
+// Close image modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const imageModal = document.getElementById('inventoryImageModal');
+        if (imageModal && !imageModal.classList.contains('hidden')) {
+            closeInventoryImageModal();
+        }
+    }
+});
+
+// Close image modal when clicking outside the image
+document.addEventListener('click', function(e) {
+    const imageModal = document.getElementById('inventoryImageModal');
+    if (imageModal && !imageModal.classList.contains('hidden')) {
+        const modalContent = imageModal.querySelector('.relative');
+        const closeButton = imageModal.querySelector('button[onclick*="closeInventoryImageModal"]');
+        // Don't close if clicking on the image or close button
+        if (modalContent && !modalContent.contains(e.target) && e.target !== closeButton && !closeButton.contains(e.target)) {
+            closeInventoryImageModal();
+        }
+    }
+});
+
 window.showViewInventoryModal = showViewInventoryModal;
 window.closeViewInventoryModal = closeViewInventoryModal;
+window.showInventoryImageModal = showInventoryImageModal;
+window.closeInventoryImageModal = closeInventoryImageModal;
 
 async function showEditInventoryModal(inventoryId) {
     try {
@@ -605,7 +720,7 @@ function populateManagerSelect(users) {
             } else if (user.email) {
                 displayName = user.email;
             } else {
-                displayName = `Usuario ${user.userId || user.id}`;
+                displayName = `Usuario ${user.id || 'N/A'}`;
             }
             
             // Add additional info if available
@@ -614,7 +729,7 @@ function populateManagerSelect(users) {
             }
             
             managerOptions.push({
-                value: String(user.userId || user.id),
+                value: String(user.id),
                 label: displayName
             });
         });
@@ -682,14 +797,26 @@ async function fetchUsers() {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch('/api/v1/users', {
+        // Request all users with a large page size for the select dropdown
+        const response = await fetch('/api/v1/users?page=0&size=1000', {
             method: 'GET',
             headers: headers
         });
 
         if (response.ok) {
-            const users = await response.json();
-            return Array.isArray(users) ? users : [];
+            const pagedResponse = await response.json();
+            
+            // Handle both paginated response (PagedUserResponse) and direct array
+            if (pagedResponse.users && Array.isArray(pagedResponse.users)) {
+                // Paginated response structure
+                return pagedResponse.users;
+            } else if (Array.isArray(pagedResponse)) {
+                // Direct array response (fallback)
+                return pagedResponse;
+            } else {
+                console.warn('Unexpected response format from /api/v1/users:', pagedResponse);
+                return [];
+            }
         } else {
             throw new Error(`Failed to fetch users: ${response.status}`);
         }
@@ -721,7 +848,7 @@ function populateUserSelect(users) {
             } else if (user.email) {
                 displayName = user.email;
             } else {
-                displayName = `Usuario ${user.userId || user.id}`;
+                displayName = `Usuario ${user.id || 'N/A'}`;
             }
             
             // Add additional info if available
@@ -730,7 +857,7 @@ function populateUserSelect(users) {
             }
             
             userOptions.push({
-                value: String(user.userId || user.id),
+                value: String(user.id),
                 label: displayName
             });
         });

@@ -3,8 +3,12 @@ package com.sgdis.backend.inventory.web;
 import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.application.port.in.AssignManagerInventoryUseCase;
 import com.sgdis.backend.inventory.application.port.in.*;
+import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
+import com.sgdis.backend.user.application.service.FileUploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,7 +16,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -35,11 +41,8 @@ public class InventoryController {
     private final DeleteManagerInventoryUseCase deleteManagerInventoryUseCase;
     private final GetInventoryManagersUseCase getInventoryManagersUseCase;
     private final GetAllManagedInventoriesUseCase getAllManagedInventoriesUseCase;
-    private final GetAllSignatoriesUseCase getAllSignatoriesUseCase;
-    private final AssignSignatoryInventoryUseCase assignSignatoryInventoryUseCase;
-    private final GetMySignatoryInventoriesUseCase getMySignatoryInventoriesUseCase;
-    private final QuitSignatoryInventoryUseCase quitSignatoryInventoryUseCase;
-    private final DeleteSignatoryInventoryUseCase deleteSignatoryInventoryUseCase;
+    private final SpringDataInventoryRepository inventoryRepository;
+    private final FileUploadService fileUploadService;
 
     @Operation(
             summary = "Create new inventory",
@@ -268,17 +271,30 @@ public class InventoryController {
     }
 
     @Operation(
-            summary = "Quit as signatory from inventory",
-            description = "Allows the authenticated user to quit as a signatory from a specific inventory"
+            summary = "Upload inventory image",
+            description = "Uploads an image for a specific inventory by its ID"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Successfully quit as signatory",
-            content = @Content(schema = @Schema(implementation = QuitInventoryResponse.class))
-    )
-    @ApiResponse(responseCode = "404", description = "Inventory not found or user is not a signatory")
-    @PostMapping("/quitSignatory/{inventoryId}")
-    public QuitInventoryResponse quitSignatory(@PathVariable Long inventoryId) {
-        return quitSignatoryInventoryUseCase.quitSignatoryInventory(inventoryId);
+    @ApiResponse(responseCode = "200", description = "Inventory image updated successfully")
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @ApiResponse(responseCode = "400", description = "Invalid file")
+    @ApiResponse(responseCode = "403", description = "Access denied")
+    @PostMapping("/{id}/image")
+    public ResponseEntity<String> uploadInventoryImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        try {
+            InventoryEntity inventory = inventoryRepository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + id));
+
+            if (inventory.getImgUrl() != null) {
+                fileUploadService.deleteFile(inventory.getImgUrl());
+            }
+
+            String imgUrl = fileUploadService.saveInventoryFile(file, inventory.getUuid().toString());
+            inventory.setImgUrl(imgUrl);
+            inventoryRepository.save(inventory);
+
+            return ResponseEntity.ok("Inventory image updated successfully");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Error updating inventory image: " + e.getMessage());
+        }
     }
 }

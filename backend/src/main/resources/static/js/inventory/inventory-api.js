@@ -279,16 +279,37 @@ async function assignInventory(assignmentData) {
         if (response.ok) {
             const result = await response.json();
             return result;
-        } else if (response.status === 400) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Datos de asignación inválidos');
-        } else if (response.status === 401) {
-            throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
-        } else if (response.status === 403) {
-            throw new Error('No tienes permisos para asignar inventarios.');
         } else {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al asignar el inventario');
+            // Try to parse error response
+            let errorMessage = 'Error al asignar el inventario';
+            try {
+                const errorData = await response.json();
+                // Check multiple possible fields for error message
+                errorMessage = errorData.detail || errorData.message || errorData.error || errorMessage;
+            } catch (parseError) {
+                // If response is not JSON, use status text
+                errorMessage = response.statusText || errorMessage;
+            }
+
+            // Handle specific status codes
+            if (response.status === 400) {
+                throw new Error(errorMessage || 'Datos de asignación inválidos');
+            } else if (response.status === 401) {
+                throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
+            } else if (response.status === 403) {
+                throw new Error('No tienes permisos para asignar inventarios.');
+            } else if (response.status === 409) {
+                // Conflict - user already has inventory assigned
+                throw new Error(errorMessage || 'Este usuario ya tiene un inventario asignado.');
+            } else if (response.status === 500) {
+                // Internal server error - check if it's a business rule violation
+                if (errorMessage.includes('ya tiene un inventario') || errorMessage.includes('ya tiene un inventorio')) {
+                    throw new Error('Este usuario ya tiene un inventario asignado.');
+                }
+                throw new Error(errorMessage || 'Ha ocurrido un error inesperado al asignar el inventario.');
+            } else {
+                throw new Error(errorMessage);
+            }
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {

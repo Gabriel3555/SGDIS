@@ -29,6 +29,7 @@ public class InventoryEntity {
     private UUID uuid;
     private String location;
     private String name;
+    private String imgUrl;
     @ManyToOne(fetch = FetchType.EAGER)
     private UserEntity owner;
 

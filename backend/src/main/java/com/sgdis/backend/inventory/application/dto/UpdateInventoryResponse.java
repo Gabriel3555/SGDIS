@@ -6,6 +6,7 @@ public record UpdateInventoryResponse(
         Long id,
         UUID uuid,
         String name,
-        String location
+        String location,
+        String imgUrl
 ) {
 }
