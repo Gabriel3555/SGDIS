@@ -47,6 +47,7 @@ public class InventoryController {
     private final QuitSignatoryInventoryUseCase quitSignatoryInventoryUseCase;
     private final DeleteSignatoryInventoryUseCase deleteSignatoryInventoryUseCase;
     private final GetAllSignatoriesUseCase getAllSignatoriesUseCase;
+    private final QuitManagerInventoryUseCase quitManagerInventoryUseCase;
     private final FileUploadService fileUploadService;
 
     @Operation(
@@ -303,6 +304,21 @@ public class InventoryController {
     @PostMapping("/quitSignatory/{inventoryId}")
     public QuitInventoryResponse quitSignatory(@PathVariable Long inventoryId) {
         return quitSignatoryInventoryUseCase.quitSignatoryInventory(inventoryId);
+    }
+
+    @Operation(
+            summary = "Quit as manager from inventory",
+            description = "Allows the authenticated user to quit as a manager from a specific inventory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Successfully quit as manager",
+            content = @Content(schema = @Schema(implementation = QuitInventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found or user is not a manager")
+    @PostMapping("/quitManager/{inventoryId}")
+    public QuitInventoryResponse quitManager(@PathVariable Long inventoryId) {
+        return quitManagerInventoryUseCase.quitManagerInventory(inventoryId);
     }
 
     @Operation(

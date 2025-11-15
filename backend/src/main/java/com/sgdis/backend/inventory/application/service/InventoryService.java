@@ -41,7 +41,8 @@ public class InventoryService
                 GetMySignatoryInventoriesUseCase,
                 GetAllSignatoriesUseCase,
                 QuitSignatoryInventoryUseCase,
-                DeleteSignatoryInventoryUseCase{
+                DeleteSignatoryInventoryUseCase,
+                QuitManagerInventoryUseCase{
 
         private final SpringDataInventoryRepository inventoryRepository;
         private final SpringDataUserRepository userRepository;
@@ -390,5 +391,33 @@ public class InventoryService
                 InventoryMapper.toResponse(inventory),
                 signatories
         );
+    }
+
+    @Override
+    @Transactional
+    public QuitInventoryResponse quitManagerInventory(Long inventoryId) {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        UserEntity user = userRepository.findById(userId)
+                        .orElseThrow(() -> new UserNotFoundException(userId));
+
+        InventoryEntity inventory = inventoryRepository.findById(inventoryId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                        "Inventory not found with id: " + inventoryId));
+
+        // Initialize managers list if null
+        List<UserEntity> managers = inventory.getManagers();
+        if (managers == null || !managers.contains(user)) {
+                throw new ResourceNotFoundException("Manager not found in inventory with id: " + inventoryId);
+        }
+
+        // Remove manager
+        managers.remove(user);
+        inventory.setManagers(managers);
+        inventoryRepository.save(inventory);
+
+        return new QuitInventoryResponse(
+                        "Successfully quit as manager",
+                        inventory.getName());
     }
 }
