@@ -8,9 +8,11 @@ import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventory
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
+import com.sgdis.backend.user.application.dto.UserResponse;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
+import com.sgdis.backend.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -34,7 +36,12 @@ public class InventoryService
                 DeleteManagerInventoryUseCase,
                 GetInventoryManagersUseCase,
                 GetAllManagedInventoriesUseCase,
-                FindMyInventoryUseCase {
+                FindMyInventoryUseCase,
+                AssignSignatoryInventoryUseCase,
+                GetMySignatoryInventoriesUseCase,
+                GetAllSignatoriesUseCase,
+                QuitSignatoryInventoryUseCase,
+                DeleteSignatoryInventoryUseCase{
 
         private final SpringDataInventoryRepository inventoryRepository;
         private final SpringDataUserRepository userRepository;
@@ -248,4 +255,140 @@ public class InventoryService
                                 "Successfully quited inventory",
                                 inventory.getName());
         }
+
+
+
+    @Override
+    @Transactional
+    public AssignSignatoryInventoryResponse assignSignatoryInventory(AssignSignatoryInventoryRequest request) {
+        UserEntity user = userRepository.findById(request.signatoryId())
+                .orElseThrow(() -> new UserNotFoundException(request.signatoryId()));
+
+        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
+
+        // Initialize signatories list if null
+        List<UserEntity> signatories = inventory.getSignatories();
+        if (signatories == null) {
+            signatories = new java.util.ArrayList<>();
+            inventory.setSignatories(signatories);
+        }
+
+        // Add signatory only if not already present
+        if (!signatories.contains(user)) {
+            signatories.add(user);
+            user.setInventory(inventory); // Set the bidirectional relationship
+            userRepository.save(user); // Save the user to update the foreign key
+        }
+
+        inventoryRepository.save(inventory);
+
+        return new AssignSignatoryInventoryResponse(
+                new AssignSignatoryInventoryUserResponse(user.getId(), user.getFullName(), user.getEmail()),
+                inventory.getUuid(),
+                "Assigned Signatory",
+                true
+        );
+    }
+
+    @Override
+    @Transactional
+    public QuitInventoryResponse quitSignatoryInventory(Long inventoryId) {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        InventoryEntity inventory = inventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
+
+        // Check if user is actually a signatory for this inventory
+        if (user.getInventory() == null || !user.getInventory().getId().equals(inventoryId)) {
+            throw new ResourceNotFoundException("User is not a signatory for inventory with id: " + inventoryId);
+        }
+
+        // Remove user from inventory's signatories list
+        List<UserEntity> signatories = inventory.getSignatories();
+        if (signatories != null) {
+            signatories.remove(user);
+            inventory.setSignatories(signatories);
+            inventoryRepository.save(inventory);
+        }
+
+        // Clear the user's inventory reference
+        user.setInventory(null);
+        userRepository.save(user);
+
+        return new QuitInventoryResponse(
+                "Successfully quit as signatory",
+                inventory.getName()
+        );
+    }
+
+    @Override
+    @Transactional
+    public DeleteSignatoryInventoryResponse deleteSignatoryInventory(DeleteSignatoryInventoryRequest request) {
+        UserEntity user = userRepository.findById(request.signatoryId())
+                .orElseThrow(() -> new UserNotFoundException(request.signatoryId()));
+
+        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
+
+        // Check if user is actually a signatory for this inventory
+        if (user.getInventory() == null || !user.getInventory().getId().equals(request.inventoryId())) {
+            throw new ResourceNotFoundException("User is not a signatory for inventory with id: " + request.inventoryId());
+        }
+
+        // Remove user from inventory's signatories list
+        List<UserEntity> signatories = inventory.getSignatories();
+        if (signatories != null) {
+            signatories.remove(user);
+            inventory.setSignatories(signatories);
+            inventoryRepository.save(inventory);
+        }
+
+        // Clear the user's inventory reference
+        user.setInventory(null);
+        userRepository.save(user);
+
+        return new DeleteSignatoryInventoryResponse(
+                user.getId(),
+                user.getFullName(),
+                user.getEmail(),
+                inventory.getId(),
+                inventory.getName(),
+                "Signatory removed from inventory successfully",
+                true
+        );
+    }
+
+    @Override
+    public List<InventoryResponse> getMySignatoryInventories() {
+        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+        if (user.getInventory() != null) {
+            return List.of(InventoryMapper.toResponse(user.getInventory()));
+        }
+
+        return List.of();
+    }
+
+    @Override
+    public GetAllSignatoriesResponse getAllSignatories(GetAllSignatoriesRequest request) {
+        InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + request.inventoryId()));
+
+        List<UserResponse> signatories = inventory.getSignatories() != null
+                ? inventory.getSignatories().stream()
+                .map(UserMapper::toResponse)
+                .collect(Collectors.toList())
+                : List.of();
+
+        return new GetAllSignatoriesResponse(
+                InventoryMapper.toResponse(inventory),
+                signatories
+        );
+    }
 }
