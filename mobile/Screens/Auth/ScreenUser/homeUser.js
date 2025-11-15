@@ -74,12 +74,12 @@ export default function DashboardScreen() {
     try {
       const token = await AsyncStorage.getItem("userToken");
       if (!token) return;
-      const response = await api.get("api/v1/inventory/owned", {
+      const response = await api.get("api/v1/users/me/inventories", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-      const data = response.data.ownedInventories || [];
+      const data = response.data || [];
       setInventoryCount(data.length);
     } catch (error) {
       console.error("Error fetching inventory count:", error);

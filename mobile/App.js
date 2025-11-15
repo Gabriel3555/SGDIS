@@ -5,6 +5,7 @@ import MainNavigator from './src/Navigation/MainNavigator';
 import { navigationRef } from './src/Navigation/NavigationService';
 import ChangePasswordScreen from './Screens/Auth/ScreenUser/ChangePasswordScreen';
 import ChangePhotoScreen from './Screens/Auth/ScreenUser/ChangePhotoScreen';
+import ItemsScreen from './Screens/Auth/ScreenUser/ItemsScreen';
 
 
 
@@ -17,6 +18,7 @@ export default function App() {
       <Stack.Navigator initialRouteName="Auth" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Auth" component={AuthNavegation} />
         <Stack.Screen name="Main" component={MainNavigator} />
+        <Stack.Screen name="Items" component={ItemsScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
         <Stack.Screen name="ChangePhoto" component={ChangePhotoScreen} />
       </Stack.Navigator>

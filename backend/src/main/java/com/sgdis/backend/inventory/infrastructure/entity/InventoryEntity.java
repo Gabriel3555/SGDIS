@@ -43,4 +43,8 @@ public class InventoryEntity {
 
     @OneToMany(mappedBy = "inventory")
     private List<ItemEntity> items;
+
+    @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<UserEntity> signatories;
+
 }
