@@ -42,23 +42,32 @@ export default function ChangePhotoScreen() {
   };
 
   const pickImage = async () => {
-    // Request permissions
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert("Permiso denegado", "Necesitas permisos para acceder a la galería");
-      return;
-    }
+    try {
+      // Request permissions for both camera and media library
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      const mediaLibraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    // Launch image picker
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-    });
+      if (cameraPermission.status !== "granted" || mediaLibraryPermission.status !== "granted") {
+        Alert.alert("Permisos denegados", "Necesitas permisos de cámara y galería para seleccionar una imagen");
+        return;
+      }
 
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0]);
+      // Launch image picker
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.5,
+      });
+
+      console.log("Image picker result:", result);
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setSelectedImage(result.assets[0]);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      Alert.alert("Error", "No se pudo abrir la galería");
     }
   };
 
@@ -113,10 +122,12 @@ export default function ChangePhotoScreen() {
           const localUri = `${FileSystem.cacheDirectory}profile_${userEmail}.jpg`;
           const downloadResult = await FileSystem.downloadAsync(fullImageUrl, localUri);
           await AsyncStorage.setItem(`userProfileImage_${userEmail}`, downloadResult.uri);
+          setCurrentImageUri(downloadResult.uri);
         } catch (downloadError) {
           console.error("Error downloading image:", downloadError);
           // Fallback to storing the URL if download fails
           await AsyncStorage.setItem(`userProfileImage_${userEmail}`, fullImageUrl);
+          setCurrentImageUri(fullImageUrl);
         }
       }
 

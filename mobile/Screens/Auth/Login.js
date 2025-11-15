@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Linking,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { login } from "../../src/Navigation/Services/AuthService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { navigationRef } from "../../src/Navigation/NavigationService";
@@ -141,15 +142,18 @@ export default function LoginScreen({ navigation }) {
             })
           }
         ]}>
-          <TextInput
-            style={styles.input}
-            placeholder="Correo electrónico"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            onFocus={() => animateInputFocus(emailBorderAnim)}
-            onBlur={() => animateInputBlur(emailBorderAnim)}
-          />
+          <View style={styles.inputWrapper}>
+            <Ionicons name="mail-outline" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="Correo electrónico"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
+              onFocus={() => animateInputFocus(emailBorderAnim)}
+              onBlur={() => animateInputBlur(emailBorderAnim)}
+            />
+          </View>
         </Animated.View>
 
         {/* Password */}
@@ -162,16 +166,19 @@ export default function LoginScreen({ navigation }) {
             })
           }
         ]}>
-          <TextInput
-            style={styles.input}
-            placeholder="Contraseña"
-            placeholderTextColor="#999"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            onFocus={() => animateInputFocus(passwordBorderAnim)}
-            onBlur={() => animateInputBlur(passwordBorderAnim)}
-          />
+          <View style={styles.inputWrapper}>
+            <Ionicons name="lock-closed-outline" size={20} color="#999" style={styles.icon} />
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              placeholder="Contraseña"
+              placeholderTextColor="#999"
+              secureTextEntry
+              value={password}
+              onChangeText={setPassword}
+              onFocus={() => animateInputFocus(passwordBorderAnim)}
+              onBlur={() => animateInputBlur(passwordBorderAnim)}
+            />
+          </View>
         </Animated.View>
 
         {/* Botón Login */}
@@ -222,14 +229,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   logoInside: {
-    width: 100,
-    height: 60,
-    marginVertical: 10,
+    width: 120,
+    height: 70,
+    marginVertical: 15,
   },
   card: {
     width: "100%",
     backgroundColor: "#fff",
-    padding: 20,
+    padding: 30,
     borderRadius: 16,
     elevation: 5,
     shadowColor: "#000",
@@ -238,32 +245,39 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   appTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: "bold",
     color: "#222",
-    marginBottom: 5,
+    marginBottom: 10,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
     color: "#28a745",
+    marginBottom: 10,
   },
   institution: {
-    fontSize: 12,
+    fontSize: 14,
     color: "#555",
-    marginBottom: 20,
+    marginBottom: 25,
   },
   inputContainer: {
     width: "100%",
     borderWidth: 1,
     borderRadius: 8,
-    marginBottom: 15,
+    marginBottom: 20,
     backgroundColor: "#f9f9f9",
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
+  },
+  icon: {
+    marginRight: 10,
+  },
+  input: {
     fontSize: 14,
-    borderWidth: 0, // Remove border since it's on the container
   },
   loginButton: {
     width: "100%",
@@ -271,7 +285,11 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 3,
   },
   loginButtonDisabled: {
     opacity: 0.7,
@@ -284,18 +302,18 @@ const styles = StyleSheet.create({
   link: {
     fontSize: 13,
     color: "#28a745",
-    marginBottom: 15,
+    marginBottom: 20,
   },
   registerText: {
     fontSize: 13,
     color: "#333",
-    marginBottom: 20,
+    marginBottom: 25,
     textAlign: "center",
   },
   footer: {
     fontSize: 10,
     color: "#999",
-    marginTop: 10,
+    marginTop: 15,
     textAlign: "center",
   },
 });
