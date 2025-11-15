@@ -17,6 +17,9 @@ import api from "../../../src/Navigation/Services/Connection";
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const [inventoryCount, setInventoryCount] = useState(0);
+  const [inventories, setInventories] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalValue, setTotalValue] = useState(0);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [localImageUri, setLocalImageUri] = useState(null);
@@ -28,6 +31,12 @@ export default function DashboardScreen() {
     fetchUserData();
     fetchInventoryCount();
   }, []);
+
+  useEffect(() => {
+    if (inventories.length > 0) {
+      fetchTotalItemsAndValue();
+    }
+  }, [inventories]);
 
   useEffect(() => {
     return () => {
@@ -80,9 +89,41 @@ export default function DashboardScreen() {
         },
       });
       const data = response.data || [];
+      setInventories(data);
       setInventoryCount(data.length);
     } catch (error) {
       console.error("Error fetching inventory count:", error);
+    }
+  };
+
+  const fetchTotalItemsAndValue = async () => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) return;
+      let totalItemsCount = 0;
+      let totalValueSum = 0;
+      for (const inv of inventories) {
+        let page = 0;
+        const size = 100; // Fetch in batches
+        while (true) {
+          const response = await api.get(`api/v1/items/inventory/${inv.id}?page=${page}&size=${size}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const items = response.data.content || [];
+          totalItemsCount += items.length;
+          for (const item of items) {
+            totalValueSum += item.acquisitionValue || 0;
+          }
+          if (items.length < size) break;
+          page++;
+        }
+      }
+      setTotalItems(totalItemsCount);
+      setTotalValue(totalValueSum);
+    } catch (error) {
+      console.error("Error fetching total items and value:", error);
     }
   };
 
@@ -174,9 +215,8 @@ export default function DashboardScreen() {
               <Ionicons name="cube" size={24} color="#fff" />
             </View>
             <View style={styles.statContent}>
-              <Text style={styles.statValue}>4</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
-              <Text style={styles.statChange}>+12.5% ↑</Text>
+              <Text style={styles.statValue}>{inventoryCount}</Text>
+              <Text style={styles.statLabel}>Total Inventarios</Text>
             </View>
           </View>
 
@@ -196,9 +236,9 @@ export default function DashboardScreen() {
               <Ionicons name="cube" size={24} color="#fff" />
             </View>
             <View style={styles.statContent}>
-              <Text style={styles.statValue}>{inventoryCount}</Text>
-              <Text style={styles.statLabel}>Inventarios</Text>
-              <Text style={styles.statSubtext}>Asignados</Text>
+              <Text style={styles.statValue}>{totalItems}</Text>
+              <Text style={styles.statLabel}>Total Items</Text>
+              <Text style={styles.statSubtext}>En inventarios</Text>
             </View>
           </View>
 
@@ -207,9 +247,9 @@ export default function DashboardScreen() {
               <Ionicons name="cash" size={24} color="#fff" />
             </View>
             <View style={styles.statContent}>
-              <Text style={styles.statValue}>$11.6M</Text>
+              <Text style={styles.statValue}>${(totalValue / 1000000).toFixed(1)}M</Text>
               <Text style={styles.statLabel}>Valor Total</Text>
-              <Text style={styles.statSubtext}>3 inventarios</Text>
+              <Text style={styles.statSubtext}>De items</Text>
             </View>
           </View>
         </View>
