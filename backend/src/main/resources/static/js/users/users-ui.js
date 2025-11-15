@@ -141,31 +141,43 @@ function updateSearchAndFilters() {
             <button onclick="handleSearchButton()" class="px-4 py-3 border border-[#00AF00] text-white rounded-xl hover:bg-[#008800] transition-colors bg-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]" title="Buscar">
                 <i class="fas fa-search"></i> Buscar
             </button>
-            <div class="relative">
-                <select onchange="setRoleFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
-                    <option value="all" ${window.usersData && window.usersData.selectedRole === 'all' ? 'selected' : ''}>Todos los roles</option>
-                    <option value="SUPERADMIN" ${window.usersData && window.usersData.selectedRole === 'SUPERADMIN' ? 'selected' : ''}>Super Admin</option>
-                    <option value="ADMIN_INSTITUTION" ${window.usersData && window.usersData.selectedRole === 'ADMIN_INSTITUTION' ? 'selected' : ''}>Admin Institución</option>
-                    <option value="ADMIN_REGIONAL" ${window.usersData && window.usersData.selectedRole === 'ADMIN_REGIONAL' ? 'selected' : ''}>Admin Regional</option>
-                    <option value="WAREHOUSE" ${window.usersData && window.usersData.selectedRole === 'WAREHOUSE' ? 'selected' : ''}>Almacén</option>
-                    <option value="USER" ${window.usersData && window.usersData.selectedRole === 'USER' ? 'selected' : ''}>Usuario</option>
-                </select>
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
+            <div class="custom-select-container" style="min-width: 180px;">
+                <div class="custom-select" id="filterRoleSelect">
+                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; min-height: 3rem;">
+                        <span class="custom-select-text">Todos los roles</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-select-dropdown">
+                        <input type="text" class="custom-select-search" placeholder="Buscar rol...">
+                        <div class="custom-select-options" id="filterRoleOptions">
+                            <!-- Options loaded dynamically -->
+                        </div>
+                    </div>
                 </div>
+                <input type="hidden" id="filterRole" name="role">
             </div>
-            <div class="relative">
-                <select onchange="setStatusFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
-                    <option value="all" ${window.usersData && window.usersData.selectedStatus === 'all' ? 'selected' : ''}>Todos los estados</option>
-                    <option value="active" ${window.usersData && window.usersData.selectedStatus === 'active' ? 'selected' : ''}>Activos</option>
-                    <option value="inactive" ${window.usersData && window.usersData.selectedStatus === 'inactive' ? 'selected' : ''}>Inactivos</option>
-                </select>
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
+            <div class="custom-select-container" style="min-width: 180px;">
+                <div class="custom-select" id="filterStatusSelect">
+                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; min-height: 3rem;">
+                        <span class="custom-select-text">Todos los estados</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-select-dropdown">
+                        <input type="text" class="custom-select-search" placeholder="Buscar estado...">
+                        <div class="custom-select-options" id="filterStatusOptions">
+                            <!-- Options loaded dynamically -->
+                        </div>
+                    </div>
                 </div>
+                <input type="hidden" id="filterStatus" name="status">
             </div>
         </div>
     `;
+
+    // Initialize CustomSelects for filters (with delay to ensure DOM and scripts are ready)
+    setTimeout(() => {
+        initializeFilterSelects();
+    }, 100);
 
     const filterSearchInput = document.getElementById('filterUserSearch');
     if (filterSearchInput && !filterSearchInput._filterSearchListeners) {
@@ -612,6 +624,174 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setTimeout(checkDependenciesAndInitialize, 100);
 });
+
+// Initialize CustomSelects for role and status filters
+function initializeFilterSelects() {
+    // Check if CustomSelect is available
+    if (typeof CustomSelect === 'undefined' && typeof window.CustomSelect === 'undefined') {
+        setTimeout(initializeFilterSelects, 100);
+        return;
+    }
+    
+    const CustomSelectClass = window.CustomSelect || CustomSelect;
+    
+    // Role filter select
+    const roleSelectContainer = document.getElementById('filterRoleSelect');
+    if (!roleSelectContainer) {
+        return;
+    }
+    
+    // Check if the container still exists in the DOM (might have been regenerated)
+    const existingRoleSelect = window.filterRoleSelect;
+    if (existingRoleSelect) {
+        // Check if the container still exists and is the same element
+        if (!existingRoleSelect.container || !document.body.contains(existingRoleSelect.container)) {
+            window.filterRoleSelect = null;
+        } else if (existingRoleSelect.container !== roleSelectContainer) {
+            // Container was replaced with a new one
+            window.filterRoleSelect = null;
+        } else {
+            // Check if trigger has event listeners
+            const trigger = roleSelectContainer.querySelector('.custom-select-trigger');
+            if (trigger && !trigger.hasAttribute('data-listener-attached')) {
+                window.filterRoleSelect = null;
+            }
+        }
+    }
+    
+    // Verify all required elements exist
+    const roleTrigger = roleSelectContainer.querySelector('.custom-select-trigger');
+    const roleSearchInput = roleSelectContainer.querySelector('.custom-select-search');
+    const roleOptionsContainer = roleSelectContainer.querySelector('.custom-select-options');
+    
+    if (!roleTrigger || !roleSearchInput || !roleOptionsContainer) {
+        return;
+    }
+    
+    if (!window.filterRoleSelect) {
+        const roleOptions = [
+            { value: 'all', label: 'Todos los roles' },
+            { value: 'SUPERADMIN', label: 'Super Admin' },
+            { value: 'ADMIN_INSTITUTION', label: 'Admin Institución' },
+            { value: 'ADMIN_REGIONAL', label: 'Admin Regional' },
+            { value: 'WAREHOUSE', label: 'Almacén' },
+            { value: 'USER', label: 'Usuario' }
+        ];
+        
+        try {
+            window.filterRoleSelect = new CustomSelectClass('filterRoleSelect', {
+                placeholder: 'Todos los roles',
+                onChange: function(option) {
+                    setRoleFilter(option.value);
+                }
+            });
+            
+            if (!window.filterRoleSelect || !window.filterRoleSelect.container) {
+                return;
+            }
+            
+            if (window.filterRoleSelect && window.filterRoleSelect.setOptions) {
+                window.filterRoleSelect.setOptions(roleOptions);
+            } else {
+                return;
+            }
+            
+            // Mark trigger as having listener attached
+            const trigger = roleSelectContainer.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.setAttribute('data-listener-attached', 'true');
+            }
+        } catch (error) {
+            console.error('Error initializing filterRoleSelect:', error);
+            return;
+        }
+    }
+    
+    // Set initial value if exists (with delay to ensure CustomSelect is fully initialized)
+    setTimeout(() => {
+        if (window.filterRoleSelect && typeof window.filterRoleSelect.setValue === 'function') {
+            const selectedRole = window.usersData ? (window.usersData.selectedRole || 'all') : 'all';
+            window.filterRoleSelect.setValue(selectedRole);
+        }
+    }, 50);
+    
+    // Status filter select
+    const statusSelectContainer = document.getElementById('filterStatusSelect');
+    if (!statusSelectContainer) {
+        return;
+    }
+    
+    // Check if the container still exists in the DOM (might have been regenerated)
+    const existingStatusSelect = window.filterStatusSelect;
+    if (existingStatusSelect) {
+        // Check if the container still exists and is the same element
+        if (!existingStatusSelect.container || !document.body.contains(existingStatusSelect.container)) {
+            window.filterStatusSelect = null;
+        } else if (existingStatusSelect.container !== statusSelectContainer) {
+            // Container was replaced with a new one
+            window.filterStatusSelect = null;
+        } else {
+            // Check if trigger has event listeners
+            const trigger = statusSelectContainer.querySelector('.custom-select-trigger');
+            if (trigger && !trigger.hasAttribute('data-listener-attached')) {
+                window.filterStatusSelect = null;
+            }
+        }
+    }
+    
+    // Verify all required elements exist
+    const statusTrigger = statusSelectContainer.querySelector('.custom-select-trigger');
+    const statusSearchInput = statusSelectContainer.querySelector('.custom-select-search');
+    const statusOptionsContainer = statusSelectContainer.querySelector('.custom-select-options');
+    
+    if (!statusTrigger || !statusSearchInput || !statusOptionsContainer) {
+        return;
+    }
+    
+    if (!window.filterStatusSelect) {
+        const statusOptions = [
+            { value: 'all', label: 'Todos los estados' },
+            { value: 'active', label: 'Activos' },
+            { value: 'inactive', label: 'Inactivos' }
+        ];
+        
+        try {
+            window.filterStatusSelect = new CustomSelectClass('filterStatusSelect', {
+                placeholder: 'Todos los estados',
+                onChange: function(option) {
+                    setStatusFilter(option.value);
+                }
+            });
+            
+            if (!window.filterStatusSelect || !window.filterStatusSelect.container) {
+                return;
+            }
+            
+            if (window.filterStatusSelect && window.filterStatusSelect.setOptions) {
+                window.filterStatusSelect.setOptions(statusOptions);
+            } else {
+                return;
+            }
+            
+            // Mark trigger as having listener attached
+            const trigger = statusSelectContainer.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.setAttribute('data-listener-attached', 'true');
+            }
+        } catch (error) {
+            console.error('Error initializing filterStatusSelect:', error);
+            return;
+        }
+    }
+    
+    // Set initial value if exists (with delay to ensure CustomSelect is fully initialized)
+    setTimeout(() => {
+        if (window.filterStatusSelect && typeof window.filterStatusSelect.setValue === 'function') {
+            const selectedStatus = window.usersData ? (window.usersData.selectedStatus || 'all') : 'all';
+            window.filterStatusSelect.setValue(selectedStatus);
+        }
+    }, 50);
+}
 
 window.setRoleFilter = setRoleFilter;
 window.setStatusFilter = setStatusFilter;

@@ -6,26 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Usuarios - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'sena-verde': '#00AF00',
-                        'sena-verde-oscuro': '#008800'
-                    }
-                }
-            }
-        }
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="../../css/dashboard.css">
-    <link rel="stylesheet" href="../../css/users-toast.css">
-    <link rel="stylesheet" href="../../css/dark-mode.css">
-    <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function() {
             const saved = localStorage.getItem('sgdis-dark-mode');
@@ -34,6 +14,28 @@
             }
         })();
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/users-toast.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
 </head>
 
 <body>
@@ -646,6 +648,7 @@
         /* Custom Select Styles */
         .custom-select-container {
             position: relative;
+            z-index: 1;
         }
 
         .custom-select {
@@ -709,7 +712,7 @@
             border-bottom-left-radius: 0.75rem;
             border-bottom-right-radius: 0.75rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
+            z-index: 10001;
             max-height: 200px;
             overflow: hidden;
             display: none;

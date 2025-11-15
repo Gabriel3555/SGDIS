@@ -96,15 +96,31 @@ async function deleteInventory(inventoryId) {
 // Form submission handlers
 
 // Load inventory data function
+// Note: This function should delegate to the one in inventory-api.js
+// But to avoid conflicts, we'll check if the API version exists and use it
 async function loadInventoryData() {
-    if (typeof window.loadCurrentUserInfo === 'function') {
-        await window.loadCurrentUserInfo();
+    // Check if showLoadingState and hideLoadingState exist (from inventory-data.js)
+    if (typeof window.showLoadingState === 'function' && typeof window.hideLoadingState === 'function') {
+        window.showLoadingState();
     }
-    if (typeof window.loadInventories === 'function') {
-        await window.loadInventories();
-    }
-    if (typeof window.updateInventoryUI === 'function') {
-        window.updateInventoryUI();
+    
+    try {
+        if (typeof window.loadCurrentUserInfo === 'function') {
+            await window.loadCurrentUserInfo();
+        }
+        if (typeof window.loadInventories === 'function') {
+            await window.loadInventories();
+        }
+        if (typeof window.updateInventoryUI === 'function') {
+            window.updateInventoryUI();
+        }
+    } catch (error) {
+        console.error('Error loading inventory data:', error);
+    } finally {
+        // Always hide loading state
+        if (typeof window.hideLoadingState === 'function') {
+            window.hideLoadingState();
+        }
     }
 }
 
@@ -120,7 +136,10 @@ function logout() {
 
 window.deleteInventory = deleteInventory;
 
+// Don't override loadInventoryData if it's already set (from inventory-api.js)
+// The inventory-api.js version handles loading states correctly
+if (!window.loadInventoryData || typeof window.loadInventoryData !== 'function') {
+    window.loadInventoryData = loadInventoryData;
+}
 
-
-window.loadInventoryData = loadInventoryData;
 window.logout = logout;

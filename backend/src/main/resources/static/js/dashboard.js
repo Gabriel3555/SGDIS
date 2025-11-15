@@ -114,24 +114,42 @@ function initializeDashboard() {
 
     if (path.includes('/admin_institution') || path.includes('/admin_regional') || path.includes('/superadmin')) {
         dashboardData.dashboardType = 'admin';
-        loadAdminDashboardData();
     } else if (path.includes('/user')) {
         dashboardData.dashboardType = 'user';
-        loadUserDashboardData();
     } else if (path.includes('/warehouse')) {
         dashboardData.dashboardType = 'warehouse';
-        loadWarehouseDashboardData();
     }
+    
+    // Use loadDashboardData() which handles loading state and UI updates
+    loadDashboardData();
 }
 
 // Load all dashboard data
 async function loadDashboardData() {
-    if (dashboardData.isLoading) return;
+    if (dashboardData.isLoading) {
+        console.log('Dashboard data is already loading, skipping...');
+        return;
+    }
 
     dashboardData.isLoading = true;
     showLoadingState();
 
     try {
+        // Ensure dashboard type is set
+        if (!dashboardData.dashboardType) {
+            const path = window.location.pathname;
+            if (path.includes('/admin_institution') || path.includes('/admin_regional') || path.includes('/superadmin')) {
+                dashboardData.dashboardType = 'admin';
+            } else if (path.includes('/user')) {
+                dashboardData.dashboardType = 'user';
+            } else if (path.includes('/warehouse')) {
+                dashboardData.dashboardType = 'warehouse';
+            } else {
+                // Default to admin if path doesn't match
+                dashboardData.dashboardType = 'admin';
+            }
+        }
+
         // Load data based on dashboard type
         if (dashboardData.dashboardType === 'admin') {
             await loadAdminDashboardData();
@@ -139,6 +157,11 @@ async function loadDashboardData() {
             await loadUserDashboardData();
         } else if (dashboardData.dashboardType === 'warehouse') {
             await loadWarehouseDashboardData();
+        } else {
+            // Fallback to admin if type is unknown
+            console.warn('Unknown dashboard type, defaulting to admin');
+            dashboardData.dashboardType = 'admin';
+            await loadAdminDashboardData();
         }
 
         // Update UI with loaded data
@@ -1184,18 +1207,10 @@ async function loadWarehouseMonthlyActivity() {
     }
 }
 
-// Initial token check when page loads
-document.addEventListener('DOMContentLoaded', async function() {
-    if (isTokenExpired()) {
-        console.log('Token expired on page load, refreshing...');
-        await refreshToken();
-    }
+// Removed duplicate DOMContentLoaded listener - using the one at line 96
 
-    // Initialize dashboard if we're on a dashboard page
-    if (window.location.pathname.includes('/dashboard/') || window.location.pathname.includes('/admin_institution/')) {
-        initializeDashboard();
-    }
-});
+// Make loadDashboardData available globally for onclick handlers
+window.loadDashboardData = loadDashboardData;
 
 // Mobile menu toggle
 const menuToggle = document.getElementById('menuToggle');

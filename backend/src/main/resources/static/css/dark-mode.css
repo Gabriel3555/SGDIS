@@ -689,3 +689,44 @@ html.dark button {
     justify-content: center !important;
 }
 
+/* Estilos para badge de rol en modo oscuro - info-me.html */
+.dark #profileRoleBadge {
+    color: var(--dark-text-primary) !important;
+}
+
+/* SUPERADMIN - Purple */
+.dark #profileRoleBadge.bg-purple-100 {
+    background-color: rgba(147, 51, 234, 0.2) !important;
+    color: #c084fc !important;
+}
+
+/* ADMIN_REGIONAL - Blue */
+.dark #profileRoleBadge.bg-blue-100 {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    color: #60a5fa !important;
+}
+
+/* ADMIN_INSTITUTION - Indigo */
+.dark #profileRoleBadge.bg-indigo-100 {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+    color: #818cf8 !important;
+}
+
+/* WAREHOUSE - Yellow */
+.dark #profileRoleBadge.bg-yellow-100 {
+    background-color: rgba(234, 179, 8, 0.2) !important;
+    color: #fbbf24 !important;
+}
+
+/* USER - Green */
+.dark #profileRoleBadge.bg-green-100 {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: var(--dark-sena-verde) !important;
+}
+
+/* Gray fallback */
+.dark #profileRoleBadge.bg-gray-100 {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-secondary) !important;
+}
+
