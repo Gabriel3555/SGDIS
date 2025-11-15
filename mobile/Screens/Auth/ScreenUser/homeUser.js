@@ -27,6 +27,7 @@ export default function DashboardScreen() {
   const [localImageUri, setLocalImageUri] = useState(null);
   const [imageLoading, setImageLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [imageKey, setImageKey] = useState(Date.now()); // For cache busting
   const imageTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function DashboardScreen() {
 
       setUser(response.data);
       setImageError(false);
+      setImageKey(Date.now()); // Bust cache for new image
       if (imageTimeoutRef.current) {
         clearTimeout(imageTimeoutRef.current);
         imageTimeoutRef.current = null;
@@ -157,7 +159,7 @@ export default function DashboardScreen() {
               ) : user?.imgUrl && !imageError ? (
                 <View style={styles.avatarWrapper}>
                   <Image
-                    source={{ uri: `https://sgdis.cloud${user.imgUrl}` }}
+                    source={{ uri: `https://sgdis.cloud${user.imgUrl}?t=${imageKey}` }}
                     style={styles.avatarImage}
                     contentFit="cover"
                     priority="high"
