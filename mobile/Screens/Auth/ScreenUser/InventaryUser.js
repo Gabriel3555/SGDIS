@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
 
-export default function Inventary() {
+export default function Inventary({ navigation }) {
   const [inventories, setInventories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -13,6 +13,44 @@ export default function Inventary() {
   useEffect(() => {
     fetchInventories();
   }, []);
+
+  const fetchItemStats = async (inventoryId, token) => {
+    try {
+      const response = await api.get(`api/v1/items/inventory/${inventoryId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        params: {
+          page: 0,
+          size: 1000, // Fetch up to 1000 items to calculate stats
+        },
+      });
+
+      const pageData = response.data;
+      const total = pageData.totalElements || 0;
+      const items = pageData.content || [];
+
+      // Calculate stats
+      const activos = total; // Assuming all items are active
+      const mantenimiento = 0; // No maintenance status available
+      const valor = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+
+      return {
+        total,
+        activos,
+        mantenimiento,
+        valor: valor.toFixed(2), // Format as currency
+      };
+    } catch (error) {
+      console.error(`Error fetching items for inventory ${inventoryId}:`, error);
+      return {
+        total: 0,
+        activos: 0,
+        mantenimiento: 0,
+        valor: '0.00',
+      };
+    }
+  };
 
   const fetchInventories = async () => {
     try {
@@ -22,13 +60,13 @@ export default function Inventary() {
         return;
       }
 
-      const response = await api.get("api/v1/inventory/owned", {
+      const response = await api.get("api/v1/users/me/inventories", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      let data = response.data.ownedInventories || [];
+      let data = response.data || [];
       if (!Array.isArray(data)) {
         data = [];
       }
@@ -36,7 +74,19 @@ export default function Inventary() {
       console.log(data);
 
       data = data.filter(item => item && typeof item === 'object' && item.id !== undefined);
-      setInventories(data);
+
+      // Fetch stats for each inventory
+      const inventoriesWithStats = await Promise.all(
+        data.map(async (inventory) => {
+          const stats = await fetchItemStats(inventory.id, token);
+          return {
+            ...inventory,
+            stats,
+          };
+        })
+      );
+
+      setInventories(inventoriesWithStats);
     } catch (error) {
       console.error("Error fetching inventories:", error);
       const status = error.response?.status;
@@ -89,19 +139,19 @@ export default function Inventary() {
 
         <View style={styles.statsGrid}>
           <View style={[styles.statItem, { backgroundColor: '#f8f9fa' }]}>
-            <Text style={styles.statNumber}>--</Text>
+            <Text style={styles.statNumber}>{item.stats?.total || 0}</Text>
             <Text style={styles.statLabel}>Total</Text>
           </View>
           <View style={[styles.statItem, { backgroundColor: '#e8f5e8' }]}>
-            <Text style={[styles.statNumber, { color: '#4caf50' }]}>--</Text>
+            <Text style={[styles.statNumber, { color: '#4caf50' }]}>{item.stats?.activos || 0}</Text>
             <Text style={styles.statLabel}>Activos</Text>
           </View>
           <View style={[styles.statItem, { backgroundColor: '#fff3e0' }]}>
-            <Text style={[styles.statNumber, { color: '#ff9800' }]}>--</Text>
+            <Text style={[styles.statNumber, { color: '#ff9800' }]}>{item.stats?.mantenimiento || 0}</Text>
             <Text style={styles.statLabel}>Mantenimiento</Text>
           </View>
           <View style={[styles.statItem, { backgroundColor: '#f3e5f5' }]}>
-            <Text style={styles.statNumber}>--</Text>
+            <Text style={styles.statNumber}>${item.stats?.valor || '0.00'}</Text>
             <Text style={styles.statLabel}>Valor</Text>
           </View>
         </View>
@@ -112,7 +162,10 @@ export default function Inventary() {
             <Text style={styles.updateText}>ID: {item.id || 'Sin ID'}</Text>
           </View>
           <View style={styles.actionButtons}>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#e3f2fd' }]}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#e3f2fd' }]}
+              onPress={() => navigation.navigate('Items', { inventoryId: item.id, inventoryName: item.name })}
+            >
               <Ionicons name="eye-outline" size={18} color="#2196f3" />
             </TouchableOpacity>
             <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#fff3e0' }]}>

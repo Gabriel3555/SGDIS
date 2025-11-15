@@ -47,9 +47,10 @@ export default function ChangePasswordScreen() {
           },
         }
       );
-      Alert.alert("Éxito", "Contraseña actualizada correctamente.", [
-        { text: "OK", onPress: () => navigation.goBack() }
-      ]);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main', params: { screen: 'Perfil' } }],
+      });
       setOldPassword("");
       setPassword("");
       setConfirmPassword("");
