@@ -10,6 +10,7 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../../../src/ThemeContext";
 
 const data = [
   {
@@ -54,7 +55,7 @@ const data = [
     location: "Not specified",
     verifiedBy: "Ana Rodriguez",
     date: "14/1/2024",
-    photo: "https://via.placeholder.com/40",
+    photo: null,
   },
   {
     id: "5",
@@ -70,12 +71,15 @@ const data = [
 ];
 
 export default function Verification() {
+  const { colors } = useTheme();
   const [search, setSearch] = useState("");
 
   const filteredData = data.filter(item =>
     item.plate.toLowerCase().includes(search.toLowerCase()) ||
     item.item.toLowerCase().includes(search.toLowerCase())
   );
+
+  const styles = getStyles(colors);
 
   const renderItem = ({ item }) => (
     <View style={styles.verificationCard}>
@@ -84,8 +88,8 @@ export default function Verification() {
           {item.photo ? (
             <Image source={{ uri: item.photo }} style={styles.photo} />
           ) : (
-            <View style={[styles.photoPlaceholder, { backgroundColor: '#f5f5f5' }]}>
-              <Ionicons name="image-outline" size={24} color="#ccc" />
+            <View style={styles.photoPlaceholder}>
+              <Ionicons name="image-outline" size={24} style={styles.photoPlaceholderIcon} />
             </View>
           )}
         </View>
@@ -99,22 +103,22 @@ export default function Verification() {
               </View>
             </View>
             <TouchableOpacity style={styles.viewButton}>
-              <Ionicons name="eye-outline" size={20} color="#666" />
+              <Ionicons name="eye-outline" size={20} style={styles.viewButtonIcon} />
             </TouchableOpacity>
           </View>
           <Text style={styles.itemName}>{item.item}</Text>
           <View style={styles.detailsRow}>
             <View style={styles.detailItem}>
-              <Ionicons name="scan-outline" size={14} color="#666" />
+              <Ionicons name="scan-outline" size={14} style={styles.detailIcon} />
               <Text style={styles.detailText}>{item.method}</Text>
             </View>
             <View style={styles.detailItem}>
-              <Ionicons name="location-outline" size={14} color="#666" />
+              <Ionicons name="location-outline" size={14} style={styles.detailIcon} />
               <Text style={styles.detailText}>{item.location}</Text>
             </View>
           </View>
           <View style={styles.verifierRow}>
-            <Ionicons name="person-outline" size={14} color="#666" />
+            <Ionicons name="person-outline" size={14} style={styles.verifierIcon} />
             <Text style={styles.verifierText}>
               Verificado por {item.verifiedBy} • {item.date}
             </Text>
@@ -160,8 +164,8 @@ export default function Verification() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.titleSection}>
-            <View style={[styles.headerIcon, { backgroundColor: '#e8f5e8' }]}>
-              <Ionicons name="checkmark-done-circle" size={24} color="#4caf50" />
+            <View style={styles.headerIcon}>
+              <Ionicons name="checkmark-done-circle" size={24} style={styles.headerIconInner} />
             </View>
             <View>
               <Text style={styles.headerTitle}>Verificación</Text>
@@ -169,7 +173,7 @@ export default function Verification() {
             </View>
           </View>
           <TouchableOpacity style={styles.scanButton}>
-            <Ionicons name="scan" size={24} color="#666" />
+            <Ionicons name="scan" size={24} style={styles.scanButtonIcon} />
           </TouchableOpacity>
         </View>
       </View>
@@ -177,22 +181,22 @@ export default function Verification() {
       {/* Search Section */}
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar por placa o item..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.placeholder}
             value={search}
             onChangeText={setSearch}
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch("")}>
-              <Ionicons name="close-circle" size={20} color="#666" />
+              <Ionicons name="close-circle" size={20} style={styles.searchIcon} />
             </TouchableOpacity>
           )}
         </View>
         <TouchableOpacity style={styles.barcodeButton}>
-          <Ionicons name="barcode-outline" size={20} color="#fff" />
+          <Ionicons name="barcode-outline" size={20} color={colors.buttonText} />
           <Text style={styles.barcodeText}>Escanear</Text>
         </TouchableOpacity>
       </View>
@@ -212,15 +216,15 @@ export default function Verification() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
 
   // Header Styles
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     paddingTop: 50,
     paddingBottom: 20,
     borderBottomLeftRadius: 20,
@@ -248,18 +252,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
+    backgroundColor: colors.statCard2, // Light green background that adapts to theme
+  },
+  headerIconInner: {
+    color: '#4caf50', // Keep the icon green
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: colors.institution,
   },
   scanButton: {
     padding: 8,
+  },
+  scanButtonIcon: {
+    color: colors.icon,
   },
 
   // Search Section
@@ -272,7 +283,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.inputBackground,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -285,11 +296,12 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     marginRight: 12,
+    color: colors.icon,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
+    color: colors.text,
   },
   barcodeButton: {
     flexDirection: "row",
@@ -319,7 +331,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
     marginBottom: 16,
   },
   list: {
@@ -328,7 +340,7 @@ const styles = StyleSheet.create({
 
   // Verification Cards
   verificationCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginBottom: 12,
     elevation: 3,
@@ -355,6 +367,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: colors.inputBackground,
+  },
+  photoPlaceholderIcon: {
+    color: colors.placeholder,
   },
   cardContent: {
     flex: 1,
@@ -371,7 +387,7 @@ const styles = StyleSheet.create({
   plateNumber: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
     marginBottom: 4,
   },
   statusBadge: {
@@ -391,9 +407,12 @@ const styles = StyleSheet.create({
   viewButton: {
     padding: 8,
   },
+  viewButtonIcon: {
+    color: colors.icon,
+  },
   itemName: {
     fontSize: 16,
-    color: "#333",
+    color: colors.text,
     marginBottom: 8,
     lineHeight: 22,
   },
@@ -406,18 +425,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 16,
   },
+  detailIcon: {
+    color: colors.icon,
+  },
   detailText: {
     fontSize: 13,
-    color: "#666",
+    color: colors.institution,
     marginLeft: 4,
   },
   verifierRow: {
     flexDirection: "row",
     alignItems: "center",
   },
+  verifierIcon: {
+    color: colors.icon,
+  },
   verifierText: {
     fontSize: 12,
-    color: "#666",
+    color: colors.institution,
     marginLeft: 4,
   },
 });

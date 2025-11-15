@@ -1,6 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from "../ThemeContext";
 
 // Screens
 import DashboardScreen from "../../Screens/Auth/ScreenUser/homeUser"; // tu dashboard
@@ -12,12 +13,17 @@ import ProfileScreen from "../../Screens/Auth/ScreenUser/meUser";
 const Tab = createBottomTabNavigator();
 
 export default function MainNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: "#16a34a", // Verde SENA
-        tabBarInactiveTintColor: "gray",
+        tabBarActiveTintColor: colors.buttonBackground,
+        tabBarInactiveTintColor: colors.icon,
+        tabBarStyle: {
+          backgroundColor: colors.card,
+        },
         tabBarIcon: ({ color, size }) => {
           let iconName;
           if (route.name === "Dashboard") iconName = "home-outline";

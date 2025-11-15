@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { useTheme } from "../../../src/ThemeContext";
 
 const notificationsData = [
   {
@@ -61,6 +62,9 @@ const notificationsData = [
 ];
 
 export default function Notifications() {
+  const { colors } = useTheme();
+  const [search, setSearch] = useState("");
+
   const renderItem = ({ item }) => (
     <View style={styles.notificationCard}>
       <View style={styles.cardHeader}>
@@ -75,21 +79,21 @@ export default function Notifications() {
           <Text style={styles.notificationMessage}>{item.message}</Text>
           <View style={styles.cardFooter}>
             <View style={styles.userInfo}>
-              <Ionicons name="person-outline" size={14} color="#666" />
+              <Ionicons name="person-outline" size={14} color={colors.icon} />
               <Text style={styles.userText}>{item.user}</Text>
             </View>
             <View style={styles.timeInfo}>
-              <Ionicons name="time-outline" size={14} color="#666" />
+              <Ionicons name="time-outline" size={14} color={colors.icon} />
               <Text style={styles.timeText}>{item.time}</Text>
             </View>
           </View>
         </View>
       </View>
       <View style={styles.cardActions}>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#e3f2fd' }]}>
-          <Ionicons name="eye-outline" size={18} color="#2196f3" />
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
+          <Ionicons name="eye-outline" size={18} color={colors.icon} />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#ffebee' }]}>
+        <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
           <Ionicons name="trash-outline" size={18} color="#f44336" />
         </TouchableOpacity>
       </View>
@@ -126,14 +130,16 @@ export default function Notifications() {
     }
   };
 
+  const styles = getStyles(colors);
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.titleSection}>
-            <View style={[styles.headerIcon, { backgroundColor: '#fff3e0' }]}>
-              <Ionicons name="notifications" size={24} color="#ff9800" />
+            <View style={[styles.headerIcon, { backgroundColor: colors.card }]}>
+              <Ionicons name="notifications" size={24} color={colors.icon} />
             </View>
             <View>
               <Text style={styles.headerTitle}>Notificaciones</Text>
@@ -141,7 +147,7 @@ export default function Notifications() {
             </View>
           </View>
           <TouchableOpacity style={styles.settingsButton}>
-            <Ionicons name="settings-outline" size={24} color="#666" />
+            <Ionicons name="settings-outline" size={24} color={colors.icon} />
           </TouchableOpacity>
         </View>
       </View>
@@ -150,16 +156,16 @@ export default function Notifications() {
       <View style={styles.summarySection}>
         <Text style={styles.sectionTitle}>Resumen</Text>
         <View style={styles.summaryGrid}>
-          <View style={[styles.summaryCard, { backgroundColor: '#e3f2fd' }]}>
-            <View style={[styles.summaryIcon, { backgroundColor: '#2196f3' }]}>
-              <Ionicons name="notifications" size={20} color="#fff" />
+          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.summaryIcon, { backgroundColor: colors.buttonBackground }]}>
+              <Ionicons name="notifications" size={20} color={colors.buttonText} />
             </View>
             <View style={styles.summaryContent}>
               <Text style={styles.summaryValue}>6</Text>
               <Text style={styles.summaryLabel}>Total</Text>
             </View>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: '#ffebee' }]}>
+          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
             <View style={[styles.summaryIcon, { backgroundColor: '#f44336' }]}>
               <Ionicons name="mail-unread" size={20} color="#fff" />
             </View>
@@ -168,18 +174,18 @@ export default function Notifications() {
               <Text style={styles.summaryLabel}>Sin Leer</Text>
             </View>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: '#e8f5e8' }]}>
-            <View style={[styles.summaryIcon, { backgroundColor: '#4caf50' }]}>
-              <Ionicons name="today" size={20} color="#fff" />
+          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.summaryIcon, { backgroundColor: colors.subtitle }]}>
+              <Ionicons name="today" size={20} color={colors.buttonText} />
             </View>
             <View style={styles.summaryContent}>
               <Text style={styles.summaryValue}>5</Text>
               <Text style={styles.summaryLabel}>Hoy</Text>
             </View>
           </View>
-          <View style={[styles.summaryCard, { backgroundColor: '#fff3e0' }]}>
-            <View style={[styles.summaryIcon, { backgroundColor: '#ff9800' }]}>
-              <Ionicons name="warning" size={20} color="#fff" />
+          <View style={[styles.summaryCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.summaryIcon, { backgroundColor: colors.institution }]}>
+              <Ionicons name="warning" size={20} color={colors.buttonText} />
             </View>
             <View style={styles.summaryContent}>
               <Text style={styles.summaryValue}>1</Text>
@@ -204,15 +210,15 @@ export default function Notifications() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
 
   // Header Styles
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     paddingTop: 50,
     paddingBottom: 20,
     borderBottomLeftRadius: 20,
@@ -244,11 +250,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: colors.institution,
   },
   settingsButton: {
     padding: 8,
@@ -261,7 +267,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
     marginBottom: 16,
   },
   summaryGrid: {
@@ -273,7 +279,7 @@ const styles = StyleSheet.create({
     width: "48%",
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -297,11 +303,11 @@ const styles = StyleSheet.create({
   summaryValue: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   summaryLabel: {
     fontSize: 12,
-    color: "#666",
+    color: colors.institution,
     marginTop: 2,
   },
 
@@ -316,7 +322,7 @@ const styles = StyleSheet.create({
 
   // Notification Cards
   notificationCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginBottom: 12,
     elevation: 3,
@@ -346,7 +352,7 @@ const styles = StyleSheet.create({
   notificationTitle: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
     flex: 1,
     marginRight: 8,
   },
@@ -358,11 +364,11 @@ const styles = StyleSheet.create({
   priorityText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#333",
+    color: colors.text,
   },
   notificationMessage: {
     fontSize: 14,
-    color: "#555",
+    color: colors.text,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -377,7 +383,7 @@ const styles = StyleSheet.create({
   },
   userText: {
     fontSize: 12,
-    color: "#666",
+    color: colors.institution,
     marginLeft: 4,
   },
   timeInfo: {
@@ -386,7 +392,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 12,
-    color: "#666",
+    color: colors.institution,
     marginLeft: 4,
   },
   cardActions: {

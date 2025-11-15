@@ -4,11 +4,15 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Activity
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { useTheme } from "../../../src/ThemeContext";
 
 export default function Inventary({ navigation }) {
-  const [inventories, setInventories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+   const { colors } = useTheme();
+   const [inventories, setInventories] = useState([]);
+   const [loading, setLoading] = useState(true);
+   const [searchQuery, setSearchQuery] = useState("");
+
+   const styles = getStyles(colors);
 
   useEffect(() => {
     fetchInventories();
@@ -116,16 +120,16 @@ export default function Inventary({ navigation }) {
       <View style={styles.inventoryCard}>
         <View style={styles.cardHeader}>
           <View style={styles.titleSection}>
-            <View style={[styles.categoryIcon, { backgroundColor: '#e3f2fd' }]}>
-              <Ionicons name="business" size={20} color="#2196f3" />
+            <View style={[styles.categoryIcon, { backgroundColor: colors.card }]}>
+              <Ionicons name="business" size={20} color={colors.icon} />
             </View>
             <View style={styles.titleContent}>
               <Text style={styles.cardTitle}>{item.name || 'Sin nombre'}</Text>
               <Text style={styles.cardLocation}>{item.location || 'Sin ubicación'}</Text>
             </View>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: '#e8f5e8' }]}>
-            <Ionicons name="checkmark-circle" size={14} color="#4caf50" />
+          <View style={[styles.statusBadge, { backgroundColor: colors.card }]}>
+            <Ionicons name="checkmark-circle" size={14} color={colors.icon} />
             <Text style={styles.statusText}>Activo</Text>
           </View>
         </View>
@@ -133,24 +137,24 @@ export default function Inventary({ navigation }) {
         <Text style={styles.cardDescription}>Inventario gestionado por {item.ownerName || 'Sin propietario'}</Text>
 
         <View style={styles.responsibleSection}>
-          <Ionicons name="person-outline" size={14} color="#666" />
+          <Ionicons name="person-outline" size={14} color={colors.icon} />
           <Text style={styles.responsibleText}>{item.ownerName || 'Sin propietario'}</Text>
         </View>
 
         <View style={styles.statsGrid}>
-          <View style={[styles.statItem, { backgroundColor: '#f8f9fa' }]}>
+          <View style={[styles.statItem, { backgroundColor: colors.card }]}>
             <Text style={styles.statNumber}>{item.stats?.total || 0}</Text>
             <Text style={styles.statLabel}>Total</Text>
           </View>
-          <View style={[styles.statItem, { backgroundColor: '#e8f5e8' }]}>
-            <Text style={[styles.statNumber, { color: '#4caf50' }]}>{item.stats?.activos || 0}</Text>
+          <View style={[styles.statItem, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statNumber, { color: colors.subtitle }]}>{item.stats?.activos || 0}</Text>
             <Text style={styles.statLabel}>Activos</Text>
           </View>
-          <View style={[styles.statItem, { backgroundColor: '#fff3e0' }]}>
-            <Text style={[styles.statNumber, { color: '#ff9800' }]}>{item.stats?.mantenimiento || 0}</Text>
+          <View style={[styles.statItem, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statNumber, { color: colors.institution }]}>{item.stats?.mantenimiento || 0}</Text>
             <Text style={styles.statLabel}>Mantenimiento</Text>
           </View>
-          <View style={[styles.statItem, { backgroundColor: '#f3e5f5' }]}>
+          <View style={[styles.statItem, { backgroundColor: colors.card }]}>
             <Text style={styles.statNumber}>${item.stats?.valor || '0.00'}</Text>
             <Text style={styles.statLabel}>Valor</Text>
           </View>
@@ -158,21 +162,21 @@ export default function Inventary({ navigation }) {
 
         <View style={styles.cardFooter}>
           <View style={styles.updateInfo}>
-            <Ionicons name="time-outline" size={14} color="#666" />
+            <Ionicons name="time-outline" size={14} color={colors.icon} />
             <Text style={styles.updateText}>ID: {item.id || 'Sin ID'}</Text>
           </View>
           <View style={styles.actionButtons}>
             <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: '#e3f2fd' }]}
+              style={[styles.actionButton, { backgroundColor: colors.card }]}
               onPress={() => navigation.navigate('Items', { inventoryId: item.id, inventoryName: item.name })}
             >
-              <Ionicons name="eye-outline" size={18} color="#2196f3" />
+              <Ionicons name="eye-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#fff3e0' }]}>
-              <Ionicons name="create-outline" size={18} color="#ff9800" />
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
+              <Ionicons name="create-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#ffebee' }]}>
-              <Ionicons name="trash-outline" size={18} color="#f44336" />
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
+              <Ionicons name="trash-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
           </View>
         </View>
@@ -181,13 +185,13 @@ export default function Inventary({ navigation }) {
   };
 
   if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#28a745" />
-        <Text style={styles.loadingText}>Cargando inventarios...</Text>
-      </View>
-    );
-  }
+   return (
+     <View style={styles.loadingContainer}>
+       <ActivityIndicator size="large" color="#28a745" />
+       <Text style={styles.loadingText}>Cargando inventarios...</Text>
+     </View>
+   );
+ }
 
   return (
     <View style={styles.container}>
@@ -195,8 +199,8 @@ export default function Inventary({ navigation }) {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.titleSection}>
-            <View style={[styles.headerIcon, { backgroundColor: '#e3f2fd' }]}>
-              <Ionicons name="cube" size={24} color="#2196f3" />
+            <View style={[styles.headerIcon, { backgroundColor: colors.card }]}>
+              <Ionicons name="cube" size={24} color={colors.icon} />
             </View>
             <View>
               <Text style={styles.headerTitle}>Mis Inventarios</Text>
@@ -204,7 +208,7 @@ export default function Inventary({ navigation }) {
             </View>
           </View>
           <TouchableOpacity style={styles.filterButton}>
-            <Ionicons name="filter" size={24} color="#666" />
+            <Ionicons name="filter" size={24} color={colors.icon} />
           </TouchableOpacity>
         </View>
       </View>
@@ -212,17 +216,17 @@ export default function Inventary({ navigation }) {
       {/* Search Bar */}
       <View style={styles.searchSection}>
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#666" style={styles.searchIcon} />
+          <Ionicons name="search" size={20} color={colors.icon} style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder="Buscar inventarios..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.placeholder}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={20} color="#666" />
+              <Ionicons name="close-circle" size={20} color={colors.icon} />
             </TouchableOpacity>
           )}
         </View>
@@ -237,7 +241,7 @@ export default function Inventary({ navigation }) {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="cube-outline" size={64} color="#ccc" />
+            <Ionicons name="cube-outline" size={64} color={colors.placeholder} />
             <Text style={styles.emptyText}>No tienes inventarios asignados</Text>
           </View>
         }
@@ -248,21 +252,21 @@ export default function Inventary({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: "#666",
+    color: colors.text,
   },
   emptyContainer: {
     flex: 1,
@@ -272,14 +276,14 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: "#666",
+    color: colors.text,
     marginTop: 10,
     textAlign: "center",
   },
 
   // Header Styles
   header: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     paddingTop: 50,
     paddingBottom: 20,
     borderBottomLeftRadius: 20,
@@ -311,11 +315,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   headerSubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: colors.institution,
   },
   filterButton: {
     padding: 8,
@@ -328,7 +332,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
@@ -344,7 +348,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
+    color: colors.text,
   },
 
   // Inventory Cards
@@ -353,7 +357,7 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   inventoryCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 16,
@@ -388,11 +392,11 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   cardLocation: {
     fontSize: 14,
-    color: "#666",
+    color: colors.institution,
     marginTop: 2,
   },
   statusBadge: {
@@ -405,12 +409,12 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#4caf50",
+    color: colors.subtitle,
     marginLeft: 4,
   },
   cardDescription: {
     fontSize: 14,
-    color: "#555",
+    color: colors.text,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -421,7 +425,7 @@ const styles = StyleSheet.create({
   },
   responsibleText: {
     fontSize: 13,
-    color: "#666",
+    color: colors.institution,
     marginLeft: 6,
   },
   statsGrid: {
@@ -439,11 +443,11 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#333",
+    color: colors.text,
   },
   statLabel: {
     fontSize: 12,
-    color: "#666",
+    color: colors.institution,
     marginTop: 4,
   },
   cardFooter: {
@@ -457,7 +461,7 @@ const styles = StyleSheet.create({
   },
   updateText: {
     fontSize: 12,
-    color: "#666",
+    color: colors.institution,
     marginLeft: 4,
   },
   actionButtons: {
@@ -480,7 +484,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#28a745",
+    backgroundColor: colors.buttonBackground,
     justifyContent: "center",
     alignItems: "center",
     elevation: 6,

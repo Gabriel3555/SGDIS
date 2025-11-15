@@ -14,8 +14,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { useTheme } from "../../../src/ThemeContext";
 
 export default function MeUserScreen() {
+    const { colors, isDarkMode } = useTheme();
     const [user, setUser] = useState(null);
      const [loading, setLoading] = useState(true);
      const [localImageUri, setLocalImageUri] = useState(null);
@@ -85,18 +87,23 @@ export default function MeUserScreen() {
       await AsyncStorage.removeItem("refreshToken");
       await AsyncStorage.removeItem("userRole");
 
-      // Navigate back to Auth screen
-      navigation.navigate("Auth");
+      // Reset navigation stack to Auth screen only, preventing back navigation
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Auth' }],
+      });
     } catch (error) {
       console.error("Error during logout:", error);
       Alert.alert("Error", "No se pudo cerrar la sesión");
     }
   };
 
+  const styles = getStyles(colors);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#28a745" />
+        <ActivityIndicator size="large" color={colors.buttonBackground} />
         <Text style={styles.loadingText}>Cargando perfil...</Text>
       </View>
     );
@@ -105,7 +112,7 @@ export default function MeUserScreen() {
   if (!user) {
     return (
       <View style={styles.errorContainer}>
-        <Ionicons name="person-outline" size={64} color="#ccc" />
+        <Ionicons name="person-outline" size={64} color={colors.placeholder} />
         <Text style={styles.errorText}>No se pudo cargar el perfil</Text>
         <TouchableOpacity style={styles.retryButton} onPress={fetchUserData}>
           <Text style={styles.retryText}>Reintentar</Text>
@@ -118,7 +125,7 @@ export default function MeUserScreen() {
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header con información básica */}
       <LinearGradient
-        colors={['#28a745', '#4CAF50', '#66BB6A']}
+        colors={isDarkMode ? ['#1a1a1a', '#2a2a2a', '#3a3a3a'] : ['#28a745', '#4CAF50', '#66BB6A']}
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -222,17 +229,17 @@ export default function MeUserScreen() {
         <Text style={styles.sectionTitle}>Acciones</Text>
         <View style={styles.actionsGrid}>
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('ChangePhoto', { userEmail: user.email })}>
-            <Ionicons name="camera-outline" size={24} color="#28a745" />
+            <Ionicons name="camera-outline" size={24} color={colors.buttonBackground} />
             <Text style={styles.actionText}>Cambiar Foto</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('ChangePassword')}>
-            <Ionicons name="key-outline" size={24} color="#28a745" />
+            <Ionicons name="key-outline" size={24} color={colors.buttonBackground} />
             <Text style={styles.actionText}>Cambiar Contraseña</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="settings-outline" size={24} color="#28a745" />
+            <Ionicons name="settings-outline" size={24} color={colors.buttonBackground} />
             <Text style={styles.actionText}>Configuración</Text>
           </TouchableOpacity>
 
@@ -246,44 +253,44 @@ export default function MeUserScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: "#666",
+    color: colors.text,
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.background,
     padding: 20,
   },
   errorText: {
     fontSize: 18,
-    color: "#666",
+    color: colors.text,
     marginTop: 10,
     textAlign: "center",
   },
   retryButton: {
     marginTop: 20,
-    backgroundColor: "#28a745",
+    backgroundColor: colors.buttonBackground,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   retryText: {
-    color: "#fff",
+    color: colors.buttonText,
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -335,7 +342,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: "#28a745",
+    backgroundColor: colors.buttonBackground,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
@@ -388,11 +395,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2c3e50",
+    color: colors.text,
     marginBottom: 16,
   },
   detailCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     elevation: 6,
@@ -401,7 +408,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.inputBorder,
   },
   detailRow: {
     flexDirection: "row",
@@ -414,18 +421,18 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: "#666",
+    color: colors.institution,
     textTransform: "uppercase",
     fontWeight: "600",
     marginBottom: 2,
   },
   detailValue: {
     fontSize: 16,
-    color: "#333",
+    color: colors.text,
     fontWeight: "500",
   },
   statusActive: {
-    color: "#28a745",
+    color: colors.subtitle,
   },
   statusInactive: {
     color: "#f44336",
@@ -441,7 +448,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     width: "45%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 24,
     marginBottom: 16,
@@ -452,12 +459,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.inputBorder,
   },
   actionText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#2c3e50",
+    color: colors.text,
     marginTop: 8,
     textAlign: "center",
   },
