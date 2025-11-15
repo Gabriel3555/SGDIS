@@ -42,6 +42,11 @@ public class InventoryController {
     private final GetInventoryManagersUseCase getInventoryManagersUseCase;
     private final GetAllManagedInventoriesUseCase getAllManagedInventoriesUseCase;
     private final SpringDataInventoryRepository inventoryRepository;
+    private final AssignSignatoryInventoryUseCase assignSignatoryInventoryUseCase;
+    private final GetMySignatoryInventoriesUseCase getMySignatoryInventoriesUseCase;
+    private final QuitSignatoryInventoryUseCase quitSignatoryInventoryUseCase;
+    private final DeleteSignatoryInventoryUseCase deleteSignatoryInventoryUseCase;
+    private final GetAllSignatoriesUseCase getAllSignatoriesUseCase;
     private final FileUploadService fileUploadService;
 
     @Operation(
@@ -237,4 +242,82 @@ public class InventoryController {
             return ResponseEntity.internalServerError().body("Error updating inventory image: " + e.getMessage());
         }
     }
+
+
+    @Operation(
+            summary = "Assign signatory to inventory",
+            description = "Assigns a signatory to an inventory item"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Signatory assigned successfully",
+            content = @Content(schema = @Schema(implementation = AssignSignatoryInventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @PostMapping("/assignSignatory")
+    public AssignSignatoryInventoryResponse assignSignatory(@RequestBody AssignSignatoryInventoryRequest request) {
+        return assignSignatoryInventoryUseCase.assignSignatoryInventory(request);
+    }
+
+    @Operation(
+            summary = "Delete signatory from inventory",
+            description = "Removes a signatory from an inventory item"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Signatory deleted successfully",
+            content = @Content(schema = @Schema(implementation = DeleteSignatoryInventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "404", description = "Signatory not found in inventory")
+    @DeleteMapping("/deleteSignatory")
+    public DeleteSignatoryInventoryResponse deleteSignatory(@RequestBody DeleteSignatoryInventoryRequest request) {
+        return deleteSignatoryInventoryUseCase.deleteSignatoryInventory(request);
+    }
+
+
+    @Operation(
+            summary = "Get inventories where current user is signatory",
+            description = "Retrieves all inventories where the authenticated user is a signatory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Signatory inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+    )
+    @GetMapping("/mySignatoryInventories")
+    public List<InventoryResponse> getMySignatoryInventories() {
+        return getMySignatoryInventoriesUseCase.getMySignatoryInventories();
+    }
+
+    @Operation(
+            summary = "Quit as signatory from inventory",
+            description = "Allows the authenticated user to quit as a signatory from a specific inventory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Successfully quit as signatory",
+            content = @Content(schema = @Schema(implementation = QuitInventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found or user is not a signatory")
+    @PostMapping("/quitSignatory/{inventoryId}")
+    public QuitInventoryResponse quitSignatory(@PathVariable Long inventoryId) {
+        return quitSignatoryInventoryUseCase.quitSignatoryInventory(inventoryId);
+    }
+
+    @Operation(
+            summary = "Get all signatories for inventory",
+            description = "Retrieves all signatories of a specific inventory by its ID"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Signatories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = GetAllSignatoriesResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @GetMapping("/{id}/signatories")
+    public GetAllSignatoriesResponse getAllSignatories(@PathVariable Long id) {
+        return getAllSignatoriesUseCase.getAllSignatories(new GetAllSignatoriesRequest(id));
+    }
+
 }
