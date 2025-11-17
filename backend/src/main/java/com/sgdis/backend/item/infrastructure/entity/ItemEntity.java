@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.category.infrastructure.entity.CategoryEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.item.domain.Attribute;
+import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -39,8 +40,10 @@ public class ItemEntity {
     private LocalDate acquisitionDate;
     private Double acquisitionValue;
     private String ivId;
-
     private String allAttributes;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "item")
+    private List<LoanEntity> loans;
 
     @ElementCollection
     @MapKeyEnumerated(EnumType.STRING)
