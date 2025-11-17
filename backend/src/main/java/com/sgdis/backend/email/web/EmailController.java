@@ -24,7 +24,6 @@ public class EmailController {
     private final EmailService emailService;
 
     @PostMapping("/send")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Send a custom email", description = "Send a custom email to a recipient (Admin only)")
     public ResponseEntity<EmailResponse> sendEmail(@Valid @RequestBody EmailRequest emailRequest) {
         log.info("Sending email to: {}", emailRequest.getTo());
@@ -62,7 +61,6 @@ public class EmailController {
     }
 
     @PostMapping("/welcome")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Send welcome email", description = "Send a welcome email to a new user (Admin only)")
     public ResponseEntity<EmailResponse> sendWelcomeEmail(
             @RequestParam String email,
@@ -83,7 +81,6 @@ public class EmailController {
     }
 
     @PostMapping("/inventory-notification")
-    @PreAuthorize("hasAnyRole('ADMIN', 'WAREHOUSE')")
     @Operation(summary = "Send inventory notification", description = "Send an inventory notification email")
     public ResponseEntity<EmailResponse> sendInventoryNotification(
             @RequestParam String email,
@@ -105,7 +102,6 @@ public class EmailController {
     }
 
     @GetMapping("/test")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Test email configuration", description = "Send a test email to verify configuration (Admin only)")
     public ResponseEntity<EmailResponse> testEmail(@RequestParam String email) {
         log.info("Sending test email to: {}", email);

@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/items")
 @Tag(name = "Item", description = "Item management endpoints")
-//@SecurityRequirement(name = "bearerAuth")
 public class ItemController {
 
     private final CreateItemUseCase createItemUseCase;
@@ -33,7 +32,6 @@ public class ItemController {
     private final GetItemsByInventoryUseCase getItemsByInventoryUseCase;
     private final GetItemsByInventoryAndCategoryUseCase getItemsByInventoryAndCategoryUseCase;
 
-    // Crear item
     @Operation(
             summary = "Create new item",
             description = "Creates a new item",
@@ -59,7 +57,6 @@ public class ItemController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // Actualizar item
     @Operation(
             summary = "Update item",
             description = "Updates an existing item",
@@ -87,7 +84,6 @@ public class ItemController {
         return ResponseEntity.ok(updated);
     }
 
-    // Obtener items de un inventario paginado
     @Operation(
             summary = "Get items by inventory",
             description = "Retrieves paginated items from a specific inventory",
@@ -126,7 +122,6 @@ public class ItemController {
         return ResponseEntity.ok(items);
     }
 
-    // Obtener items de un inventario y categoría específicos paginado
     @Operation(
             summary = "Get items by inventory and category",
             description = "Retrieves paginated items from a specific inventory and category",

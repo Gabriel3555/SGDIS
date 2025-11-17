@@ -335,12 +335,10 @@ public class InventoryService
         InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
 
-        // Check if user is actually a signatory for this inventory
         if (user.getInventory() == null || !user.getInventory().getId().equals(request.inventoryId())) {
             throw new ResourceNotFoundException("User is not a signatory for inventory with id: " + request.inventoryId());
         }
 
-        // Remove user from inventory's signatories list
         List<UserEntity> signatories = inventory.getSignatories();
         if (signatories != null) {
             signatories.remove(user);
@@ -348,7 +346,6 @@ public class InventoryService
             inventoryRepository.save(inventory);
         }
 
-        // Clear the user's inventory reference
         user.setInventory(null);
         userRepository.save(user);
 
