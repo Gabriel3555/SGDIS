@@ -41,7 +41,10 @@ public class ItemEntity {
     private Double acquisitionValue;
     private String ivId;
     private String allAttributes;
+    private String location;
+    private String responsible;
 
+    @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "item")
     private List<LoanEntity> loans;
 

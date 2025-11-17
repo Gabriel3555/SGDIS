@@ -12,5 +12,7 @@ public record ItemDTO(
         LocalDate acquisitionDate,
         Double acquisitionValue,
         Map<Attribute, String> attributes,
-        String categoryName
+        String categoryName,
+        String location,
+        String responsible
 ) {}

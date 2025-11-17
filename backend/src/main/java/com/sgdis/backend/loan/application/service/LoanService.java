@@ -36,7 +36,6 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
     private final AuthService authService;
     private final SpringDataLoanRepository loanRepository;
-    private final SpringDataUserRepository userRepository;
     private final SpringDataItemRepository itemRepository;
 
     @Override
@@ -46,7 +45,6 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         ItemEntity item = itemRepository.findById(request.itemId())
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
 
-        // Check if the item has been returned in its last loan
         Optional<LoanEntity> lastLoan = loanRepository.findLastLoanByItemId(request.itemId());
         if (lastLoan.isPresent() && !Boolean.TRUE.equals(lastLoan.get().getReturned())) {
             throw new IllegalStateException("Item cannot be lent because it has not been returned from its last loan");
@@ -54,7 +52,6 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
         LoanEntity loanEntity = LoanMapper.toEntity(request, item, user);
 
-        // Sincronizar relación bidireccional: setear el item en el loan y agregar el loan a la lista de préstamos del item
         loanEntity.setItem(item);
         if (item.getLoans() == null) {
             item.setLoans(new ArrayList<>());
@@ -63,6 +60,10 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
             item.getLoans().add(loanEntity);
         }
 
+        item.setLocation("");
+        item.setResponsible(request.responsibleName());
+
+        itemRepository.save(item);
         loanRepository.save(loanEntity);
 
         return new LendItemResponse(user.getFullName(), "Item prestado exitosamente a " + loanEntity.getResponsibleName());
@@ -83,7 +84,6 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         loanEntity.setDetailsReturn(request.detailsReturn());
         loanEntity.setReturnAt(LocalDateTime.now());
 
-        // Sincronizar relación bidireccional: asegurar que el loan está en la lista de préstamos del item
         ItemEntity item = loanEntity.getItem();
         if (item != null) {
             if (item.getLoans() == null) {
@@ -94,6 +94,11 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
             }
         }
 
+        ItemEntity itemEntity = itemRepository.findById(loanEntity.getItem().getId()).orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+        itemEntity.setLocation(itemEntity.getInventory().getLocation());
+        itemEntity.setResponsible("");
+
+        itemRepository.save(itemEntity);
         loanRepository.save(loanEntity);
 
         return new ReturnItemResponse(user.getFullName(), "Item devuelto exitosamente");
@@ -101,7 +106,6 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
     @Override
     public List<LoanResponse> getLoansByItemId(Long itemId) {
-        // Verificar que el item existe
         itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
 
@@ -113,7 +117,6 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
     @Override
     public Optional<LoanResponse> getLastLoanByItemId(Long itemId) {
-        // Verificar que el item existe
         itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
 
