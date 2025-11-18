@@ -32,6 +32,7 @@ public class LoanEntity {
 
     private String responsibleName;
     private String detailsLend;
+    private String documentUrl;
     private String detailsReturn;
     private LocalDateTime lendAt;
     private LocalDateTime returnAt;

@@ -332,4 +332,57 @@ public class InventoryController {
         return getAllSignatoriesUseCase.getAllSignatories(new GetAllSignatoriesRequest(id));
     }
 
+    @Operation(
+            summary = "Get owner, managers and signatories of an inventory",
+            description = "Retrieves the owner, all managers and all signatories of a specific inventory with their basic user information"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Users retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryUsersResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @GetMapping("/{id}/users")
+    public ResponseEntity<InventoryUsersResponse> getInventoryUsers(@PathVariable Long id) {
+        InventoryEntity inventory = inventoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + id));
+
+        // Owner
+        InventoryUserInfo owner = null;
+        if (inventory.getOwner() != null) {
+            owner = new InventoryUserInfo(
+                    inventory.getOwner().getId(),
+                    inventory.getOwner().getFullName(),
+                    inventory.getOwner().getImgUrl() != null ? inventory.getOwner().getImgUrl() : ""
+            );
+        }
+
+        // Managers
+        List<InventoryUserInfo> managers = new java.util.ArrayList<>();
+        if (inventory.getManagers() != null) {
+            managers = inventory.getManagers().stream()
+                    .map(user -> new InventoryUserInfo(
+                            user.getId(),
+                            user.getFullName(),
+                            user.getImgUrl() != null ? user.getImgUrl() : ""
+                    ))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        // Signatories
+        List<InventoryUserInfo> signatories = new java.util.ArrayList<>();
+        if (inventory.getSignatories() != null) {
+            signatories = inventory.getSignatories().stream()
+                    .map(user -> new InventoryUserInfo(
+                            user.getId(),
+                            user.getFullName(),
+                            user.getImgUrl() != null ? user.getImgUrl() : ""
+                    ))
+                    .collect(java.util.stream.Collectors.toList());
+        }
+
+        InventoryUsersResponse response = new InventoryUsersResponse(owner, managers, signatories);
+        return ResponseEntity.ok(response);
+    }
+
 }

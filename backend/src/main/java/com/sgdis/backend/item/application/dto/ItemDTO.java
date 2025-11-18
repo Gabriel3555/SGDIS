@@ -14,5 +14,6 @@ public record ItemDTO(
         Map<Attribute, String> attributes,
         String categoryName,
         String location,
-        String responsible
+        String responsible,
+        String urlImg
 ) {}

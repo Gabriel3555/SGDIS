@@ -68,4 +68,32 @@ public class FileUploadService {
         Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
         return "/uploads/inventories/" + inventoryUuid + "/" + filename;
     }
+
+    public String saveLoanDocument(MultipartFile file, Long loanId) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be null or empty");
+        }
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String filename = "document" + extension;
+        Path loanDir = rootLocation.resolve("loans").resolve(loanId.toString());
+        Files.createDirectories(loanDir);
+        Path targetFile = loanDir.resolve(filename);
+        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        return "/uploads/loans/" + loanId + "/" + filename;
+    }
+
+    public String saveItemImage(MultipartFile file, Long itemId, int imageIndex) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be null or empty");
+        }
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String filename = "image_" + imageIndex + extension;
+        Path itemDir = rootLocation.resolve("items").resolve(itemId.toString());
+        Files.createDirectories(itemDir);
+        Path targetFile = itemDir.resolve(filename);
+        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        return "/uploads/items/" + itemId + "/" + filename;
+    }
 }

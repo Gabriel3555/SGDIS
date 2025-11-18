@@ -1,5 +1,6 @@
 package com.sgdis.backend.item.web;
 
+import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.item.application.dto.CreateItemRequest;
 import com.sgdis.backend.item.application.dto.CreateItemResponse;
 import com.sgdis.backend.item.application.dto.ItemDTO;
@@ -9,6 +10,9 @@ import com.sgdis.backend.item.application.port.CreateItemUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryAndCategoryUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
 import com.sgdis.backend.item.application.port.UpdateItemUseCase;
+import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
+import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
+import com.sgdis.backend.user.application.service.FileUploadService;
 import org.springframework.data.domain.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,6 +24,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,6 +40,8 @@ public class ItemController {
     private final UpdateItemUseCase updateItemUseCase;
     private final GetItemsByInventoryUseCase getItemsByInventoryUseCase;
     private final GetItemsByInventoryAndCategoryUseCase getItemsByInventoryAndCategoryUseCase;
+    private final SpringDataItemRepository itemRepository;
+    private final FileUploadService fileUploadService;
 
     @Operation(
             summary = "Create new item",
@@ -165,5 +176,116 @@ public class ItemController {
     ) {
         var items = getItemsByInventoryAndCategoryUseCase.getItemsByInventoryAndCategory(inventoryId, categoryId, page, size);
         return ResponseEntity.ok(items);
+    }
+
+    @Operation(
+            summary = "Upload image for an item",
+            description = "Uploads an image file for a specific item. The image will be added to the item's images list"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Image uploaded successfully"
+    )
+    @ApiResponse(responseCode = "404", description = "Item not found")
+    @ApiResponse(responseCode = "400", description = "Invalid file")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @PostMapping("/{itemId}/image")
+    public ResponseEntity<String> uploadItemImage(
+            @PathVariable Long itemId,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            ItemEntity item = itemRepository.findById(itemId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+
+            if (item.getUrlsImages() == null) {
+                item.setUrlsImages(new ArrayList<>());
+            }
+
+            int imageIndex = item.getUrlsImages().size();
+            String imageUrl = fileUploadService.saveItemImage(file, itemId, imageIndex);
+            item.getUrlsImages().add(imageUrl);
+            itemRepository.save(item);
+
+            return ResponseEntity.ok("Image uploaded successfully");
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error uploading image: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error: " + e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Get all images for an item",
+            description = "Retrieves all image URLs associated with a specific item"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Images retrieved successfully",
+            content = @Content(schema = @Schema(implementation = List.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Item not found")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/{itemId}/images")
+    public ResponseEntity<List<String>> getItemImages(@PathVariable Long itemId) {
+        ItemEntity item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+
+        List<String> images = item.getUrlsImages();
+        if (images == null) {
+            images = new ArrayList<>();
+        }
+
+        return ResponseEntity.ok(images);
+    }
+
+    @Operation(
+            summary = "Delete an image from an item",
+            description = "Deletes a specific image from an item by its URL path. Both the file and the URL reference will be removed."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Image deleted successfully"
+    )
+    @ApiResponse(responseCode = "404", description = "Item not found or image not found in item")
+    @ApiResponse(responseCode = "400", description = "Invalid image URL")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @DeleteMapping("/{itemId}/image")
+    public ResponseEntity<String> deleteItemImage(
+            @PathVariable Long itemId,
+            @RequestParam("imageUrl") String imageUrl) {
+        try {
+            ItemEntity item = itemRepository.findById(itemId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+
+            if (item.getUrlsImages() == null || item.getUrlsImages().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Item has no images");
+            }
+
+            if (!item.getUrlsImages().contains(imageUrl)) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("Image not found in item's image list");
+            }
+
+            // Remove from list
+            item.getUrlsImages().remove(imageUrl);
+
+            // Delete physical file
+            try {
+                fileUploadService.deleteFile(imageUrl);
+            } catch (IOException e) {
+                // Log error but continue with removing from database
+                // The file might already be deleted or not exist
+            }
+
+            itemRepository.save(item);
+
+            return ResponseEntity.ok("Image deleted successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting image: " + e.getMessage());
+        }
     }
 }
