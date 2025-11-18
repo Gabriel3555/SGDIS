@@ -10,18 +10,20 @@ import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
 import com.sgdis.backend.user.application.service.FileUploadService;
-import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
-import com.sgdis.backend.data.regional.mapper.RegionalMapper;
-import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
-import com.sgdis.backend.institution.mapper.InstitutionMapper;
+import com.sgdis.backend.auth.application.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -54,8 +56,7 @@ public class InventoryController {
     private final GetAllSignatoriesUseCase getAllSignatoriesUseCase;
     private final QuitManagerInventoryUseCase quitManagerInventoryUseCase;
     private final FileUploadService fileUploadService;
-    private final SpringDataRegionalRepository regionalRepository;
-    private final SpringDataInstitutionRepository institutionRepository;
+    private final AuthService authService;
 
     @Operation(
             summary = "Create new inventory",
@@ -393,35 +394,158 @@ public class InventoryController {
     }
 
     @Operation(
-            summary = "Get all inventories organized by regional and institution",
-            description = "Retrieves all regionals with their institutions and each institution's inventories (Superadmin only)"
+            summary = "Get all inventories (Superadmin only)",
+            description = "Retrieves all paginated inventories. Only accessible by SUPERADMIN role."
     )
     @ApiResponse(
             responseCode = "200",
             description = "Inventories retrieved successfully",
-            content = @Content(schema = @Schema(implementation = SuperadminInventoriesResponse.class))
+            content = @Content(schema = @Schema(implementation = Page.class))
     )
-    @GetMapping("/superadminInventories")
-    public List<SuperadminInventoriesResponse> getSuperadminInventories() {
-        return regionalRepository.findAll().stream()
-                .map(regional -> {
-                    var regionalResponse = RegionalMapper.toResponse(regional);
-                    var institutions = institutionRepository.findByRegionalId(regional.getId()).stream()
-                            .map(institution -> {
-                                var institutionResponse = InstitutionMapper.toResponse(institution);
-                                // Cargar inventarios explícitamente usando el repositorio
-                                var inventories = inventoryRepository.findByInstitutionId(institution.getId()).stream()
-                                        .map(InventoryMapper::toResponse)
-                                        .toList();
-                                return new SuperadminInventoriesResponse.InstitutionWithInventories(
-                                        institutionResponse,
-                                        inventories
-                                );
-                            })
-                            .toList();
-                    return new SuperadminInventoriesResponse(regionalResponse, institutions);
-                })
-                .toList();
+    @ApiResponse(responseCode = "403", description = "Access denied - SUPERADMIN role required")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping("/superAdminInventories")
+    public Page<InventoryResponse> getSuperAdminInventories(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "3") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<InventoryEntity> inventoryPage = inventoryRepository.findAll(pageable);
+        return inventoryPage.map(InventoryMapper::toResponse);
+    }
+
+    @Operation(
+            summary = "Get inventories from current user's regional",
+            description = "Retrieves paginated inventories from all institutions in the current user's regional. " +
+                    "The regional is obtained from the current user's institution."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution or regional not found")
+    @GetMapping("/regionalAdminInventories")
+    public Page<InventoryResponse> getRegionalAdminInventories(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "3") int size
+    ) {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+            throw new ResourceNotFoundException("User institution or regional not found");
+        }
+        Long regionalId = currentUser.getInstitution().getRegional().getId();
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<InventoryEntity> inventoryPage = inventoryRepository.findPageByRegionalId(regionalId, pageable);
+        return inventoryPage.map(InventoryMapper::toResponse);
+    }
+
+    @Operation(
+            summary = "Get inventories from a specific regional by ID",
+            description = "Retrieves paginated inventories from all institutions in the specified regional."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Regional not found")
+    @GetMapping("/regionalAdminInventories/{id}")
+    public Page<InventoryResponse> getRegionalAdminInventoriesById(
+            @Parameter(description = "Regional ID", required = true)
+            @PathVariable Long id,
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "3") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<InventoryEntity> inventoryPage = inventoryRepository.findPageByRegionalId(id, pageable);
+        return inventoryPage.map(InventoryMapper::toResponse);
+    }
+
+    @Operation(
+            summary = "Get inventories from current user's institution",
+            description = "Retrieves paginated inventories from the current user's institution."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @GetMapping("/institutionAdminInventories")
+    public Page<InventoryResponse> getInstitutionAdminInventories(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "3") int size
+    ) {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        Pageable pageable = PageRequest.of(page, size);
+        Page<InventoryEntity> inventoryPage = inventoryRepository.findPageByInstitutionId(institutionId, pageable);
+        return inventoryPage.map(InventoryMapper::toResponse);
+    }
+
+    @Operation(
+            summary = "Get inventories from a specific institution by ID",
+            description = "Retrieves paginated inventories from the specified institution."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Institution not found")
+    @GetMapping("/institutionAdminInventories/{id}")
+    public Page<InventoryResponse> getInstitutionAdminInventoriesById(
+            @Parameter(description = "Institution ID", required = true)
+            @PathVariable Long id,
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "3") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<InventoryEntity> inventoryPage = inventoryRepository.findPageByInstitutionId(id, pageable);
+        return inventoryPage.map(InventoryMapper::toResponse);
+    }
+
+    @Operation(
+            summary = "Get inventories from a specific regional and institution",
+            description = "Retrieves paginated inventories from a specific institution within a specific regional."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Regional or institution not found")
+    @GetMapping("/regional/{regionalId}/institution/{institutionId}")
+    public Page<InventoryResponse> getInventoriesByRegionalAndInstitution(
+            @Parameter(description = "Regional ID", required = true)
+            @PathVariable Long regionalId,
+            @Parameter(description = "Institution ID", required = true)
+            @PathVariable Long institutionId,
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "3") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<InventoryEntity> inventoryPage = inventoryRepository.findPageByRegionalIdAndInstitutionId(
+                regionalId, institutionId, pageable);
+        return inventoryPage.map(InventoryMapper::toResponse);
     }
 
 }
