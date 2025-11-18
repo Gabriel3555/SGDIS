@@ -92,7 +92,9 @@ public final class ItemMapper {
                 itemEntity.getAcquisitionDate(),
                 itemEntity.getAcquisitionValue(),
                 itemEntity.getAttributes(),
-                itemEntity.getCategory() != null ? itemEntity.getCategory().getName() : null
+                itemEntity.getCategory() != null ? itemEntity.getCategory().getName() : "",
+                itemEntity.getLocation() != null ? itemEntity.getLocation() : "",
+                itemEntity.getResponsible() != null ? itemEntity.getResponsible() : ""
         );
     }
 }

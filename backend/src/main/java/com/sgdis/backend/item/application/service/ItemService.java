@@ -47,6 +47,7 @@ public class ItemService implements
         inventoryEntity.setItems(itemEntityList);
         itemEntity.setInventory(inventoryEntity);
         itemEntity.setCategory(categoryEntity);
+        itemEntity.setLocation(inventoryEntity.getLocation() != null ? inventoryEntity.getLocation() : "");
 
         inventoryRepository.save(inventoryEntity);
         itemRepository.save(itemEntity);
