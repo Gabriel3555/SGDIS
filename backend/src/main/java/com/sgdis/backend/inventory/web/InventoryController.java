@@ -5,10 +5,15 @@ import com.sgdis.backend.inventory.application.port.in.AssignManagerInventoryUse
 import com.sgdis.backend.inventory.application.port.in.*;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
 import com.sgdis.backend.user.application.service.FileUploadService;
+import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
+import com.sgdis.backend.data.regional.mapper.RegionalMapper;
+import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
+import com.sgdis.backend.institution.mapper.InstitutionMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -49,6 +54,8 @@ public class InventoryController {
     private final GetAllSignatoriesUseCase getAllSignatoriesUseCase;
     private final QuitManagerInventoryUseCase quitManagerInventoryUseCase;
     private final FileUploadService fileUploadService;
+    private final SpringDataRegionalRepository regionalRepository;
+    private final SpringDataInstitutionRepository institutionRepository;
 
     @Operation(
             summary = "Create new inventory",
@@ -383,6 +390,38 @@ public class InventoryController {
 
         InventoryUsersResponse response = new InventoryUsersResponse(owner, managers, signatories);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Get all inventories organized by regional and institution",
+            description = "Retrieves all regionals with their institutions and each institution's inventories (Superadmin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = SuperadminInventoriesResponse.class))
+    )
+    @GetMapping("/superadminInventories")
+    public List<SuperadminInventoriesResponse> getSuperadminInventories() {
+        return regionalRepository.findAll().stream()
+                .map(regional -> {
+                    var regionalResponse = RegionalMapper.toResponse(regional);
+                    var institutions = institutionRepository.findByRegionalId(regional.getId()).stream()
+                            .map(institution -> {
+                                var institutionResponse = InstitutionMapper.toResponse(institution);
+                                // Cargar inventarios explícitamente usando el repositorio
+                                var inventories = inventoryRepository.findByInstitutionId(institution.getId()).stream()
+                                        .map(InventoryMapper::toResponse)
+                                        .toList();
+                                return new SuperadminInventoriesResponse.InstitutionWithInventories(
+                                        institutionResponse,
+                                        inventories
+                                );
+                            })
+                            .toList();
+                    return new SuperadminInventoriesResponse(regionalResponse, institutions);
+                })
+                .toList();
     }
 
 }

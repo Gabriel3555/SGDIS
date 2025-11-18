@@ -1,6 +1,7 @@
 package com.sgdis.backend.inventory.infrastructure.repository;
 
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,4 +20,9 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
     List<InventoryEntity> findInventoryEntitiesByManagerId(@Param("managerId") Long managerId);
 
     InventoryEntity findInventoryEntityByOwner(UserEntity owner);
+    
+    List<InventoryEntity> findByInstitution(InstitutionEntity institution);
+    
+    @Query("SELECT i FROM InventoryEntity i WHERE i.institution.id = :institutionId")
+    List<InventoryEntity> findByInstitutionId(@Param("institutionId") Long institutionId);
 }
