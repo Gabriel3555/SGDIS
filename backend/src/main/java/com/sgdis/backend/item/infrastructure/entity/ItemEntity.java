@@ -43,6 +43,7 @@ public class ItemEntity {
     private String allAttributes;
     private String location;
     private String responsible;
+    private List<String> urlsImages;
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "item")
