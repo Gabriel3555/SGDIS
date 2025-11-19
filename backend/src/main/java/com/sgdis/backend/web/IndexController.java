@@ -40,4 +40,17 @@ public class IndexController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/login")
+    @ResponseBody
+    public ResponseEntity<Resource> login() throws IOException {
+        Resource resource = new ClassPathResource("static/login.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

@@ -7,7 +7,7 @@
     <title>Dashboard Warehouse - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
-        (function() {
+        (function () {
             const saved = localStorage.getItem('sgdis-dark-mode');
             if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
@@ -40,54 +40,40 @@
 <body>
 
     <!-- Overlay for mobile -->
-    <div class="overlay" id="overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
+    <div class="overlay" id="overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+    </div>
 
     <!-- Sidebar -->
-    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar" style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar"
+        style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
         <!-- Sidebar header -->
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
-                    <img src="../../../svg/logoSena.png" alt="Logo SENA" class="w-full h-full object-cover">
+                    <img src="../../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
                 <div class="text-gray-800">
                     <div class="font-bold text-lg">SGDIS</div>
-                    <div class="text-xs opacity-70">Inventario</div>
+                    <div class="text-xs opacity-70">Dashboard</div>
                 </div>
             </div>
         </div>
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active">
+            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/warehouse/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="/warehouse/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+            <a href="/warehouse/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/inventory')">
                 <i class="fas fa-boxes text-lg"></i>
-                <span class="font-medium">Inventarios</span>
+                <span class="font-medium">Inventario</span>
             </a>
-            <a href="/warehouse/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </a>
-            <a href="/warehouse/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
-                <i class="fas fa-chart-bar text-lg"></i>
-                <span class="font-medium">Reportes</span>
-            </a>
-            <a href="/warehouse/maintenance" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
-                <i class="fas fa-cogs text-lg"></i>
-                <span class="font-medium">Mantenimiento</span>
-            </a>
-            <a href="/warehouse/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
-                <i class="fas fa-bell text-lg"></i>
-                <span class="font-medium">Notificaciones</span>
-            </a>
-            <a href="/warehouse/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
-                <i class="fas fa-exchange-alt text-lg"></i>
-                <span class="font-medium">Importar/Exportar</span>
-            </a>
-            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/info-me')">
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
             </a>
@@ -95,12 +81,12 @@
 
         <!-- Logout button -->
         <div class="p-4 border-t border-gray-200 mt-auto">
-            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
+            <button onclick="logout()"
+                class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
                 <i class="fas fa-sign-out-alt text-lg"></i>
                 <span>Cerrar Sesión</span>
             </button>
         </div>
-
     </aside>
 
     <!-- Main Content -->
@@ -109,7 +95,7 @@
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <button class="sidebar-toggle text-gray-600 hover:text-green-600 transition-colors" id="menuToggle">
+                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
                     <div class="relative flex-1 max-w-xl">
@@ -120,10 +106,11 @@
 
                 <div class="flex items-center gap-4">
                     <div class="relative cursor-pointer">
-                        <i class="fas fa-bell text-gray-600 text-xl hover:text-green-600 transition-colors"></i>
+                        <i class="fas fa-bell text-gray-600 text-xl hover:text-[#00AF00] transition-colors"></i>
                         <span class="notification-badge">2</span>
                     </div>
-                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='/info-me'">
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        onclick="window.location.href='/info-me'">
                         <div class="user-avatar" id="headerUserAvatar">W</div>
                         <div class="hidden sm:block">
                             <div class="font-semibold text-gray-800 text-sm" id="headerUserName">Admin Warehouse</div>
@@ -143,7 +130,8 @@
                     <h1 class="text-3xl font-bold text-gray-800 mb-1" id="dashboardTitle">Dashboard Almacén</h1>
                     <p class="text-gray-600" id="welcomeMessage">Cargando información del usuario...</p>
                 </div>
-                <button onclick="loadDashboardData()" class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                <button onclick="loadDashboardData()"
+                    class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
                     <i class="fas fa-sync-alt" id="refreshIcon"></i>
                     <span id="refreshText">Actualizar</span>
                 </button>
@@ -421,7 +409,7 @@
             const overlay = document.getElementById('overlay');
 
             if (menuToggle && sidebar && overlay) {
-                menuToggle.addEventListener('click', function() {
+                menuToggle.addEventListener('click', function () {
                     const isHidden = sidebar.style.transform === 'translateX(-100%)';
 
                     if (isHidden) {
@@ -480,7 +468,7 @@
         }
 
         // Initialize mobile menu toggle when DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
             loadCurrentUserInfo(); // Load user info for header
         });
@@ -509,7 +497,8 @@
     </script>
 
     <!-- Logout Confirmation Modal -->
-    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 9999;">
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
         <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
@@ -525,16 +514,18 @@
             </div>
 
             <div class="flex gap-3">
-                <button onclick="closeLogoutModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                <button onclick="closeLogoutModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                     Cancelar
                 </button>
-                <button onclick="confirmLogout()" class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                <button onclick="confirmLogout()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
                     Cerrar Sesión
                 </button>
             </div>
         </div>
     </div>
 
-    </body>
+</body>
 
 </html>

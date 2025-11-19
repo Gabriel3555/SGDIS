@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 
-
 @Hidden
 @Controller
 public class AdminDashboardController {
@@ -30,7 +29,6 @@ public class AdminDashboardController {
             return ResponseEntity.notFound().build();
         }
     }
-
 
     @GetMapping("/admin_institution/users")
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
@@ -149,6 +147,48 @@ public class AdminDashboardController {
     @ResponseBody
     public ResponseEntity<Resource> userProfile() throws IOException {
         Resource resource = new ClassPathResource("static/views/info-me/info-me.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/superadmin/items")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminItemsManagement() throws IOException {
+        Resource resource = new ClassPathResource("static/views/items/items.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/items")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalItemsManagement() throws IOException {
+        Resource resource = new ClassPathResource("static/views/items/items.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_institution/items")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionItemsManagement() throws IOException {
+        Resource resource = new ClassPathResource("static/views/items/items.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

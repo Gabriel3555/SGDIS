@@ -176,6 +176,17 @@ html.dark > * {
     background-color: var(--dark-sena-verde-dark) !important;
 }
 
+/* Asegurar texto blanco en botones verdes en modo oscuro */
+.dark .bg-sena-verde,
+.dark .bg-sena-verde-oscuro {
+    color: #ffffff !important;
+}
+
+.dark .bg-sena-verde *,
+.dark .bg-sena-verde-oscuro * {
+    color: #ffffff !important;
+}
+
 .dark .text-sena-verde {
     color: var(--dark-sena-verde) !important;
 }

@@ -233,10 +233,20 @@ window.confirmDeleteInventory = confirmDeleteInventory;
 window.showDeleteInventoryModal = showDeleteInventoryModal;
 window.closeDeleteInventoryModal = closeDeleteInventoryModal;
 
+// Store current inventory ID for items view
+let currentInventoryId = null;
+
 async function showViewInventoryModal(inventoryId) {
     try {
         // Set the current inventory ID
         inventoryData.currentInventoryId = inventoryId;
+        currentInventoryId = inventoryId;
+        if (window.itemsData) {
+            window.itemsData.currentInventoryId = inventoryId;
+        }
+        
+        // Store in sessionStorage for items page
+        sessionStorage.setItem('currentInventoryId', inventoryId.toString());
         
         // Show loading state
         showInventoryLoadingModal();
@@ -258,6 +268,20 @@ async function showViewInventoryModal(inventoryId) {
         closeViewInventoryModal();
     }
 }
+
+// Navigate to items page
+function navigateToItems() {
+    if (currentInventoryId) {
+        // Store inventory ID in sessionStorage
+        sessionStorage.setItem('currentInventoryId', currentInventoryId.toString());
+        // Store return URL
+        sessionStorage.setItem('returnToInventory', 'true');
+        // Navigate to items page
+        window.location.href = `/superadmin/items?inventoryId=${currentInventoryId}`;
+    }
+}
+
+window.navigateToItems = navigateToItems;
 
 function populateViewInventoryModal(inventory) {
     // Populate inventory image
