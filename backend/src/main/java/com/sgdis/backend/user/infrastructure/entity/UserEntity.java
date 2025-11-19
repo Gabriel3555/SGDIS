@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.user.domain.Role;
+import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,4 +48,8 @@ public class UserEntity {
     @ManyToOne
     @JoinColumn(name = "signatorie_id")
     private InventoryEntity inventory;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "user")
+    private List<VerificationEntity> verifications;
 }
