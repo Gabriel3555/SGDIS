@@ -129,7 +129,9 @@ export default function DashboardScreen() {
       setTotalItems(totalItemsCount);
       setTotalValue(totalValueSum);
     } catch (error) {
-      console.error("Error fetching total items and value:", error);
+      // Handle server errors gracefully by setting default values
+      setTotalItems(0);
+      setTotalValue(0);
     }
   };
 

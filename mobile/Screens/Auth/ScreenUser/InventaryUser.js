@@ -46,7 +46,7 @@ export default function Inventary({ navigation }) {
         valor: valor.toFixed(2), // Format as currency
       };
     } catch (error) {
-      console.error(`Error fetching items for inventory ${inventoryId}:`, error);
+      // Handle server errors gracefully by returning default stats
       return {
         total: 0,
         activos: 0,

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { register } from "../../src/Navigation/Services/AuthService";
 import { useTheme } from "../../src/ThemeContext";
 
@@ -30,81 +30,96 @@ export default function RegisterScreen({ navigation }) {
   const styles = getStyles(colors);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.titulo}>Registro</Text>
-      <Text style={styles.subtitulo}>Sistema de Gestión de Inventario</Text>
-      <Text style={styles.subSena}>Servicio Nacional de Aprendizaje - SENA</Text>
+    <KeyboardAvoidingView
+      style={[styles.keyboardAvoidingView]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.titulo}>Registro</Text>
+        <Text style={styles.subtitulo}>Sistema de Gestión de Inventario</Text>
+        <Text style={styles.subSena}>Servicio Nacional de Aprendizaje - SENA</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Nombre Completo"
-        placeholderTextColor={colors.placeholder}
-        value={nombre}
-        onChangeText={setNombre}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Nombre Completo"
+          placeholderTextColor={colors.placeholder}
+          value={nombre}
+          onChangeText={setNombre}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Correo Electrónico"
-        placeholderTextColor={colors.placeholder}
-        value={correo}
-        onChangeText={setCorreo}
-        keyboardType="email-address"
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Correo Electrónico"
+          placeholderTextColor={colors.placeholder}
+          value={correo}
+          onChangeText={setCorreo}
+          keyboardType="email-address"
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Cargo Laboral"
-        placeholderTextColor={colors.placeholder}
-        value={cargo}
-        onChangeText={setCargo}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Cargo Laboral"
+          placeholderTextColor={colors.placeholder}
+          value={cargo}
+          onChangeText={setCargo}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Departamento Laboral"
-        placeholderTextColor={colors.placeholder}
-        value={departamento}
-        onChangeText={setDepartamento}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Departamento Laboral"
+          placeholderTextColor={colors.placeholder}
+          value={departamento}
+          onChangeText={setDepartamento}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Contraseña"
-        placeholderTextColor={colors.placeholder}
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Contraseña"
+          placeholderTextColor={colors.placeholder}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Confirmar Contraseña"
-        placeholderTextColor={colors.placeholder}
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Confirmar Contraseña"
+          placeholderTextColor={colors.placeholder}
+          secureTextEntry
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+        />
 
-      <TouchableOpacity style={styles.boton} onPress={handleRegister}>
-        <Text style={styles.textoBoton}>Registrarse</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.boton} onPress={handleRegister}>
+          <Text style={styles.textoBoton}>Registrarse</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.textoLink}>
-          ¿Ya tienes cuenta? <Text style={styles.link}>Inicia sesión</Text>
-        </Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+          <Text style={styles.textoLink}>
+            ¿Ya tienes cuenta? <Text style={styles.link}>Inicia sesión</Text>
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const getStyles = (colors) => StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    backgroundColor: colors.background,
+  },
   container: {
-    flexGrow: 1,
-    justifyContent: "center",
     alignItems: "center",
     padding: 20,
+    paddingTop: 60,
     backgroundColor: colors.background,
   },
   titulo: {
