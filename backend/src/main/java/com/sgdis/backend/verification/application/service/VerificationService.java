@@ -4,6 +4,7 @@ import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.DomainValidationException;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.item.domain.Attribute;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
@@ -11,14 +12,19 @@ import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.verification.application.dto.CreateVerificationByLicencePlateNumberRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationBySerialRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationResponse;
+import com.sgdis.backend.verification.application.dto.LatestVerificationResponse;
 import com.sgdis.backend.verification.application.dto.VerificationResponse;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationByLicencePlateNumberUseCase;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationBySerialUseCase;
+import com.sgdis.backend.verification.application.port.in.GetItemVerificationsUseCase;
+import com.sgdis.backend.verification.application.port.in.GetLatestInventoryVerificationsUseCase;
 import com.sgdis.backend.verification.application.port.in.GetVerificationsByItemUseCase;
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import com.sgdis.backend.verification.infrastructure.repository.SpringDataVerificationRepository;
 import com.sgdis.backend.verification.mapper.VerificationMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,11 +37,14 @@ import java.util.Optional;
 public class VerificationService implements 
         CreateVerificationBySerialUseCase, 
         CreateVerificationByLicencePlateNumberUseCase, 
-        GetVerificationsByItemUseCase {
+        GetVerificationsByItemUseCase,
+        GetItemVerificationsUseCase,
+        GetLatestInventoryVerificationsUseCase {
 
     private final AuthService authService;
     private final SpringDataVerificationRepository verificationRepository;
     private final SpringDataItemRepository itemRepository;
+    private final SpringDataInventoryRepository inventoryRepository;
 
     @Override
     @Transactional
@@ -105,6 +114,34 @@ public class VerificationService implements
         List<VerificationEntity> verifications = verificationRepository.findAllByItemIdOrderByCreatedAtDesc(itemId);
 
         return VerificationMapper.toDtoList(verifications);
+    }
+
+    @Override
+    public List<LatestVerificationResponse> getLatestVerificationsByInventory(Long inventoryId, int limit) {
+        if (limit <= 0) {
+            throw new DomainValidationException("Limit must be greater than 0");
+        }
+
+        inventoryRepository.findById(inventoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
+
+        var pageable = PageRequest.of(0, limit);
+        List<VerificationEntity> verifications = verificationRepository.findLatestByInventory(inventoryId, pageable);
+        return VerificationMapper.toLatestDtoList(verifications);
+    }
+
+    @Override
+    public Page<VerificationResponse> getItemVerifications(Long itemId, int page, int size) {
+        if (page < 0 || size <= 0) {
+            throw new DomainValidationException("Invalid pagination parameters");
+        }
+
+        itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item not found with id: " + itemId));
+
+        var pageable = PageRequest.of(page, size);
+        var verificationsPage = verificationRepository.findAllByItemId(itemId, pageable);
+        return verificationsPage.map(VerificationMapper::toDto);
     }
 
     /**

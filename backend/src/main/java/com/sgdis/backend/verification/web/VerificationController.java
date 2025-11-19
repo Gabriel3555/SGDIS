@@ -5,10 +5,12 @@ import com.sgdis.backend.user.application.service.FileUploadService;
 import com.sgdis.backend.verification.application.dto.CreateVerificationByLicencePlateNumberRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationBySerialRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationResponse;
+import com.sgdis.backend.verification.application.dto.LatestVerificationResponse;
 import com.sgdis.backend.verification.application.dto.UploadEvidenceResponse;
 import com.sgdis.backend.verification.application.dto.VerificationResponse;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationByLicencePlateNumberUseCase;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationBySerialUseCase;
+import com.sgdis.backend.verification.application.port.in.GetLatestInventoryVerificationsUseCase;
 import com.sgdis.backend.verification.application.port.in.GetVerificationsByItemUseCase;
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import com.sgdis.backend.verification.infrastructure.repository.SpringDataVerificationRepository;
@@ -46,6 +48,7 @@ public class VerificationController {
     private final CreateVerificationBySerialUseCase createVerificationBySerialUseCase;
     private final CreateVerificationByLicencePlateNumberUseCase createVerificationByLicencePlateNumberUseCase;
     private final GetVerificationsByItemUseCase getVerificationsByItemUseCase;
+    private final GetLatestInventoryVerificationsUseCase getLatestInventoryVerificationsUseCase;
     private final SpringDataVerificationRepository verificationRepository;
     private final FileUploadService fileUploadService;
 
@@ -124,6 +127,28 @@ public class VerificationController {
     ) {
         List<VerificationResponse> verifications = getVerificationsByItemUseCase.getVerificationsByItemId(itemId);
         return ResponseEntity.ok(verifications);
+    }
+
+    @Operation(
+            summary = "Get latest verifications for an inventory",
+            description = "Retrieves the most recent verification records for all items within a specific inventory. " +
+                    "Results are ordered from newest to oldest."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Latest verifications retrieved successfully",
+            content = @Content(schema = @Schema(implementation = LatestVerificationResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/inventories/{inventoryId}/verifications/latest")
+    public ResponseEntity<List<LatestVerificationResponse>> getLatestVerificationsByInventory(
+            @PathVariable Long inventoryId,
+            @RequestParam(name = "limit", required = false, defaultValue = "5") int limit
+    ) {
+        List<LatestVerificationResponse> latest = getLatestInventoryVerificationsUseCase
+                .getLatestVerificationsByInventory(inventoryId, limit);
+        return ResponseEntity.ok(latest);
     }
 
     @Operation(

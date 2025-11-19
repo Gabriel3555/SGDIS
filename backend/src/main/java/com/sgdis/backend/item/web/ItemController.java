@@ -12,6 +12,8 @@ import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryAndCategoryUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
 import com.sgdis.backend.item.application.port.UpdateItemUseCase;
+import com.sgdis.backend.verification.application.dto.VerificationResponse;
+import com.sgdis.backend.verification.application.port.in.GetItemVerificationsUseCase;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import com.sgdis.backend.user.application.service.FileUploadService;
@@ -44,6 +46,7 @@ public class ItemController {
     private final GetItemsByInventoryAndCategoryUseCase getItemsByInventoryAndCategoryUseCase;
     private final GetItemByLicencePlateNumberUseCase getItemByLicencePlateNumberUseCase;
     private final GetItemBySerialUseCase getItemBySerialUseCase;
+    private final GetItemVerificationsUseCase getItemVerificationsUseCase;
     private final SpringDataItemRepository itemRepository;
     private final FileUploadService fileUploadService;
 
@@ -234,6 +237,45 @@ public class ItemController {
     ) {
         ItemDTO item = getItemBySerialUseCase.getItemBySerial(serial);
         return ResponseEntity.ok(item);
+    }
+
+    @Operation(
+            summary = "Get verifications for an item",
+            description = "Retrieves paginated verifications for a specific item, ordered by most recent first",
+            parameters = {
+                    @io.swagger.v3.oas.annotations.Parameter(
+                            name = "itemId",
+                            description = "ID of the item",
+                            required = true,
+                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
+                    ),
+                    @io.swagger.v3.oas.annotations.Parameter(
+                            name = "page",
+                            description = "Page number (0-based)",
+                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
+                    ),
+                    @io.swagger.v3.oas.annotations.Parameter(
+                            name = "size",
+                            description = "Number of verifications per page",
+                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
+                    )
+            }
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Verifications retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Item not found")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/{itemId}/verifications")
+    public ResponseEntity<Page<VerificationResponse>> getItemVerifications(
+            @PathVariable Long itemId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<VerificationResponse> verifications = getItemVerificationsUseCase.getItemVerifications(itemId, page, size);
+        return ResponseEntity.ok(verifications);
     }
 
     @Operation(

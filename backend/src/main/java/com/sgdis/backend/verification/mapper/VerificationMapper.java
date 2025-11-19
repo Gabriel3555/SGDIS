@@ -2,6 +2,7 @@ package com.sgdis.backend.verification.mapper;
 
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.verification.application.dto.LatestVerificationResponse;
 import com.sgdis.backend.verification.application.dto.VerificationResponse;
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 
@@ -36,6 +37,25 @@ public final class VerificationMapper {
     public static List<VerificationResponse> toDtoList(List<VerificationEntity> entities) {
         return entities.stream()
                 .map(VerificationMapper::toDto)
+                .toList();
+    }
+
+    public static LatestVerificationResponse toLatestDto(VerificationEntity entity) {
+        return new LatestVerificationResponse(
+                entity.getId(),
+                entity.getItem() != null ? entity.getItem().getId() : null,
+                entity.getItem() != null ? entity.getItem().getLicencePlateNumber() : null,
+                entity.getUser() != null ? entity.getUser().getId() : null,
+                entity.getUser() != null ? entity.getUser().getFullName() : null,
+                entity.getUser() != null ? entity.getUser().getEmail() : null,
+                entity.getCreatedAt(),
+                entity.getUrlPhotos() != null ? entity.getUrlPhotos() : List.of()
+        );
+    }
+
+    public static List<LatestVerificationResponse> toLatestDtoList(List<VerificationEntity> entities) {
+        return entities.stream()
+                .map(VerificationMapper::toLatestDto)
                 .toList();
     }
 }
