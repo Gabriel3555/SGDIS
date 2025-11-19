@@ -56,6 +56,43 @@ export default function Inventary({ navigation }) {
     }
   };
 
+  const quitManager = async (inventoryId) => {
+    Alert.alert(
+      "Confirmar",
+      "¿Deseas dejar de ser gestor de este inventario?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Confirmar",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("userToken");
+              if (!token) {
+                Alert.alert("Error", "No se encontró token de autenticación");
+                return;
+              }
+
+              const response = await api.post(`api/v1/inventory/quitManager/${inventoryId}`, { inventoryId }, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              Alert.alert("Éxito", "Has renunciado como gestor del inventario");
+              // Refetch inventories to update the list
+              fetchInventories();
+            } catch (error) {
+              console.error("Error quitting manager:", error);
+              const status = error.response?.status;
+              const message = error.response?.data?.message || error.message;
+              Alert.alert("Error", `No se pudo renunciar como gestor: ${status || 'Desconocido'} - ${message}`);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const fetchInventories = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken");
@@ -134,7 +171,7 @@ export default function Inventary({ navigation }) {
           </View>
         </View>
 
-        <Text style={styles.cardDescription}>Inventario gestionado por {item.ownerName || 'Sin propietario'}</Text>
+        <Text style={styles.cardDescription}>Dueño de inventario {item.ownerName || 'Sin propietario'}</Text>
 
         <View style={styles.responsibleSection}>
           <Ionicons name="person-outline" size={14} color={colors.icon} />
@@ -175,7 +212,10 @@ export default function Inventary({ navigation }) {
             <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
               <Ionicons name="create-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.card }]}
+              onPress={() => quitManager(item.id)}
+            >
               <Ionicons name="trash-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
           </View>
