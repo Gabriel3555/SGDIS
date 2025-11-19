@@ -44,15 +44,90 @@ function closeNewUserModal() {
      }
  }
 
-function showViewUserModal(userId) {
+async function showViewUserModal(userId) {
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
-    const user = usersData.users.find(u => u && u.id === numericUserId);
+    
+    // Get user from local data first
+    let user = usersData.users.find(u => u && u.id === numericUserId);
+    
+    // If user not found in local data or missing institution info, fetch from API
+    if (!user || !user.institution) {
+        try {
+            const token = localStorage.getItem('jwt');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`/api/v1/users/${numericUserId}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                user = await response.json();
+            } else {
+                // Fallback to local data if API fails
+                if (!user) {
+                    showErrorToast('Error', 'No se pudo cargar la información del usuario');
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            if (!user) {
+                showErrorToast('Error', 'Error al cargar la información del usuario');
+                return;
+            }
+        }
+    }
 
     if (user) {
         const content = document.getElementById('viewUserContent');
         const fullName = user.fullName || 'Usuario sin nombre';
         const email = user.email || 'Sin email';
         const initials = fullName.charAt(0).toUpperCase();
+
+        // Fetch institution and regional information
+        let institutionName = user.institution || 'No asignada';
+        let regionalName = 'No asignada';
+
+        if (user.institution) {
+            try {
+                const token = localStorage.getItem('jwt');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                // Get all institutions to find the one matching the name
+                const institutionsResponse = await fetch('/api/v1/institutions', {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (institutionsResponse.ok) {
+                    const institutions = await institutionsResponse.json();
+                    // Note: GetAllInstitutionResponse uses 'institutionId' not 'id'
+                    const institution = institutions.find(inst => inst.name === user.institution);
+                    
+                    if (institution && institution.regionalId) {
+                        // Get all regionals to find the one matching the regionalId
+                        const regionalsResponse = await fetch('/api/v1/regional', {
+                            method: 'GET',
+                            headers: headers
+                        });
+
+                        if (regionalsResponse.ok) {
+                            const regionals = await regionalsResponse.json();
+                            const regional = regionals.find(reg => reg.id === institution.regionalId);
+                            if (regional) {
+                                regionalName = regional.name;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching institution/regional info:', error);
+                // Continue with default values
+            }
+        }
 
         if (content) {
             let profileDisplay;
@@ -92,6 +167,14 @@ function showViewUserModal(userId) {
                             ${user.status !== false ? 'Activo' : 'Inactivo'}
                         </span>
                     </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Institución:</span>
+                        <span class="font-semibold">${institutionName}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Regional:</span>
+                        <span class="font-semibold">${regionalName}</span>
+                    </div>
                     ${user.jobTitle ? `
                     <div class="flex justify-between">
                         <span class="text-gray-600">Cargo:</span>
@@ -123,9 +206,39 @@ function closeViewUserModal() {
     }
 }
 
-function showEditUserModal(userId) {
+async function showEditUserModal(userId) {
     const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
-    const user = usersData.users.find(u => u && u.id === numericUserId);
+    let user = usersData.users.find(u => u && u.id === numericUserId);
+    
+    // If user not found in local data or missing institution info, fetch from API
+    if (!user || !user.institution) {
+        try {
+            const token = localStorage.getItem('jwt');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`/api/v1/users/${numericUserId}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                user = await response.json();
+            } else {
+                if (!user) {
+                    showErrorToast('Error', 'No se pudo cargar la información del usuario');
+                    return;
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            if (!user) {
+                showErrorToast('Error', 'Error al cargar la información del usuario');
+                return;
+            }
+        }
+    }
+    
     if (user) {
         usersData.currentUserId = userId;
 
@@ -167,6 +280,56 @@ function showEditUserModal(userId) {
         // Set the selected role
         if (user.role) {
             window.editRoleSelect.setValue(user.role);
+        }
+        
+        // Initialize regional and institution selects
+        await loadRegionalsForEditUser();
+        
+        // Load institution if user has one
+        if (user.institution) {
+            try {
+                const token = localStorage.getItem('jwt');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                // Get all institutions to find the one matching the name
+                const institutionsResponse = await fetch('/api/v1/institutions', {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (institutionsResponse.ok) {
+                    const institutions = await institutionsResponse.json();
+                    const institution = institutions.find(inst => inst.name === user.institution);
+                    
+                    if (institution && institution.regionalId) {
+                        // Set regional first
+                        if (window.editRegionalSelect) {
+                            window.editRegionalSelect.setValue(institution.regionalId.toString());
+                            // Load institutions for that regional
+                            const institutionSelect = await loadInstitutionsByRegionalForEdit(institution.regionalId.toString());
+                            // Wait a bit for the CustomSelect to be ready
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            // Then set institution (GetAllInstitutionResponse uses 'institutionId' not 'id')
+                            if (institutionSelect && institution.institutionId) {
+                                // Set value with a small delay to ensure CustomSelect is ready
+                                setTimeout(() => {
+                                    if (institutionSelect && typeof institutionSelect.setValue === 'function') {
+                                        institutionSelect.setValue(institution.institutionId.toString());
+                                        // Also update the hidden input directly to ensure it's set
+                                        const hiddenInput = document.getElementById('editUserInstitution');
+                                        if (hiddenInput) {
+                                            hiddenInput.value = institution.institutionId.toString();
+                                        }
+                                    }
+                                }, 150);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading institution for edit:', error);
+            }
         }
         
         // Check if editing own user
@@ -319,6 +482,14 @@ function closeEditUserModal() {
         window.editRoleSelect.clear();
     }
     
+    // Clear regional and institution selects
+    if (window.editRegionalSelect) {
+        window.editRegionalSelect.clear();
+    }
+    if (window.editInstitutionSelect) {
+        window.editInstitutionSelect.clear();
+    }
+    
     // Hide role warning if exists
     const roleWarningContainer = document.getElementById('editUserRoleWarning');
     if (roleWarningContainer) {
@@ -463,8 +634,19 @@ class CustomSelect {
         this.textElement.textContent = option.label;
         this.textElement.classList.remove('custom-select-placeholder');
 
+        // Always update the hidden input, checking both locations
         if (this.hiddenInput) {
             this.hiddenInput.value = option.value;
+        } else {
+            // Fallback: try to find hidden input in parent container
+            const container = this.container.closest('.custom-select-container');
+            if (container) {
+                const hiddenInput = container.querySelector('input[type="hidden"]');
+                if (hiddenInput) {
+                    hiddenInput.value = option.value;
+                    this.hiddenInput = hiddenInput; // Cache it for future use
+                }
+            }
         }
 
         this.close();
@@ -496,6 +678,13 @@ class CustomSelect {
     open() {
         if (!this.container) return;
         this.container.classList.add('open');
+        
+        // Add class to parent container to increase z-index
+        const container = this.container.closest('.custom-select-container');
+        if (container) {
+            container.classList.add('select-open');
+        }
+        
         if (this.searchable && this.searchInput) {
             setTimeout(() => {
                 if (this.searchInput) {
@@ -507,6 +696,13 @@ class CustomSelect {
 
     close() {
         this.container.classList.remove('open');
+        
+        // Remove class from parent container to restore z-index
+        const container = this.container.closest('.custom-select-container');
+        if (container) {
+            container.classList.remove('select-open');
+        }
+        
         if (this.searchInput) {
             this.searchInput.value = '';
             this.filterOptions('');
@@ -534,9 +730,30 @@ class CustomSelect {
     }
 
     setValue(value) {
-        const option = this.options.find(opt => opt.value === value);
+        if (!value) return;
+        
+        // Convert value to string for comparison
+        const stringValue = value.toString();
+        const option = this.options.find(opt => opt.value === stringValue || opt.value.toString() === stringValue);
+        
         if (option) {
             this.selectOption(option);
+        } else {
+            // If option not found, still update the hidden input and selected value
+            // This can happen if setValue is called before options are loaded
+            this.selectedValue = stringValue;
+            if (this.hiddenInput) {
+                this.hiddenInput.value = stringValue;
+            }
+            // Try to find and set the text if possible
+            if (this.textElement) {
+                // Try to find the label from the options or use the value
+                const foundOption = this.options.find(opt => opt.value === stringValue || opt.value.toString() === stringValue);
+                if (foundOption) {
+                    this.textElement.textContent = foundOption.label;
+                    this.textElement.classList.remove('custom-select-placeholder');
+                }
+            }
         }
     }
 
@@ -746,4 +963,96 @@ function closeDeleteUserModal() {
     }
 
     usersData.currentUserId = null;
+}
+
+// Function to load regionals for edit user modal
+async function loadRegionalsForEditUser() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch('/api/v1/regional', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const regionals = await response.json();
+            const options = regionals.map(regional => ({
+                value: regional.id.toString(),
+                label: regional.name
+            }));
+
+            if (!window.editRegionalSelect) {
+                window.editRegionalSelect = new CustomSelect('editUserRegionalSelect', {
+                    placeholder: 'Seleccionar regional',
+                    onChange: function(option) {
+                        // Clear error highlighting
+                        const trigger = document.getElementById('editUserRegionalSelect')?.querySelector('.custom-select-trigger');
+                        if (trigger) {
+                            trigger.classList.remove('border-red-500');
+                        }
+                        
+                        // Clear institution when regional changes
+                        if (window.editInstitutionSelect) {
+                            window.editInstitutionSelect.clear();
+                        }
+                        // Load institutions for selected regional
+                        loadInstitutionsByRegionalForEdit(option.value);
+                    }
+                });
+            }
+            window.editRegionalSelect.setOptions(options);
+        } else {
+            showErrorToast('Error', 'No se pudieron cargar las regionales');
+        }
+    } catch (error) {
+        console.error('Error loading regionals:', error);
+        showErrorToast('Error', 'Error al cargar las regionales');
+    }
+}
+
+// Function to load institutions by regional ID for edit user modal
+async function loadInstitutionsByRegionalForEdit(regionalId) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const institutions = await response.json();
+            const options = institutions.map(institution => ({
+                value: institution.id.toString(),
+                label: institution.name
+            }));
+
+            if (!window.editInstitutionSelect) {
+                window.editInstitutionSelect = new CustomSelect('editUserInstitutionSelect', {
+                    placeholder: 'Seleccionar institución',
+                    onChange: function(option) {
+                        // Clear error highlighting
+                        const trigger = document.getElementById('editUserInstitutionSelect')?.querySelector('.custom-select-trigger');
+                        if (trigger) {
+                            trigger.classList.remove('border-red-500');
+                        }
+                    }
+                });
+            }
+            window.editInstitutionSelect.setOptions(options);
+            
+            // Return the CustomSelect instance so we can use it after setting options
+            return window.editInstitutionSelect;
+        } else {
+            showErrorToast('Error', 'No se pudieron cargar las instituciones');
+        }
+    } catch (error) {
+        console.error('Error loading institutions:', error);
+        showErrorToast('Error', 'Error al cargar las instituciones');
+    }
 }

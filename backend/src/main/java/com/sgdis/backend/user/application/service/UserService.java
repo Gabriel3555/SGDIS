@@ -4,11 +4,13 @@ import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
+import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.user.mapper.UserMapper;
 // Excepciones
 import com.sgdis.backend.exception.DomainValidationException;
+import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.exception.userExceptions.InvalidEmailDomainException;
 import com.sgdis.backend.exception.userExceptions.EmailAlreadyInUseException;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
@@ -141,20 +143,50 @@ public class UserService implements
             }
         }
 
-        UserEntity user = UserMapper.fromUpdateRequest(updateUserRequest, id);
-
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            user.setPassword(existingUser.getPassword());
-        } else {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // Update existing user entity instead of creating a new one
+        // This ensures the entity is managed by JPA and relationships are properly handled
+        if (updateUserRequest.fullName() != null) {
+            existingUser.setFullName(updateUserRequest.fullName());
+        }
+        if (updateUserRequest.email() != null) {
+            existingUser.setEmail(updateUserRequest.email());
+        }
+        if (updateUserRequest.role() != null) {
+            existingUser.setRole(Role.valueOf(updateUserRequest.role().toUpperCase()));
+        }
+        if (updateUserRequest.status() != null) {
+            existingUser.setStatus(updateUserRequest.status());
+        }
+        if (updateUserRequest.jobTitle() != null) {
+            existingUser.setJobTitle(updateUserRequest.jobTitle());
+        }
+        if (updateUserRequest.laborDepartment() != null) {
+            existingUser.setLaborDepartment(updateUserRequest.laborDepartment());
         }
 
-        if (user.getImgUrl() == null) user.setImgUrl(existingUser.getImgUrl());
-        if (user.getJobTitle() == null) user.setJobTitle(existingUser.getJobTitle());
-        if (user.getLaborDepartment() == null) user.setLaborDepartment(existingUser.getLaborDepartment());
+        // Handle institution update
+        Long institutionIdValue = updateUserRequest.institutionId();
+        
+        if (institutionIdValue != null && institutionIdValue > 0) {
+            try {
+                InstitutionEntity institution = institutionRepository.findById(institutionIdValue)
+                        .orElseThrow(() -> new ResourceNotFoundException("Institution not found with id: " + institutionIdValue));
+                existingUser.setInstitution(institution);
+            } catch (ResourceNotFoundException e) {
+                // If institution not found, keep existing institution (already set, no change needed)
+            } catch (Exception e) {
+                // Keep existing institution on error
+            }
+        }
 
-        UserEntity updated = userRepository.save(user);
-        return UserMapper.toResponse(updated);
+        // Save and flush to ensure the institution relationship is persisted
+        UserEntity updated = userRepository.save(existingUser);
+        userRepository.flush(); // Force immediate database write
+        
+        // Reload to verify the institution was saved
+        UserEntity reloaded = userRepository.findById(updated.getId()).orElse(updated);
+        
+        return UserMapper.toResponse(reloaded);
     }
 
     @Override

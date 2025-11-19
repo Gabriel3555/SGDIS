@@ -372,12 +372,15 @@
     </style>
 
     <script>
-        // Handle sidebar click
+        // Handle sidebar click with debounce
         function handleSidebarClick(event, link) {
             if (link === '#') {
                 event.preventDefault();
                 return;
             }
+
+            // Prevent default to avoid immediate navigation
+            event.preventDefault();
 
             // Close sidebar on mobile after click
             if (window.innerWidth <= 1024) {
@@ -387,9 +390,14 @@
                 if (overlay) overlay.classList.remove('active');
             }
 
-            // Navigate to the link
+            // Navigate to the link with debounce
             if (link.startsWith('/')) {
-                window.location.href = link;
+                if (typeof debouncedNavigate === 'function') {
+                    debouncedNavigate(link);
+                } else {
+                    // Fallback if debouncedNavigate is not available
+                    window.location.href = link;
+                }
             }
         }
 

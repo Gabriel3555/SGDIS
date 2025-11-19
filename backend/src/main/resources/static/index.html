@@ -5,6 +5,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SGDIS - Sistema de Gestión de Inventario SENA</title>
+    <script>
+        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
+        (function() {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
     <script>
@@ -25,15 +34,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/users-toast.css">
     <link rel="stylesheet" href="css/dark-mode.css">
-    <script>
-        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
-        (function() {
-            const saved = localStorage.getItem('sgdis-dark-mode');
-            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-            }
-        })();
-    </script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -155,6 +155,19 @@
             box-shadow: 0 25px 50px -12px rgba(0, 175, 0, 0.25);
             border: 2px solid rgba(0, 175, 0, 0.1);
             min-width: 300px;
+        }
+
+        /* Dark mode styles for spinner - applied immediately */
+        .dark .spinner-overlay {
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(8px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(8px) saturate(180%) !important;
+        }
+
+        .dark .spinner-container {
+            background: rgba(30, 41, 59, 0.95) !important;
+            border-color: rgba(148, 163, 184, 0.2) !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
         }
 
         .spinner-logo {

@@ -95,8 +95,68 @@ function populateUserProfile(userData) {
     // Work Information
     document.getElementById('profileDepartment').textContent = userData.laborDepartment || 'Sin departamento';
     document.getElementById('profileRoleInfo').textContent = getRoleDisplayName(userData.role);
-    document.getElementById('profileInstitution').textContent = userData.institution ? userData.institution.name || 'Sin institución' : 'Sin institución';
+    
+    // Load institution and regional information
+    let institutionName = userData.institution || 'Sin institución';
+    let regionalName = 'Sin regional';
+    
+    // Set institution name initially
+    document.getElementById('profileInstitution').textContent = institutionName;
+    document.getElementById('profileRegional').textContent = regionalName;
+    
+    // Fetch regional information if institution exists
+    if (userData.institution) {
+        loadInstitutionAndRegionalInfo(userData.institution).then(({ institution, regional }) => {
+            if (institution) {
+                document.getElementById('profileInstitution').textContent = institution.name || institutionName;
+            }
+            if (regional) {
+                document.getElementById('profileRegional').textContent = regional.name || regionalName;
+            }
+        }).catch(error => {
+            console.error('Error loading institution/regional info:', error);
+        });
+    }
+    
     document.getElementById('profileStatusInfo').textContent = userData.status ? 'Cuenta Activa' : 'Cuenta Inactiva';
+}
+
+// Function to load institution and regional information
+async function loadInstitutionAndRegionalInfo(institutionName) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Get all institutions to find the one matching the name
+        const institutionsResponse = await fetch('/api/v1/institutions', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (institutionsResponse.ok) {
+            const institutions = await institutionsResponse.json();
+            const institution = institutions.find(inst => inst.name === institutionName);
+            
+            if (institution && institution.regionalId) {
+                // Get all regionals to find the one matching the regionalId
+                const regionalsResponse = await fetch('/api/v1/regional', {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (regionalsResponse.ok) {
+                    const regionals = await regionalsResponse.json();
+                    const regional = regionals.find(reg => reg.id === institution.regionalId);
+                    return { institution, regional: regional || null };
+                }
+            }
+        }
+        return { institution: null, regional: null };
+    } catch (error) {
+        console.error('Error fetching institution/regional info:', error);
+        return { institution: null, regional: null };
+    }
 }
 
 // Update header information
@@ -110,7 +170,18 @@ function updateHeaderInfo(userData) {
 
     if (headerUserAvatar) {
         if (userData.imgUrl) {
-            headerUserAvatar.innerHTML = `<img src="${userData.imgUrl}" alt="${userData.fullName || 'Usuario'}" class="w-full h-full object-cover rounded-full">`;
+            const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
+            headerUserAvatar.innerHTML = `
+                <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
+                    <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
+                        <div class="image-loading-spinner"></div>
+                    </div>
+                    <img src="${userData.imgUrl}" alt="${userData.fullName || 'Usuario'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                         id="img-${uniqueId}"
+                         onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
+                         onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
+                </div>
+            `;
         } else {
             headerUserAvatar.textContent = (userData.fullName || 'Usuario').charAt(0).toUpperCase();
         }
