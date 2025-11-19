@@ -9,9 +9,12 @@ import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventory
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.item.application.dto.*;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
+import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
+import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryAndCategoryUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
 import com.sgdis.backend.item.application.port.UpdateItemUseCase;
+import com.sgdis.backend.item.domain.Attribute;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import org.springframework.data.domain.Page;
@@ -29,7 +32,9 @@ public class ItemService implements
         CreateItemUseCase,
         UpdateItemUseCase,
         GetItemsByInventoryUseCase,
-        GetItemsByInventoryAndCategoryUseCase {
+        GetItemsByInventoryAndCategoryUseCase,
+        GetItemByLicencePlateNumberUseCase,
+        GetItemBySerialUseCase {
 
     private final SpringDataItemRepository itemRepository;
     private final SpringDataInventoryRepository inventoryRepository;
@@ -78,5 +83,21 @@ public class ItemService implements
         Pageable pageable = PageRequest.of(page, size);
         Page<ItemEntity> itemEntities = itemRepository.findByInventoryIdAndCategoryId(inventoryId, categoryId, pageable);
         return itemEntities.map(ItemMapper::toDTO);
+    }
+
+    @Override
+    public ItemDTO getItemByLicencePlateNumber(String licencePlateNumber) {
+        ItemEntity item = itemRepository.findByLicencePlateNumber(licencePlateNumber)
+                .orElseThrow(() -> new DomainNotFoundException(
+                        "Item not found with licence plate number: " + licencePlateNumber));
+        return ItemMapper.toDTO(item);
+    }
+
+    @Override
+    public ItemDTO getItemBySerial(String serial) {
+        ItemEntity item = itemRepository.findByAttribute(Attribute.SERIAL, serial)
+                .orElseThrow(() -> new DomainNotFoundException(
+                        "Item not found with serial: " + serial));
+        return ItemMapper.toDTO(item);
     }
 }

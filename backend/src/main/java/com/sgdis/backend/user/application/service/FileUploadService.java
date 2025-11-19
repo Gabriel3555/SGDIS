@@ -96,4 +96,21 @@ public class FileUploadService {
         Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
         return "/uploads/items/" + itemId + "/" + filename;
     }
+
+    public String saveVerificationFile(MultipartFile file, String licencePlateNumber, Long verificationId, int fileIndex) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be null or empty");
+        }
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String filename = "verification_" + verificationId + "_" + fileIndex + extension;
+        
+        // Crear estructura: uploads/verifications/{licencePlateNumber}/
+        Path verificationDir = rootLocation.resolve("verifications").resolve(licencePlateNumber);
+        Files.createDirectories(verificationDir);
+        
+        Path targetFile = verificationDir.resolve(filename);
+        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        return "/uploads/verifications/" + licencePlateNumber + "/" + filename;
+    }
 }
