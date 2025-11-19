@@ -519,6 +519,22 @@
             transform: scale(1.05);
         }
 
+        /* Image loading spinner */
+        .image-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 175, 0, 0.2);
+            border-top-color: #00AF00;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         /* Responsive adjustments */
         @media (max-width: 1024px) {
             .main-content {
@@ -545,12 +561,15 @@
     </style>
 
     <script>
-        // Handle sidebar click
+        // Handle sidebar click with debounce
         function handleSidebarClick(event, link) {
             if (link === '#') {
                 event.preventDefault();
                 return;
             }
+
+            // Prevent default to avoid immediate navigation
+            event.preventDefault();
 
             // Close sidebar on mobile after click
             if (window.innerWidth <= 1024) {
@@ -560,9 +579,14 @@
                 if (overlay) overlay.classList.remove('active');
             }
 
-            // Navigate to the link
+            // Navigate to the link with debounce
             if (link.startsWith('/')) {
-                window.location.href = link;
+                if (typeof debouncedNavigate === 'function') {
+                    debouncedNavigate(link);
+                } else {
+                    // Fallback if debouncedNavigate is not available
+                    window.location.href = link;
+                }
             }
         }
 

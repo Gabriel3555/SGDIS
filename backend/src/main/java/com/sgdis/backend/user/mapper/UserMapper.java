@@ -44,6 +44,8 @@ public final class UserMapper {
                 .id(id)
                 .email(request.email())
                 .fullName(request.fullName())
+                .jobTitle(request.jobTitle())
+                .laborDepartment(request.laborDepartment())
                 .role(Role.valueOf(request.role().toUpperCase()))
                 .status(request.status())
                 .build();

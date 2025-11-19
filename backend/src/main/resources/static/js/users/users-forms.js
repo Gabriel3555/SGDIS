@@ -152,9 +152,54 @@ async function handleEditUserSubmit(e) {
     const statusValue = document.getElementById('editUserStatus').value;
     const status = statusValue === 'true';
     const photoFile = document.getElementById('editUserPhoto').files[0];
+    
+    // Get institution from CustomSelect or hidden input
+    let institutionId = null;
+    
+    // First try CustomSelect
+    if (window.editInstitutionSelect) {
+        const institutionValue = window.editInstitutionSelect.getValue();
+        if (institutionValue) {
+            institutionId = parseInt(institutionValue, 10);
+        }
+    }
+    
+    // Fallback to hidden input (this is the source of truth)
+    const institutionInput = document.getElementById('editUserInstitution');
+    if (institutionInput && institutionInput.value) {
+        const parsedValue = parseInt(institutionInput.value, 10);
+        if (!isNaN(parsedValue) && parsedValue > 0) {
+            institutionId = parsedValue;
+        }
+    }
+    
+    // If still no value, try to get it from the CustomSelect's selectedValue directly
+    if ((!institutionId || isNaN(institutionId)) && window.editInstitutionSelect) {
+        const selectedValue = window.editInstitutionSelect.selectedValue;
+        if (selectedValue) {
+            const parsedValue = parseInt(selectedValue, 10);
+            if (!isNaN(parsedValue) && parsedValue > 0) {
+                institutionId = parsedValue;
+            }
+        }
+    }
 
+    // Validate required fields
     if (!fullName || !email || !role) {
         showErrorToast('Campos obligatorios', 'Por favor complete todos los campos obligatorios');
+        return;
+    }
+    
+    // Validate institution is selected
+    if (!institutionId || isNaN(institutionId) || institutionId <= 0) {
+        showErrorToast('Campo requerido', 'Por favor selecciona una institución');
+        const institutionSelect = document.getElementById('editUserInstitutionSelect');
+        if (institutionSelect) {
+            const trigger = institutionSelect.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.classList.add('border-red-500');
+            }
+        }
         return;
     }
     
@@ -194,9 +239,10 @@ async function handleEditUserSubmit(e) {
             full_name: fullName,
             email: email,
             role: role,
-            jobTitle: jobTitle,
-            laborDepartment: laborDepartment,
-            status: status
+            jobTitle: jobTitle || null,
+            laborDepartment: laborDepartment || null,
+            status: status,
+            institutionId: institutionId
         };
 
         const response = await fetch(`/api/v1/users/${usersData.currentUserId}`, {
@@ -206,6 +252,8 @@ async function handleEditUserSubmit(e) {
         });
 
         if (response.ok) {
+            const updatedUser = await response.json();
+            
             if (photoFile) {
                 try {
                     await uploadUserPhotoById(photoFile, usersData.currentUserId);
@@ -215,25 +263,21 @@ async function handleEditUserSubmit(e) {
                     showWarningToast('Imagen no subida', 'Usuario actualizado pero error al subir la imagen. Puedes subirla después desde el botón de cambiar foto.');
                 }
             } else {
-                showSuccessToast('Usuario actualizado', 'Usuario actualizado exitosamente (datos recargados)');
-                closeEditUserModal();
-                loadUsersData();
-                setTimeout(() => {
-                    updateUsersUI();
-                }, 200);
+                showSuccessToast('Usuario actualizado', 'Usuario actualizado exitosamente');
             }
 
             closeEditUserModal();
+            
+            // Reload users data to reflect the changes
             await loadUsersData();
-
+            
             setTimeout(() => {
                 updateUsersUI();
             }, 200);
         } else {
             const errorData = await response.json();
-            showErrorToast('Error al actualizar usuario', errorData.detail ||'Error del servidor');
+            showErrorToast('Error al actualizar usuario', errorData.detail || errorData.message || 'Error del servidor');
             closeEditUserModal();
-            await loadUsersData();
         }
     } catch (error) {
         showErrorToast('Error al actualizar usuario', 'Inténtalo de nuevo.');
