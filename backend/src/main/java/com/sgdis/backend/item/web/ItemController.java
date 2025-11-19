@@ -7,6 +7,8 @@ import com.sgdis.backend.item.application.dto.ItemDTO;
 import com.sgdis.backend.item.application.dto.UpdateItemRequest;
 import com.sgdis.backend.item.application.dto.UpdateItemResponse;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
+import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
+import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryAndCategoryUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
 import com.sgdis.backend.item.application.port.UpdateItemUseCase;
@@ -40,6 +42,8 @@ public class ItemController {
     private final UpdateItemUseCase updateItemUseCase;
     private final GetItemsByInventoryUseCase getItemsByInventoryUseCase;
     private final GetItemsByInventoryAndCategoryUseCase getItemsByInventoryAndCategoryUseCase;
+    private final GetItemByLicencePlateNumberUseCase getItemByLicencePlateNumberUseCase;
+    private final GetItemBySerialUseCase getItemBySerialUseCase;
     private final SpringDataItemRepository itemRepository;
     private final FileUploadService fileUploadService;
 
@@ -176,6 +180,60 @@ public class ItemController {
     ) {
         var items = getItemsByInventoryAndCategoryUseCase.getItemsByInventoryAndCategory(inventoryId, categoryId, page, size);
         return ResponseEntity.ok(items);
+    }
+
+    @Operation(
+            summary = "Get item by licence plate number",
+            description = "Retrieves a single item by its licence plate number",
+            parameters = {
+                    @io.swagger.v3.oas.annotations.Parameter(
+                            name = "licencePlateNumber",
+                            description = "Licence plate number of the item",
+                            required = true,
+                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
+                    )
+            }
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Item retrieved successfully",
+            content = @Content(schema = @Schema(implementation = ItemDTO.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Item not found with the provided licence plate number")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/licence-plate/{licencePlateNumber}")
+    public ResponseEntity<ItemDTO> getItemByLicencePlateNumber(
+            @PathVariable String licencePlateNumber
+    ) {
+        ItemDTO item = getItemByLicencePlateNumberUseCase.getItemByLicencePlateNumber(licencePlateNumber);
+        return ResponseEntity.ok(item);
+    }
+
+    @Operation(
+            summary = "Get item by serial number",
+            description = "Retrieves a single item by its serial number (from the SERIAL attribute)",
+            parameters = {
+                    @io.swagger.v3.oas.annotations.Parameter(
+                            name = "serial",
+                            description = "Serial number of the item",
+                            required = true,
+                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
+                    )
+            }
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Item retrieved successfully",
+            content = @Content(schema = @Schema(implementation = ItemDTO.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Item not found with the provided serial number")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/serial/{serial}")
+    public ResponseEntity<ItemDTO> getItemBySerial(
+            @PathVariable String serial
+    ) {
+        ItemDTO item = getItemBySerialUseCase.getItemBySerial(serial);
+        return ResponseEntity.ok(item);
     }
 
     @Operation(
