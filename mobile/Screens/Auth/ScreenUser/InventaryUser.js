@@ -1,6 +1,6 @@
 // src/Screens/Inventary.js
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
@@ -11,6 +11,8 @@ export default function Inventary({ navigation }) {
    const [inventories, setInventories] = useState([]);
    const [loading, setLoading] = useState(true);
    const [searchQuery, setSearchQuery] = useState("");
+   const [showQuitModal, setShowQuitModal] = useState(false);
+   const [selectedInventoryId, setSelectedInventoryId] = useState(null);
 
    const styles = getStyles(colors);
 
@@ -56,41 +58,32 @@ export default function Inventary({ navigation }) {
     }
   };
 
-  const quitManager = async (inventoryId) => {
-    Alert.alert(
-      "Confirmar",
-      "¿Deseas dejar de ser gestor de este inventario?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Confirmar",
-          onPress: async () => {
-            try {
-              const token = await AsyncStorage.getItem("userToken");
-              if (!token) {
-                Alert.alert("Error", "No se encontró token de autenticación");
-                return;
-              }
+  const handleQuitConfirm = async () => {
+    setShowQuitModal(false);
+    const inventoryId = selectedInventoryId;
+    setSelectedInventoryId(null);
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      if (!token) {
+        Alert.alert("Error", "No se encontró token de autenticación");
+        return;
+      }
 
-              const response = await api.post(`api/v1/inventory/quitManager/${inventoryId}`, { inventoryId }, {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              });
+      const response = await api.post(`api/v1/inventory/quitManager/${inventoryId}`, { inventoryId }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-              Alert.alert("Éxito", "Has renunciado como gestor del inventario");
-              // Refetch inventories to update the list
-              fetchInventories();
-            } catch (error) {
-              console.error("Error quitting manager:", error);
-              const status = error.response?.status;
-              const message = error.response?.data?.message || error.message;
-              Alert.alert("Error", `No se pudo renunciar como gestor: ${status || 'Desconocido'} - ${message}`);
-            }
-          }
-        }
-      ]
-    );
+      Alert.alert("Éxito", "Has renunciado como gestor del inventario");
+      // Refetch inventories to update the list
+      fetchInventories();
+    } catch (error) {
+      console.error("Error quitting manager:", error);
+      const status = error.response?.status;
+      const message = error.response?.data?.message || error.message;
+      Alert.alert("Error", `No se pudo renunciar como gestor: ${status || 'Desconocido'} - ${message}`);
+    }
   };
 
   const fetchInventories = async () => {
@@ -214,7 +207,10 @@ export default function Inventary({ navigation }) {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: colors.card }]}
-              onPress={() => quitManager(item.id)}
+              onPress={() => {
+                setSelectedInventoryId(item.id);
+                setShowQuitModal(true);
+              }}
             >
               <Ionicons name="trash-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
@@ -287,7 +283,34 @@ export default function Inventary({ navigation }) {
         }
       />
 
-    
+      <Modal
+        visible={showQuitModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowQuitModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Confirmar</Text>
+            <Text style={[styles.modalMessage, { color: colors.text }]}>¿Deseas dejar de ser gestor de este inventario?</Text>
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.buttonBackground }]}
+                onPress={() => setShowQuitModal(false)}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.confirmButton, { backgroundColor: colors.institution }]}
+                onPress={handleQuitConfirm}
+              >
+                <Text style={[styles.modalButtonText, { color: colors.card }]}>Confirmar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -532,5 +555,53 @@ const getStyles = (colors) => StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    borderRadius: 16,
+    padding: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginHorizontal: 5,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    // backgroundColor set in component
+  },
+  confirmButton: {
+    // backgroundColor set in component
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
