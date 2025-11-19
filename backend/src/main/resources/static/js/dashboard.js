@@ -1,3 +1,41 @@
+// Navigation debounce to prevent rapid navigation and system overload
+let navigationTimeout = null;
+let isNavigating = false;
+const NAVIGATION_DEBOUNCE_MS = 300; // 300ms debounce for navigation
+
+function debouncedNavigate(url) {
+    // Prevent navigation if already navigating
+    if (isNavigating) {
+        return;
+    }
+
+    // Clear any pending navigation
+    if (navigationTimeout) {
+        clearTimeout(navigationTimeout);
+    }
+
+    // Set navigating flag
+    isNavigating = true;
+
+    // Apply dark mode immediately before navigation to prevent flash
+    const saved = localStorage.getItem('sgdis-dark-mode');
+    if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    }
+
+    // Debounce navigation
+    navigationTimeout = setTimeout(() => {
+        window.location.href = url;
+        // Reset flag after navigation starts (page will reload anyway)
+        setTimeout(() => {
+            isNavigating = false;
+        }, 100);
+    }, NAVIGATION_DEBOUNCE_MS);
+}
+
+// Export debouncedNavigate globally
+window.debouncedNavigate = debouncedNavigate;
+
 // Utility functions for cookie management
 function getCookie(name) {
     const nameEQ = name + "=";

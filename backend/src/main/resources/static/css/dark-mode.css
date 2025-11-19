@@ -730,3 +730,13 @@ html.dark button {
     color: var(--dark-text-secondary) !important;
 }
 
+/* Image loading spinner in dark mode */
+.dark .image-loading-spinner {
+    border-color: rgba(0, 175, 0, 0.3) !important;
+    border-top-color: var(--dark-sena-verde) !important;
+}
+
+.dark [id^="spinner-"] {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+

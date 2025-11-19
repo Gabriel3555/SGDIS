@@ -39,7 +39,8 @@ export default function ItemsScreen({ route, navigation }) {
       setItems(itemsData);
     } catch (error) {
       console.error("Error fetching items:", error);
-      Alert.alert("Error", "No se pudieron cargar los items");
+      Alert.alert("Error", "No se pudieron cargar los items. Verifica tu conexión e intenta de nuevo.");
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -48,6 +49,9 @@ export default function ItemsScreen({ route, navigation }) {
   const renderItem = ({ item }) => {
     return (
       <View style={styles.itemCard}>
+        <View style={styles.imagePlaceholder}>
+          {/* Espacio reservado para cargar imagen del item más tarde */}
+        </View>
         <View style={styles.cardHeader}>
           <View style={styles.titleSection}>
             <View style={[styles.categoryIcon, { backgroundColor: colors.card }]}>
@@ -211,6 +215,14 @@ const getStyles = (colors) => StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  imagePlaceholder: {
+    height: 150,
+    backgroundColor: colors.placeholder || '#e0e0e0',
+    borderRadius: 8,
+    marginBottom: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardHeader: {
     marginBottom: 12,
