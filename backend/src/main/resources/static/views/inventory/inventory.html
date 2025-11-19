@@ -51,7 +51,7 @@
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
-                    <img src="../../svg/logoSena.png" alt="Logo SENA" class="w-full h-full object-cover">
+                    <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
                 <div class="text-gray-800">
                     <div class="font-bold text-lg">SGDIS</div>
@@ -334,6 +334,12 @@
     <script src="../../js/inventory/inventory-images.js"></script>
     <script src="../../js/inventory/inventory-ui.js"></script>
     <script src="../../js/inventory/inventory.js"></script>
+    <!-- Items Module Scripts -->
+    <script src="../../js/inventory/items/items-data.js"></script>
+    <script src="../../js/inventory/items/items-api.js"></script>
+    <script src="../../js/inventory/items/items-ui.js"></script>
+    <script src="../../js/inventory/items/items-modals.js"></script>
+    <script src="../../js/inventory/items/items-forms.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
@@ -764,7 +770,7 @@
                 </div>
 
                 <!-- Inventory Basic Information -->
-                <div class="bg-gray-50 rounded-xl p-6">
+                <div class="bg-gray-50 rounded-xl p-6 relative">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
                         <i class="fas fa-box text-[#00AF00] mr-2"></i>
                         Información del Inventario
@@ -794,6 +800,12 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Ver Items Button -->
+                    <button onclick="navigateToItems()"
+                        class="absolute bottom-4 right-4 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center gap-2">
+                        <i class="fas fa-cubes"></i>
+                        Ver Items
+                    </button>
                 </div>
 
                 <!-- Owner Information -->
@@ -1015,6 +1027,101 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- View Item Modal -->
+    <div id="viewItemModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 10002;">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Detalles del Item</h2>
+                <button onclick="closeViewItemModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div id="viewItemContent" class="space-y-6">
+                <!-- Content loaded dynamically -->
+            </div>
+
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+                <button onclick="closeViewItemModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cerrar
+                </button>
+                <button onclick="showEditItemModal()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Editar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Item Modal -->
+    <div id="newItemModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 10002;">
+        <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Nuevo Item</h2>
+                <button onclick="closeNewItemModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="newItemForm" class="space-y-4">
+                <!-- Form fields will be loaded dynamically -->
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Item Modal -->
+    <div id="editItemModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 10002;">
+        <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Editar Item</h2>
+                <button onclick="closeEditItemModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="editItemForm" class="space-y-4">
+                <!-- Form fields will be loaded dynamically -->
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Item Modal -->
+    <div id="deleteItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 10002;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-red-600">Eliminar Item</h2>
+                <button onclick="closeDeleteItemModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro?</h3>
+                <p class="text-gray-600" id="deleteItemMessage">Esta acción no se puede deshacer.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeDeleteItemModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmDeleteItem()"
+                    class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors">
+                    Eliminar Item
+                </button>
+            </div>
         </div>
     </div>
 </body>

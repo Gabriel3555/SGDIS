@@ -23,6 +23,18 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeInventoryPage() {
     loadInventoryData();
     setupEventListeners();
+    
+    // Check if we need to open a specific inventory modal
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewInventoryId = urlParams.get('viewInventory');
+    if (viewInventoryId) {
+        // Small delay to ensure data is loaded
+        setTimeout(() => {
+            if (window.showViewInventoryModal) {
+                window.showViewInventoryModal(parseInt(viewInventoryId, 10));
+            }
+        }, 500);
+    }
 }
 
 // Setup event listeners for inventory-specific elements

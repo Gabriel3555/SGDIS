@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <script>
+        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
+        (function () {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/jpeg" href="svg/box.png">
+    <script>
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800',
+                            'sena-verde-claro': '#E8F5E8',
+                            'sena-acento': '#FF6B00'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/users-toast.css">
+    <link rel="stylesheet" href="css/dark-mode.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-repeat: repeat;
+            background-size: auto;
+            background-position: 0 0;
+            background-attachment: fixed;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .efecto-vidrio {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .dark .efecto-vidrio {
+            background: rgba(30, 41, 59, 0.95);
+        }
+
+        .entrada-focus:focus {
+            border-color: #00AF00;
+            box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
+        }
+
+        .logo-sena {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 50;
+        }
+
+        /* Estilos de la barra de desplazamiento */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(232, 245, 232, 0.3);
+            border-radius: 10px;
+            margin: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00AF00 0%, #008800 100%);
+            border-radius: 10px;
+            border: 2px solid rgba(232, 245, 232, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #008800 0%, #006600 100%);
+            border: 2px solid rgba(0, 175, 0, 0.2);
+            transform: scale(1.1);
+        }
+
+        ::-webkit-scrollbar-thumb:active {
+            background: linear-gradient(180deg, #006600 0%, #005500 100%);
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: rgba(232, 245, 232, 0.3);
+        }
+
+        /* Scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #00AF00 rgba(232, 245, 232, 0.3);
+        }
+
+        /* Desplazamiento suave */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* SENA Loading Spinner Styles */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 175, 0, 0.1);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spinner-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 175, 0, 0.25);
+            border: 2px solid rgba(0, 175, 0, 0.1);
+            min-width: 300px;
+        }
+
+        /* Dark mode styles for spinner - applied immediately */
+        .dark .spinner-overlay {
+            background: rgba(0, 0, 0, 0.8) !important;
+            backdrop-filter: blur(8px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(8px) saturate(180%) !important;
+        }
+
+        .dark .spinner-container {
+            background: rgba(30, 41, 59, 0.95) !important;
+            border-color: rgba(148, 163, 184, 0.2) !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .spinner-logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .spinner {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .spinner-ring {
+            width: 100%;
+            height: 100%;
+            border: 8px solid rgba(0, 175, 0, 0.1);
+            border-radius: 50%;
+            position: absolute;
+            animation: spin 2s linear infinite;
+        }
+
+        .spinner-ring:nth-child(1) {
+            border-top-color: #00AF00;
+            animation-duration: 1.5s;
+        }
+
+        .spinner-ring:nth-child(2) {
+            border-right-color: #2D8000;
+            animation-duration: 2s;
+            animation-direction: reverse;
+        }
+
+        .spinner-ring:nth-child(3) {
+            border-bottom-color: #00AF00;
+            animation-duration: 2.5s;
+        }
+
+        .spinner-ring:nth-child(4) {
+            border-left-color: #1F5A00;
+            animation-duration: 3s;
+            animation-direction: reverse;
+        }
+
+        .spinner-center {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00AF00, #008800);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(0, 175, 0, 0.3);
+            animation: pulse-glow 2s ease-in-out infinite alternate;
+        }
+
+        .spinner-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #00AF00;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .spinner-subtitle {
+            font-size: 0.875rem;
+            color: #008800;
+            text-align: center;
+            opacity: 0.8;
+        }
+
+        .spinner-dots {
+            display: inline-flex;
+            gap: 0.25rem;
+            margin-left: 0.5rem;
+        }
+
+        .spinner-dot {
+            width: 8px;
+            height: 8px;
+            background: #00AF00;
+            border-radius: 50%;
+            animation: dot-bounce 1.4s ease-in-out infinite both;
+        }
+
+        .spinner-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .spinner-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        .spinner-dot:nth-child(3) {
+            animation-delay: 0s;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        @keyframes pulse-glow {
+            from {
+                box-shadow: 0 0 20px rgba(0, 175, 0, 0.3);
+                transform: translate(-50%, -50%) scale(1);
+            }
+
+            to {
+                box-shadow: 0 0 30px rgba(0, 175, 0, 0.6);
+                transform: translate(-50%, -50%) scale(1.1);
+            }
+        }
+
+        @keyframes dot-bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .spinner-container {
+            animation: fade-in 0.3s ease-out;
+        }
+
+        /* Typewriter Animation */
+        .typewriter {
+            overflow: hidden;
+            border-right: 3px solid #00AF00;
+            white-space: nowrap;
+            margin: 0 auto;
+            animation: blink-caret 0.75s step-end infinite;
+            display: inline-block;
+            min-height: 1.75rem;
+        }
+
+        .typewriter.typing {
+            animation: blink-caret 0.75s step-end infinite;
+        }
+
+        .typewriter.finished {
+            border-right: none;
+            animation: none;
+        }
+
+        @keyframes blink-caret {
+
+            from,
+            to {
+                border-color: transparent;
+            }
+
+            50% {
+                border-color: #00AF00;
+            }
+        }
+
+        .typewriter-container {
+            min-height: 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- SENA Loading Spinner Overlay -->
+    <div id="senaSpinner" class="spinner-overlay">
+        <div class="spinner-container">
+            <img src="svg/box.png" alt="Logo SGDIS" class="spinner-logo">
+            <div class="spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-center"></div>
+            </div>
+            <div class="spinner-text">
+                Iniciando sesión
+                <div class="spinner-dots">
+                    <div class="spinner-dot"></div>
+                    <div class="spinner-dot"></div>
+                    <div class="spinner-dot"></div>
+                </div>
+            </div>
+            <div class="spinner-subtitle">
+                Cargando dashboard...
+            </div>
+        </div>
+    </div>
+
+    <div class="logo-sena">
+        <img src="svg/logoSena.png" alt="Logo SENA" class="h-16 w-auto">
+    </div>
+
+    <div class="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div class="w-full max-w-md">
+            <div class="efecto-vidrio rounded-2xl shadow-2xl p-8 border border-white/20 dark:border-gray-700/20">
+                <div class="text-center mb-8">
+                    <div class="mb-4">
+                        <img src="svg/box.png" alt="Logo Caja" class="h-20 w-20 mx-auto rounded-2xl object-cover">
+                    </div>
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">SGDIS</h1>
+                    <div class="typewriter-container mb-1">
+                        <h2 class="text-lg font-semibold text-sena-verde typewriter typing" id="typewriterText"></h2>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Servicio Nacional de Aprendizaje - SENA</p>
+                    <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-3"></div>
+                </div>
+
+                <form class="space-y-6" id="loginForm">
+                    <div>
+                        <label for="usuario" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Correo Electrónico
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                                </svg>
+                            </div>
+                            <input type="email" id="usuario" name="usuario"
+                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-0 transition-all duration-200"
+                                placeholder="usuario@soy.sena.edu.co" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="contrasena" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Contraseña
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <input type="password" id="contrasena" name="contrasena"
+                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-0 transition-all duration-200"
+                                placeholder="Ingresa tu contraseña" required>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input id="recordarme" name="recordarme" type="checkbox"
+                                class="h-4 w-4 text-sena-verde focus:ring-sena-verde border-gray-300 dark:border-gray-600 rounded">
+                            <label for="recordarme" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                Recordarme
+                            </label>
+                        </div>
+                        <a href="forgot_password.html"
+                            class="text-sm text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
+
+                    <button type="submit"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-sena-verde hover:bg-sena-verde-oscuro focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sena-verde transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        </svg>
+                        Iniciar Sesión
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        ¿No tienes cuenta?
+                        <a href="register.html"
+                            class="text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
+                            Regístrate aquí
+                        </a>
+                    </p>
+                </div>
+
+                <div class="text-center mt-6">
+                    <a href="/"
+                        class="text-sm text-gray-600 dark:text-gray-400 hover:text-sena-verde transition-colors">
+                        ← Volver a la página principal
+                    </a>
+                </div>
+
+                <div class="text-center mt-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        © 2025 SENA - Servicio Nacional de Aprendizaje
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- Typewriter Effect ---
+            const typewriterElement = document.getElementById('typewriterText');
+            const fullText = 'Sistema de Gestión de Inventario';
+            let charIndex = 0;
+            const typingSpeed = 80;
+            const pauseBeforeRemovingCursor = 2000;
+
+            function typeWriter() {
+                if (charIndex < fullText.length) {
+                    typewriterElement.textContent = fullText.substring(0, charIndex + 1);
+                    charIndex++;
+                    setTimeout(typeWriter, typingSpeed);
+                } else {
+                    setTimeout(() => {
+                        typewriterElement.classList.remove('typing');
+                        typewriterElement.classList.add('finished');
+                    }, pauseBeforeRemovingCursor);
+                }
+            }
+
+            setTimeout(() => {
+                typeWriter();
+            }, 500);
+
+            const entradas = document.querySelectorAll('input[type="text"], input[type="password"]');
+
+            entradas.forEach(entrada => {
+                entrada.addEventListener('focus', function () {
+                    this.parentElement.classList.add('scale-[1.02]');
+                });
+                entrada.addEventListener('blur', function () {
+                    this.parentElement.classList.remove('scale-[1.02]');
+                });
+            });
+
+            // --- Remember me functionality ---
+            const usuarioInput = document.getElementById('usuario');
+            const contrasenaInput = document.getElementById('contrasena');
+            const recordarCheckbox = document.getElementById('recordarme');
+            const form = document.getElementById('loginForm');
+
+            const savedEmail = localStorage.getItem('rememberedEmail');
+            const savedPassword = localStorage.getItem('rememberedPassword');
+
+            if (savedEmail && savedPassword) {
+                usuarioInput.value = savedEmail;
+                contrasenaInput.value = savedPassword;
+                recordarCheckbox.checked = true;
+            }
+
+            usuarioInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    form.requestSubmit();
+                }
+            });
+
+            contrasenaInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    form.requestSubmit();
+                }
+            });
+
+            // --- Spinner functions ---
+            function showSenaSpinner() {
+                const spinner = document.getElementById('senaSpinner');
+                if (spinner) {
+                    spinner.style.display = 'flex';
+                    setTimeout(() => {
+                        spinner.style.opacity = '1';
+                    }, 10);
+                }
+            }
+
+            function hideSenaSpinner() {
+                const spinner = document.getElementById('senaSpinner');
+                if (spinner) {
+                    spinner.style.opacity = '0';
+                    setTimeout(() => {
+                        spinner.style.display = 'none';
+                    }, 300);
+                }
+            }
+
+            window.addEventListener('load', function () {
+                hideSenaSpinner();
+            });
+
+            // --- Envío del formulario ---
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                if (!form.reportValidity()) return;
+
+                const email = usuarioInput.value;
+                const contrasena = contrasenaInput.value;
+
+                console.log('Attempting login with email:', email);
+
+                try {
+                    const response = await fetch('/api/v1/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            password: contrasena
+                        })
+                    });
+
+                    console.log('Response status:', response.status);
+
+                    let data;
+                    try {
+                        data = await response.json();
+                        console.log('Response data:', data);
+                    } catch (parseError) {
+                        console.error('Error parsing response:', parseError);
+                        data = null;
+                    }
+
+                    if (response.ok && data && data.status) {
+                        console.log('Login successful, role:', data.role);
+
+                        localStorage.setItem('jwt', data.jwt);
+                        localStorage.setItem('refreshToken', data.refreshToken);
+
+                        document.cookie = `jwt=${data.jwt}; path=/; max-age=900`;
+
+                        if (recordarCheckbox.checked) {
+                            localStorage.setItem('rememberedEmail', email);
+                            localStorage.setItem('rememberedPassword', contrasena);
+                            console.log('Credentials saved for future logins');
+                        } else {
+                            localStorage.removeItem('rememberedEmail');
+                            localStorage.removeItem('rememberedPassword');
+                            console.log('Remember me not checked, credentials cleared');
+                        }
+
+                        let redirectUrl = '/index.html';
+                        if (data.role === "ADMIN_INSTITUTION") redirectUrl = '/dashboard/admin_institution';
+                        else if (data.role === "ADMIN_REGIONAL") redirectUrl = '/dashboard/admin_regional';
+                        else if (data.role === "SUPERADMIN") redirectUrl = '/dashboard/superadmin';
+                        else if (data.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
+                        else if (data.role === "USER") redirectUrl = '/dashboard/user';
+
+                        console.log('Redirecting to:', redirectUrl);
+
+                        showSenaSpinner();
+
+                        setTimeout(() => {
+                            window.location.href = redirectUrl;
+                        }, 1500);
+                    } else {
+                        hideSenaSpinner();
+
+                        localStorage.removeItem('rememberedEmail');
+                        localStorage.removeItem('rememberedPassword');
+                        recordarCheckbox.checked = false;
+
+                        let errorMessage = 'Credenciales inválidas';
+                        if (data && data.detail) {
+                            errorMessage = data.detail;
+                        } else if (data && data.message) {
+                            errorMessage = data.message;
+                        } else if (response.status === 401) {
+                            errorMessage = 'Usuario o contraseña incorrectos';
+                        }
+
+                        console.error('Error en login:', errorMessage);
+                        showErrorToast('Error de autenticación', errorMessage);
+                    }
+                } catch (error) {
+                    console.error('Error de conexión:', error);
+                    hideSenaSpinner();
+                    showErrorToast('Error de conexión', 'Inténtalo de nuevo.');
+                }
+            });
+        });
+    </script>
+    <script src="js/users/users-toast.js"></script>
+
+    <!-- Dark Mode Toggle Button -->
+    <button id="darkModeToggle" aria-label="Cambiar a modo oscuro"
+        class="fixed bottom-6 right-6 z-50 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110">
+        <svg class="moon-icon w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+        <svg class="sun-icon hidden w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+    </button>
+
+    <script src="js/dark-mode.js"></script>
+</body>
+
+</html>

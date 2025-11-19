@@ -7,7 +7,7 @@
     <title>SGDIS - Sistema de Gestión de Inventario SENA</title>
     <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
-        (function() {
+        (function () {
             const saved = localStorage.getItem('sgdis-dark-mode');
             if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
@@ -15,54 +15,102 @@
         })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'sena-verde': '#00AF00',
-                        'sena-verde-oscuro': '#008800',
-                        'sena-verde-claro': '#E8F5E8',
-                        'sena-acento': '#FF6B00'
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800',
+                            'sena-verde-claro': '#E8F5E8',
+                            'sena-acento': '#FF6B00'
+                        }
                     }
                 }
             }
         }
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/users-toast.css">
+    <link rel="icon" type="image/jpeg" href="svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/dark-mode.css">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-repeat: repeat;
-            background-size: auto;
-            background-position: 0 0;
-            background-attachment: fixed;
-            min-height: 100vh;
-            width: 100%;
         }
 
-        .efecto-vidrio {
-            backdrop-filter: blur(10px);
-            background: rgba(255, 255, 255, 0.95);
+        /* Smooth scroll */
+        html {
+            scroll-behavior: smooth;
         }
 
-        .entrada-focus:focus {
-            border-color: #00AF00;
-            box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
+        /* Gradient backgrounds */
+        .gradient-bg {
+            background: linear-gradient(135deg, #E8F5E8 0%, #ffffff 100%);
         }
 
-        .logo-sena {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 50;
+        .dark .gradient-bg {
+            background: linear-gradient(135deg, #1a2e1a 0%, #0f172a 100%);
         }
 
-        /* Estilos de la barra de desplazamiento */
+        .gradient-hero {
+            background: linear-gradient(135deg, rgba(0, 175, 0, 0.1) 0%, rgba(0, 136, 0, 0.05) 100%);
+        }
+
+        .dark .gradient-hero {
+            background: linear-gradient(135deg, rgba(0, 175, 0, 0.15) 0%, rgba(0, 136, 0, 0.1) 100%);
+        }
+
+        /* Feature cards hover effect */
+        .feature-card {
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 175, 0, 0.15);
+        }
+
+        .dark .feature-card:hover {
+            box-shadow: 0 20px 40px rgba(0, 175, 0, 0.3);
+        }
+
+        /* Image gallery */
+        .image-gallery-item {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .image-gallery-item:hover {
+            transform: scale(1.05);
+        }
+
+        .image-gallery-item img {
+            transition: transform 0.5s ease;
+        }
+
+        .image-gallery-item:hover img {
+            transform: scale(1.1);
+        }
+
+        /* Creator cards */
+        .creator-card {
+            transition: all 0.3s ease;
+        }
+
+        .creator-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 175, 0, 0.2);
+        }
+
+        .dark .creator-card:hover {
+            box-shadow: 0 15px 30px rgba(0, 175, 0, 0.4);
+        }
+
+        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 12px;
         }
@@ -70,612 +118,559 @@
         ::-webkit-scrollbar-track {
             background: rgba(232, 245, 232, 0.3);
             border-radius: 10px;
-            margin: 5px;
         }
 
         ::-webkit-scrollbar-thumb {
             background: linear-gradient(180deg, #00AF00 0%, #008800 100%);
             border-radius: 10px;
             border: 2px solid rgba(232, 245, 232, 0.3);
-            transition: all 0.3s ease;
         }
 
         ::-webkit-scrollbar-thumb:hover {
             background: linear-gradient(180deg, #008800 0%, #006600 100%);
-            border: 2px solid rgba(0, 175, 0, 0.2);
-            transform: scale(1.1);
         }
 
-        ::-webkit-scrollbar-thumb:active {
-            background: linear-gradient(180deg, #006600 0%, #005500 100%);
-        }
-
-        ::-webkit-scrollbar-corner {
-            background: rgba(232, 245, 232, 0.3);
-        }
-
-        /* Scrollbar */
-        * {
-            scrollbar-width: thin;
-            scrollbar-color: #00AF00 rgba(232, 245, 232, 0.3);
-        }
-
-        /* Desplazamiento suave */
-        html {
-            scroll-behavior: smooth;
-        }
-
-        /* Barra personalizada para contenedores */
-        .scroll-personalizado {
-            scrollbar-width: thin;
-            scrollbar-color: #00AF00 transparent;
-        }
-
-        .scroll-personalizado::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .scroll-personalizado::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .scroll-personalizado::-webkit-scrollbar-thumb {
-            background: rgba(0, 175, 0, 0.6);
-            border-radius: 6px;
-            border: none;
-        }
-
-        .scroll-personalizado::-webkit-scrollbar-thumb:hover {
-            background: rgba(0, 255, 0, 0.8);
-        }
-
-        /* SENA Loading Spinner Styles */
-        .spinner-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 175, 0, 0.1);
-            backdrop-filter: blur(8px);
-            z-index: 9999;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .spinner-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 1.5rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 175, 0, 0.25);
-            border: 2px solid rgba(0, 175, 0, 0.1);
-            min-width: 300px;
-        }
-
-        /* Dark mode styles for spinner - applied immediately */
-        .dark .spinner-overlay {
-            background: rgba(0, 0, 0, 0.8) !important;
-            backdrop-filter: blur(8px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(8px) saturate(180%) !important;
-        }
-
-        .dark .spinner-container {
-            background: rgba(30, 41, 59, 0.95) !important;
-            border-color: rgba(148, 163, 184, 0.2) !important;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
-        }
-
-        .spinner-logo {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 1.5rem;
-            animation: pulse 2s infinite;
-        }
-
-        .spinner {
-            width: 120px;
-            height: 120px;
-            position: relative;
-            margin-bottom: 1.5rem;
-        }
-
-        .spinner-ring {
-            width: 100%;
-            height: 100%;
-            border: 8px solid rgba(0, 175, 0, 0.1);
-            border-radius: 50%;
-            position: absolute;
-            animation: spin 2s linear infinite;
-        }
-
-        .spinner-ring:nth-child(1) {
-            border-top-color: #00AF00;
-            animation-duration: 1.5s;
-        }
-
-        .spinner-ring:nth-child(2) {
-            border-right-color: #2D8000;
-            animation-duration: 2s;
-            animation-direction: reverse;
-        }
-
-        .spinner-ring:nth-child(3) {
-            border-bottom-color: #00AF00;
-            animation-duration: 2.5s;
-        }
-
-        .spinner-ring:nth-child(4) {
-            border-left-color: #1F5A00;
-            animation-duration: 3s;
-            animation-direction: reverse;
-        }
-
-        .spinner-center {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #00AF00, #008800);
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            box-shadow: 0 0 20px rgba(0, 175, 0, 0.3);
-            animation: pulse-glow 2s ease-in-out infinite alternate;
-        }
-
-        .spinner-text {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #00AF00;
-            margin-bottom: 0.5rem;
-            text-align: center;
-        }
-
-        .spinner-subtitle {
-            font-size: 0.875rem;
-            color: #008800;
-            text-align: center;
-            opacity: 0.8;
-        }
-
-        .spinner-dots {
-            display: inline-flex;
-            gap: 0.25rem;
-            margin-left: 0.5rem;
-        }
-
-        .spinner-dot {
-            width: 8px;
-            height: 8px;
-            background: #00AF00;
-            border-radius: 50%;
-            animation: dot-bounce 1.4s ease-in-out infinite both;
-        }
-
-        .spinner-dot:nth-child(1) { animation-delay: -0.32s; }
-        .spinner-dot:nth-child(2) { animation-delay: -0.16s; }
-        .spinner-dot:nth-child(3) { animation-delay: 0s; }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        @keyframes pulse-glow {
+        /* Animations */
+        @keyframes fadeInUp {
             from {
-                box-shadow: 0 0 20px rgba(0, 175, 0, 0.3);
-                transform: translate(-50%, -50%) scale(1);
+                opacity: 0;
+                transform: translateY(30px);
             }
+
             to {
-                box-shadow: 0 0 30px rgba(0, 175, 0, 0.6);
-                transform: translate(-50%, -50%) scale(1.1);
-            }
-        }
-
-        @keyframes dot-bounce {
-            0%, 80%, 100% {
-                transform: scale(0);
-                opacity: 0.5;
-            }
-            40% {
-                transform: scale(1);
                 opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        @keyframes fade-in {
-            from { opacity: 0; transform: scale(0.8); }
-            to { opacity: 1; transform: scale(1); }
-        }
-
-        .spinner-container {
-            animation: fade-in 0.3s ease-out;
-        }
-
-        /* Typewriter Animation */
-        .typewriter {
-            overflow: hidden;
-            border-right: 3px solid #00AF00;
-            white-space: nowrap;
-            margin: 0 auto;
-            animation: blink-caret 0.75s step-end infinite;
-            display: inline-block;
-            min-height: 1.75rem;
-        }
-
-        .typewriter.typing {
-            animation: blink-caret 0.75s step-end infinite;
-        }
-
-        .typewriter.finished {
-            border-right: none;
-            animation: none;
-        }
-
-        @keyframes blink-caret {
-            from, to { border-color: transparent; }
-            50% { border-color: #00AF00; }
-        }
-
-        .typewriter-container {
-            min-height: 1.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .animate-fade-in-up {
+            animation: fadeInUp 0.6s ease-out;
         }
     </style>
 </head>
 
-<body class="min-h-screen" style="background-color: #fdfdfd;">
-<!-- SENA Loading Spinner Overlay -->
-<div id="senaSpinner" class="spinner-overlay">
-    <div class="spinner-container">
-        <img src="svg/box.png" alt="Logo SGDIS" class="spinner-logo">
-        <div class="spinner">
-            <div class="spinner-ring"></div>
-            <div class="spinner-ring"></div>
-            <div class="spinner-ring"></div>
-            <div class="spinner-ring"></div>
-            <div class="spinner-center"></div>
-        </div>
-        <div class="spinner-text">
-            Iniciando sesión
-            <div class="spinner-dots">
-                <div class="spinner-dot"></div>
-                <div class="spinner-dot"></div>
-                <div class="spinner-dot"></div>
-            </div>
-        </div>
-        <div class="spinner-subtitle">
-            Cargando dashboard...
-        </div>
-    </div>
-</div>
-
-<div class="logo-sena">
-    <img src="svg/logoSena.png" alt="Logo SENA" class="h-16 w-auto">
-</div>
-
-<div class="min-h-screen flex items-center justify-center p-4 relative z-10">
-    <div class="w-full max-w-md">
-        <div class="efecto-vidrio rounded-2xl shadow-2xl p-8 border border-white/20">
-            <div class="text-center mb-8">
-                <div class="mb-4">
-                    <img src="svg/box.png" alt="Logo Caja"
-                         class="h-20 w-20 mx-auto rounded-2xl object-cover">
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <!-- Navigation -->
+    <nav
+        class="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-3">
+                    <img src="svg/box.png" alt="SGDIS Logo" class="h-10 w-10">
+                    <span class="text-xl font-bold text-sena-verde">SGDIS</span>
                 </div>
-                <h1 class="text-2xl font-bold text-gray-800 mb-2">SGDIS</h1>
-                <div class="typewriter-container mb-1">
-                    <h2 class="text-lg font-semibold text-sena-verde typewriter typing" id="typewriterText"></h2>
-                </div>
-                <p class="text-sm text-gray-600">Servicio Nacional de Aprendizaje - SENA</p>
-                <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-3"></div>
-            </div>
-
-            <!-- Cambio: sin onsubmit y botón submit -->
-            <form class="space-y-6" id="loginForm">
-                <div>
-                    <label for="usuario" class="block text-sm font-medium text-gray-700 mb-2">
-                        Correo Electrónico
-                    </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                            </svg>
-                        </div>
-                        <input type="email" id="usuario" name="usuario"
-                               class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
-                               placeholder="usuario@soy.sena.edu.co" required>
-                    </div>
-                </div>
-
-                <div>
-                    <label for="contrasena" class="block text-sm font-medium text-gray-700 mb-2">
-                        Contraseña
-                    </label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
-                                 viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <input type="password" id="contrasena" name="contrasena"
-                               class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
-                               placeholder="Ingresa tu contraseña" required>
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <input id="recordarme" name="recordarme" type="checkbox"
-                               class="h-4 w-4 text-sena-verde focus:ring-sena-verde border-gray-300 rounded">
-                        <label for="recordarme" class="ml-2 block text-sm text-gray-700">
-                            Recordarme
-                        </label>
-                    </div>
-                    <a href="forgot_password.html"
-                       class="text-sm text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
-                        ¿Olvidaste tu contraseña?
+                <div class="flex items-center gap-4">
+                    <a href="#features"
+                        class="hidden md:block text-gray-700 dark:text-gray-300 hover:text-sena-verde transition-colors">Características</a>
+                    <a href="#about"
+                        class="hidden md:block text-gray-700 dark:text-gray-300 hover:text-sena-verde transition-colors">Acerca
+                        de</a>
+                    <a href="#creators"
+                        class="hidden md:block text-gray-700 dark:text-gray-300 hover:text-sena-verde transition-colors">Equipo</a>
+                    <a href="/login"
+                        class="px-6 py-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105">
+                        Iniciar Sesión
                     </a>
                 </div>
+            </div>
+        </div>
+    </nav>
 
-                <!-- Cambio: botón de envío nativo -->
-                <button type="submit"
-                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-sena-verde hover:bg-sena-verde-oscuro focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sena-verde transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                    </svg>
-                    Iniciar Sesión
-                </button>
-            </form>
+    <!-- Hero Section -->
+    <section class="gradient-hero pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="animate-fade-in-up">
+                    <div class="flex items-center gap-3 mb-6">
+                        <img src="svg/logoSena.png" alt="SENA Logo" class="h-16 w-auto">
+                        <div class="h-12 w-px bg-sena-verde"></div>
+                        <img src="svg/box.png" alt="SGDIS Logo" class="h-12 w-12">
+                    </div>
+                    <h1 class="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
+                        Sistema de Gestión de
+                        <span class="text-sena-verde">Inventario</span>
+                    </h1>
+                    <p class="text-xl text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+                        Plataforma integral para la gestión eficiente de inventarios en el Servicio Nacional de
+                        Aprendizaje - SENA.
+                        Controla, organiza y optimiza tus recursos con herramientas avanzadas.
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="/login"
+                            class="px-8 py-4 bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg text-center">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Iniciar Sesión
+                        </a>
+                        <a href="#features"
+                            class="px-8 py-4 border-2 border-sena-verde text-sena-verde hover:bg-sena-verde hover:text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 text-center">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Conocer Más
+                        </a>
+                    </div>
+                </div>
+                <div class="hidden lg:block">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-sena-verde/20 rounded-3xl blur-3xl"></div>
+                        <div class="relative bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div
+                                    class="bg-gradient-to-br from-sena-verde to-sena-verde-oscuro rounded-2xl p-6 text-white">
+                                    <i class="fas fa-boxes text-4xl mb-4"></i>
+                                    <h3 class="font-bold text-lg mb-2">Inventarios</h3>
+                                    <p class="text-sm opacity-90">Gestión completa</p>
+                                </div>
+                                <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6">
+                                    <i class="fas fa-users text-4xl text-sena-verde mb-4"></i>
+                                    <h3 class="font-bold text-lg mb-2">Usuarios</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">Control de acceso</p>
+                                </div>
+                                <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl p-6">
+                                    <i class="fas fa-chart-line text-4xl text-sena-verde mb-4"></i>
+                                    <h3 class="font-bold text-lg mb-2">Reportes</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">Análisis detallado</p>
+                                </div>
+                                <div
+                                    class="bg-gradient-to-br from-sena-verde to-sena-verde-oscuro rounded-2xl p-6 text-white">
+                                    <i class="fas fa-shield-alt text-4xl mb-4"></i>
+                                    <h3 class="font-bold text-lg mb-2">Seguridad</h3>
+                                    <p class="text-sm opacity-90">Protección de datos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-            <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600 mb-3">
-                    ¿No tienes cuenta?
-                    <a href="register.html"
-                       class="text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
-                        Regístrate aquí
-                    </a>
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                    Características Principales
+                </h2>
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                    Herramientas optimizadas diseñadas para optimizar la gestión de inventarios en el SENA
                 </p>
             </div>
 
-            <div class="text-center mt-6">
-                <p class="text-sm text-gray-600">
-                    © 2025 SENA - Servicio Nacional de Aprendizaje
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div
+                    class="feature-card bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div
+                        class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-boxes text-3xl text-sena-verde"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Gestión de Inventarios</h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Administra múltiples inventarios con facilidad. Crea, edita y organiza tus recursos de manera
+                        eficiente.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div
+                    class="feature-card bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div
+                        class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-cube text-3xl text-sena-verde"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Control de Items</h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Gestiona cada item individualmente con información detallada, imágenes y seguimiento completo.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div
+                    class="feature-card bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div
+                        class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-user-shield text-3xl text-sena-verde"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Control de Acceso</h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Sistema de roles y permisos que garantiza la seguridad y el acceso adecuado a la información.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div
+                    class="feature-card bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div
+                        class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-images text-3xl text-sena-verde"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Gestión de Imágenes</h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Sube y gestiona imágenes de inventarios e items para una identificación visual rápida y precisa.
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div
+                    class="feature-card bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div
+                        class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-chart-bar text-3xl text-sena-verde"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Reportes y Análisis</h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Genera reportes detallados y análisis estadísticos para tomar decisiones informadas.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div
+                    class="feature-card bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div
+                        class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
+                        <i class="fas fa-mobile-alt text-3xl text-sena-verde"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Acceso Multiplataforma</h3>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        Accede desde cualquier dispositivo. Disponible en web y aplicación móvil para máxima
+                        flexibilidad.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Image Gallery Section -->
+    <section class="py-20 px-4 sm:px-6 lg:px-8 gradient-bg">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                    Gestión total de Inventarios
+                </h2>
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                    Gestión, trazabilidad y visualización de todos tus inventarios e ítems
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Image 1 - Inventario de Bodega -->
+                <div class="image-gallery-item bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                    <div class="aspect-video relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                        <img src="svg/gallery/bodega.png" alt="Inventario de Bodega" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Inventario de Bodega</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">Gestión completa de recursos almacenados</p>
+                    </div>
+                </div>
+
+                <!-- Image 2 - Equipos y Herramientas -->
+                <div class="image-gallery-item bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                    <div class="aspect-video relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                        <img src="svg/gallery/herramientas.png" alt="Equipos y Herramientas"
+                            class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Equipos y Herramientas</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">Control de equipos de trabajo</p>
+                    </div>
+                </div>
+
+                <!-- Image 3 - Tecnología -->
+                <div class="image-gallery-item bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                    <div class="aspect-video relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                        <img src="svg/gallery/Tecnologia.png" alt="Tecnología" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Tecnología</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">Inventario de equipos tecnológicos</p>
+                    </div>
+                </div>
+
+                <!-- Image 4 - Material Didáctico -->
+                <div class="image-gallery-item bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                    <div class="aspect-video relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                        <img src="svg/gallery/Didactico.png" alt="Material Didáctico"
+                            class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Material Didáctico</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">Recursos educativos y materiales</p>
+                    </div>
+                </div>
+
+                <!-- Image 5 - Infraestructura -->
+                <div class="image-gallery-item bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                    <div class="aspect-video relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                        <img src="svg/gallery/Infraestructura.png" alt="Infraestructura"
+                            class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Infraestructura</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">Control de espacios y recursos físicos</p>
+                    </div>
+                </div>
+
+                <!-- Image 6 - Verificación -->
+                <div class="image-gallery-item bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg">
+                    <div class="aspect-video relative overflow-hidden bg-gray-100 dark:bg-gray-700">
+                        <img src="svg/gallery/Verificacion.png" alt="Verificación" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Verificación</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">Sistema de verificación y auditoría</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-6">
+                        ¿Qué es SGDIS?
+                    </h2>
+                    <p class="text-lg text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                        SGDIS (Sistema de Gestión de Inventario SENA) es una plataforma integral desarrollada
+                        específicamente
+                        para el Servicio Nacional de Aprendizaje, diseñada para optimizar y modernizar la gestión de
+                        inventarios
+                        en todas las sedes y centros de formación.
+                    </p>
+                    <p class="text-lg text-gray-600 dark:text-gray-400 mb-4 leading-relaxed">
+                        Nuestro sistema permite a los administradores, gestores y usuarios del SENA llevar un control
+                        preciso
+                        de todos los recursos, desde equipos tecnológicos hasta materiales didácticos, facilitando la
+                        toma de
+                        decisiones y mejorando la eficiencia operativa.
+                    </p>
+                    <div class="flex flex-wrap gap-4 mt-8">
+                        <div
+                            class="flex items-center gap-2 bg-sena-verde/10 dark:bg-sena-verde/20 px-4 py-2 rounded-lg">
+                            <i class="fas fa-check-circle text-sena-verde"></i>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Control Total</span>
+                        </div>
+                        <div
+                            class="flex items-center gap-2 bg-sena-verde/10 dark:bg-sena-verde/20 px-4 py-2 rounded-lg">
+                            <i class="fas fa-check-circle text-sena-verde"></i>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Seguridad Avanzada</span>
+                        </div>
+                        <div
+                            class="flex items-center gap-2 bg-sena-verde/10 dark:bg-sena-verde/20 px-4 py-2 rounded-lg">
+                            <i class="fas fa-check-circle text-sena-verde"></i>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Fácil de Usar</span>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="bg-gradient-to-br from-sena-verde/10 to-sena-verde-oscuro/10 dark:from-sena-verde/20 dark:to-sena-verde-oscuro/20 rounded-3xl p-8">
+                    <div class="space-y-6">
+                        <div class="flex items-start gap-4">
+                            <div
+                                class="w-12 h-12 bg-sena-verde rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-boxes text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Gestión Centralizada
+                                </h3>
+                                <p class="text-gray-600 dark:text-gray-400">Todos tus inventarios en un solo lugar,
+                                    accesible desde cualquier dispositivo.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div
+                                class="w-12 h-12 bg-sena-verde rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-users-cog text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Roles y Permisos</h3>
+                                <p class="text-gray-600 dark:text-gray-400">Sistema de roles que garantiza el acceso
+                                    adecuado según las responsabilidades.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-4">
+                            <div
+                                class="w-12 h-12 bg-sena-verde rounded-xl flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-chart-line text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-lg text-gray-900 dark:text-white mb-2">Reportes en Tiempo Real
+                                </h3>
+                                <p class="text-gray-600 dark:text-gray-400">Genera reportes y análisis estadísticos para
+                                    una gestión basada en datos.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Creators Section -->
+    <section id="creators" class="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                    Nuestro Equipo de Desarrollo
+                </h2>
+                <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                    Conoce a los desarrolladores que hicieron posible SGDIS
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Creator 1 - Gabriel Barrantes -->
+                <div
+                    class="creator-card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+                    <div
+                        class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-sena-verde/20 dark:border-sena-verde/40">
+                        <img src="svg/team/gabriel.jpeg" alt="Gabriel Barrantes" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Gabriel Barrantes</h3>
+                    <p class="text-sena-verde font-semibold mb-4">Desarrollador Backend</p>
+                    <div class="flex justify-center gap-3">
+                        <a href="https://github.com/Gabriel3555" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sena-verde hover:text-white transition-colors">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="https://co.linkedin.com/in/barrantesv/es" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sena-verde hover:text-white transition-colors">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Creator 2 - Cristian Garcia -->
+                <div
+                    class="creator-card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+                    <div
+                        class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-sena-verde/20 dark:border-sena-verde/40">
+                        <img src="svg/team/cristian.jpeg" alt="Cristian Garcia" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Cristian Garcia</h3>
+                    <p class="text-sena-verde font-semibold mb-4">Desarrollador Backend</p>
+                    <div class="flex justify-center gap-3">
+                        <a href="https://github.com/Cril727" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sena-verde hover:text-white transition-colors">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/in/cristian-yohani-gracia-rincon-developer" target="_blank"
+                            rel="noopener noreferrer"
+                            class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sena-verde hover:text-white transition-colors">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Creator 3 - Carlos Parra -->
+                <div
+                    class="creator-card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+                    <div
+                        class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-sena-verde/20 dark:border-sena-verde/40">
+                        <img src="svg/team/carlos.jpg" alt="Carlos Parra" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Carlos Parra</h3>
+                    <p class="text-sena-verde font-semibold mb-4">Desarrollador Frontend</p>
+                    <div class="flex justify-center gap-3">
+                        <a href="https://github.com/CarlosParra69" target="_blank" rel="noopener noreferrer"
+                            class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sena-verde hover:text-white transition-colors">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/in/carlos-parra-b6b960345" target="_blank"
+                            rel="noopener noreferrer"
+                            class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sena-verde hover:text-white transition-colors">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Creator 4 - Julian Chaparro -->
+                <div
+                    class="creator-card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
+                    <div
+                        class="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden border-4 border-sena-verde/20 dark:border-sena-verde/40">
+                        <img src="svg/team/julian.jpeg" alt="Julian Chaparro" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Julian Chaparro</h3>
+                    <p class="text-sena-verde font-semibold mb-4">Desarrollador Móvil</p>
+                    <div class="flex justify-center gap-3">
+                        <a href="https://github.com/JC2405"
+                            class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sena-verde hover:text-white transition-colors">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="https://www.linkedin.com/in/julian-chaparro-2405/" target="_blank"
+                            rel="noopener noreferrer"
+                            class="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-sena-verde hover:text-white transition-colors">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 dark:bg-black text-gray-300 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="svg/box.png" alt="SGDIS Logo" class="h-10 w-10">
+                        <span class="text-xl font-bold text-sena-verde">SGDIS</span>
+                    </div>
+                    <p class="text-gray-400">
+                        Sistema de Gestión de Inventario para el Servicio Nacional de Aprendizaje - SENA
+                    </p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white mb-4">Enlaces Rápidos</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#features" class="hover:text-sena-verde transition-colors">Características</a></li>
+                        <li><a href="#about" class="hover:text-sena-verde transition-colors">Acerca de</a></li>
+                        <li><a href="#creators" class="hover:text-sena-verde transition-colors">Equipo</a></li>
+                        <li><a href="/login" class="hover:text-sena-verde transition-colors">Iniciar Sesión</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white mb-4">Contacto</h3>
+                    <ul class="space-y-2">
+                        <li class="flex items-center gap-2">
+                            <i class="fas fa-envelope text-sena-verde"></i>
+                            <span>sgdis@sena.edu.co</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <i class="fas fa-globe text-sena-verde"></i>
+                            <span>sgdis.cloud</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 pt-8 text-center">
+                <p class="text-gray-400">
+                    © 2025 SENA - Servicio Nacional de Aprendizaje. Todos los derechos reservados.
                 </p>
             </div>
         </div>
-    </div>
+    </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // --- Typewriter Effect ---
-            const typewriterElement = document.getElementById('typewriterText');
-            const fullText = 'Sistema de Gestión de Inventario';
-            let charIndex = 0;
-            const typingSpeed = 80; // milliseconds per character
-            const pauseBeforeRemovingCursor = 2000; // pause 2 seconds before removing cursor
-
-            function typeWriter() {
-                if (charIndex < fullText.length) {
-                    typewriterElement.textContent = fullText.substring(0, charIndex + 1);
-                    charIndex++;
-                    setTimeout(typeWriter, typingSpeed);
-                } else {
-                    // Finished typing, remove cursor after a pause
-                    setTimeout(() => {
-                        typewriterElement.classList.remove('typing');
-                        typewriterElement.classList.add('finished');
-                    }, pauseBeforeRemovingCursor);
-                }
-            }
-
-            // Start typewriter effect after a small delay
-            setTimeout(() => {
-                typeWriter();
-            }, 500);
-
-            const entradas = document.querySelectorAll('input[type="text"], input[type="password"]');
-
-            // --- Efecto suave en inputs ---
-            entradas.forEach(entrada => {
-                entrada.addEventListener('focus', function () {
-                    this.parentElement.classList.add('scale-[1.02]');
-                });
-                entrada.addEventListener('blur', function () {
-                    this.parentElement.classList.remove('scale-[1.02]');
-                });
-            });
-
-            // --- Remember me functionality ---
-            const usuarioInput = document.getElementById('usuario');
-            const contrasenaInput = document.getElementById('contrasena');
-            const recordarCheckbox = document.getElementById('recordarme');
-            const form = document.getElementById('loginForm');
-
-            // Auto-fill form if credentials are saved
-            const savedEmail = localStorage.getItem('rememberedEmail');
-            const savedPassword = localStorage.getItem('rememberedPassword');
-
-            if (savedEmail && savedPassword) {
-                usuarioInput.value = savedEmail;
-                contrasenaInput.value = savedPassword;
-                recordarCheckbox.checked = true;
-            }
-
-            // --- Enter key functionality (dispara validación nativa) ---
-            usuarioInput.addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    form.requestSubmit();
-                }
-            });
-
-            contrasenaInput.addEventListener('keypress', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    form.requestSubmit();
-                }
-            });
-
-            // --- Spinner functions ---
-            function showSenaSpinner() {
-                const spinner = document.getElementById('senaSpinner');
-                if (spinner) {
-                    spinner.style.display = 'flex';
-                    setTimeout(() => {
-                        spinner.style.opacity = '1';
-                    }, 10);
-                }
-            }
-
-            function hideSenaSpinner() {
-                const spinner = document.getElementById('senaSpinner');
-                if (spinner) {
-                    spinner.style.opacity = '0';
-                    setTimeout(() => {
-                        spinner.style.display = 'none';
-                    }, 300);
-                }
-            }
-
-            // Hide spinner when page loads
-            window.addEventListener('load', function () {
-                hideSenaSpinner();
-            });
-
-            // --- Envío del formulario con validación nativa ---
-            form.addEventListener('submit', async function (e) {
-                e.preventDefault();
-
-                // Ejecuta validación HTML5 (required, type=email, etc.)
-                if (!form.reportValidity()) return;
-
-                const email = usuarioInput.value;
-                const contrasena = contrasenaInput.value;
-
-                console.log('Attempting login with email:', email);
-
-                try {
-                    const response = await fetch('/api/v1/auth/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            email: email,
-                            password: contrasena
-                        })
-                    });
-
-                    console.log('Response status:', response.status);
-                    console.log('Response ok:', response.ok);
-
-                    let data;
-                    try {
-                        data = await response.json();
-                        console.log('Response data:', data);
-                    } catch (parseError) {
-                        console.error('Error parsing response:', parseError);
-                        data = null;
-                    }
-
-                    if (response.ok && data && data.status) {
-                        console.log('Login successful, role:', data.role);
-
-                        // Guardar tokens
-                        localStorage.setItem('jwt', data.jwt);
-                        localStorage.setItem('refreshToken', data.refreshToken);
-
-                        // Set cookie para que el servidor pueda leer el JWT
-                        document.cookie = `jwt=${data.jwt}; path=/; max-age=900`; // 15 minutos
-
-                        // Remember me functionality - save credentials if checkbox is checked
-                        if (recordarCheckbox.checked) {
-                            localStorage.setItem('rememberedEmail', email);
-                            localStorage.setItem('rememberedPassword', contrasena);
-                            console.log('Credentials saved for future logins');
-                        } else {
-                            // Clear any saved credentials if checkbox is not checked
-                            localStorage.removeItem('rememberedEmail');
-                            localStorage.removeItem('rememberedPassword');
-                            console.log('Remember me not checked, credentials cleared');
-                        }
-
-                        // Redirección según el rol
-                        let redirectUrl = '/index.html';
-                        if (data.role === "ADMIN_INSTITUTION") redirectUrl = '/dashboard/admin_institution';
-                        else if (data.role === "ADMIN_REGIONAL") redirectUrl = '/dashboard/admin_regional';
-                        else if (data.role === "SUPERADMIN") redirectUrl = '/dashboard/superadmin';
-                        else if (data.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
-                        else if (data.role === "USER") redirectUrl = '/dashboard/user';
-
-                        console.log('Redirecting to:', redirectUrl);
-
-                        // Show SENA loading spinner before redirect
-                        showSenaSpinner();
-
-                        // Redirect after a short delay to show the spinner
-                        setTimeout(() => {
-                            window.location.href = redirectUrl;
-                        }, 1500);
-                    } else {
-                        hideSenaSpinner();
-
-                        // Clear saved credentials on login failure for security
-                        localStorage.removeItem('rememberedEmail');
-                        localStorage.removeItem('rememberedPassword');
-                        recordarCheckbox.checked = false;
-
-                        let errorMessage = 'Credenciales inválidas';
-                        if (data && data.detail) {
-                            errorMessage = data.detail;
-                        } else if (data && data.message) {
-                            errorMessage = data.message;
-                        } else if (response.status === 401) {
-                            errorMessage = 'Usuario o contraseña incorrectos';
-                        }
-
-                        console.error('Error en login:', errorMessage);
-                        showErrorToast('Error de autenticación', errorMessage);
-                    }
-                } catch (error) {
-                    console.error('Error de conexión:', error);
-                    hideSenaSpinner();
-                    showErrorToast('Error de conexión', 'Inténtalo de nuevo.');
-                }
-            });
-        });
-    </script>
-    <script src="js/users/users-toast.js"></script>
-    
     <!-- Dark Mode Toggle Button -->
-    <button id="darkModeToggle" aria-label="Cambiar a modo oscuro" class="fixed bottom-6 right-6 z-50">
-        <svg class="moon-icon w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+    <button id="darkModeToggle" aria-label="Cambiar a modo oscuro"
+        class="fixed bottom-6 right-6 z-50 p-3 bg-white dark:bg-gray-800 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110 border border-gray-200 dark:border-gray-700">
+        <svg class="moon-icon w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
         </svg>
-        <svg class="sun-icon hidden w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        <svg class="sun-icon hidden w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
         </svg>
     </button>
-    
+
     <script src="js/dark-mode.js"></script>
 </body>
-</html>
 
+</html>

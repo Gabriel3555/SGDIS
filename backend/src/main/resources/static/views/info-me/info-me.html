@@ -7,7 +7,7 @@
     <title>Mi Perfil - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
-        (function() {
+        (function () {
             const saved = localStorage.getItem('sgdis-dark-mode');
             if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
@@ -132,6 +132,26 @@
             background-color: #fee2e2;
             color: #991b1b;
         }
+
+        /* Asegurar color del botón de cerrar sesión en modo claro */
+        .sidebar button.bg-sena-verde,
+        button.bg-sena-verde {
+            background-color: #00AF00 !important;
+            opacity: 1 !important;
+        }
+
+        .sidebar button.bg-sena-verde:hover,
+        button.bg-sena-verde:hover {
+            background-color: #008800 !important;
+            opacity: 1 !important;
+        }
+
+        .sidebar button.bg-sena-verde,
+        .sidebar button.bg-sena-verde-oscuro,
+        button.bg-sena-verde,
+        button.bg-sena-verde-oscuro {
+            color: #ffffff !important;
+        }
     </style>
 </head>
 
@@ -148,11 +168,11 @@
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
-                    <img src="../../svg/logoSena.png" alt="Logo SENA" class="w-full h-full object-cover">
+                    <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
                 <div class="text-gray-800">
                     <div class="font-bold text-lg">SGDIS</div>
-                    <div class="text-xs opacity-70">Inventario</div>
+                    <div class="text-xs opacity-70">Mi Perfil</div>
                 </div>
             </div>
         </div>
@@ -210,7 +230,7 @@
         <!-- Logout button -->
         <div class="p-4 border-t border-gray-200 mt-auto">
             <button onclick="logout()"
-                class="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl">
+                class="w-full flex items-center justify-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold py-3 px-4 rounded-xl transition-colors">
                 <i class="fas fa-sign-out-alt text-lg"></i>
                 <span>Cerrar Sesión</span>
             </button>
@@ -284,7 +304,8 @@
                                     <i class="fas fa-circle text-xs"></i>
                                     <span>Estado</span>
                                 </span>
-                                <span class="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5"
+                                <span
+                                    class="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold flex items-center justify-center gap-1.5"
                                     id="profileRoleBadge">
                                     <i class="fas fa-user-shield"></i>
                                     <span>Rol</span>
@@ -387,7 +408,7 @@
                 <h3 class="text-xl font-semibold text-gray-800 mb-2">Error al cargar la información</h3>
                 <p class="text-gray-600 mb-4" id="errorMessage">Ha ocurrido un error al cargar tu perfil.</p>
                 <button onclick="window.location.reload()"
-                    class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                    class="px-6 py-3 bg-sena-verde hover:bg-sena-verde-oscuro text-white rounded-xl transition-colors">
                     <i class="fas fa-redo mr-2"></i>
                     Reintentar
                 </button>
@@ -532,7 +553,8 @@
     </script>
 
     <!-- Logout Confirmation Modal -->
-    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index: 9999;">
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
         <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
@@ -548,10 +570,12 @@
             </div>
 
             <div class="flex gap-3">
-                <button onclick="closeLogoutModal()" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                <button onclick="closeLogoutModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                     Cancelar
                 </button>
-                <button onclick="confirmLogout()" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors">
+                <button onclick="confirmLogout()"
+                    class="flex-1 px-4 py-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white rounded-xl transition-colors">
                     Cerrar Sesión
                 </button>
             </div>

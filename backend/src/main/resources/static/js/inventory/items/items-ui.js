@@ -1,0 +1,437 @@
+// Items UI Functions
+
+// Helper function to create image with loading spinner
+function createItemImageWithSpinner(imgUrl, alt, className, size = "w-24 h-24", shape = "rounded-lg") {
+    if (!imgUrl) {
+        return `<div class="${size} ${shape} bg-gray-200 flex items-center justify-center text-gray-400">
+            <i class="fas fa-box text-2xl"></i>
+        </div>`;
+    }
+
+    const uniqueId = "img-" + Math.random().toString(36).substr(2, 9);
+    return `
+        <div class="relative ${size} ${shape} overflow-hidden" id="img-container-${uniqueId}">
+            <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
+                <div class="image-loading-spinner"></div>
+            </div>
+            <img src="${imgUrl}" alt="${alt}" class="${className} opacity-0 transition-opacity duration-300" 
+                 id="img-${uniqueId}"
+                 onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
+                 onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-box\\'></i></div>'; })();">
+        </div>
+    `;
+}
+
+function updateItemsUI() {
+    if (!window.itemsData) return;
+    
+    updateItemsStats();
+    updateItemsSearchAndFilters();
+    updateItemsViewModeButtons();
+    
+    if (window.itemsData.viewMode === 'list') {
+        updateItemsList();
+    } else {
+        updateItemsCards();
+    }
+    
+    updateItemsPagination();
+}
+
+function updateItemsStats() {
+    const container = document.getElementById('itemsStatsContainer');
+    if (!container || !window.itemsData) return;
+    
+    const items = window.itemsData.items || [];
+    const totalItems = window.itemsData.totalElements || 0;
+    const itemsWithImages = items.filter(item => item.urlImg || (item.attributes && item.attributes.IMAGE)).length;
+    const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+    const categories = new Set(items.map(item => item.categoryName).filter(Boolean));
+    
+    container.innerHTML = `
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${totalItems}</h3>
+                </div>
+                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-cubes text-blue-600 text-xl"></i>
+                </div>
+            </div>
+            <p class="text-blue-600 text-sm font-medium">Items en el inventario</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Con Imágenes</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${itemsWithImages}</h3>
+                </div>
+                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-image text-[#00AF00] text-xl"></i>
+                </div>
+            </div>
+            <p class="text-[#00AF00] text-sm font-medium">Items con fotos</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Categorías</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${categories.size}</h3>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-tags text-purple-600 text-xl"></i>
+                </div>
+            </div>
+            <p class="text-purple-600 text-sm font-medium">Categorías diferentes</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
+                    <h3 class="text-3xl font-bold text-gray-800">$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</h3>
+                </div>
+                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-dollar-sign text-emerald-600 text-xl"></i>
+                </div>
+            </div>
+            <p class="text-emerald-600 text-sm font-medium">Valor de adquisición</p>
+        </div>
+    `;
+}
+
+function updateItemsSearchAndFilters() {
+    const container = document.getElementById('searchFilterContainer');
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="flex-1 relative">
+            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <input type="text" id="itemSearch" 
+                   placeholder="Buscar items por nombre, categoría, placa..." 
+                   class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] transition-all duration-200">
+        </div>
+        <button onclick="handleItemSearch()" class="px-4 py-3 border border-[#00AF00] text-white rounded-xl hover:bg-[#008800] transition-colors bg-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]" title="Buscar">
+            <i class="fas fa-search"></i>
+            Buscar
+        </button>
+    `;
+    
+    // Add event listeners
+    const searchInput = document.getElementById('itemSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                handleItemSearch();
+            }
+        });
+    }
+}
+
+function handleItemSearch() {
+    const searchInput = document.getElementById('itemSearch');
+    if (!searchInput || !window.itemsData) return;
+    
+    const searchTerm = searchInput.value.trim().toLowerCase();
+    window.itemsData.searchTerm = searchTerm;
+    
+    // Filter items locally if we have them all loaded
+    // Otherwise, reload from API with search
+    if (window.itemsData.items && window.itemsData.items.length > 0) {
+        filterItems();
+    } else {
+        loadItemsData();
+    }
+}
+
+function filterItems() {
+    if (!window.itemsData) return;
+    
+    const searchTerm = window.itemsData.searchTerm || '';
+    const allItems = window.itemsData.items || [];
+    
+    if (!searchTerm) {
+        // No search term, show all items
+        updateItemsUI();
+        return;
+    }
+    
+    // Filter items
+    const filteredItems = allItems.filter(item => {
+        const productName = (item.productName || '').toLowerCase();
+        const categoryName = (item.categoryName || '').toLowerCase();
+        const licencePlateNumber = (item.licencePlateNumber || '').toLowerCase();
+        
+        return productName.includes(searchTerm) || 
+               categoryName.includes(searchTerm) || 
+               licencePlateNumber.includes(searchTerm);
+    });
+    
+    // Temporarily replace items for display
+    const originalItems = window.itemsData.items;
+    window.itemsData.items = filteredItems;
+    
+    updateItemsViewModeButtons();
+    if (window.itemsData.viewMode === 'list') {
+        updateItemsList();
+    } else {
+        updateItemsCards();
+    }
+    
+    // Restore original items
+    window.itemsData.items = originalItems;
+}
+
+function updateItemsViewModeButtons() {
+    const container = document.getElementById('viewModeButtonsContainer');
+    if (!container) return;
+    
+    const viewMode = window.itemsData ? window.itemsData.viewMode : 'cards';
+    const isCardsActive = viewMode === 'cards';
+    const isListActive = viewMode === 'list';
+    
+    container.innerHTML = `
+        <div class="flex items-center gap-2">
+            <button onclick="setItemsViewMode('cards')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                isCardsActive
+                    ? "bg-[#00AF00] text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }">
+                <i class="fas fa-th"></i>
+                <span class="hidden sm:inline">Cards</span>
+            </button>
+            <button onclick="setItemsViewMode('list')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                isListActive
+                    ? "bg-[#00AF00] text-white shadow-md"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+            }">
+                <i class="fas fa-list"></i>
+                <span class="hidden sm:inline">Lista</span>
+            </button>
+        </div>
+    `;
+}
+
+function updateItemsCards() {
+    const container = document.getElementById('itemsContainer');
+    if (!container || !window.itemsData) return;
+    
+    const items = window.itemsData.items || [];
+    
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-box text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-500 text-lg">No hay items en este inventario</p>
+                <button onclick="showNewItemModal()" class="mt-4 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                    <i class="fas fa-plus mr-2"></i>
+                    Agregar Primer Item
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let cardsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+    
+    items.forEach(item => {
+        const imageUrl = item.urlImg || (item.attributes && item.attributes.IMAGE) || null;
+        const productName = item.productName || 'Sin nombre';
+        const categoryName = item.categoryName || 'Sin categoría';
+        const acquisitionDate = item.acquisitionDate ? new Date(item.acquisitionDate).toLocaleDateString('es-ES') : 'N/A';
+        const acquisitionValue = item.acquisitionValue ? `$${item.acquisitionValue.toLocaleString('es-ES')}` : 'N/A';
+        
+        cardsHtml += `
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow p-4 cursor-pointer" onclick="showViewItemModal(${item.id})">
+                <div class="flex items-start gap-4 mb-4">
+                    ${createItemImageWithSpinner(imageUrl, productName, 'w-full h-full object-cover', 'w-20 h-20', 'rounded-lg')}
+                    <div class="flex-1">
+                        <h3 class="font-semibold text-gray-800 mb-1">${productName}</h3>
+                        <p class="text-sm text-gray-600">${categoryName}</p>
+                    </div>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Fecha de adquisición:</span>
+                        <span class="font-medium">${acquisitionDate}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Valor:</span>
+                        <span class="font-medium">${acquisitionValue}</span>
+                    </div>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button onclick="event.stopPropagation(); showViewItemModal(${item.id})" class="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-eye mr-1"></i>
+                        Ver
+                    </button>
+                    <button onclick="event.stopPropagation(); showEditItemModal(${item.id})" class="flex-1 px-3 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-edit mr-1"></i>
+                        Editar
+                    </button>
+                    <button onclick="event.stopPropagation(); showDeleteItemModal(${item.id})" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    cardsHtml += '</div>';
+    container.innerHTML = cardsHtml;
+}
+
+function updateItemsList() {
+    const container = document.getElementById('itemsContainer');
+    if (!container || !window.itemsData) return;
+    
+    const items = window.itemsData.items || [];
+    
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-box text-gray-300 text-5xl mb-4"></i>
+                <p class="text-gray-500 text-lg">No hay items en este inventario</p>
+                <button onclick="showNewItemModal()" class="mt-4 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                    <i class="fas fa-plus mr-2"></i>
+                    Agregar Primer Item
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    let listHtml = `
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-gray-200">
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Imagen</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Nombre</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Categoría</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Fecha Adquisición</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Valor</th>
+                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    items.forEach(item => {
+        const imageUrl = item.urlImg || (item.attributes && item.attributes.IMAGE) || null;
+        const productName = item.productName || 'Sin nombre';
+        const categoryName = item.categoryName || 'Sin categoría';
+        const acquisitionDate = item.acquisitionDate ? new Date(item.acquisitionDate).toLocaleDateString('es-ES') : 'N/A';
+        const acquisitionValue = item.acquisitionValue ? `$${item.acquisitionValue.toLocaleString('es-ES')}` : 'N/A';
+        
+        listHtml += `
+            <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td class="py-3 px-4">
+                    ${createItemImageWithSpinner(imageUrl, productName, 'w-full h-full object-cover', 'w-12 h-12', 'rounded')}
+                </td>
+                <td class="py-3 px-4">
+                    <span class="font-medium text-gray-800">${productName}</span>
+                </td>
+                <td class="py-3 px-4">
+                    <span class="text-gray-600">${categoryName}</span>
+                </td>
+                <td class="py-3 px-4">
+                    <span class="text-gray-600">${acquisitionDate}</span>
+                </td>
+                <td class="py-3 px-4">
+                    <span class="font-medium text-gray-800">${acquisitionValue}</span>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center justify-center gap-2">
+                        <button onclick="showViewItemModal(${item.id})" class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="showEditItemModal(${item.id})" class="px-3 py-1 bg-[#00AF00] hover:bg-[#008800] text-white rounded-lg text-sm transition-colors">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="showDeleteItemModal(${item.id})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    listHtml += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = listHtml;
+}
+
+function updateItemsPagination() {
+    const container = document.getElementById('itemsPaginationContainer');
+    if (!container || !window.itemsData) return;
+    
+    const { currentPage, totalPages, totalElements } = window.itemsData;
+    const startItem = currentPage * window.itemsData.pageSize + 1;
+    const endItem = Math.min((currentPage + 1) * window.itemsData.pageSize, totalElements);
+    
+    let paginationHtml = `
+        <div class="text-sm text-gray-600">
+            Mostrando ${startItem}-${endItem} de ${totalElements} items
+        </div>
+        <div class="flex gap-2">
+    `;
+    
+    // Previous button
+    paginationHtml += `
+        <button onclick="changeItemsPage(${currentPage - 1})" 
+                ${currentPage === 0 ? 'disabled' : ''}
+                class="px-4 py-2 rounded-xl ${currentPage === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#00AF00] hover:bg-[#008800] text-white'} transition-colors">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    `;
+    
+    // Page numbers
+    const maxPagesToShow = 5;
+    let startPage = Math.max(0, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage < maxPagesToShow - 1) {
+        startPage = Math.max(0, endPage - maxPagesToShow + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHtml += `
+            <button onclick="changeItemsPage(${i})" 
+                    class="px-4 py-2 rounded-xl ${i === currentPage ? 'bg-[#00AF00] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition-colors">
+                ${i + 1}
+            </button>
+        `;
+    }
+    
+    // Next button
+    paginationHtml += `
+        <button onclick="changeItemsPage(${currentPage + 1})" 
+                ${currentPage >= totalPages - 1 ? 'disabled' : ''}
+                class="px-4 py-2 rounded-xl ${currentPage >= totalPages - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#00AF00] hover:bg-[#008800] text-white'} transition-colors">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+    
+    paginationHtml += '</div>';
+    container.innerHTML = paginationHtml;
+}
+
+// Export functions globally
+window.updateItemsUI = updateItemsUI;
+window.updateItemsStats = updateItemsStats;
+window.updateItemsSearchAndFilters = updateItemsSearchAndFilters;
+window.updateItemsCards = updateItemsCards;
+window.updateItemsList = updateItemsList;
+window.updateItemsPagination = updateItemsPagination;
+window.handleItemSearch = handleItemSearch;
+window.filterItems = filterItems;
+
