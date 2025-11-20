@@ -7,9 +7,10 @@ import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -19,19 +20,22 @@ public class ManagedInventoriesService implements GetManagedInventoriesUseCase {
 
     @Override
     public List<ManagedInventoryResponse> getManagedInventories(Long userId) {
-        // Get all inventories related to the user (both owned and managed)
-        Set<InventoryEntity> allInventories = new HashSet<>();
-        
-        // Add inventories where user is a manager
+        List<InventoryEntity> combinedInventories = new ArrayList<>();
+
         List<InventoryEntity> managedInventories = userRepository.findManagedInventoriesByUserId(userId);
-        allInventories.addAll(managedInventories);
-        
-        // Add inventories where user is the owner
+        combinedInventories.addAll(managedInventories);
+
         List<InventoryEntity> ownedInventories = userRepository.findInventoriesByOwnerId(userId);
-        allInventories.addAll(ownedInventories);
-        
-        // Convert to response DTOs
-        return allInventories.stream()
+        combinedInventories.addAll(ownedInventories);
+
+        Map<Long, InventoryEntity> uniqueInventories = new LinkedHashMap<>();
+        for (InventoryEntity inventory : combinedInventories) {
+            if (inventory != null && inventory.getId() != null) {
+                uniqueInventories.putIfAbsent(inventory.getId(), inventory);
+            }
+        }
+
+        return uniqueInventories.values().stream()
                 .map(inventory -> new ManagedInventoryResponse(
                         inventory.getId(),
                         inventory.getUuid(),
