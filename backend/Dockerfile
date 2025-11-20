@@ -1,10 +1,10 @@
-FROM eclipse-temurin:21-jdk-alpine
+FROM eclipse-temurin:21-jdk as builder
 WORKDIR /app
+COPY . .
+RUN ./mvnw -DskipTests clean package
 
-# Copiar el JAR desde la raíz del proyecto
-COPY backend-0.0.1.jar app.jar
-
-# Puerto en el que Spring Boot corre por defecto
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+COPY --from=builder /app/target/*.jar app.jar
 EXPOSE 8080
-
 ENTRYPOINT ["java", "-jar", "app.jar"]
