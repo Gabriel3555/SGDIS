@@ -22,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -228,8 +229,17 @@ public class InventoryController {
     @ApiResponse(responseCode = "404", description = "Inventory not found")
     @ApiResponse(responseCode = "400", description = "Invalid file")
     @ApiResponse(responseCode = "403", description = "Access denied")
-    @PostMapping("/{id}/image")
-    public ResponseEntity<String> uploadInventoryImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadInventoryImage(
+            @PathVariable Long id,
+            @Parameter(
+                    description = "Imagen que se asociará al inventario",
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            )
+            @RequestParam("file") MultipartFile file) {
         try {
             InventoryEntity inventory = inventoryRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + id));

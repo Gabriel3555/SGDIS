@@ -19,6 +19,7 @@ import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository
 import com.sgdis.backend.user.application.service.FileUploadService;
 import org.springframework.data.domain.Page;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,6 +27,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -289,9 +291,16 @@ public class ItemController {
     @ApiResponse(responseCode = "404", description = "Item not found")
     @ApiResponse(responseCode = "400", description = "Invalid file")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
-    @PostMapping("/{itemId}/image")
+    @PostMapping(value = "/{itemId}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadItemImage(
             @PathVariable Long itemId,
+            @Parameter(
+                    description = "Imagen que se asociará al ítem",
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            )
             @RequestParam("file") MultipartFile file) {
         try {
             ItemEntity item = itemRepository.findById(itemId)

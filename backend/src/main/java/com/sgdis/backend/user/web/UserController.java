@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -155,8 +156,15 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Profile image updated successfully")
     @ApiResponse(responseCode = "400", description = "Invalid file or request")
     @ApiResponse(responseCode = "403", description = "Access denied")
-    @PostMapping("/me/image")
-    public ResponseEntity<String> uploadProfileImage(@RequestParam("file") MultipartFile file) {
+    @PostMapping(value = "/me/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadProfileImage(
+            @Parameter(
+                    description = "Imagen del perfil a cargar",
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            ) @RequestParam("file") MultipartFile file) {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             Long userId = (Long) authentication.getPrincipal();
@@ -185,8 +193,16 @@ public class UserController {
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "400", description = "Invalid file")
     @ApiResponse(responseCode = "403", description = "Access denied")
-    @PostMapping("/{id}/image")
-    public ResponseEntity<String> uploadUserImageById(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+    @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadUserImageById(
+            @PathVariable Long id,
+            @Parameter(
+                    description = "Imagen del usuario a cargar",
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            ) @RequestParam("file") MultipartFile file) {
         try {
             UserEntity user = userRepository.findById(id)
                     .orElseThrow(() -> new UserNotFoundException(id));
