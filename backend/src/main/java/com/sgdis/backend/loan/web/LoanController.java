@@ -14,6 +14,9 @@ import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository;
 import com.sgdis.backend.user.application.service.FileUploadService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -118,7 +121,7 @@ public class LoanController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/{loanId}/document")
+    @PostMapping(value = "/{loanId}/document", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(
             summary = "Upload document for a loan",
             description = "Uploads a document file for a specific loan. Supports PDF, images, and other document formats"
@@ -132,6 +135,13 @@ public class LoanController {
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     public ResponseEntity<String> uploadLoanDocument(
             @PathVariable Long loanId,
+            @Parameter(
+                    description = "Documento adjunto para el préstamo",
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            )
             @RequestParam("file") MultipartFile file) {
         try {
             LoanEntity loan = loanRepository.findById(loanId)
