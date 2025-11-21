@@ -81,7 +81,7 @@ function logout() {
     localStorage.removeItem('jwt');
     // Clear refresh token from cookies (no JWT cookies to clear)
     document.cookie = 'refreshToken=; path=/; max-age=0';
-    window.location.href = '/index';
+    window.location.href = '/index.html';
 }
 
 // Auto-refresh token every 5 minutes or when needed
