@@ -98,7 +98,14 @@ export default function DashboardScreen() {
       setInventories(data);
       setInventoryCount(data.length);
     } catch (error) {
-      console.error("Error fetching inventory count:", error);
+      const status = error.response?.status;
+      if (status >= 500) {
+        // Handle server errors gracefully by assuming no inventories assigned
+        setInventories([]);
+        setInventoryCount(0);
+      } else {
+        console.error("Error fetching inventory count:", error);
+      }
     }
   };
 
@@ -164,7 +171,6 @@ export default function DashboardScreen() {
                     source={{ uri: `https://sgdis.cloud${user.imgUrl}?t=${imageKey}` }}
                     style={styles.avatarImage}
                     contentFit="cover"
-                    priority="high"
                     onLoadStart={() => {
                       setImageLoading(true);
                       imageTimeoutRef.current = setTimeout(() => {

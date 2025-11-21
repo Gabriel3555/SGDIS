@@ -58,8 +58,8 @@ export default function ItemsScreen({ route, navigation }) {
               <Ionicons name="cube" size={20} color={colors.icon} />
             </View>
             <View style={styles.titleContent}>
-              <Text style={styles.cardTitle}>{item.name || 'Sin nombre'}</Text>
-              <Text style={styles.cardDescription}>{item.description || 'Sin descripción'}</Text>
+              <Text style={styles.cardTitle}>{item.productName || 'Sin nombre'}</Text>
+              <Text style={styles.cardDescription}>{item.attributes?.OBSERVATIONS || 'Sin descripción'}</Text>
             </View>
           </View>
         </View>
