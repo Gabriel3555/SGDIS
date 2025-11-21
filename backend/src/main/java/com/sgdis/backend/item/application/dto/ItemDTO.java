@@ -15,5 +15,6 @@ public record ItemDTO(
         String categoryName,
         String location,
         String responsible,
-        String urlImg
+        String urlImg,
+        Boolean status
 ) {}

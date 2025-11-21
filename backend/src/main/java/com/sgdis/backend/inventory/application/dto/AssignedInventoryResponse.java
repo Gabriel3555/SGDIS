@@ -8,5 +8,6 @@ public record AssignedInventoryResponse(
         UUID uuid,
         String name,
         String location,
-        AssignedInventoryUserResponse user
+        AssignedInventoryUserResponse user,
+        Boolean status
 ) {}

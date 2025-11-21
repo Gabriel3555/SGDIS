@@ -7,6 +7,7 @@ public record UpdateInventoryResponse(
         UUID uuid,
         String name,
         String location,
-        String imgUrl
+        String imgUrl,
+        Boolean status
 ) {
 }

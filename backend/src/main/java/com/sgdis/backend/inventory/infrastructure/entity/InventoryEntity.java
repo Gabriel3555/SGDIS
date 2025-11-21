@@ -7,6 +7,7 @@ import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -30,6 +31,9 @@ public class InventoryEntity {
     private String location;
     private String name;
     private String imgUrl;
+    @Default
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean status = true;
     @ManyToOne(fetch = FetchType.EAGER)
     private UserEntity owner;
 

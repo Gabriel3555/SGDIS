@@ -9,10 +9,12 @@ import java.util.UUID;
 public class InventoryMapper {
 
     public static InventoryEntity fromCreateRequest(CreateInventoryRequest request) {
+        boolean status = request.status() == null ? true : request.status();
         return InventoryEntity.builder()
                 .uuid(UUID.randomUUID())
                 .name(request.name())
                 .location(request.location())
+                .status(status)
                 .build();
     }
 
@@ -22,7 +24,8 @@ public class InventoryMapper {
                 entity.getUuid(),
                 entity.getName(),
                 entity.getLocation(),
-                entity.getImgUrl()
+                entity.getImgUrl(),
+                entity.isStatus()
         );
     }
 
@@ -36,17 +39,19 @@ public class InventoryMapper {
                         ? UserMapper.toResponse(entity.getOwner())
                         : null,
                 entity.getItems() != null ? (long) entity.getItems().size() : null,
-                entity.getImgUrl()
+                entity.getImgUrl(),
+                entity.isStatus()
         );
     }
 
-    public static InventoryEntity fromUpdateRequest(UpdateInventoryRequest request, Long id) {
-        return InventoryEntity.builder()
-                .id(id)
-                .uuid(UUID.randomUUID())
-                .name(request.name())
-                .location(request.location())
-                .build();
+    public static InventoryEntity fromUpdateRequest(UpdateInventoryRequest request, InventoryEntity entity) {
+        entity.setUuid(UUID.randomUUID());
+        entity.setName(request.name());
+        entity.setLocation(request.location());
+        if (request.status() != null) {
+            entity.setStatus(request.status());
+        }
+        return entity;
     }
 
     public static UpdateInventoryResponse toUpdateResponse(InventoryEntity entity) {
@@ -55,7 +60,8 @@ public class InventoryMapper {
                 entity.getUuid(),
                 entity.getName(),
                 entity.getLocation(),
-                entity.getImgUrl()
+                entity.getImgUrl(),
+                entity.isStatus()
         );
     }
 
@@ -80,7 +86,8 @@ public class InventoryMapper {
                 entity.getUuid(),
                 entity.getName(),
                 entity.getLocation(),
-                userResponse
+                userResponse,
+                entity.isStatus()
         );
     }
 

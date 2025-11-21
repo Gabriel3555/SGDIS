@@ -43,7 +43,8 @@ public class ManagedInventoriesService implements GetManagedInventoriesUseCase {
                         inventory.getLocation(),
                         inventory.getOwner() != null ? inventory.getOwner().getId() : null,
                         inventory.getOwner() != null ? inventory.getOwner().getFullName() : null,
-                        inventory.getOwner() != null ? inventory.getOwner().getEmail() : null
+                        inventory.getOwner() != null ? inventory.getOwner().getEmail() : null,
+                        inventory.isStatus()
                 ))
                 .toList();
     }

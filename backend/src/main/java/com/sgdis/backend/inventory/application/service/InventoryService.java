@@ -82,8 +82,10 @@ public class InventoryService
         @Override
         @Transactional
         public UpdateInventoryResponse updateInventory(Long id, UpdateInventoryRequest request) {
-                InventoryEntity inventory = InventoryMapper.fromUpdateRequest(request, id);
-                InventoryEntity updatedInventory = inventoryRepository.save(inventory);
+                InventoryEntity inventory = inventoryRepository.findById(id)
+                                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + id));
+                InventoryEntity updatedInventory = InventoryMapper.fromUpdateRequest(request, inventory);
+                updatedInventory = inventoryRepository.save(updatedInventory);
                 return InventoryMapper.toUpdateResponse(updatedInventory);
         }
 
@@ -212,7 +214,8 @@ public class InventoryService
                                                 inventory.getOwner() != null ? inventory.getOwner().getId() : null,
                                                 inventory.getOwner() != null ? inventory.getOwner().getFullName()
                                                                 : null,
-                                                inventory.getOwner() != null ? inventory.getOwner().getEmail() : null))
+                                                inventory.getOwner() != null ? inventory.getOwner().getEmail() : null,
+                                                inventory.isStatus()))
                                 .toList();
         }
 

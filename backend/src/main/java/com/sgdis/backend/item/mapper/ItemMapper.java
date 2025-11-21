@@ -17,6 +17,7 @@ public final class ItemMapper {
     private ItemMapper() {}
 
     public static ItemEntity toEntity(CreateItemRequest request) {
+        boolean status = request.status() == null ? true : request.status();
         Map<Attribute, String> attributes = Map.of(
                 Attribute.BRAND, request.brand(),
                 Attribute.SERIAL, request.serial(),
@@ -35,6 +36,7 @@ public final class ItemMapper {
                 .acquisitionDate(request.acquisitionDate())
                 .acquisitionValue(request.acquisitionValue())
                 .ivId(request.ivId())
+                .status(status)
                 .build();
 
         StringBuilder allAttributes = new StringBuilder();
@@ -69,6 +71,9 @@ public final class ItemMapper {
         existingEntity.setAcquisitionDate(request.acquisitionDate());
         existingEntity.setAcquisitionValue(request.acquisitionValue());
         existingEntity.setIvId(request.ivId());
+        if (request.status() != null) {
+            existingEntity.setStatus(request.status());
+        }
 
         StringBuilder allAttributes = new StringBuilder();
 
@@ -95,7 +100,8 @@ public final class ItemMapper {
                 itemEntity.getCategory() != null ? itemEntity.getCategory().getName() : "",
                 itemEntity.getLocation() != null ? itemEntity.getLocation() : "",
                 itemEntity.getResponsible() != null ? itemEntity.getResponsible() : "",
-                itemEntity.getUrlsImages() != null ? itemEntity.getUrlsImages().get(0) : null
+                itemEntity.getUrlsImages() != null ? itemEntity.getUrlsImages().get(0) : null,
+                itemEntity.isStatus()
         );
     }
 }
