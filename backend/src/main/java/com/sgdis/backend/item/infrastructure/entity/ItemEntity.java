@@ -5,6 +5,7 @@ import com.sgdis.backend.category.infrastructure.entity.CategoryEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.item.domain.Attribute;
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
+import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -72,4 +73,8 @@ public class ItemEntity {
     @JsonIgnore
     @OneToMany(mappedBy = "item")
     private List<VerificationEntity> verifications;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "item",fetch = FetchType.EAGER)
+    private List<TransferEntity> transfers;
 }

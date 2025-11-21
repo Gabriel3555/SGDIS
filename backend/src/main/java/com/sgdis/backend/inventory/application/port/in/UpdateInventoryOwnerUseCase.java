@@ -7,3 +7,4 @@ public interface UpdateInventoryOwnerUseCase {
     InventoryResponse updateInventoryOwner(Long inventoryId, UpdateInventoryOwnerRequest request);
 }
 
+

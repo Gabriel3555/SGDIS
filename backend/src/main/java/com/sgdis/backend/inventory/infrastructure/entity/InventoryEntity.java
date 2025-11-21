@@ -3,6 +3,7 @@ package com.sgdis.backend.inventory.infrastructure.entity;
 import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
+import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -50,5 +51,8 @@ public class InventoryEntity {
 
     @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<UserEntity> signatories;
+
+    @OneToMany(mappedBy = "inventory",cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<TransferEntity> transfers;
 
 }
