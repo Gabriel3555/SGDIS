@@ -17,15 +17,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         if (typeof tailwind !== 'undefined') {
-            tailwind.config = {
+        tailwind.config = {
                 darkMode: 'class',
-                theme: {
-                    extend: {
-                        colors: {
+            theme: {
+                extend: {
+                    colors: {
                             'sena-verde': '#00AF00',
                             'sena-verde-oscuro': '#008800',
-                            'sena-verde-claro': '#E8F5E8',
-                            'sena-acento': '#FF6B00'
+                        'sena-verde-claro': '#E8F5E8',
+                        'sena-acento': '#FF6B00'
                         }
                     }
                 }
@@ -146,6 +146,40 @@
         .animate-fade-in-up {
             animation: fadeInUp 0.6s ease-out;
         }
+
+        /* Asegurar texto blanco en botones de iniciar sesión */
+        a[href="/login"].bg-sena-verde,
+        a[href="/login"].bg-sena-verde:hover,
+        a[href="/login"].bg-sena-verde-oscuro,
+        a[href="/login"].bg-sena-verde-oscuro:hover {
+            color: #ffffff !important;
+        }
+
+        a[href="/login"].bg-sena-verde *,
+        a[href="/login"].bg-sena-verde:hover *,
+        a[href="/login"].bg-sena-verde-oscuro *,
+        a[href="/login"].bg-sena-verde-oscuro:hover *,
+        a[href="/login"].bg-sena-verde i,
+        a[href="/login"].bg-sena-verde:hover i,
+        a[href="/login"].bg-sena-verde-oscuro i,
+        a[href="/login"].bg-sena-verde-oscuro:hover i {
+            color: #ffffff !important;
+        }
+
+        /* Asegurar colores correctos en botón "Conocer Más" */
+        a[href="#features"].border-sena-verde {
+            color: #00AF00 !important;
+        }
+
+        a[href="#features"].border-sena-verde i {
+            color: #00AF00 !important;
+        }
+
+        a[href="#features"].border-sena-verde:hover,
+        a[href="#features"].border-sena-verde:hover *,
+        a[href="#features"].border-sena-verde:hover i {
+            color: #ffffff !important;
+        }
     </style>
 </head>
 
@@ -168,7 +202,7 @@
                     <a href="#creators"
                         class="hidden md:block text-gray-700 dark:text-gray-300 hover:text-sena-verde transition-colors">Equipo</a>
                     <a href="/login"
-                        class="px-6 py-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105">
+                        class="px-6 py-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white hover:text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105">
                         Iniciar Sesión
                     </a>
                 </div>
@@ -197,13 +231,13 @@
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4">
                         <a href="/login"
-                            class="px-8 py-4 bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg text-center">
+                            class="px-8 py-4 bg-sena-verde hover:bg-sena-verde-oscuro text-white hover:text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg text-center">
                             <i class="fas fa-sign-in-alt mr-2"></i>
                             Iniciar Sesión
                         </a>
                         <a href="#features"
                             class="px-8 py-4 border-2 border-sena-verde text-sena-verde hover:bg-sena-verde hover:text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 text-center">
-                            <i class="fas fa-info-circle mr-2"></i>
+                            <i class="fas fa-info-circle mr-2 text-sena-verde hover:text-white"></i>
                             Conocer Más
                         </a>
                     </div>
@@ -235,12 +269,12 @@
                                     <h3 class="font-bold text-lg mb-2">Seguridad</h3>
                                     <p class="text-sm opacity-90">Protección de datos</p>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        </div>
             </div>
         </div>
+        </div>
+    </div>
+</div>
     </section>
 
     <!-- Features Section -->
@@ -253,7 +287,7 @@
                 <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                     Herramientas optimizadas diseñadas para optimizar la gestión de inventarios en el SENA
                 </p>
-            </div>
+</div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Feature 1 -->
@@ -262,13 +296,13 @@
                     <div
                         class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
                         <i class="fas fa-boxes text-3xl text-sena-verde"></i>
-                    </div>
+                </div>
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Gestión de Inventarios</h3>
                     <p class="text-gray-600 dark:text-gray-400">
                         Administra múltiples inventarios con facilidad. Crea, edita y organiza tus recursos de manera
                         eficiente.
                     </p>
-                </div>
+            </div>
 
                 <!-- Feature 2 -->
                 <div
@@ -276,7 +310,7 @@
                     <div
                         class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
                         <i class="fas fa-cube text-3xl text-sena-verde"></i>
-                    </div>
+                        </div>
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Control de Items</h3>
                     <p class="text-gray-600 dark:text-gray-400">
                         Gestiona cada item individualmente con información detallada, imágenes y seguimiento completo.
@@ -289,7 +323,7 @@
                     <div
                         class="w-16 h-16 bg-sena-verde/10 dark:bg-sena-verde/20 rounded-xl flex items-center justify-center mb-6">
                         <i class="fas fa-user-shield text-3xl text-sena-verde"></i>
-                    </div>
+                        </div>
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Control de Acceso</h3>
                     <p class="text-gray-600 dark:text-gray-400">
                         Sistema de roles y permisos que garantiza la seguridad y el acceso adecuado a la información.
@@ -319,8 +353,8 @@
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">Reportes y Análisis</h3>
                     <p class="text-gray-600 dark:text-gray-400">
                         Genera reportes detallados y análisis estadísticos para tomar decisiones informadas.
-                    </p>
-                </div>
+                </p>
+            </div>
 
                 <!-- Feature 6 -->
                 <div
@@ -333,10 +367,10 @@
                     <p class="text-gray-600 dark:text-gray-400">
                         Accede desde cualquier dispositivo. Disponible en web y aplicación móvil para máxima
                         flexibilidad.
-                    </p>
-                </div>
+                </p>
             </div>
         </div>
+    </div>
     </section>
 
     <!-- Image Gallery Section -->
