@@ -18,5 +18,6 @@ public record CreateItemRequest(
     Double acquisitionValue,
     String ivId,
     Long inventoryId,
-    Long categoryId
+    Long categoryId,
+    Boolean status
 ) {}

@@ -9,5 +9,6 @@ public record ManagedInventoryResponse(
         String location,
         Long ownerId,
         String ownerName,
-        String ownerEmail
+        String ownerEmail,
+        Boolean status
 ) {}

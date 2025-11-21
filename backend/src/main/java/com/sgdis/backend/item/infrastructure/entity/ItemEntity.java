@@ -9,6 +9,7 @@ import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -45,6 +46,9 @@ public class ItemEntity {
     private String location;
     private String responsible;
     private List<String> urlsImages;
+    @Default
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean status = true;
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "item")

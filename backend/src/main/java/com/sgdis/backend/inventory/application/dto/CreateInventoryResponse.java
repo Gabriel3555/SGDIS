@@ -4,11 +4,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.util.UUID;
 
-@JsonPropertyOrder({ "id", "uuid","name","location" })
+@JsonPropertyOrder({ "id", "uuid","name","location","imgUrl","status" })
 public record CreateInventoryResponse(
         Long id,
         UUID uuid,
         String name,
         String location,
-        String imgUrl
+        String imgUrl,
+        Boolean status
 ) {}

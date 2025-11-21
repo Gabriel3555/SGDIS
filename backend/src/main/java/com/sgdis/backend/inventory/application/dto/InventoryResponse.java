@@ -13,5 +13,6 @@ public record InventoryResponse(
         String name,
         UserResponse owner,
         Long quantityItems,
-        String imgUrl
+        String imgUrl,
+        Boolean status
 ) {}
