@@ -12,8 +12,8 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { ensureAuthToken } from "../../../src/Navigation/Services/AuthSession";
 import senaLogo from "../../../assets/sena-logo.png";
 import { useTheme } from "../../../src/ThemeContext";
 
@@ -39,7 +39,10 @@ export default function ChangePasswordScreen() {
 
     try {
       setLoading(true);
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
+      if (!token) {
+        return;
+      }
       await api.post(
         "api/v1/users/changePassword",
         { oldPassword, newPassword: password },

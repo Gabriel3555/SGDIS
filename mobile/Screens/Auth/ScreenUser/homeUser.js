@@ -13,6 +13,7 @@ import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { ensureAuthToken } from "../../../src/Navigation/Services/AuthSession";
 import { useTheme } from "../../../src/ThemeContext";
 
 export default function DashboardScreen() {
@@ -53,9 +54,8 @@ export default function DashboardScreen() {
 
   const fetchUserData = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
       if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
         return;
       }
 
@@ -87,7 +87,7 @@ export default function DashboardScreen() {
 
   const fetchInventoryCount = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
       if (!token) return;
       const response = await api.get("api/v1/users/me/inventories", {
         headers: {
@@ -111,7 +111,7 @@ export default function DashboardScreen() {
 
   const fetchTotalItemsAndValue = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
       if (!token) return;
       let totalItemsCount = 0;
       let totalValueSum = 0;

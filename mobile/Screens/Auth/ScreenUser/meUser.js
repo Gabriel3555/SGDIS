@@ -14,6 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { ensureAuthToken, clearSessionAndRedirect } from "../../../src/Navigation/Services/AuthSession";
 import { useTheme } from "../../../src/ThemeContext";
 
 export default function MeUserScreen() {
@@ -48,9 +49,8 @@ export default function MeUserScreen() {
 
   const fetchUserData = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
       if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
         return;
       }
 
@@ -82,16 +82,7 @@ export default function MeUserScreen() {
 
   const handleLogout = async () => {
     try {
-      // Clear all stored authentication data
-      await AsyncStorage.removeItem("userToken");
-      await AsyncStorage.removeItem("refreshToken");
-      await AsyncStorage.removeItem("userRole");
-
-      // Reset navigation stack to Auth screen only, preventing back navigation
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Auth' }],
-      });
+      await clearSessionAndRedirect({ showAlert: false });
     } catch (error) {
       console.error("Error during logout:", error);
       Alert.alert("Error", "No se pudo cerrar la sesión");
