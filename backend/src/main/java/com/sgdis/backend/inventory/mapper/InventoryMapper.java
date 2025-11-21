@@ -9,12 +9,11 @@ import java.util.UUID;
 public class InventoryMapper {
 
     public static InventoryEntity fromCreateRequest(CreateInventoryRequest request) {
-        boolean status = request.status() == null ? true : request.status();
         return InventoryEntity.builder()
                 .uuid(UUID.randomUUID())
                 .name(request.name())
                 .location(request.location())
-                .status(status)
+                .status(true)
                 .build();
     }
 
@@ -25,7 +24,7 @@ public class InventoryMapper {
                 entity.getName(),
                 entity.getLocation(),
                 entity.getImgUrl(),
-                entity.isStatus()
+                entity.getOwner() != null ? UserMapper.toResponse(entity.getOwner()) : null
         );
     }
 
@@ -61,32 +60,6 @@ public class InventoryMapper {
                 entity.getName(),
                 entity.getLocation(),
                 entity.getImgUrl(),
-                entity.isStatus()
-        );
-    }
-
-    public static AssignedInventoryResponse toAssignedResponse(InventoryEntity entity) {
-        AssignedInventoryUserResponse userResponse = null;
-        if (entity.getOwner() != null) {
-            var user = entity.getOwner();
-            userResponse = new AssignedInventoryUserResponse(
-                    user.getId(),
-                    user.getEmail(),
-                    user.getFullName(),
-                    user.getJobTitle(),
-                    user.getLaborDepartment(),
-                    user.getImgUrl(),
-                    user.getRole().name(),
-                    user.isStatus()
-            );
-        }
-
-        return new AssignedInventoryResponse(
-                entity.getId(),
-                entity.getUuid(),
-                entity.getName(),
-                entity.getLocation(),
-                userResponse,
                 entity.isStatus()
         );
     }
