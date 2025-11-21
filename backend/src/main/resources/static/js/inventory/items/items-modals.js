@@ -104,15 +104,18 @@ function populateViewItemModal(item) {
         attributesHtml += '</div>';
     }
     
+    const imageContainerId = "view-item-image-" + item.id;
     content.innerHTML = `
         <div class="flex justify-center mb-6">
             ${imageUrl ? `
-                <div class="w-48 h-48 bg-gray-200 rounded-xl overflow-hidden">
+                <div class="w-48 h-48 bg-gray-200 rounded-xl overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative" id="${imageContainerId}" onclick="handleItemImageUploadClick(${item.id}, '${imageContainerId}')" title="Haz clic para cambiar la imagen">
                     <img src="${imageUrl}" alt="${productName}" class="w-full h-full object-cover">
+                    <input type="file" accept="image/*" id="file-input-${imageContainerId}" style="display: none;" onchange="handleItemImageFileSelect(event, ${item.id}, '${imageContainerId}')">
                 </div>
             ` : `
-                <div class="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400">
+                <div class="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-300 transition-colors" id="${imageContainerId}" onclick="handleItemImageUploadClick(${item.id}, '${imageContainerId}')" title="Haz clic para subir una imagen">
                     <i class="fas fa-box text-6xl"></i>
+                    <input type="file" accept="image/*" id="file-input-${imageContainerId}" style="display: none;" onchange="handleItemImageFileSelect(event, ${item.id}, '${imageContainerId}')">
                 </div>
             `}
         </div>
