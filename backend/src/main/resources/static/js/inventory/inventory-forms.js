@@ -274,18 +274,15 @@ async function handleAssignManagerSubmit(e) {
     e.preventDefault();
 
     if (!inventoryData.currentInventoryId) {
-        showAssignManagerErrorToast('No se ha seleccionado un inventario para asignar gerente');
+        showAssignManagerErrorToast('No se ha seleccionado un inventario para asignar roles');
         return;
     }
 
-    // Try to get value from CustomSelect first, then fallback to hidden input
+    // Get manager ID from CustomSelect or hidden input
     let managerId = '';
-    
     if (window.managerSelect && window.managerSelect.getValue) {
         managerId = window.managerSelect.getValue();
     }
-    
-    // Fallback to hidden input if CustomSelect value is empty
     if (!managerId) {
         const managerIdElement = document.getElementById('managerId');
         if (managerIdElement) {
@@ -293,49 +290,125 @@ async function handleAssignManagerSubmit(e) {
         }
     }
 
-    if (!managerId || managerId.trim() === '') {
-        showAssignManagerErrorToast('Por favor selecciona un gerente para la asignación');
+    // Get signatory ID from CustomSelect or hidden input
+    let signatoryId = '';
+    if (window.signatorySelect && window.signatorySelect.getValue) {
+        signatoryId = window.signatorySelect.getValue();
+    }
+    if (!signatoryId) {
+        const signatoryIdElement = document.getElementById('signatoryId');
+        if (signatoryIdElement) {
+            signatoryId = signatoryIdElement.value;
+        }
+    }
+
+    // At least one must be selected
+    if ((!managerId || managerId.trim() === '') && (!signatoryId || signatoryId.trim() === '')) {
+        showAssignManagerErrorToast('Por favor selecciona al menos un manejador o un firmante para asignar');
         return;
     }
 
-    // Validate managerId is a valid number
-    const numericManagerId = parseInt(managerId);
-    if (isNaN(numericManagerId)) {
-        showAssignManagerErrorToast('ID de gerente inválido');
+    const errors = [];
+    let hasManager = false;
+    let hasSignatory = false;
+
+    // Handle manager assignment if selected
+    if (managerId && managerId.trim() !== '') {
+        const numericManagerId = parseInt(managerId);
+        if (isNaN(numericManagerId)) {
+            errors.push('ID de manejador inválido');
+        } else {
+            hasManager = true;
+        }
+    }
+
+    // Handle signatory assignment if selected
+    if (signatoryId && signatoryId.trim() !== '') {
+        const numericSignatoryId = parseInt(signatoryId);
+        if (isNaN(numericSignatoryId)) {
+            errors.push('ID de firmante inválido');
+        } else {
+            hasSignatory = true;
+        }
+    }
+
+    if (errors.length > 0) {
+        showAssignManagerErrorToast(errors.join(', '));
         return;
     }
 
     try {
-        const managerData = {
-            inventoryId: inventoryData.currentInventoryId,
-            managerId: numericManagerId
-        };
+        // Execute assignments in parallel if both are selected
+        const assignments = [];
+        
+        if (hasManager) {
+            const managerData = {
+                inventoryId: inventoryData.currentInventoryId,
+                managerId: parseInt(managerId)
+            };
+            assignments.push(assignManager(managerData).then(() => {
+                showAssignManagerSuccessToast();
+            }).catch(error => {
+                console.error('Error assigning manager:', error);
+                throw { type: 'manager', error };
+            }));
+        }
 
-        const result = await assignManager(managerData);
+        if (hasSignatory) {
+            const signatoryData = {
+                inventoryId: inventoryData.currentInventoryId,
+                signatoryId: parseInt(signatoryId)
+            };
+            assignments.push(assignSignatory(signatoryData).then(() => {
+                showAssignSignatorySuccessToast();
+            }).catch(error => {
+                console.error('Error assigning signatory:', error);
+                throw { type: 'signatory', error };
+            }));
+        }
 
-        showAssignManagerSuccessToast();
+        // Wait for all assignments to complete
+        await Promise.all(assignments);
+
+        // Close modal and reload data
         closeAssignManagerModal();
         await loadInventoryData();
 
     } catch (error) {
-        console.error('Error assigning manager:', error);
+        console.error('Error assigning roles:', error);
         
-        let errorMessage = error.message || 'Inténtalo de nuevo.';
+        let errorMessage = error.error?.message || error.message || 'Inténtalo de nuevo.';
         
         // Customize error messages based on the error
         if (errorMessage.includes('401') || errorMessage.includes('expired')) {
             errorMessage = 'Sesión expirada. Por favor inicia sesión nuevamente.';
         } else if (errorMessage.includes('403') || errorMessage.includes('permission')) {
-            errorMessage = 'No tienes permisos para asignar gerentes a este inventario.';
+            if (error.type === 'signatory') {
+                errorMessage = 'No tienes permisos para asignar firmantes a este inventario.';
+            } else {
+                errorMessage = 'No tienes permisos para asignar manejadores a este inventario.';
+            }
         } else if (errorMessage.includes('404')) {
-            errorMessage = 'Gerente o inventario no encontrado.';
+            if (error.type === 'signatory') {
+                errorMessage = 'Firmante o inventario no encontrado.';
+            } else {
+                errorMessage = 'Manejador o inventario no encontrado.';
+            }
         } else if (errorMessage.includes('400') && errorMessage.includes('validation')) {
             errorMessage = 'Los datos de asignación no son válidos.';
         } else if (errorMessage.includes('already assigned')) {
-            errorMessage = 'Este inventario ya tiene este gerente asignado.';
+            if (error.type === 'signatory') {
+                errorMessage = 'Este inventario ya tiene este firmante asignado.';
+            } else {
+                errorMessage = 'Este inventario ya tiene este manejador asignado.';
+            }
         }
         
-        showAssignManagerErrorToast(errorMessage);
+        if (error.type === 'signatory') {
+            showAssignSignatoryErrorToast(errorMessage);
+        } else {
+            showAssignManagerErrorToast(errorMessage);
+        }
     }
 }
 

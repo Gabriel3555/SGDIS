@@ -694,8 +694,11 @@ async function populateAssignManagerModal(inventory) {
         console.warn('assignManagerInventoryId element not found');
     }
     
-    // Load users into the manager select dropdown
-    await loadManagersForAssignment();
+    // Load users into both select dropdowns
+    await Promise.all([
+        loadManagersForAssignment(),
+        loadSignatoriesForAssignment()
+    ]);
 }
 
 async function loadManagersForAssignment() {
@@ -727,7 +730,7 @@ function populateManagerSelect(users) {
     // Initialize CustomSelect if not already done
     if (!window.managerSelect) {
         window.managerSelect = new CustomSelect('managerIdSelect', {
-            placeholder: 'Seleccionar gerente...',
+            placeholder: 'Seleccionar manejador...',
             searchable: true
         });
     }
@@ -773,11 +776,11 @@ function showManagerSelectLoading() {
     // Initialize CustomSelect if not already done
     if (!window.managerSelect) {
         window.managerSelect = new CustomSelect('managerIdSelect', {
-            placeholder: 'Cargando gerentes...',
+            placeholder: 'Cargando manejadores...',
             searchable: true
         });
     }
-    window.managerSelect.setOptions([{ value: '', label: 'Cargando gerentes...', disabled: true }]);
+    window.managerSelect.setOptions([{ value: '', label: 'Cargando manejadores...', disabled: true }]);
 }
 
 function hideManagerSelectLoading() {
@@ -797,22 +800,129 @@ function closeAssignManagerModal() {
         window.managerSelect.clear();
     }
     
+    if (window.signatorySelect) {
+        window.signatorySelect.clear();
+    }
+    
     inventoryData.currentInventoryId = null;
+}
+
+// Signatory Assignment Functions
+async function loadSignatoriesForAssignment() {
+    // Show loading state for signatory select
+    showSignatorySelectLoading();
+    
+    try {
+        // Fetch users from API and filter only USER role
+        const users = await fetchUsers();
+        
+        // Filter only users with role USER
+        const normalUsers = users.filter(user => user.role === 'USER');
+        
+        if (normalUsers.length === 0) {
+            populateSignatorySelect([]);
+            return;
+        }
+        
+        // Populate the signatory select with normal users
+        populateSignatorySelect(normalUsers);
+        
+    } catch (error) {
+        console.error('Error loading signatories:', error);
+        populateSignatorySelect([]);
+    } finally {
+        // Hide loading state
+        hideSignatorySelectLoading();
+    }
+}
+
+function populateSignatorySelect(users) {
+    // Initialize CustomSelect if not already done
+    if (!window.signatorySelect) {
+        window.signatorySelect = new CustomSelect('signatoryIdSelect', {
+            placeholder: 'Seleccionar firmante...',
+            searchable: true
+        });
+    }
+
+    // Format users as options
+    const signatoryOptions = [];
+    
+    if (users && users.length > 0) {
+        users.forEach(user => {
+            // Format display name
+            let displayName = '';
+            if (user.fullName && user.fullName.trim()) {
+                displayName = user.fullName;
+            } else if (user.email) {
+                displayName = user.email;
+            } else {
+                displayName = `Usuario ${user.id || 'N/A'}`;
+            }
+            
+            // Add additional info if available
+            if (user.jobTitle) {
+                displayName += ` (${user.jobTitle})`;
+            }
+            
+            signatoryOptions.push({
+                value: String(user.id),
+                label: displayName
+            });
+        });
+    } else {
+        // Add no signatories option (will be shown as disabled in CustomSelect)
+        signatoryOptions.push({
+            value: '',
+            label: 'No hay usuarios normales disponibles',
+            disabled: true
+        });
+    }
+    
+    window.signatorySelect.setOptions(signatoryOptions);
+}
+
+function showSignatorySelectLoading() {
+    // Initialize CustomSelect if not already done
+    if (!window.signatorySelect) {
+        window.signatorySelect = new CustomSelect('signatoryIdSelect', {
+            placeholder: 'Cargando firmantes...',
+            searchable: true
+        });
+    }
+    window.signatorySelect.setOptions([{ value: '', label: 'Cargando firmantes...', disabled: true }]);
+}
+
+function hideSignatorySelectLoading() {
+    // Loading state is cleared when populateSignatorySelect is called
+    // This function is kept for compatibility but doesn't need to do anything
+    // as the CustomSelect will be updated by populateSignatorySelect
 }
 
 // Toast notification helpers for manager assignment operations
 function showAssignManagerSuccessToast() {
-    showSuccessToast('Gerente asignado', 'El gerente se ha asignado correctamente al inventario.');
+    showSuccessToast('Manejador asignado', 'El manejador se ha asignado correctamente al inventario.');
 }
 
 function showAssignManagerErrorToast(message) {
-    showErrorToast('Error al asignar gerente', message || 'No se pudo asignar el gerente.');
+    showErrorToast('Error al asignar manejador', message || 'No se pudo asignar el manejador.');
+}
+
+// Toast notification helpers for signatory assignment operations
+function showAssignSignatorySuccessToast() {
+    showSuccessToast('Firmante asignado', 'El firmante se ha asignado correctamente al inventario.');
+}
+
+function showAssignSignatoryErrorToast(message) {
+    showErrorToast('Error al asignar firmante', message || 'No se pudo asignar el firmante.');
 }
 
 window.showAssignManagerModal = showAssignManagerModal;
 window.closeAssignManagerModal = closeAssignManagerModal;
 window.showAssignManagerSuccessToast = showAssignManagerSuccessToast;
 window.showAssignManagerErrorToast = showAssignManagerErrorToast;
+window.showAssignSignatorySuccessToast = showAssignSignatorySuccessToast;
+window.showAssignSignatoryErrorToast = showAssignSignatoryErrorToast;
 
 // Function to fetch users from API
 async function fetchUsers() {

@@ -411,15 +411,18 @@ function updateInventoryTable() {
                             }')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar inventario">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="showInventoryAssignment('${
-                              inventory.id
-                            }')" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Asignar usuario">
-                                <i class="fas fa-user-plus"></i>
-                            </button>
                             <button onclick="showInventoryManagerAssignment('${
                               inventory.id
-                            }')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Asignar gerente">
+                            }')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Asignar Rol">
                                 <i class="fas fa-user-tie"></i>
+                            </button>
+                            <button onclick="showInventoryTreeModal('${
+                              inventory.id
+                            }', '${(inventory.name || "").replace(
+        /'/g,
+        "\\'"
+      )}')" class="p-2 text-[#00AF00] hover:bg-green-50 rounded-lg transition-colors" title="Ver jerarquía">
+                                <i class="fas fa-sitemap text-[#00AF00]"></i>
                             </button>
                             <button onclick="showDeleteInventoryModal('${
                               inventory.id
@@ -615,15 +618,18 @@ function updateInventoryCards() {
                             }')" class="text-yellow-600 hover:text-yellow-800 transition-colors" title="Editar inventario">
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
-                            <button onclick="showInventoryAssignment('${
-                              inventory.id
-                            }')" class="text-indigo-600 hover:text-indigo-800 transition-colors" title="Asignar usuario">
-                                <i class="fas fa-user-plus text-lg"></i>
-                            </button>
                             <button onclick="showInventoryManagerAssignment('${
                               inventory.id
-                            }')" class="text-purple-600 hover:text-purple-800 transition-colors" title="Asignar gerente">
+                            }')" class="text-purple-600 hover:text-purple-800 transition-colors" title="Asignar Rol">
                                 <i class="fas fa-user-tie text-lg"></i>
+                           </button>
+                           <button onclick="showInventoryTreeModal('${
+                             inventory.id
+                            }', '${(inventory.name || "").replace(
+        /'/g,
+        "\\'"
+      )}')" class="text-[#00AF00] hover:text-green-800 transition-colors" title="Ver jerarquía">
+                                <i class="fas fa-sitemap text-lg text-[#00AF00]"></i>
                            </button>
                            <button onclick="showDeleteInventoryModal('${
                              inventory.id

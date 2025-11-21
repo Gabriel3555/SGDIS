@@ -338,14 +338,14 @@ async function assignManager(managerData) {
             return result;
         } else if (response.status === 400) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Datos de asignación de gerente inválidos');
+            throw new Error(errorData.message || 'Datos de asignación de manejador inválidos');
         } else if (response.status === 401) {
             throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
         } else if (response.status === 403) {
-            throw new Error('No tienes permisos para asignar gerentes.');
+            throw new Error('No tienes permisos para asignar manejadores.');
         } else {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al asignar el gerente');
+            throw new Error(errorData.message || 'Error al asignar el manejador');
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {
@@ -354,6 +354,45 @@ async function assignManager(managerData) {
         throw error;
     }
 }
+
+async function assignSignatory(signatoryData) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch('/api/v1/inventory/assignSignatory', {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(signatoryData)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            return result;
+        } else if (response.status === 400) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Datos de asignación de firmante inválidos');
+        } else if (response.status === 401) {
+            throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
+        } else if (response.status === 403) {
+            throw new Error('No tienes permisos para asignar firmantes.');
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al asignar el firmante');
+        }
+    } catch (error) {
+        if (error.message && error.message.includes('Failed to fetch')) {
+            throw new Error('Error de conexión. Verifica tu conexión a internet.');
+        }
+        throw error;
+    }
+}
+
+// Export functions
+window.assignSignatory = assignSignatory;
 
 async function confirmDeleteInventory() {
     if (!inventoryData.currentInventoryId) {
@@ -411,3 +450,4 @@ window.deleteInventory = deleteInventoryFromApi;
 window.getInventoryById = getInventoryById;
 window.assignInventory = assignInventory;
 window.assignManager = assignManager;
+window.assignSignatory = assignSignatory;
