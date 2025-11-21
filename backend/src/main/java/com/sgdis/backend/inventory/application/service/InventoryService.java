@@ -30,7 +30,6 @@ public class InventoryService
                 UpdateInventoryUseCase,
                 DeleteInventoryUseCase,
                 GetInventoryByIdUseCase,
-                AssignedInventoryUseCase,
                 QuitInventoryUseCase,
                 AssignManagerInventoryUseCase,
                 DeleteManagerInventoryUseCase,
@@ -42,6 +41,7 @@ public class InventoryService
                 GetAllSignatoriesUseCase,
                 QuitSignatoryInventoryUseCase,
                 DeleteSignatoryInventoryUseCase,
+                UpdateInventoryOwnerUseCase,
                 QuitManagerInventoryUseCase{
 
         private final SpringDataInventoryRepository inventoryRepository;
@@ -50,7 +50,22 @@ public class InventoryService
         @Override
         @Transactional
         public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
+                if (request.ownerId() == null) {
+                        throw new IllegalArgumentException("Owner id is required to create an inventory");
+                }
+
+                UserEntity owner = userRepository.findById(request.ownerId())
+                                .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
+
+                List<InventoryEntity> existingInventories = inventoryRepository
+                                .findInventoryEntitiesByOwnerId(owner.getId());
+                if (existingInventories != null && !existingInventories.isEmpty()) {
+                        throw new IllegalArgumentException("This owner already has an assigned inventory");
+                }
+
                 InventoryEntity inventory = InventoryMapper.fromCreateRequest(request);
+                inventory.setOwner(owner);
+
                 InventoryEntity savedInventory = inventoryRepository.save(inventory);
                 return InventoryMapper.toCreateResponse(savedInventory);
         }
@@ -91,34 +106,37 @@ public class InventoryService
 
         @Override
         @Transactional
-        public AssignedInventoryResponse assignedInventory(AssignedInventoryRequest request) {
-                InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Inventory not found with id: " + request.inventoryId()));
-
-                UserEntity owner = userRepository.findById(request.userId())
-                                .orElseThrow(() -> new UserNotFoundException(request.userId()));
-
-                // Check if user already has an inventory assigned (excluding the current
-                // inventory being assigned)
-                List<InventoryEntity> existingInventories = inventoryRepository
-                                .findInventoryEntitiesByOwnerId(request.userId());
-                if (existingInventories != null && !existingInventories.isEmpty()) {
-                        // Check if the user has a different inventory assigned (not the one being
-                        // assigned now)
-                        boolean hasOtherInventory = existingInventories.stream()
-                                        .anyMatch(inv -> !inv.getId().equals(request.inventoryId()));
-
-                        if (hasOtherInventory) {
-                                throw new RuntimeException("This user already has an assigned inventory.");
-                        }
-                        // If the user already owns this inventory, allow the assignment (no error)
+        public InventoryResponse updateInventoryOwner(Long inventoryId, UpdateInventoryOwnerRequest request) {
+                if (request.ownerId() == null) {
+                        throw new IllegalArgumentException("Owner id is required");
                 }
 
-                inventory.setOwner(owner);
-                InventoryEntity updated = inventoryRepository.save(inventory);
+                InventoryEntity inventory = inventoryRepository.findById(inventoryId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + inventoryId));
 
-                return InventoryMapper.toAssignedResponse(updated);
+                UserEntity newOwner = userRepository.findById(request.ownerId())
+                                .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
+
+                boolean isSameOwner = inventory.getOwner() != null
+                                && inventory.getOwner().getId().equals(newOwner.getId());
+
+                if (!isSameOwner) {
+                        final Long currentInventoryId = inventory.getId();
+                        List<InventoryEntity> existingInventories = inventoryRepository
+                                        .findInventoryEntitiesByOwnerId(newOwner.getId());
+
+                        boolean ownsOtherInventory = existingInventories.stream()
+                                        .anyMatch(inv -> !inv.getId().equals(currentInventoryId));
+
+                        if (ownsOtherInventory) {
+                                throw new IllegalArgumentException("This owner already has an assigned inventory");
+                        }
+
+                        inventory.setOwner(newOwner);
+                        inventory = inventoryRepository.save(inventory);
+                }
+
+                return InventoryMapper.toResponse(inventory);
         }
 
         @Override

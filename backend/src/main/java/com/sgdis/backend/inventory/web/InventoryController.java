@@ -42,7 +42,7 @@ public class InventoryController {
     private final GetInventoryByIdUseCase getInventoryByIdUseCase;
     private final ListInventoryUseCase listInventoryUseCase;
     private final UpdateInventoryUseCase updateInventoryUseCase;
-    private final AssignedInventoryUseCase assignedInventoryUseCase;
+    private final UpdateInventoryOwnerUseCase updateInventoryOwnerUseCase;
     private final FindMyInventoryUseCase findMyInventoryUseCase;
     private final QuitInventoryUseCase quitInventoryUseCase;
     private final AssignManagerInventoryUseCase assignManagerInventoryUseCase;
@@ -121,6 +121,22 @@ public class InventoryController {
     }
 
     @Operation(
+            summary = "Change inventory owner",
+            description = "Updates the owner assigned to an inventory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Owner updated successfully",
+            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory or user not found")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @PatchMapping("/{id}/owner")
+    public InventoryResponse updateInventoryOwner(@PathVariable Long id, @RequestBody UpdateInventoryOwnerRequest request) {
+        return updateInventoryOwnerUseCase.updateInventoryOwner(id, request);
+    }
+
+    @Operation(
             summary = "Delete inventory",
             description = "Deletes an inventory item by its ID"
     )
@@ -133,21 +149,6 @@ public class InventoryController {
     @DeleteMapping("/{id}")
     public InventoryResponse deleteInventoryById(@PathVariable Long id) {
         return deleteInventoryUseCase.deleteInventoryById(id);
-    }
-
-    @Operation(
-            summary = "Assign inventory to user",
-            description = "Assigns an inventory item to a specific user"
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Inventory assigned successfully",
-            content = @Content(schema = @Schema(implementation = AssignedInventoryResponse.class))
-    )
-    @ApiResponse(responseCode = "400", description = "Invalid request")
-    @PostMapping("/assignedInventory")
-    public AssignedInventoryResponse assignInventory(@RequestBody AssignedInventoryRequest request) {
-        return assignedInventoryUseCase.assignedInventory(request);
     }
 
     @Operation(
