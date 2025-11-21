@@ -11,65 +11,299 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../../../src/ThemeContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { ensureAuthToken } from "../../../src/Navigation/Services/AuthSession";
 import * as ImagePicker from "expo-image-picker";
+import { Camera, CameraView } from "expo-camera";
 
 export default function Verification() {
   const { colors } = useTheme();
   const [search, setSearch] = useState("");
   const [verifications, setVerifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [serialModalVisible, setSerialModalVisible] = useState(false);
-  const [licencePlateModalVisible, setLicencePlateModalVisible] = useState(false);
-  const [evidenceModalVisible, setEvidenceModalVisible] = useState(false);
-  const [selectedVerification, setSelectedVerification] = useState(null);
-  const [inputValue, setInputValue] = useState("");
+  const [verificationModalVisible, setVerificationModalVisible] = useState(false);
+  const [verificationMode, setVerificationMode] = useState("serial");
+  const [verificationInput, setVerificationInput] = useState("");
+  const [itemPreview, setItemPreview] = useState(null);
+  const [itemPreviewLoading, setItemPreviewLoading] = useState(false);
+  const [itemPreviewError, setItemPreviewError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [selectedVerification, setSelectedVerification] = useState(null);
+  const [inventories, setInventories] = useState([]);
+  const [selectedInventory, setSelectedInventory] = useState(null);
+  const [inventoriesLoading, setInventoriesLoading] = useState(true);
+  const [scannerVisible, setScannerVisible] = useState(false);
+  const [hasScannerPermission, setHasScannerPermission] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [verificationsError, setVerificationsError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [previewModalVisible, setPreviewModalVisible] = useState(false);
+  const [previewVerification, setPreviewVerification] = useState(null);
 
   useEffect(() => {
-    fetchVerifications();
+    loadInventories();
   }, []);
 
-  const fetchVerifications = async () => {
+  useEffect(() => {
+    if (selectedInventory) {
+      fetchVerifications(selectedInventory);
+    } else {
+      setVerifications([]);
+      setLoading(false);
+    }
+  }, [selectedInventory]);
+
+  const handleManualRefresh = async () => {
+    if (!selectedInventory) {
+      return;
+    }
+    setRefreshing(true);
+    await fetchVerifications(selectedInventory, { showLoader: false });
+    setRefreshing(false);
+  };
+
+  const loadInventories = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      setInventoriesLoading(true);
+      const token = await ensureAuthToken();
       if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
         return;
       }
 
-      // TODO: Get inventoryId - for now using a placeholder
-      const inventoryId = 1; // This should be obtained from user data or route params
-
-      const response = await api.get(`api/v1/verifications/inventories/${inventoryId}/verifications/latest`, {
+      const response = await api.get("api/v1/users/me/inventories", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        params: {
-          limit: 50,
-        },
       });
 
-      setVerifications(response.data || []);
+      const data = Array.isArray(response.data) ? response.data : [];
+      setInventories(data);
+
+      if (data.length === 0) {
+        setSelectedInventory(null);
+      } else {
+        setSelectedInventory((current) => {
+          if (!current) {
+            return data[0];
+          }
+
+          const next = data.find(
+                  (inventory) =>
+                    (current.id && inventory.id === current.id) ||
+                    (current.uuid && inventory.uuid === current.uuid)
+                ) || data[0];
+
+          return next;
+        });
+      }
     } catch (error) {
-      console.error("Error fetching verifications:", error);
-      Alert.alert("Error", "No se pudieron cargar las verificaciones");
-      setVerifications([]);
+      console.error("Error loading inventories:", error);
+      Alert.alert("Error", "No se pudieron cargar los inventarios asignados.");
     } finally {
-      setLoading(false);
+      setInventoriesLoading(false);
     }
   };
 
-  const filteredData = verifications.filter(item =>
-    item.licencePlateNumber?.toLowerCase().includes(search.toLowerCase()) ||
-    item.itemName?.toLowerCase().includes(search.toLowerCase())
-  );
+  const fetchVerifications = async (inventory, options = {}) => {
+    const { showLoader = true } = options;
+
+    if (!inventory?.id) {
+      setVerifications([]);
+      if (showLoader) setLoading(false);
+      return;
+    }
+
+    try {
+      if (showLoader) {
+        setLoading(true);
+      }
+      setVerificationsError(null);
+      const token = await ensureAuthToken();
+      if (!token) {
+        return;
+      }
+
+      const response = await api.get(
+        `api/v1/verifications/inventories/${inventory.id}/verifications/latest`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            limit: 50,
+          },
+        }
+      );
+
+      setVerifications(response.data || []);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error("Error fetching verifications:", error);
+      const status = error.response?.status;
+      const message =
+        status === 404
+          ? "No hay verificaciones registradas en este inventario todavía."
+          : "No se pudieron cargar las verificaciones. Intenta nuevamente.";
+      setVerifications([]);
+      setVerificationsError(message);
+    } finally {
+      if (showLoader) {
+        setLoading(false);
+      }
+    }
+  };
+
+  const resetVerificationModalState = () => {
+    setVerificationInput("");
+    setItemPreview(null);
+    setItemPreviewError(null);
+    setSelectedVerification(null);
+  };
+
+  const openVerificationModal = (mode, presetValue = "") => {
+    setVerificationMode(mode);
+    setVerificationInput(presetValue);
+    setVerificationModalVisible(true);
+    setItemPreview(null);
+    setItemPreviewError(null);
+    setSelectedVerification(null);
+    if (presetValue) {
+      fetchItemPreview(presetValue, mode);
+    }
+  };
+
+  const closeVerificationModal = () => {
+    setVerificationModalVisible(false);
+    resetVerificationModalState();
+  };
+
+  const openPreviewModal = (verification) => {
+    setPreviewVerification(verification);
+    setPreviewModalVisible(true);
+  };
+
+  const closePreviewModal = () => {
+    setPreviewVerification(null);
+    setPreviewModalVisible(false);
+  };
+
+  const fetchItemPreview = async (value = verificationInput, mode = verificationMode) => {
+    const cleanValue = value?.trim();
+    if (!cleanValue) {
+      setItemPreview(null);
+      setItemPreviewError("Ingresa un valor válido para buscar.");
+      return;
+    }
+
+    try {
+      setItemPreviewLoading(true);
+      setItemPreviewError(null);
+      const token = await ensureAuthToken();
+      if (!token) {
+        return;
+      }
+
+      const encodedValue = encodeURIComponent(cleanValue);
+      const endpoint =
+        mode === "serial"
+          ? `api/v1/items/serial/${encodedValue}`
+          : `api/v1/items/licence-plate/${encodedValue}`;
+
+      const response = await api.get(endpoint, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setItemPreview(response.data);
+    } catch (error) {
+      console.error("Error fetching item preview:", error);
+      const message =
+        error.response?.data?.message ||
+        (error.response?.status === 404
+          ? "No se encontró un ítem con ese identificador."
+          : "No se pudo obtener la información del ítem. Intenta de nuevo.");
+      setItemPreview(null);
+      setItemPreviewError(message);
+    } finally {
+      setItemPreviewLoading(false);
+    }
+  };
+
+  const handleCreateVerification = async () => {
+    if (!selectedInventory) {
+      Alert.alert("Inventario requerido", "Selecciona un inventario para realizar la verificación.");
+      return;
+    }
+
+    const cleanValue = verificationInput?.trim();
+    if (!cleanValue) {
+      Alert.alert("Error", "Debes ingresar un valor válido.");
+      return;
+    }
+
+    if (!itemPreview) {
+      Alert.alert("Item requerido", "Primero busca el ítem para confirmar la información.");
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const token = await ensureAuthToken();
+      if (!token) {
+        return;
+      }
+
+      const endpoint =
+        verificationMode === "serial"
+          ? "api/v1/verifications/by-serial"
+          : "api/v1/verifications/by-licence-plate";
+      const payload =
+        verificationMode === "serial"
+          ? { serial: cleanValue }
+          : { licencePlateNumber: cleanValue };
+
+      const { data } = await api.post(endpoint, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const verificationSummary = {
+        verificationId: data.verificationId,
+        itemLicencePlateNumber: itemPreview?.licencePlateNumber || cleanValue,
+      };
+
+      setSelectedVerification(verificationSummary);
+      Alert.alert(
+        "Éxito",
+        "Verificación creada. Ahora puedes subir la evidencia desde este mismo modal."
+      );
+      fetchVerifications(selectedInventory);
+    } catch (error) {
+      console.error("Error creating verification:", error);
+      Alert.alert("Error", error.response?.data?.message || "No se pudo crear la verificación.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const normalizedQuery = search.trim().toLowerCase();
+  const filteredData = verifications.filter((item) => {
+    if (!normalizedQuery) return true;
+    const byPlate = item.itemLicencePlateNumber?.toLowerCase().includes(normalizedQuery);
+    const byUser = item.userFullName?.toLowerCase().includes(normalizedQuery);
+    const byId = item.itemId?.toString().includes(normalizedQuery);
+    return byPlate || byUser || byId;
+  });
 
   const styles = getStyles(colors);
+  const hasInventorySelected = Boolean(selectedInventory);
 
   const renderItem = ({ item }) => (
     <View style={styles.verificationCard}>
@@ -94,10 +328,7 @@ export default function Verification() {
             </View>
             <TouchableOpacity
               style={styles.viewButton}
-              onPress={() => {
-                setSelectedVerification(item);
-                setEvidenceModalVisible(true);
-              }}
+              onPress={() => openPreviewModal(item)}
             >
               <Ionicons name="eye-outline" size={20} style={styles.viewButtonIcon} />
             </TouchableOpacity>
@@ -154,25 +385,52 @@ export default function Verification() {
     }
   };
 
-  const createVerificationBySerial = async (serial) => {
+  const getSerialFromItem = (item) => {
+    if (!item?.attributes) {
+      return null;
+    }
+    return (
+      item.attributes.SERIAL ||
+      item.attributes.Serial ||
+      item.attributes.serial ||
+      item.attributes?.SerialNumber ||
+      null
+    );
+  };
+
+  const createVerificationBySerial = async (serial, options = {}) => {
+    const { skipModalReset = false } = options;
+
     try {
       setActionLoading(true);
-      const token = await AsyncStorage.getItem("userToken");
-      if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
+      if (!selectedInventory) {
+        Alert.alert("Inventario requerido", "Selecciona un inventario para realizar la verificación.");
         return;
       }
 
-      const response = await api.post("api/v1/verifications/by-serial", { serial }, {
+      const token = await ensureAuthToken();
+      if (!token) {
+        return;
+      }
+
+      const cleanSerial = serial?.trim();
+      if (!cleanSerial) {
+        Alert.alert("Error", "Debes ingresar un número de serial válido.");
+        return;
+      }
+
+      await api.post("api/v1/verifications/by-serial", { serial: cleanSerial }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       Alert.alert("Éxito", "Verificación creada exitosamente");
-      setSerialModalVisible(false);
+      if (!skipModalReset) {
+        setSerialModalVisible(false);
+      }
       setInputValue("");
-      fetchVerifications(); // Refresh the list
+      fetchVerifications(selectedInventory); // Refresh the list
     } catch (error) {
       console.error("Error creating verification by serial:", error);
       Alert.alert("Error", error.response?.data?.message || "Error al crear verificación");
@@ -181,25 +439,39 @@ export default function Verification() {
     }
   };
 
-  const createVerificationByLicencePlate = async (licencePlateNumber) => {
+  const createVerificationByLicencePlate = async (licencePlateNumber, options = {}) => {
+    const { skipModalReset = false } = options;
+
     try {
       setActionLoading(true);
-      const token = await AsyncStorage.getItem("userToken");
-      if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
+      if (!selectedInventory) {
+        Alert.alert("Inventario requerido", "Selecciona un inventario para realizar la verificación.");
         return;
       }
 
-      const response = await api.post("api/v1/verifications/by-licence-plate", { licencePlateNumber }, {
+      const token = await ensureAuthToken();
+      if (!token) {
+        return;
+      }
+
+      const cleanLicencePlate = licencePlateNumber?.trim();
+      if (!cleanLicencePlate) {
+        Alert.alert("Error", "Debes ingresar un número de placa válido.");
+        return;
+      }
+
+      await api.post("api/v1/verifications/by-licence-plate", { licencePlateNumber: cleanLicencePlate }, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       Alert.alert("Éxito", "Verificación creada exitosamente");
-      setLicencePlateModalVisible(false);
+      if (!skipModalReset) {
+        setLicencePlateModalVisible(false);
+      }
       setInputValue("");
-      fetchVerifications(); // Refresh the list
+      fetchVerifications(selectedInventory); // Refresh the list
     } catch (error) {
       console.error("Error creating verification by licence plate:", error);
       Alert.alert("Error", error.response?.data?.message || "Error al crear verificación");
@@ -208,12 +480,19 @@ export default function Verification() {
     }
   };
 
+  const ensureVerificationAvailable = () => {
+    if (!selectedVerification) {
+      Alert.alert("Verificación requerida", "Primero registra una verificación para este ítem.");
+      return false;
+    }
+    return true;
+  };
+
   const uploadEvidence = async (verificationId, imageUri) => {
     try {
       setActionLoading(true);
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
       if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
         return;
       }
 
@@ -235,9 +514,8 @@ export default function Verification() {
       });
 
       Alert.alert("Éxito", "Evidencia subida exitosamente");
-      setEvidenceModalVisible(false);
-      setSelectedVerification(null);
-      fetchVerifications(); // Refresh the list
+      closeVerificationModal();
+      fetchVerifications(selectedInventory); // Refresh the list
     } catch (error) {
       console.error("Error uploading evidence:", error);
       Alert.alert("Error", error.response?.data?.message || "Error al subir evidencia");
@@ -247,6 +525,9 @@ export default function Verification() {
   };
 
   const pickImage = async () => {
+    if (!ensureVerificationAvailable()) {
+      return;
+    }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permiso requerido', 'Se necesita acceso a la galería para subir evidencia');
@@ -266,6 +547,9 @@ export default function Verification() {
   };
 
   const takePhoto = async () => {
+    if (!ensureVerificationAvailable()) {
+      return;
+    }
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permiso requerido', 'Se necesita acceso a la cámara para tomar fotos');
@@ -283,6 +567,52 @@ export default function Verification() {
     }
   };
 
+  const openScanner = async () => {
+    try {
+      if (!selectedInventory) {
+        Alert.alert("Inventario requerido", "Selecciona un inventario antes de escanear una placa.");
+        return;
+      }
+
+      setHasScannerPermission(null);
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        setHasScannerPermission(false);
+        Alert.alert("Permiso requerido", "Se necesita acceder a la cámara para escanear la placa.");
+        return;
+      }
+
+      setHasScannerPermission(true);
+      setScannerVisible(true);
+      setIsScanning(false);
+    } catch (error) {
+      console.error("Error opening scanner:", error);
+      Alert.alert("Error", "No se pudo abrir el escáner. Intenta de nuevo.");
+    }
+  };
+
+  const handleBarCodeScanned = ({ data }) => {
+    if (isScanning) {
+      return;
+    }
+
+    setIsScanning(true);
+    setScannerVisible(false);
+
+    const scannedPlate = data?.trim();
+    if (!scannedPlate) {
+      Alert.alert("Código inválido", "No se detectó un número de placa válido.");
+      setIsScanning(false);
+      return;
+    }
+
+    // Abrir modal prellenado con el valor escaneado
+    setTimeout(() => {
+      openVerificationModal("plate", scannedPlate);
+      setIsScanning(false);
+    }, 200);
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -297,10 +627,64 @@ export default function Verification() {
               <Text style={styles.headerSubtitle}>Verifica ubicación y estado de items</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.scanButton}>
+          <TouchableOpacity
+            style={[styles.scanButton, !selectedInventory && styles.scanButtonDisabled]}
+            onPress={openScanner}
+            disabled={!selectedInventory}
+          >
             <Ionicons name="scan" size={24} style={styles.scanButtonIcon} />
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* Inventory Selector */}
+      <View style={styles.inventorySection}>
+        <View style={styles.inventoryHeader}>
+          <Text style={styles.inventoryTitle}>Inventarios asignados</Text>
+          <TouchableOpacity onPress={loadInventories} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="refresh" size={18} color={colors.icon} />
+          </TouchableOpacity>
+        </View>
+        {inventoriesLoading ? (
+          <View style={styles.inventoryLoading}>
+            <ActivityIndicator size="small" color={colors.buttonBackground} />
+            <Text style={styles.inventoryHint}>Cargando inventarios...</Text>
+          </View>
+        ) : inventories.length === 0 ? (
+          <Text style={styles.inventoryHint}>No tienes inventarios asignados.</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {inventories.map((inventory) => {
+              const selectedKey = selectedInventory?.id ?? selectedInventory?.uuid;
+              const inventoryKey = inventory.id ?? inventory.uuid;
+              const isSelected = selectedKey !== undefined && selectedKey !== null
+                ? selectedKey === inventoryKey
+                : inventory.id === selectedInventory?.id;
+              return (
+                <TouchableOpacity
+                  key={inventoryKey || inventory.id || inventory.uuid}
+                  style={[styles.inventoryChip, isSelected && styles.inventoryChipActive]}
+                  onPress={() => setSelectedInventory(inventory)}
+                >
+                  <Ionicons
+                    name="cube-outline"
+                    size={18}
+                    color={isSelected ? "#fff" : colors.icon}
+                    style={styles.inventoryChipIcon}
+                  />
+                  <View>
+                    <Text style={[styles.inventoryChipTitle, isSelected && styles.inventoryChipTitleActive]}>
+                      {inventory.name || `Inventario ${inventory.id}`}
+                    </Text>
+                    <Text style={[styles.inventoryChipSubtitle, isSelected && styles.inventoryChipSubtitleActive]}>
+                      {inventory.location || "Sin ubicación"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
       </View>
 
       {/* Search Section */}
@@ -320,7 +704,11 @@ export default function Verification() {
             </TouchableOpacity>
           )}
         </View>
-        <TouchableOpacity style={styles.barcodeButton}>
+        <TouchableOpacity
+          style={[styles.barcodeButton, !selectedInventory && styles.barcodeButtonDisabled]}
+          onPress={openScanner}
+          disabled={!selectedInventory}
+        >
           <Ionicons name="barcode-outline" size={20} color={colors.buttonText} />
           <Text style={styles.barcodeText}>Escanear</Text>
         </TouchableOpacity>
@@ -329,34 +717,58 @@ export default function Verification() {
       {/* Action Buttons */}
       <View style={styles.actionButtonsSection}>
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => setSerialModalVisible(true)}
+          style={[
+            styles.actionButton,
+            (!selectedInventory || actionLoading) && styles.actionButtonDisabled,
+          ]}
+          onPress={() => openVerificationModal("serial")}
+          disabled={!selectedInventory || actionLoading}
         >
           <Ionicons name="scan-outline" size={20} color="#fff" />
           <Text style={styles.actionButtonText}>Verificar por Serial</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => setLicencePlateModalVisible(true)}
+          style={[
+            styles.actionButton,
+            (!selectedInventory || actionLoading) && styles.actionButtonDisabled,
+          ]}
+          onPress={() => openVerificationModal("plate")}
+          disabled={!selectedInventory || actionLoading}
         >
           <Ionicons name="car-outline" size={20} color="#fff" />
           <Text style={styles.actionButtonText}>Verificar por Placa</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => {
-            if (verifications.length === 0) {
-              Alert.alert("Error", "No hay verificaciones disponibles para subir evidencia");
-              return;
-            }
-            setSelectedVerification(verifications[0]); // Default to first verification
-            setEvidenceModalVisible(true);
-          }}
-        >
-          <Ionicons name="camera-outline" size={20} color="#fff" />
-          <Text style={styles.actionButtonText}>Subir Evidencia</Text>
-        </TouchableOpacity>
       </View>
+
+      {/* Summary Section */}
+      <View style={styles.summarySection}>
+        <View style={styles.summaryCard}>
+          <View>
+            <Text style={styles.summaryLabel}>Verificaciones cargadas</Text>
+            <Text style={styles.summaryValue}>{verifications.length}</Text>
+          </View>
+          <View style={styles.summaryDivider} />
+          <View>
+            <Text style={styles.summaryLabel}>Última actualización</Text>
+            <Text style={styles.summaryValueSmall}>
+              {lastUpdated ? lastUpdated.toLocaleTimeString() : "Pendiente"}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.summaryRefresh} onPress={handleManualRefresh}>
+            <Ionicons name="refresh" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.summaryHint}>
+          Registra la verificación y sube la evidencia desde el modal para mantener la trazabilidad.
+        </Text>
+      </View>
+
+      {verificationsError && (
+        <View style={styles.errorBanner}>
+          <Ionicons name="alert-circle" size={18} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.errorBannerText}>{verificationsError}</Text>
+        </View>
+      )}
 
       {/* Verification List */}
       <View style={styles.listSection}>
@@ -373,143 +785,265 @@ export default function Verification() {
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            refreshing={refreshing}
+            onRefresh={handleManualRefresh}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Ionicons name="checkmark-done-circle-outline" size={64} color={colors.placeholder} />
                 <Text style={styles.emptyText}>No hay verificaciones disponibles</Text>
+                <TouchableOpacity
+                  style={styles.emptyCTA}
+                  onPress={() => openVerificationModal("serial")}
+                >
+                  <Text style={styles.emptyCTAText}>Registrar primera verificación</Text>
+                </TouchableOpacity>
               </View>
             }
           />
         )}
       </View>
 
-      {/* Serial Input Modal */}
+      {/* Barcode Scanner Modal */}
       <Modal
-        visible={serialModalVisible}
+        visible={scannerVisible}
         transparent={true}
-        animationType="slide"
-        onRequestClose={() => setSerialModalVisible(false)}
+        animationType="fade"
+        onRequestClose={() => setScannerVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Verificar por Serial</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Ingrese el número de serial"
-              value={inputValue}
-              onChangeText={setInputValue}
-              placeholderTextColor={colors.placeholder}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => {
-                  setSerialModalVisible(false);
-                  setInputValue("");
-                }}
-              >
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalConfirmButton}
-                onPress={() => createVerificationBySerial(inputValue)}
-                disabled={actionLoading || !inputValue.trim()}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.modalConfirmText}>Verificar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Licence Plate Input Modal */}
-      <Modal
-        visible={licencePlateModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setLicencePlateModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Verificar por Placa</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Ingrese el número de placa"
-              value={inputValue}
-              onChangeText={setInputValue}
-              placeholderTextColor={colors.placeholder}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => {
-                  setLicencePlateModalVisible(false);
-                  setInputValue("");
-                }}
-              >
-                <Text style={styles.modalCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalConfirmButton}
-                onPress={() => createVerificationByLicencePlate(inputValue)}
-                disabled={actionLoading || !inputValue.trim()}
-              >
-                {actionLoading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.modalConfirmText}>Verificar</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Evidence Upload Modal */}
-      <Modal
-        visible={evidenceModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setEvidenceModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Subir Evidencia</Text>
-            {selectedVerification && (
-              <Text style={styles.modalSubtitle}>
-                Verificación: {selectedVerification.itemLicencePlateNumber}
-              </Text>
-            )}
-            <View style={styles.evidenceButtons}>
-              <TouchableOpacity
-                style={styles.evidenceButton}
-                onPress={takePhoto}
-                disabled={actionLoading}
-              >
-                <Ionicons name="camera" size={24} color="#fff" />
-                <Text style={styles.evidenceButtonText}>Tomar Foto</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.evidenceButton}
-                onPress={pickImage}
-                disabled={actionLoading}
-              >
-                <Ionicons name="images" size={24} color="#fff" />
-                <Text style={styles.evidenceButtonText}>Seleccionar de Galería</Text>
-              </TouchableOpacity>
+          <View style={styles.scannerContent}>
+            <Text style={styles.modalTitle}>Escanear Placa</Text>
+            <Text style={styles.modalSubtitle}>Alinea el código de barras dentro del recuadro</Text>
+            <View style={styles.scannerBox}>
+              {hasScannerPermission === null ? (
+                <View style={styles.scannerMessageContainer}>
+                  <ActivityIndicator size="large" color={colors.buttonBackground} />
+                  <Text style={styles.scannerMessage}>Solicitando permisos...</Text>
+                </View>
+              ) : hasScannerPermission === false ? (
+                <View style={styles.scannerMessageContainer}>
+                  <Ionicons name="alert-circle" size={32} color="#ff9800" />
+                  <Text style={styles.scannerMessage}>
+                    No se otorgó acceso a la cámara. Habilítalo en los ajustes para poder escanear.
+                  </Text>
+                </View>
+              ) : (
+                <View style={styles.barcodeWrapper}>
+                  <CameraView
+                    style={StyleSheet.absoluteFillObject}
+                    onBarcodeScanned={handleBarCodeScanned}
+                    barcodeScannerSettings={{
+                      barcodeTypes: [
+                        "code128",
+                        "code39",
+                        "ean13",
+                        "ean8",
+                        "qr",
+                        "upc_a",
+                        "upc_e",
+                      ],
+                    }}
+                  />
+                </View>
+              )}
             </View>
             <TouchableOpacity
               style={styles.modalCancelButton}
-              onPress={() => {
-                setEvidenceModalVisible(false);
+              onPress={() => setScannerVisible(false)}
+            >
+              <Text style={styles.modalCancelText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Verification Preview Modal */}
+      <Modal
+        visible={previewModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closePreviewModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Detalle de verificación</Text>
+            {previewVerification ? (
+              <>
+                <Text style={styles.previewMeta}>
+                  Placa: {previewVerification.itemLicencePlateNumber || "Sin placa"}
+                </Text>
+                <Text style={styles.previewMeta}>
+                  Verificado por: {previewVerification.userFullName || "Desconocido"}
+                </Text>
+                <Text style={styles.previewMeta}>
+                  Fecha:{" "}
+                  {previewVerification.verifiedAt
+                    ? new Date(previewVerification.verifiedAt).toLocaleString()
+                    : "Sin fecha"}
+                </Text>
+                <View style={styles.previewPhotosWrapper}>
+                  <Text style={styles.previewPhotosTitle}>Evidencias</Text>
+                  {previewVerification.photoUrls && previewVerification.photoUrls.length > 0 ? (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      {previewVerification.photoUrls.map((url, index) => (
+                        <Image
+                          key={index}
+                          source={{ uri: url.startsWith("http") ? url : `https://sgdis.cloud${url}` }}
+                          style={styles.previewPhoto}
+                        />
+                      ))}
+                    </ScrollView>
+                  ) : (
+                    <View style={styles.previewNoPhoto}>
+                      <Ionicons name="images-outline" size={28} color={colors.placeholder} />
+                      <Text style={styles.previewNoPhotoText}>Sin evidencia cargada</Text>
+                    </View>
+                  )}
+                </View>
+              </>
+            ) : (
+              <ActivityIndicator size="large" color={colors.buttonBackground} />
+            )}
+            <TouchableOpacity style={styles.modalCancelButton} onPress={closePreviewModal}>
+              <Text style={styles.modalCancelText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Verification Modal */}
+      <Modal
+        visible={verificationModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={closeVerificationModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              {verificationMode === "serial" ? "Verificar por Serial" : "Verificar por Placa"}
+            </Text>
+            <Text style={styles.modalSubtitle}>
+              Ingresa el {verificationMode === "serial" ? "serial" : "número de placa"} del ítem
+            </Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder={
+                verificationMode === "serial"
+                  ? "Ej: SN-123456"
+                  : "Ej: PLACA-001"
+              }
+              value={verificationInput}
+              onChangeText={(text) => {
+                setVerificationInput(text);
+                setItemPreview(null);
+                setItemPreviewError(null);
                 setSelectedVerification(null);
               }}
+              placeholderTextColor={colors.placeholder}
+              autoCapitalize="characters"
+            />
+            <TouchableOpacity
+              style={styles.modalPrimaryButton}
+              onPress={() => fetchItemPreview()}
+              disabled={itemPreviewLoading || !verificationInput.trim()}
             >
-              <Text style={styles.modalCancelText}>Cancelar</Text>
+              {itemPreviewLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.modalPrimaryButtonText}>Buscar ítem</Text>
+              )}
+            </TouchableOpacity>
+
+            {itemPreviewError && (
+              <Text style={styles.previewError}>{itemPreviewError}</Text>
+            )}
+
+            {itemPreview && (
+              <View style={styles.previewCard}>
+                <View style={styles.previewImageWrapper}>
+                  {itemPreview.urlImg ? (
+                    <Image
+                      source={{ uri: `https://sgdis.cloud${itemPreview.urlImg}` }}
+                      style={styles.previewImage}
+                    />
+                  ) : (
+                    <View style={styles.previewPlaceholder}>
+                      <Ionicons name="image-outline" size={32} color={colors.placeholder} />
+                    </View>
+                  )}
+                </View>
+                <View style={styles.previewInfo}>
+                  <Text style={styles.previewTitle}>{itemPreview.productName || "Sin nombre"}</Text>
+                  <Text style={styles.previewDetail}>
+                    Ubicación: {itemPreview.location || "Sin ubicación"}
+                  </Text>
+                  <Text style={styles.previewDetail}>
+                    Placa: {itemPreview.licencePlateNumber || "Sin placa"}
+                  </Text>
+                  <Text style={styles.previewDetail}>
+                    Serial: {getSerialFromItem(itemPreview) || "Sin serial"}
+                  </Text>
+                  <Text style={styles.previewDetail}>
+                    Valor: $
+                    {itemPreview.acquisitionValue
+                      ? itemPreview.acquisitionValue.toLocaleString("es-CO")
+                      : "0"}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.modalPrimaryButton,
+                (!itemPreview || actionLoading) && styles.modalButtonDisabled,
+              ]}
+              onPress={handleCreateVerification}
+              disabled={!itemPreview || actionLoading}
+            >
+              {actionLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.modalPrimaryButtonText}>Registrar verificación</Text>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.evidenceInlineSection}>
+              <Text style={styles.evidenceInlineTitle}>Evidencia fotográfica</Text>
+              <Text style={styles.evidenceInlineHint}>
+                {selectedVerification
+                  ? "Sube evidencia para la verificación registrada."
+                  : "Registra la verificación para habilitar la subida de evidencia."}
+              </Text>
+              <View style={styles.evidenceInlineButtons}>
+                <TouchableOpacity
+                  style={[
+                    styles.evidenceInlineButton,
+                    (!selectedVerification || actionLoading) && styles.evidenceInlineButtonDisabled,
+                  ]}
+                  onPress={takePhoto}
+                  disabled={!selectedVerification || actionLoading}
+                >
+                  <Ionicons name="camera" size={20} color="#fff" />
+                  <Text style={styles.evidenceInlineButtonText}>Tomar foto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.evidenceInlineButton,
+                    (!selectedVerification || actionLoading) && styles.evidenceInlineButtonDisabled,
+                  ]}
+                  onPress={pickImage}
+                  disabled={!selectedVerification || actionLoading}
+                >
+                  <Ionicons name="images" size={20} color="#fff" />
+                  <Text style={styles.evidenceInlineButtonText}>Galería</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.modalCancelButton} onPress={closeVerificationModal}>
+              <Text style={styles.modalCancelText}>Cerrar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -571,8 +1105,71 @@ const getStyles = (colors) => StyleSheet.create({
   scanButton: {
     padding: 8,
   },
+  scanButtonDisabled: {
+    opacity: 0.4,
+  },
   scanButtonIcon: {
     color: colors.icon,
+  },
+
+  // Inventory Section
+  inventorySection: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  inventoryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  inventoryTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  inventoryLoading: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  inventoryHint: {
+    fontSize: 13,
+    color: colors.institution,
+    marginLeft: 8,
+  },
+  inventoryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    marginRight: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+  },
+  inventoryChipActive: {
+    backgroundColor: "#28a745",
+    borderColor: "#28a745",
+  },
+  inventoryChipIcon: {
+    marginRight: 10,
+  },
+  inventoryChipTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  inventoryChipSubtitle: {
+    fontSize: 12,
+    color: colors.institution,
+  },
+  inventoryChipTitleActive: {
+    color: "#fff",
+  },
+  inventoryChipSubtitleActive: {
+    color: "#f1f1f1",
   },
 
   // Search Section
@@ -617,6 +1214,9 @@ const getStyles = (colors) => StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+  },
+  barcodeButtonDisabled: {
+    opacity: 0.5,
   },
   barcodeText: {
     color: "#fff",
@@ -771,6 +1371,9 @@ const getStyles = (colors) => StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
+  actionButtonDisabled: {
+    opacity: 0.5,
+  },
   actionButtonText: {
     color: "#fff",
     fontSize: 12,
@@ -801,6 +1404,17 @@ const getStyles = (colors) => StyleSheet.create({
     color: colors.text,
     marginTop: 10,
     textAlign: "center",
+  },
+  emptyCTA: {
+    marginTop: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#28a745",
+  },
+  emptyCTAText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 
   // Modal Styles
@@ -877,6 +1491,147 @@ const getStyles = (colors) => StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
+  modalPrimaryButton: {
+    width: "100%",
+    backgroundColor: "#28a745",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  modalPrimaryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
+  previewError: {
+    marginTop: 8,
+    color: "#f44336",
+    textAlign: "center",
+  },
+  previewCard: {
+    flexDirection: "row",
+    width: "100%",
+    backgroundColor: colors.inputBackground,
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  previewImageWrapper: {
+    width: 90,
+    height: 90,
+    borderRadius: 10,
+    overflow: "hidden",
+    marginRight: 12,
+    backgroundColor: colors.card,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  previewPlaceholder: {
+    width: "100%",
+    height: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewInfo: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  previewTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.text,
+    marginBottom: 4,
+  },
+  previewDetail: {
+    fontSize: 13,
+    color: colors.institution,
+  },
+  evidenceInlineSection: {
+    width: "100%",
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: colors.inputBackground,
+  },
+  evidenceInlineTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 4,
+  },
+  evidenceInlineHint: {
+    fontSize: 12,
+    color: colors.institution,
+    marginBottom: 12,
+  },
+  evidenceInlineButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  evidenceInlineButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007bff",
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginHorizontal: 4,
+  },
+  evidenceInlineButtonDisabled: {
+    opacity: 0.5,
+  },
+  evidenceInlineButtonText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  previewMeta: {
+    fontSize: 14,
+    color: colors.text,
+    marginBottom: 4,
+  },
+  previewPhotosWrapper: {
+    width: "100%",
+    marginTop: 16,
+  },
+  previewPhotosTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 8,
+  },
+  previewPhoto: {
+    width: 120,
+    height: 90,
+    borderRadius: 10,
+    marginRight: 10,
+    backgroundColor: colors.inputBackground,
+  },
+  previewNoPhoto: {
+    width: "100%",
+    borderRadius: 12,
+    padding: 16,
+    backgroundColor: colors.inputBackground,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  previewNoPhotoText: {
+    marginTop: 6,
+    color: colors.institution,
+  },
   evidenceButtons: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -904,5 +1659,103 @@ const getStyles = (colors) => StyleSheet.create({
     fontWeight: "600",
     marginTop: 4,
     textAlign: "center",
+  },
+  summarySection: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  summaryCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  summaryLabel: {
+    fontSize: 12,
+    color: colors.institution,
+  },
+  summaryValue: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: colors.text,
+  },
+  summaryValueSmall: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  summaryDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: colors.inputBorder,
+    marginHorizontal: 16,
+  },
+  summaryRefresh: {
+    marginLeft: "auto",
+    backgroundColor: "#28a745",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  summaryHint: {
+    fontSize: 12,
+    color: colors.institution,
+    marginTop: 6,
+  },
+  errorBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "#f44336",
+  },
+  errorBannerText: {
+    color: "#fff",
+    flex: 1,
+    fontSize: 13,
+  },
+  scannerContent: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 20,
+    width: "90%",
+    maxWidth: 400,
+    alignItems: "center",
+  },
+  scannerBox: {
+    width: "100%",
+    height: 280,
+    borderRadius: 16,
+    overflow: "hidden",
+    marginVertical: 16,
+    borderWidth: 2,
+    borderColor: colors.inputBorder,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  barcodeWrapper: {
+    width: "100%",
+    height: "100%",
+  },
+  scannerMessageContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  scannerMessage: {
+    marginTop: 10,
+    textAlign: "center",
+    color: colors.text,
   },
 });

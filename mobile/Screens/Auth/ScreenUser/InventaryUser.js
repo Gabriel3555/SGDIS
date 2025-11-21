@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { ensureAuthToken } from "../../../src/Navigation/Services/AuthSession";
 import { useTheme } from "../../../src/ThemeContext";
 
 export default function Inventary({ navigation }) {
@@ -63,9 +63,8 @@ export default function Inventary({ navigation }) {
     const inventoryId = selectedInventoryId;
     setSelectedInventoryId(null);
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
       if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
         return;
       }
 
@@ -88,9 +87,8 @@ export default function Inventary({ navigation }) {
 
   const fetchInventories = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
       if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
         return;
       }
 

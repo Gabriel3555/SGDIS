@@ -19,6 +19,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../../../src/Navigation/Services/Connection";
+import { ensureAuthToken } from "../../../src/Navigation/Services/AuthSession";
 import { useTheme } from "../../../src/ThemeContext";
 
 export default function ChangePhotoScreen() {
@@ -90,9 +91,8 @@ export default function ChangePhotoScreen() {
 
     setLoading(true);
     try {
-      const token = await AsyncStorage.getItem("userToken");
+      const token = await ensureAuthToken();
       if (!token) {
-        Alert.alert("Error", "No se encontró token de autenticación");
         return;
       }
 
