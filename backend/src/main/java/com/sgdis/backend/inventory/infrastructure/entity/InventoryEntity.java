@@ -35,7 +35,9 @@ public class InventoryEntity {
     @Default
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean status = true;
-    @ManyToOne(fetch = FetchType.EAGER)
+
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "owner_id", unique = true)
     private UserEntity owner;
 
     @JsonIgnore
