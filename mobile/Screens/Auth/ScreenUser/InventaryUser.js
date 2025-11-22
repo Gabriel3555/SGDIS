@@ -282,9 +282,6 @@ export default function Inventary({ navigation }) {
             >
               <Ionicons name="eye-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
-              <Ionicons name="create-outline" size={18} color={colors.icon} />
-            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: colors.card }]}
               onPress={() => {
@@ -359,9 +356,6 @@ export default function Inventary({ navigation }) {
               onPress={() => navigation.navigate('Items', { inventoryId: item.id, inventoryName: item.name })}
             >
               <Ionicons name="eye-outline" size={18} color={colors.icon} />
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
-              <Ionicons name="create-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: colors.card }]}
