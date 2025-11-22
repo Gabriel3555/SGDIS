@@ -16,11 +16,9 @@ export default function Inventary({ navigation }) {
    const [ownerInventories, setOwnerInventories] = useState([]);
    const [assignedInventories, setAssignedInventories] = useState([]);
    const [managerInventories, setManagerInventories] = useState([]);
-   const [selectedOwner, setSelectedOwner] = useState("");
-   const [selectedAssigned, setSelectedAssigned] = useState("");
-   const [selectedManager, setSelectedManager] = useState("");
-   const [showDropdownModal, setShowDropdownModal] = useState(false);
-   const [currentDropdownType, setCurrentDropdownType] = useState(""); // "owner", "assigned", "manager"
+   const [expandedOwner, setExpandedOwner] = useState(true);
+   const [expandedAssigned, setExpandedAssigned] = useState(false);
+   const [expandedManager, setExpandedManager] = useState(false);
 
    const styles = getStyles(colors);
 
@@ -106,7 +104,9 @@ export default function Inventary({ navigation }) {
         },
       });
       if (response.data) {
-        setOwnerInventories([response.data]);
+        const inventory = response.data;
+        const stats = await fetchItemStats(inventory.id, token);
+        setOwnerInventories([{ ...inventory, stats }]);
       } else {
         setOwnerInventories([]);
       }
@@ -125,8 +125,18 @@ export default function Inventary({ navigation }) {
           Authorization: `Bearer ${token}`,
         },
       });
-      const data = response.data || [];
-      setAssignedInventories(data);
+      let data = response.data || [];
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+      data = data.filter(item => item && typeof item === 'object' && item.id !== undefined);
+      const inventoriesWithStats = await Promise.all(
+        data.map(async (inventory) => {
+          const stats = await fetchItemStats(inventory.id, token);
+          return { ...inventory, stats };
+        })
+      );
+      setAssignedInventories(inventoriesWithStats);
     } catch (error) {
       console.error("Error fetching assigned inventories:", error);
       setAssignedInventories([]);
@@ -142,8 +152,18 @@ export default function Inventary({ navigation }) {
           Authorization: `Bearer ${token}`,
         },
       });
-      const data = response.data || [];
-      setManagerInventories(data);
+      let data = response.data || [];
+      if (!Array.isArray(data)) {
+        data = [];
+      }
+      data = data.filter(item => item && typeof item === 'object' && item.id !== undefined);
+      const inventoriesWithStats = await Promise.all(
+        data.map(async (inventory) => {
+          const stats = await fetchItemStats(inventory.id, token);
+          return { ...inventory, stats };
+        })
+      );
+      setManagerInventories(inventoriesWithStats);
     } catch (error) {
       console.error("Error fetching manager inventories:", error);
       setManagerInventories([]);
@@ -199,11 +219,83 @@ export default function Inventary({ navigation }) {
     }
   };
 
-  const filteredData = inventories.filter(item =>
-    item && typeof item === 'object' &&
-    ((item.name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-    (item.location?.toLowerCase() || '').includes(searchQuery.toLowerCase()))
-  );
+  const renderInventoryCard = (item) => {
+    if (!item || typeof item !== 'object') {
+      return null;
+    }
+    return (
+      <View key={item.id} style={styles.inventoryCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.titleSection}>
+            <View style={[styles.categoryIcon, { backgroundColor: colors.card }]}>
+              <Ionicons name="business" size={20} color={colors.icon} />
+            </View>
+            <View style={styles.titleContent}>
+              <Text style={styles.cardTitle}>{item.name || 'Sin nombre'}</Text>
+              <Text style={styles.cardLocation}>{item.location || 'Sin ubicación'}</Text>
+            </View>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: colors.card }]}>
+            <Ionicons name="checkmark-circle" size={14} color={colors.icon} />
+            <Text style={styles.statusText}>Activo</Text>
+          </View>
+        </View>
+
+        <Text style={styles.cardDescription}>Dueño de inventario {item.ownerName || 'Sin propietario'}</Text>
+
+        <View style={styles.responsibleSection}>
+          <Ionicons name="person-outline" size={14} color={colors.icon} />
+          <Text style={styles.responsibleText}>{item.ownerName || 'Sin propietario'}</Text>
+        </View>
+
+        <View style={styles.statsGrid}>
+          <View style={[styles.statItem, { backgroundColor: colors.card }]}>
+            <Text style={styles.statNumber}>{item.stats?.total || 0}</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
+          <View style={[styles.statItem, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statNumber, { color: colors.subtitle }]}>{item.stats?.activos || 0}</Text>
+            <Text style={styles.statLabel}>Activos</Text>
+          </View>
+          <View style={[styles.statItem, { backgroundColor: colors.card }]}>
+            <Text style={[styles.statNumber, { color: colors.institution }]}>{item.stats?.mantenimiento || 0}</Text>
+            <Text style={styles.statLabel}>Mantenimiento</Text>
+          </View>
+          <View style={[styles.statItem, { backgroundColor: colors.card }]}>
+            <Text style={styles.statNumber}>${item.stats?.valor || '0.00'}</Text>
+            <Text style={styles.statLabel}>Valor</Text>
+          </View>
+        </View>
+
+        <View style={styles.cardFooter}>
+          <View style={styles.updateInfo}>
+            <Ionicons name="time-outline" size={14} color={colors.icon} />
+            <Text style={styles.updateText}>ID: {item.id || 'Sin ID'}</Text>
+          </View>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.card }]}
+              onPress={() => navigation.navigate('Items', { inventoryId: item.id, inventoryName: item.name })}
+            >
+              <Ionicons name="eye-outline" size={18} color={colors.icon} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
+              <Ionicons name="create-outline" size={18} color={colors.icon} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.card }]}
+              onPress={() => {
+                setSelectedInventoryId(item.id);
+                setShowQuitModal(true);
+              }}
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.icon} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
 
   const renderItem = ({ item }) => {
     if (!item || typeof item !== 'object') {
@@ -317,51 +409,84 @@ export default function Inventary({ navigation }) {
       {/* Dropdowns Section */}
       <View style={styles.dropdownsSection}>
         <View style={styles.dropdownContainer}>
-          <Text style={styles.dropdownLabel}>Inventarios como Dueño</Text>
           <TouchableOpacity
             style={styles.dropdownButton}
             onPress={() => {
-              setCurrentDropdownType("owner");
-              setShowDropdownModal(true);
+              if (expandedOwner) {
+                setExpandedOwner(false);
+              } else {
+                setExpandedOwner(true);
+                setExpandedAssigned(false);
+                setExpandedManager(false);
+              }
             }}
           >
-            <Text style={styles.dropdownButtonText}>
-              {selectedOwner ? ownerInventories.find(i => i.id == selectedOwner)?.name : "Seleccionar..."}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color={colors.icon} />
+            <Text style={styles.dropdownLabel}>Inventarios como Dueño</Text>
+            <Ionicons name={expandedOwner ? "chevron-up" : "chevron-down"} size={20} color={colors.icon} />
           </TouchableOpacity>
+          {expandedOwner && (
+            <View style={styles.expandedContent}>
+              {ownerInventories.length > 0 ? (
+                ownerInventories.map((item) => renderInventoryCard(item))
+              ) : (
+                <Text style={styles.emptyText}>No hay inventarios como dueño</Text>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={styles.dropdownContainer}>
-          <Text style={styles.dropdownLabel}>Inventarios Asignados</Text>
           <TouchableOpacity
             style={styles.dropdownButton}
             onPress={() => {
-              setCurrentDropdownType("assigned");
-              setShowDropdownModal(true);
+              if (expandedAssigned) {
+                setExpandedAssigned(false);
+              } else {
+                setExpandedAssigned(true);
+                setExpandedOwner(false);
+                setExpandedManager(false);
+              }
             }}
           >
-            <Text style={styles.dropdownButtonText}>
-              {selectedAssigned ? assignedInventories.find(i => i.id == selectedAssigned)?.name : "Seleccionar..."}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color={colors.icon} />
+            <Text style={styles.dropdownLabel}>Inventarios Asignados</Text>
+            <Ionicons name={expandedAssigned ? "chevron-up" : "chevron-down"} size={20} color={colors.icon} />
           </TouchableOpacity>
+          {expandedAssigned && (
+            <View style={styles.expandedContent}>
+              {assignedInventories.length > 0 ? (
+                assignedInventories.map((item) => renderInventoryCard(item))
+              ) : (
+                <Text style={styles.emptyText}>No hay inventarios asignados</Text>
+              )}
+            </View>
+          )}
         </View>
 
         <View style={styles.dropdownContainer}>
-          <Text style={styles.dropdownLabel}>Inventarios como Manager</Text>
           <TouchableOpacity
             style={styles.dropdownButton}
             onPress={() => {
-              setCurrentDropdownType("manager");
-              setShowDropdownModal(true);
+              if (expandedManager) {
+                setExpandedManager(false);
+              } else {
+                setExpandedManager(true);
+                setExpandedOwner(false);
+                setExpandedAssigned(false);
+              }
             }}
           >
-            <Text style={styles.dropdownButtonText}>
-              {selectedManager ? managerInventories.find(i => i.id == selectedManager)?.name : "Seleccionar..."}
-            </Text>
-            <Ionicons name="chevron-down" size={20} color={colors.icon} />
+            <Text style={styles.dropdownLabel}>Inventarios como Manager</Text>
+            <Ionicons name={expandedManager ? "chevron-up" : "chevron-down"} size={20} color={colors.icon} />
           </TouchableOpacity>
+          {expandedManager && (
+            <View style={styles.expandedContent}>
+              {managerInventories.length > 0 ? (
+                managerInventories.map((item) => renderInventoryCard(item))
+              ) : (
+                <Text style={styles.emptyText}>No hay inventarios como manager</Text>
+              )}
+            </View>
+          )}
         </View>
       </View>
 
@@ -395,54 +520,6 @@ export default function Inventary({ navigation }) {
         </View>
       </Modal>
 
-      {/* Dropdown Modal */}
-      <Modal
-        visible={showDropdownModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowDropdownModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>
-              {currentDropdownType === "owner" ? "Inventarios como Dueño" :
-               currentDropdownType === "assigned" ? "Inventarios Asignados" :
-               "Inventarios como Manager"}
-            </Text>
-            <FlatList
-              data={
-                currentDropdownType === "owner" ? ownerInventories :
-                currentDropdownType === "assigned" ? assignedInventories :
-                managerInventories
-              }
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.modalItem}
-                  onPress={() => {
-                    if (currentDropdownType === "owner") setSelectedOwner(item.id);
-                    else if (currentDropdownType === "assigned") setSelectedAssigned(item.id);
-                    else setSelectedManager(item.id);
-                    navigation.navigate('Items', { inventoryId: item.id, inventoryName: item.name });
-                    setShowDropdownModal(false);
-                  }}
-                >
-                  <Text style={[styles.modalItemText, { color: colors.text }]}>{item.name}</Text>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <Text style={[styles.emptyModalText, { color: colors.text }]}>No hay inventarios disponibles</Text>
-              }
-            />
-            <TouchableOpacity
-              style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.buttonBackground }]}
-              onPress={() => setShowDropdownModal(false)}
-            >
-              <Text style={[styles.modalButtonText, { color: colors.text }]}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
     </View>
   );
@@ -574,10 +651,27 @@ const getStyles = (colors) => StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
-  dropdownButtonText: {
+  dropdownButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  dropdownLabel: {
     fontSize: 16,
+    fontWeight: "bold",
     color: colors.text,
-    flex: 1,
+  },
+  expandedContent: {
+    marginTop: 10,
   },
   modalItem: {
     paddingVertical: 12,
