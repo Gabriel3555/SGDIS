@@ -44,13 +44,24 @@ async function createItem(itemData) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || errorData.detail || 'Error al crear el item');
+            let errorMessage = 'Error al crear el item';
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+                } else {
+                    const errorText = await response.text();
+                    errorMessage = errorText || errorMessage;
+                }
+            } catch (parseError) {
+                // Error al parsear respuesta
+            }
+            throw new Error(errorMessage);
         }
 
         return await response.json();
     } catch (error) {
-        console.error('Error creating item:', error);
         throw error;
     }
 }
@@ -72,13 +83,24 @@ async function updateItem(itemId, itemData) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || errorData.detail || 'Error al actualizar el item');
+            let errorMessage = 'Error al actualizar el item';
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+                } else {
+                    const errorText = await response.text();
+                    errorMessage = errorText || errorMessage;
+                }
+            } catch (parseError) {
+                // Error al parsear respuesta
+            }
+            throw new Error(errorMessage);
         }
 
         return await response.json();
     } catch (error) {
-        console.error('Error updating item:', error);
         throw error;
     }
 }

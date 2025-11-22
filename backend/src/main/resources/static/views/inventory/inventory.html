@@ -544,6 +544,22 @@
             }
         }
 
+        /* Role selector button styles */
+        .role-selector-btn {
+            transition: all 0.3s ease;
+        }
+
+        .role-selector-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 175, 0, 0.15);
+        }
+
+        .role-selector-btn.selected {
+            border-color: #00AF00 !important;
+            background-color: rgb(240, 253, 244) !important;
+            color: #00AF00 !important;
+        }
+
         /* Tree styles */
         .tree-link {
             fill: none;
@@ -1038,46 +1054,44 @@
             </div>
 
             <form id="assignManagerForm" class="space-y-4">
+                <!-- Usuario Selector -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Asignar Manejador</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Usuario</label>
                     <div class="custom-select-container">
-                        <div class="custom-select" id="managerIdSelect">
+                        <div class="custom-select" id="roleUserIdSelect">
                             <div class="custom-select-trigger">
-                                <span class="custom-select-text">Seleccionar manejador...</span>
+                                <span class="custom-select-text">Seleccionar usuario...</span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar manejador...">
-                                <div class="custom-select-options" id="managerIdOptions">
+                                <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
+                                <div class="custom-select-options" id="roleUserIdOptions">
                                     <!-- Options loaded dynamically -->
                                 </div>
                             </div>
                         </div>
-                        <input type="hidden" id="managerId" name="managerId">
+                        <input type="hidden" id="roleUserId" name="userId">
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">El inventario será administrado por el manejador seleccionado
-                    </p>
+                    <p class="text-xs text-gray-500 mt-1">Selecciona el usuario al que se le asignará el rol</p>
                 </div>
 
+                <!-- Role Selection Buttons -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Asignar Firmante</label>
-                    <div class="custom-select-container">
-                        <div class="custom-select" id="signatoryIdSelect">
-                            <div class="custom-select-trigger">
-                                <span class="custom-select-text">Seleccionar firmante...</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar firmante...">
-                                <div class="custom-select-options" id="signatoryIdOptions">
-                                    <!-- Options loaded dynamically -->
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="signatoryId" name="signatoryId">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Seleccionar Rol a Asignar</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" id="managerRoleBtn" onclick="selectRole('manager')"
+                            class="role-selector-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-[#00AF00] hover:bg-green-50 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-user-tie text-2xl"></i>
+                            <span class="font-semibold">Manejador</span>
+                        </button>
+                        <button type="button" id="signatoryRoleBtn" onclick="selectRole('signatory')"
+                            class="role-selector-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-[#00AF00] hover:bg-green-50 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-signature text-2xl"></i>
+                            <span class="font-semibold">Firmante</span>
+                        </button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Selecciona un usuario normal para asignar como firmante del inventario
-                    </p>
+                    <input type="hidden" id="selectedRole" name="role">
+                    <p class="text-xs text-gray-500 mt-2" id="roleDescription">Selecciona un rol para continuar</p>
                 </div>
 
                 <div class="flex gap-3 pt-4">
@@ -1087,7 +1101,7 @@
                     </button>
                     <button type="submit"
                         class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                        Asignar Roles
+                        Asignar Rol
                     </button>
                 </div>
             </form>

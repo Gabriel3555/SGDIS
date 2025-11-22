@@ -44,6 +44,16 @@ function populateNewItemForm() {
             </div>
             
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">ID IR</label>
+                <input type="text" id="newItemIrId" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="ID de IR">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">ID IV</label>
+                <input type="text" id="newItemIvId" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="ID de IV">
+            </div>
+            
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Placa</label>
                 <input type="text" id="newItemLicencePlateNumber" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Número de placa">
             </div>
@@ -54,8 +64,13 @@ function populateNewItemForm() {
             </div>
             
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Categoría *</label>
-                <input type="text" id="newItemCategory" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Nombre de categoría" required>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción SKU</label>
+                <input type="text" id="newItemSkuDescription" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Descripción del SKU">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">ID Categoría</label>
+                <input type="number" id="newItemCategoryId" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="ID de la categoría">
             </div>
             
             <div>
@@ -80,7 +95,7 @@ function populateNewItemForm() {
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Valor de Adquisición</label>
-                <input type="number" step="0.01" id="newItemAcquisitionValue" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="0.00">
+                <input type="number" step="0.01" min="0.1" id="newItemAcquisitionValue" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="0.00">
             </div>
             
             <div class="md:col-span-2">
@@ -96,6 +111,13 @@ function populateNewItemForm() {
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
                 <textarea id="newItemObservations" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Observaciones adicionales"></textarea>
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" id="newItemStatus" class="w-4 h-4 text-[#00AF00] border-gray-300 rounded focus:ring-[#00AF00]" checked>
+                    <span class="text-sm font-medium text-gray-700">Activo</span>
+                </label>
             </div>
         </div>
         
@@ -120,33 +142,61 @@ async function handleNewItemSubmit(e) {
         return;
     }
     
-    const productName = document.getElementById('newItemProductName')?.value;
-    const category = document.getElementById('newItemCategory')?.value;
+    const productName = document.getElementById('newItemProductName')?.value?.trim();
     
-    if (!productName || !category) {
+    if (!productName) {
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'Por favor complete los campos obligatorios');
+            window.showErrorToast('Error', 'Por favor ingrese el nombre del producto');
         }
         return;
     }
     
     try {
-        // Note: We need to get categoryId from category name
-        // For now, we'll use a placeholder
+        // Obtener valores del formulario
+        const irId = document.getElementById('newItemIrId')?.value?.trim() || '';
+        const ivId = document.getElementById('newItemIvId')?.value?.trim() || '';
+        const licencePlateNumber = document.getElementById('newItemLicencePlateNumber')?.value?.trim() || '';
+        const consecutiveNumber = document.getElementById('newItemConsecutiveNumber')?.value?.trim() || '';
+        const skuDescription = document.getElementById('newItemSkuDescription')?.value?.trim() || '';
+        const wareHouseDescription = document.getElementById('newItemWareHouseDescription')?.value?.trim() || '';
+        const descriptionElement = document.getElementById('newItemDescriptionElement')?.value?.trim() || '';
+        const brand = document.getElementById('newItemBrand')?.value?.trim() || '';
+        const serial = document.getElementById('newItemSerial')?.value?.trim() || '';
+        const model = document.getElementById('newItemModel')?.value?.trim() || '';
+        const observations = document.getElementById('newItemObservations')?.value?.trim() || '';
+        const acquisitionDate = document.getElementById('newItemAcquisitionDate')?.value || null;
+        const acquisitionValueInput = document.getElementById('newItemAcquisitionValue')?.value;
+        const categoryIdInput = document.getElementById('newItemCategoryId')?.value;
+        const status = document.getElementById('newItemStatus')?.checked ?? true;
+        
+        // Validar y parsear acquisitionValue (debe ser al menos 0.1)
+        let acquisitionValue = acquisitionValueInput ? parseFloat(acquisitionValueInput) : 0.1;
+        if (acquisitionValue < 0.1) {
+            acquisitionValue = 0.1;
+        }
+        
+        // Validar y parsear categoryId
+        const categoryId = categoryIdInput ? parseInt(categoryIdInput, 10) : 0;
+        
+        // Construir objeto de datos según la API
         const itemData = {
+            irId: irId,
             productName: productName,
-            licencePlateNumber: document.getElementById('newItemLicencePlateNumber')?.value || null,
-            consecutiveNumber: document.getElementById('newItemConsecutiveNumber')?.value || null,
-            brand: document.getElementById('newItemBrand')?.value || null,
-            serial: document.getElementById('newItemSerial')?.value || null,
-            model: document.getElementById('newItemModel')?.value || null,
-            wareHouseDescription: document.getElementById('newItemWareHouseDescription')?.value || null,
-            descriptionElement: document.getElementById('newItemDescriptionElement')?.value || null,
-            observations: document.getElementById('newItemObservations')?.value || null,
-            acquisitionDate: document.getElementById('newItemAcquisitionDate')?.value || null,
-            acquisitionValue: document.getElementById('newItemAcquisitionValue')?.value ? parseFloat(document.getElementById('newItemAcquisitionValue').value) : null,
+            wareHouseDescription: wareHouseDescription,
+            licencePlateNumber: licencePlateNumber,
+            consecutiveNumber: consecutiveNumber,
+            skuDescription: skuDescription,
+            descriptionElement: descriptionElement,
+            brand: brand,
+            serial: serial,
+            model: model,
+            observations: observations,
+            acquisitionDate: acquisitionDate,
+            acquisitionValue: acquisitionValue,
+            ivId: ivId,
             inventoryId: window.itemsData.currentInventoryId,
-            categoryId: null // TODO: Get from category name
+            categoryId: categoryId,
+            status: status
         };
         
         const response = await window.createItem(itemData);
@@ -173,57 +223,106 @@ function populateEditItemForm() {
     const item = window.itemsData.items.find(i => i.id === window.itemsData.currentItemId);
     if (!item) return;
     
-    // Similar to new item form but with values pre-filled
+    // Extract values from item, handling different possible structures
+    const irId = item.irId || '';
+    const ivId = item.ivId || '';
+    const productName = item.productName || '';
+    const wareHouseDescription = item.wareHouseDescription || '';
+    const licencePlateNumber = item.licencePlateNumber || '';
+    const consecutiveNumber = item.consecutiveNumber || '';
+    const skuDescription = item.skuDescription || '';
+    const descriptionElement = item.descriptionElement || '';
+    const categoryName = item.categoryName || item.category || '';
+    const brand = item.brand || item.attributes?.BRAND || '';
+    const serial = item.serial || item.attributes?.SERIAL || '';
+    const model = item.model || item.attributes?.MODEL || '';
+    const observations = item.observations || item.attributes?.OBSERVATIONS || '';
+    const acquisitionDate = item.acquisitionDate ? new Date(item.acquisitionDate).toISOString().split('T')[0] : '';
+    const acquisitionValue = item.acquisitionValue || '';
+    const status = item.status ?? true;
+    
     form.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Producto *</label>
-                <input type="text" id="editItemProductName" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.productName || ''}" required>
+                <input type="text" id="editItemProductName" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${productName}" required>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">ID IR</label>
+                <input type="text" id="editItemIrId" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${irId}">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">ID IV</label>
+                <input type="text" id="editItemIvId" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${ivId}">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Placa</label>
-                <input type="text" id="editItemLicencePlateNumber" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.licencePlateNumber || ''}">
+                <input type="text" id="editItemLicencePlateNumber" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${licencePlateNumber}">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Número Consecutivo</label>
-                <input type="text" id="editItemConsecutiveNumber" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.consecutiveNumber || ''}">
+                <input type="text" id="editItemConsecutiveNumber" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${consecutiveNumber}">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción SKU</label>
+                <input type="text" id="editItemSkuDescription" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${skuDescription}">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Categoría *</label>
-                <input type="text" id="editItemCategory" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.categoryName || ''}" required>
+                <input type="text" id="editItemCategory" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${categoryName}" required>
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Marca</label>
-                <input type="text" id="editItemBrand" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.attributes?.BRAND || ''}">
+                <input type="text" id="editItemBrand" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${brand}">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Serial</label>
-                <input type="text" id="editItemSerial" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.attributes?.SERIAL || ''}">
+                <input type="text" id="editItemSerial" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${serial}">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Modelo</label>
-                <input type="text" id="editItemModel" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.attributes?.MODEL || ''}">
+                <input type="text" id="editItemModel" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${model}">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Adquisición</label>
-                <input type="date" id="editItemAcquisitionDate" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.acquisitionDate ? new Date(item.acquisitionDate).toISOString().split('T')[0] : ''}">
+                <input type="date" id="editItemAcquisitionDate" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${acquisitionDate}">
             </div>
             
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Valor de Adquisición</label>
-                <input type="number" step="0.01" id="editItemAcquisitionValue" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${item.acquisitionValue || ''}">
+                <input type="number" step="0.01" min="0.1" id="editItemAcquisitionValue" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${acquisitionValue}">
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción del Almacén</label>
+                <textarea id="editItemWareHouseDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">${wareHouseDescription}</textarea>
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Descripción del Elemento</label>
+                <textarea id="editItemDescriptionElement" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">${descriptionElement}</textarea>
             </div>
             
             <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
-                <textarea id="editItemObservations" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Observaciones adicionales">${item.attributes?.OBSERVATIONS || ''}</textarea>
+                <textarea id="editItemObservations" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">${observations}</textarea>
+            </div>
+            
+            <div class="md:col-span-2">
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" id="editItemStatus" class="w-4 h-4 text-[#00AF00] border-gray-300 rounded focus:ring-[#00AF00]" ${status ? 'checked' : ''}>
+                    <span class="text-sm font-medium text-gray-700">Activo</span>
+                </label>
             </div>
         </div>
         
@@ -248,29 +347,58 @@ async function handleEditItemSubmit(e) {
         return;
     }
     
-    const productName = document.getElementById('editItemProductName')?.value;
-    const category = document.getElementById('editItemCategory')?.value;
+    const productName = document.getElementById('editItemProductName')?.value?.trim();
+    const category = document.getElementById('editItemCategory')?.value?.trim();
     
-    if (!productName || !category) {
+    if (!productName) {
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'Por favor complete los campos obligatorios');
+            window.showErrorToast('Error', 'Por favor ingrese el nombre del producto');
         }
         return;
     }
     
     try {
+        // Obtener valores del formulario
+        const irId = document.getElementById('editItemIrId')?.value?.trim() || '';
+        const ivId = document.getElementById('editItemIvId')?.value?.trim() || '';
+        const licencePlateNumber = document.getElementById('editItemLicencePlateNumber')?.value?.trim() || '';
+        const consecutiveNumber = document.getElementById('editItemConsecutiveNumber')?.value?.trim() || '';
+        const skuDescription = document.getElementById('editItemSkuDescription')?.value?.trim() || '';
+        const wareHouseDescription = document.getElementById('editItemWareHouseDescription')?.value?.trim() || '';
+        const descriptionElement = document.getElementById('editItemDescriptionElement')?.value?.trim() || '';
+        const brand = document.getElementById('editItemBrand')?.value?.trim() || '';
+        const serial = document.getElementById('editItemSerial')?.value?.trim() || '';
+        const model = document.getElementById('editItemModel')?.value?.trim() || '';
+        const observations = document.getElementById('editItemObservations')?.value?.trim() || '';
+        const acquisitionDate = document.getElementById('editItemAcquisitionDate')?.value || null;
+        const acquisitionValueInput = document.getElementById('editItemAcquisitionValue')?.value;
+        const status = document.getElementById('editItemStatus')?.checked ?? true;
+        
+        // Validar y parsear acquisitionValue (debe ser al menos 0.1)
+        let acquisitionValue = acquisitionValueInput ? parseFloat(acquisitionValueInput) : 0.1;
+        if (acquisitionValue < 0.1) {
+            acquisitionValue = 0.1;
+        }
+        
+        // Construir objeto de datos según la API PUT
         const itemData = {
             itemId: window.itemsData.currentItemId,
+            irId: irId,
             productName: productName,
-            licencePlateNumber: document.getElementById('editItemLicencePlateNumber')?.value || null,
-            consecutiveNumber: document.getElementById('editItemConsecutiveNumber')?.value || null,
-            brand: document.getElementById('editItemBrand')?.value || null,
-            serial: document.getElementById('editItemSerial')?.value || null,
-            model: document.getElementById('editItemModel')?.value || null,
-            observations: document.getElementById('editItemObservations')?.value || null,
-            acquisitionDate: document.getElementById('editItemAcquisitionDate')?.value || null,
-            acquisitionValue: document.getElementById('editItemAcquisitionValue')?.value ? parseFloat(document.getElementById('editItemAcquisitionValue').value) : null,
-            category: category
+            wareHouseDescription: wareHouseDescription,
+            licencePlateNumber: licencePlateNumber,
+            consecutiveNumber: consecutiveNumber,
+            skuDescription: skuDescription,
+            descriptionElement: descriptionElement,
+            brand: brand,
+            serial: serial,
+            model: model,
+            observations: observations,
+            acquisitionDate: acquisitionDate,
+            acquisitionValue: acquisitionValue,
+            ivId: ivId,
+            category: category || '',
+            status: status
         };
         
         const response = await window.updateItem(window.itemsData.currentItemId, itemData);
@@ -282,7 +410,6 @@ async function handleEditItemSubmit(e) {
         closeEditItemModal();
         await loadItemsData();
     } catch (error) {
-        console.error('Error updating item:', error);
         if (window.showErrorToast) {
             window.showErrorToast('Error', error.message || 'No se pudo actualizar el item');
         }
