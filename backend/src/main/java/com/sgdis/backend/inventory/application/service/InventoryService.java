@@ -151,11 +151,11 @@ public class InventoryService
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Inventory not found with id: " + request.inventoryId()));
 
-                if (user.getMySignatories() != null && user.getMySignatories().contains(inventory)) {
+                if (inventory.getSignatories() != null && inventory.getSignatories().contains(user)) {
                     throw new RuntimeException("Este usuario ya esta asignado como firmador a este inventario");
                 }
 
-                if (user.getMyManagers() != null && user.getMyManagers().contains(inventory)) {
+                if (inventory.getManagers() != null && inventory.getManagers().contains(user)) {
                     throw new RuntimeException("Este usuario ya esta asignado como manejador a este inventario");
                 }
 
@@ -298,11 +298,11 @@ public class InventoryService
         InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
 
-        if (user.getMyManagers() != null && user.getMyManagers().contains(inventory)) {
+        if (inventory.getManagers() != null && inventory.getManagers().contains(user)) {
             throw new RuntimeException("Este usuario ya esta asignado como manejador a este inventario");
         }
 
-        if (user.getMySignatories() != null && user.getMySignatories().contains(inventory)) {
+        if (inventory.getSignatories() != null && inventory.getSignatories().contains(user)) {
             throw new RuntimeException("Este usuario ya esta asignado como firmador a este inventario");
         }
 
