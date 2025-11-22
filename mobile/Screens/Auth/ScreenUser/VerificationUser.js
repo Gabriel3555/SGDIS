@@ -744,11 +744,6 @@ export default function Verification() {
       <View style={styles.summarySection}>
         <View style={styles.summaryCard}>
           <View>
-            <Text style={styles.summaryLabel}>Verificaciones cargadas</Text>
-            <Text style={styles.summaryValue}>{verifications.length}</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View>
             <Text style={styles.summaryLabel}>Última actualización</Text>
             <Text style={styles.summaryValueSmall}>
               {lastUpdated ? lastUpdated.toLocaleTimeString() : "Pendiente"}
@@ -758,9 +753,6 @@ export default function Verification() {
             <Ionicons name="refresh" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
-        <Text style={styles.summaryHint}>
-          Registra la verificación y sube la evidencia desde el modal para mantener la trazabilidad.
-        </Text>
       </View>
 
       {verificationsError && (
@@ -1244,6 +1236,7 @@ const getStyles = (colors) => StyleSheet.create({
     fontWeight: "bold",
     color: colors.text,
     marginBottom: 16,
+    marginTop: 10,
   },
   list: {
     paddingBottom: 20,
