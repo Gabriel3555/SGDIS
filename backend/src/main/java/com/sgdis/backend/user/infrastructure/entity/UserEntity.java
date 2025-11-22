@@ -37,6 +37,10 @@ public class UserEntity {
     private boolean status = true;
 
     @JsonIgnore
+    @OneToOne(mappedBy = "owner") // "owner" es el nombre del campo en InventoryEntity
+    private InventoryEntity myOwnedInventory;
+
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER, mappedBy = "managers")
     private List<InventoryEntity> myManagers;
 
