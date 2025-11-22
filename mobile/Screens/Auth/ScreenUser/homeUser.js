@@ -19,11 +19,13 @@ import { useTheme } from "../../../src/ThemeContext";
 export default function DashboardScreen() {
   const navigation = useNavigation();
   const { colors } = useTheme();
-  const [inventoryCount, setInventoryCount] = useState(0);
   const [inventories, setInventories] = useState([]);
   const [totalItems, setTotalItems] = useState(0);
   const [totalValue, setTotalValue] = useState(0);
   const [user, setUser] = useState(null);
+  const [ownerCount, setOwnerCount] = useState(0);
+  const [assignmentCount, setAssignmentCount] = useState(0);
+  const [managerCount, setManagerCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [localImageUri, setLocalImageUri] = useState(null);
   const [imageLoading, setImageLoading] = useState(false);
@@ -33,8 +35,15 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     fetchUserData();
-    fetchInventoryCount();
   }, []);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchManagerCount(user.id);
+      fetchOwnerCount();
+      fetchAssignmentCount();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (inventories.length > 0) {
@@ -85,7 +94,7 @@ export default function DashboardScreen() {
     }
   };
 
-  const fetchInventoryCount = async () => {
+  const fetchManagerCount = async (userId) => {
     try {
       const token = await ensureAuthToken();
       if (!token) return;
@@ -96,16 +105,50 @@ export default function DashboardScreen() {
       });
       const data = response.data || [];
       setInventories(data);
-      setInventoryCount(data.length);
+      setManagerCount(data.length);
     } catch (error) {
       const status = error.response?.status;
       if (status >= 500) {
         // Handle server errors gracefully by assuming no inventories assigned
         setInventories([]);
-        setInventoryCount(0);
+        setManagerCount(0);
       } else {
-        console.error("Error fetching inventory count:", error);
+        console.error("Error fetching manager count:", error);
       }
+    }
+  };
+
+  const fetchOwnerCount = async () => {
+    try {
+      const token = await ensureAuthToken();
+      if (!token) return;
+      const response = await api.get("api/v1/inventory/myInventory", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      // If response.data exists, user owns 1 inventory, else 0
+      setOwnerCount(response.data ? 1 : 0);
+    } catch (error) {
+      console.error("Error fetching owner count:", error);
+      setOwnerCount(0);
+    }
+  };
+
+  const fetchAssignmentCount = async () => {
+    try {
+      const token = await ensureAuthToken();
+      if (!token) return;
+      const response = await api.get("api/v1/inventory/mySignatoryInventories", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = response.data || [];
+      setAssignmentCount(data.length);
+    } catch (error) {
+      console.error("Error fetching assignment count:", error);
+      setAssignmentCount(0);
     }
   };
 
@@ -224,49 +267,36 @@ export default function DashboardScreen() {
         <Text style={styles.sectionTitle}>Estadísticas del Sistema</Text>
 
         <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: colors.statCard1 }]}>
-            <View style={[styles.statIcon, { backgroundColor: '#2196f3' }]}>
-              <Ionicons name="cube" size={24} color="#fff" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{inventoryCount}</Text>
-              <Text style={styles.statLabel}>Total Inventarios</Text>
-            </View>
-          </View>
+           <View style={[styles.statCard, { backgroundColor: colors.statCard1 }]}>
+             <View style={[styles.statIcon, { backgroundColor: '#2196f3' }]}>
+               <Ionicons name="person" size={24} color="#fff" />
+             </View>
+             <View style={styles.statContent}>
+               <Text style={styles.statValue}>{ownerCount}</Text>
+               <Text style={styles.statLabel}>Inventarios como Dueño</Text>
+             </View>
+           </View>
 
-          <View style={[styles.statCard, { backgroundColor: colors.statCard2 }]}>
-            <View style={[styles.statIcon, { backgroundColor: '#4caf50' }]}>
-              <Ionicons name="checkmark-circle" size={24} color="#fff" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>3</Text>
-              <Text style={styles.statLabel}>Activos</Text>
-              <Text style={styles.statSubtext}>75%</Text>
-            </View>
-          </View>
+           <View style={[styles.statCard, { backgroundColor: colors.statCard2 }]}>
+             <View style={[styles.statIcon, { backgroundColor: '#4caf50' }]}>
+               <Ionicons name="checkmark-circle" size={24} color="#fff" />
+             </View>
+             <View style={styles.statContent}>
+               <Text style={styles.statValue}>{assignmentCount}</Text>
+               <Text style={styles.statLabel}>Inventarios Asignados</Text>
+             </View>
+           </View>
 
-          <View style={[styles.statCard, { backgroundColor: colors.statCard3 }]}>
-            <View style={[styles.statIcon, { backgroundColor: '#ff9800' }]}>
-              <Ionicons name="cube" size={24} color="#fff" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>{totalItems}</Text>
-              <Text style={styles.statLabel}>Total Items</Text>
-              <Text style={styles.statSubtext}>En inventarios</Text>
-            </View>
-          </View>
-
-          <View style={[styles.statCard, { backgroundColor: colors.statCard4 }]}>
-            <View style={[styles.statIcon, { backgroundColor: '#9c27b0' }]}>
-              <Ionicons name="cash" size={24} color="#fff" />
-            </View>
-            <View style={styles.statContent}>
-              <Text style={styles.statValue}>${(totalValue / 1000000).toFixed(1)}M</Text>
-              <Text style={styles.statLabel}>Valor Total</Text>
-              <Text style={styles.statSubtext}>De items</Text>
-            </View>
-          </View>
-        </View>
+           <View style={[styles.statCard, { backgroundColor: colors.statCard3 }]}>
+             <View style={[styles.statIcon, { backgroundColor: '#ff9800' }]}>
+               <Ionicons name="cube" size={24} color="#fff" />
+             </View>
+             <View style={styles.statContent}>
+               <Text style={styles.statValue}>{managerCount}</Text>
+               <Text style={styles.statLabel}>Inventarios como Manager</Text>
+             </View>
+           </View>
+         </View>
       </View>
 
       {/* Categorías y Estado */}
@@ -506,10 +536,10 @@ const getStyles = (colors) => StyleSheet.create({
     justifyContent: "space-between",
   },
   statCard: {
-    width: "48%",
+    width: "31%",
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    padding: 18,
+    marginBottom: 8,
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
