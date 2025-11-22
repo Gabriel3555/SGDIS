@@ -37,7 +37,7 @@ public class UserEntity {
     private boolean status = true;
 
     @JsonIgnore
-    @OneToOne(mappedBy = "owner") // "owner" es el nombre del campo en InventoryEntity
+    @OneToOne(mappedBy = "owner")
     private InventoryEntity myOwnedInventory;
 
     @JsonIgnore

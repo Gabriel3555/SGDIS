@@ -54,6 +54,8 @@ public class ItemService implements
         itemEntity.setCategory(categoryEntity);
         itemEntity.setLocation(inventoryEntity.getLocation() != null ? inventoryEntity.getLocation() : "");
 
+        if (request.acquisitionValue() != null) inventoryEntity.setTotalPrice(inventoryEntity.getTotalPrice() + request.acquisitionValue());
+
         inventoryRepository.save(inventoryEntity);
         itemRepository.save(itemEntity);
 

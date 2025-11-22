@@ -14,5 +14,6 @@ public record InventoryResponse(
         UserResponse owner,
         Long quantityItems,
         String imgUrl,
-        Boolean status
+        Boolean status,
+        Double totalPrice
 ) {}

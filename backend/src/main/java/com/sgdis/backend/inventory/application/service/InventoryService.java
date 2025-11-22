@@ -52,10 +52,6 @@ public class InventoryService
         @Override
         @Transactional
         public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
-                if (request.ownerId() == null) {
-                        throw new IllegalArgumentException("Owner id is required to create an inventory");
-                }
-
                 UserEntity owner = userRepository.findById(request.ownerId())
                                 .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
 
@@ -193,7 +189,6 @@ public class InventoryService
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Inventory not found with id: " + request.inventoryId()));
 
-                // Initialize managers list if null
                 List<UserEntity> managers = inventory.getManagers();
                 if (managers == null || !managers.contains(user)) {
                         throw new ResourceNotFoundException(
@@ -263,28 +258,21 @@ public class InventoryService
 
         @Override
         public QuitInventoryResponse quitInventory(Long inventoryId) {
+            UserEntity user = authService.getCurrentUser();
 
-                Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            InventoryEntity inventory = inventoryRepository.findById(inventoryId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
 
-                UserEntity user = userRepository.findById(userId)
-                                .orElseThrow(() -> new UserNotFoundException(userId));
+            List<UserEntity> managers = inventory.getManagers();
+            if (managers == null || !managers.contains(user)) {
+                throw new ResourceNotFoundException("Manager not found in inventory with id: " + inventoryId);
+            }
 
-                InventoryEntity inventory = inventoryRepository.findById(inventoryId)
-                                .orElseThrow(() -> new ResourceNotFoundException(
-                                                "Inventory not found with id: " + inventoryId));
+            managers.remove(user);
+            inventory.setManagers(managers);
+            inventoryRepository.save(inventory);
 
-                List<UserEntity> managers = inventory.getManagers();
-                if (managers == null || !managers.contains(user)) {
-                        throw new ResourceNotFoundException("Manager not found in inventory with id: " + inventoryId);
-                }
-
-                managers.remove(user);
-                inventory.setManagers(managers);
-                inventoryRepository.save(inventory);
-
-                return new QuitInventoryResponse(
-                                "Successfully quited inventory",
-                                inventory.getName());
+            return new QuitInventoryResponse("Ha renunciado exitosamente a este inventario", inventory.getName());
         }
 
 
