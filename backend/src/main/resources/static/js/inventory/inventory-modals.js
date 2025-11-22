@@ -1,232 +1,616 @@
 // Custom Select Component (copied from users-modals.js for use in inventory modals)
 // Solo declarar si no existe ya (para evitar conflictos si se carga users-modals.js)
-if (typeof CustomSelect === 'undefined' && typeof window.CustomSelect === 'undefined') {
-    var CustomSelect = class CustomSelect {
+if (
+  typeof CustomSelect === "undefined" &&
+  typeof window.CustomSelect === "undefined"
+) {
+  var CustomSelect = class CustomSelect {
     constructor(containerId, options = {}) {
-        this.container = document.getElementById(containerId);
-        if (!this.container) return;
+      this.container = document.getElementById(containerId);
+      if (!this.container) return;
 
-        this.trigger = this.container.querySelector('.custom-select-trigger');
-        this.dropdown = this.container.querySelector('.custom-select-dropdown');
-        this.searchInput = this.container.querySelector('.custom-select-search');
-        this.optionsContainer = this.container.querySelector('.custom-select-options');
-        this.textElement = this.container.querySelector('.custom-select-text');
-        
-        // Try to find hidden input inside container first, then in parent container
-        this.hiddenInput = this.container.querySelector('input[type="hidden"]');
-        if (!this.hiddenInput && this.container.parentElement) {
-            this.hiddenInput = this.container.parentElement.querySelector('input[type="hidden"]');
-        }
+      this.trigger = this.container.querySelector(".custom-select-trigger");
+      this.dropdown = this.container.querySelector(".custom-select-dropdown");
+      this.searchInput = this.container.querySelector(".custom-select-search");
+      this.optionsContainer = this.container.querySelector(
+        ".custom-select-options"
+      );
+      this.textElement = this.container.querySelector(".custom-select-text");
 
-        this.options = [];
-        this.filteredOptions = [];
-        this.selectedValue = '';
-        this.selectedText = '';
-        this.placeholder = options.placeholder || 'Seleccionar...';
-        this.searchable = options.searchable !== false;
-        this.onChange = options.onChange || null;
+      // Try to find hidden input inside container first, then in parent container
+      this.hiddenInput = this.container.querySelector('input[type="hidden"]');
+      if (!this.hiddenInput && this.container.parentElement) {
+        this.hiddenInput = this.container.parentElement.querySelector(
+          'input[type="hidden"]'
+        );
+      }
 
-        this.init();
+      this.options = [];
+      this.filteredOptions = [];
+      this.selectedValue = "";
+      this.selectedText = "";
+      this.placeholder = options.placeholder || "Seleccionar...";
+      this.searchable = options.searchable !== false;
+      this.onChange = options.onChange || null;
+
+      this.init();
     }
 
     init() {
-        // Set initial placeholder
-        this.textElement.textContent = this.placeholder;
-        this.textElement.classList.add('custom-select-placeholder');
+      // Set initial placeholder
+      this.textElement.textContent = this.placeholder;
+      this.textElement.classList.add("custom-select-placeholder");
 
-        // Event listeners
-        this.trigger.addEventListener('click', () => this.toggle());
-        this.searchInput.addEventListener('input', (e) => this.filterOptions(e.target.value));
-        this.searchInput.addEventListener('keydown', (e) => this.handleKeydown(e));
+      // Event listeners
+      this.trigger.addEventListener("click", () => this.toggle());
+      this.searchInput.addEventListener("input", (e) =>
+        this.filterOptions(e.target.value)
+      );
+      this.searchInput.addEventListener("keydown", (e) =>
+        this.handleKeydown(e)
+      );
 
-        // Close on outside click
-        document.addEventListener('click', (e) => {
-            if (!this.container.contains(e.target)) {
-                this.close();
-            }
-        });
+      // Close on outside click
+      document.addEventListener("click", (e) => {
+        if (!this.container.contains(e.target)) {
+          this.close();
+        }
+      });
     }
 
     setOptions(options) {
-        this.options = options;
-        this.filteredOptions = [...options];
-        this.renderOptions();
+      this.options = options;
+      this.filteredOptions = [...options];
+      this.renderOptions();
     }
 
     renderOptions() {
-        this.optionsContainer.innerHTML = '';
+      this.optionsContainer.innerHTML = "";
 
-        if (this.filteredOptions.length === 0) {
-            const noResults = document.createElement('div');
-            noResults.className = 'custom-select-option disabled';
-            noResults.textContent = 'No se encontraron resultados';
-            this.optionsContainer.appendChild(noResults);
-            return;
+      if (this.filteredOptions.length === 0) {
+        const noResults = document.createElement("div");
+        noResults.className = "custom-select-option disabled";
+        noResults.textContent = "No se encontraron resultados";
+        this.optionsContainer.appendChild(noResults);
+        return;
+      }
+
+      this.filteredOptions.forEach((option) => {
+        const optionElement = document.createElement("div");
+        optionElement.className = "custom-select-option";
+        if (option.disabled) {
+          optionElement.classList.add("disabled");
+        }
+        optionElement.textContent = option.label;
+        optionElement.dataset.value = option.value;
+
+        if (option.value === this.selectedValue) {
+          optionElement.classList.add("selected");
         }
 
-        this.filteredOptions.forEach(option => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'custom-select-option';
-            if (option.disabled) {
-                optionElement.classList.add('disabled');
-            }
-            optionElement.textContent = option.label;
-            optionElement.dataset.value = option.value;
-
-            if (option.value === this.selectedValue) {
-                optionElement.classList.add('selected');
-            }
-
-            if (!option.disabled) {
-                optionElement.addEventListener('click', () => this.selectOption(option));
-            }
-            this.optionsContainer.appendChild(optionElement);
-        });
+        if (!option.disabled) {
+          optionElement.addEventListener("click", () =>
+            this.selectOption(option)
+          );
+        }
+        this.optionsContainer.appendChild(optionElement);
+      });
     }
 
     filterOptions(searchTerm) {
-        if (!searchTerm.trim()) {
-            this.filteredOptions = [...this.options];
-        } else {
-            this.filteredOptions = this.options.filter(option =>
-                option.label.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
-        this.renderOptions();
+      if (!searchTerm.trim()) {
+        this.filteredOptions = [...this.options];
+      } else {
+        this.filteredOptions = this.options.filter((option) =>
+          option.label.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      this.renderOptions();
     }
 
     selectOption(option) {
-        this.selectedValue = option.value;
-        this.selectedText = option.label;
+      this.selectedValue = option.value;
+      this.selectedText = option.label;
 
-        this.textElement.textContent = option.label;
-        this.textElement.classList.remove('custom-select-placeholder');
+      this.textElement.textContent = option.label;
+      this.textElement.classList.remove("custom-select-placeholder");
 
-        if (this.hiddenInput) {
-            this.hiddenInput.value = option.value;
-        }
+      if (this.hiddenInput) {
+        this.hiddenInput.value = option.value;
+      }
 
-        this.close();
+      this.close();
 
-        if (this.onChange) {
-            this.onChange(option);
-        }
+      if (this.onChange) {
+        this.onChange(option);
+      }
     }
 
     toggle() {
-        const isOpen = this.container.classList.contains('open');
+      const isOpen = this.container.classList.contains("open");
 
-        // Close all other selects
-        document.querySelectorAll('.custom-select.open').forEach(select => {
-            if (select !== this.container) {
-                select.classList.remove('open');
-            }
-        });
-
-        if (isOpen) {
-            this.close();
-        } else {
-            this.open();
+      // Close all other selects
+      document.querySelectorAll(".custom-select.open").forEach((select) => {
+        if (select !== this.container) {
+          select.classList.remove("open");
         }
+      });
+
+      if (isOpen) {
+        this.close();
+      } else {
+        this.open();
+      }
     }
 
     open() {
-        this.container.classList.add('open');
-        if (this.searchable && this.searchInput) {
-            this.searchInput.focus();
-        }
+      this.container.classList.add("open");
+      if (this.searchable && this.searchInput) {
+        this.searchInput.focus();
+      }
     }
 
     close() {
-        this.container.classList.remove('open');
-        if (this.searchInput) {
-            this.searchInput.value = '';
-            this.filterOptions('');
-        }
+      this.container.classList.remove("open");
+      if (this.searchInput) {
+        this.searchInput.value = "";
+        this.filterOptions("");
+      }
     }
 
     handleKeydown(e) {
-        if (e.key === 'Escape') {
-            this.close();
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            const firstOption = this.optionsContainer.querySelector('.custom-select-option:not(.disabled)');
-            if (firstOption) {
-                const value = firstOption.dataset.value;
-                const option = this.options.find(opt => opt.value === value);
-                if (option) {
-                    this.selectOption(option);
-                }
-            }
+      if (e.key === "Escape") {
+        this.close();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const firstOption = this.optionsContainer.querySelector(
+          ".custom-select-option:not(.disabled)"
+        );
+        if (firstOption) {
+          const value = firstOption.dataset.value;
+          const option = this.options.find((opt) => opt.value === value);
+          if (option) {
+            this.selectOption(option);
+          }
         }
+      }
     }
 
     getValue() {
-        return this.selectedValue;
+      return this.selectedValue;
     }
 
     setValue(value) {
-        const option = this.options.find(opt => opt.value === value);
-        if (option) {
-            this.selectOption(option);
-        }
+      const option = this.options.find((opt) => opt.value === value);
+      if (option) {
+        this.selectOption(option);
+      }
     }
 
     clear() {
-        this.selectedValue = '';
-        this.selectedText = '';
-        this.textElement.textContent = this.placeholder;
-        this.textElement.classList.add('custom-select-placeholder');
+      this.selectedValue = "";
+      this.selectedText = "";
+      this.textElement.textContent = this.placeholder;
+      this.textElement.classList.add("custom-select-placeholder");
 
-        if (this.hiddenInput) {
-            this.hiddenInput.value = '';
-        }
+      if (this.hiddenInput) {
+        this.hiddenInput.value = "";
+      }
 
-        this.renderOptions();
+      this.renderOptions();
     }
-};
-    // Hacer disponible globalmente
-    window.CustomSelect = CustomSelect;
+  };
+  // Hacer disponible globalmente
+  window.CustomSelect = CustomSelect;
 } // Fin del if (typeof CustomSelect === 'undefined')
 
-function showDeleteInventoryModal(inventoryId) {
-    inventoryData.currentInventoryId = inventoryId;
+async function showDeleteInventoryModal(inventoryId) {
+  inventoryData.currentInventoryId = inventoryId;
 
-    const inventory = inventoryData.inventories.find(i => i && i.id == inventoryId);
+  const inventory = inventoryData.inventories.find(
+    (i) => i && i.id == inventoryId
+  );
 
-    if (!inventory) {
-        showErrorToast('Inventario no encontrado', 'El inventario que intenta eliminar no existe o ya fue eliminado.');
-        return;
-    }
+  if (!inventory) {
+    showErrorToast(
+      "Inventario no encontrado",
+      "El inventario que intenta eliminar no existe o ya fue eliminado."
+    );
+    return;
+  }
 
-    const message = document.getElementById('deleteInventoryMessage');
-    const inventoryName = inventory.name || 'Inventario sin nombre';
+  // Store current inventory data globally for deletion
+  window.currentDeleteInventory = inventory;
 
-    if (message) {
-        message.textContent = `¿Está seguro de que desea eliminar el inventario "${inventoryName}"? Esta acción no se puede deshacer.`;
-    }
+  // Populate inventory info
+  const inventoryNameElement = document.getElementById("deleteInventoryName");
+  const inventoryIdElement = document.getElementById(
+    "deleteInventoryIdDisplay"
+  );
+  const inventoryName = inventory.name || "Inventario sin nombre";
 
-    const modal = document.getElementById('deleteInventoryModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-    }
+  if (inventoryNameElement) {
+    inventoryNameElement.textContent = inventoryName;
+  }
+
+  if (inventoryIdElement) {
+    inventoryIdElement.textContent = inventory.id || "N/A";
+  }
+
+  // Reset delete role selection
+  resetDeleteRoleSelection();
+
+  const modal = document.getElementById("deleteInventoryModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
 }
 
 function closeDeleteInventoryModal() {
-    const modal = document.getElementById('deleteInventoryModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
+  const modal = document.getElementById("deleteInventoryModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
 
-    inventoryData.currentInventoryId = null;
+  // Reset delete role selection
+  resetDeleteRoleSelection();
+
+  // Clear delete role user select
+  if (window.deleteRoleUserSelect) {
+    window.deleteRoleUserSelect.clear();
+  }
+
+  inventoryData.currentInventoryId = null;
 }
 
-async function confirmDeleteInventory() {
-    const inventoryId = inventoryData.currentInventoryId;
-    if (inventoryId) {
-        await window.deleteInventory(inventoryId);
-        closeDeleteInventoryModal();
+// Delete role selection function
+async function selectDeleteRole(role) {
+  const managerBtn = document.getElementById("deleteManagerRoleBtn");
+  const signatoryBtn = document.getElementById("deleteSignatoryRoleBtn");
+  const userSection = document.getElementById("deleteRoleUserSection");
+  const roleDescription = document.getElementById("deleteRoleDescription");
+
+  // Remove selected class from both buttons
+  if (managerBtn) {
+    managerBtn.classList.remove(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    managerBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+  if (signatoryBtn) {
+    signatoryBtn.classList.remove(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    signatoryBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+
+  // Add selected class to clicked button
+  if (role === "manager" && managerBtn) {
+    managerBtn.classList.add(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    managerBtn.classList.remove("border-gray-300", "text-gray-700");
+    if (roleDescription) {
+      roleDescription.textContent =
+        "Selecciona el manejador que deseas eliminar del inventario";
     }
+  } else if (role === "signatory" && signatoryBtn) {
+    signatoryBtn.classList.add(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    signatoryBtn.classList.remove("border-gray-300", "text-gray-700");
+    if (roleDescription) {
+      roleDescription.textContent =
+        "Selecciona el firmante que deseas eliminar del inventario";
+    }
+  }
+
+  // Store selected role
+  window.selectedDeleteRole = role;
+
+  // Show user section and load users for the selected role
+  if (userSection) {
+    userSection.classList.remove("hidden");
+  }
+
+  // Load users based on role
+  if (!inventoryData.currentInventoryId) {
+    showErrorToast("Error", "No se ha seleccionado un inventario");
+    return;
+  }
+
+  await loadUsersForDeleteRole(role, inventoryData.currentInventoryId);
+}
+
+// Reset delete role selection
+function resetDeleteRoleSelection() {
+  const managerBtn = document.getElementById("deleteManagerRoleBtn");
+  const signatoryBtn = document.getElementById("deleteSignatoryRoleBtn");
+  const userSection = document.getElementById("deleteRoleUserSection");
+  const roleDescription = document.getElementById("deleteRoleDescription");
+
+  // Remove selected class from both buttons
+  if (managerBtn) {
+    managerBtn.classList.remove(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    managerBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+  if (signatoryBtn) {
+    signatoryBtn.classList.remove(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    signatoryBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+
+  // Hide user section
+  if (userSection) {
+    userSection.classList.add("hidden");
+  }
+
+  // Reset description
+  if (roleDescription) {
+    roleDescription.textContent =
+      "Selecciona el usuario al que se le eliminará el rol";
+  }
+
+  // Clear selected role
+  window.selectedDeleteRole = null;
+}
+
+// Load users for delete role
+async function loadUsersForDeleteRole(role, inventoryId) {
+  showDeleteRoleUserSelectLoading();
+
+  try {
+    let users = [];
+    let response = null;
+
+    if (role === "manager") {
+      response = await getInventoryManagers(inventoryId);
+    } else if (role === "signatory") {
+      response = await getInventorySignatories(inventoryId);
+    }
+
+    // Handle different response formats
+    if (Array.isArray(response)) {
+      users = response;
+    } else if (response && Array.isArray(response.managers)) {
+      users = response.managers;
+    } else if (response && Array.isArray(response.signatories)) {
+      users = response.signatories;
+    } else if (response && Array.isArray(response.data)) {
+      users = response.data;
+    } else {
+      console.warn("Unexpected response format for role users:", response);
+      users = [];
+    }
+
+    if (!users || users.length === 0) {
+      populateDeleteRoleUserSelect([]);
+      showInfoToast(
+        "Sin usuarios",
+        `No hay ${
+          role === "manager" ? "manejadores" : "firmantes"
+        } asignados a este inventario`
+      );
+      return;
+    }
+
+    populateDeleteRoleUserSelect(users);
+  } catch (error) {
+    console.error("Error loading users for delete role:", error);
+    populateDeleteRoleUserSelect([]);
+    showErrorToast(
+      "Error",
+      `No se pudieron cargar los ${
+        role === "manager" ? "manejadores" : "firmantes"
+      }`
+    );
+  } finally {
+    hideDeleteRoleUserSelectLoading();
+  }
+}
+
+// Populate delete role user select
+function populateDeleteRoleUserSelect(users) {
+  // Initialize CustomSelect if not already done
+  if (!window.deleteRoleUserSelect) {
+    window.deleteRoleUserSelect = new CustomSelect("deleteRoleUserIdSelect", {
+      placeholder: "Seleccionar usuario...",
+      searchable: true,
+    });
+  }
+
+  // Format users as options
+  const userOptions = [];
+
+  if (users && users.length > 0) {
+    users.forEach((user) => {
+      // Format display name
+      let displayName = "";
+      if (user.fullName && user.fullName.trim()) {
+        displayName = user.fullName;
+      } else if (user.email) {
+        displayName = user.email;
+      } else {
+        displayName = `Usuario ${user.id || "N/A"}`;
+      }
+
+      // Add additional info if available
+      if (user.email && user.fullName) {
+        displayName += ` (${user.email})`;
+      }
+
+      userOptions.push({
+        value: String(user.id),
+        label: displayName,
+      });
+    });
+  } else {
+    // Add no users option (will be shown as disabled in CustomSelect)
+    userOptions.push({
+      value: "",
+      label: "No hay usuarios disponibles",
+      disabled: true,
+    });
+  }
+
+  window.deleteRoleUserSelect.setOptions(userOptions);
+}
+
+// Show loading state for delete role user select
+function showDeleteRoleUserSelectLoading() {
+  if (!window.deleteRoleUserSelect) {
+    window.deleteRoleUserSelect = new CustomSelect("deleteRoleUserIdSelect", {
+      placeholder: "Cargando usuarios...",
+      searchable: true,
+    });
+  }
+  window.deleteRoleUserSelect.setOptions([
+    { value: "", label: "Cargando usuarios...", disabled: true },
+  ]);
+}
+
+// Hide loading state for delete role user select
+function hideDeleteRoleUserSelectLoading() {
+  // Loading state is cleared when populateDeleteRoleUserSelect is called
+}
+
+// Confirm delete role
+async function confirmDeleteRole() {
+  if (!inventoryData.currentInventoryId) {
+    showErrorToast("Error", "No se ha seleccionado un inventario");
+    return;
+  }
+
+  const role = window.selectedDeleteRole;
+  if (!role) {
+    showErrorToast(
+      "Rol no seleccionado",
+      "Por favor selecciona un tipo de rol (Manejador o Firmante)"
+    );
+    return;
+  }
+
+  // Get user ID from CustomSelect or hidden input
+  let userId = "";
+  if (window.deleteRoleUserSelect && window.deleteRoleUserSelect.getValue) {
+    userId = window.deleteRoleUserSelect.getValue();
+  }
+  if (!userId) {
+    const userIdElement = document.getElementById("deleteRoleUserId");
+    if (userIdElement) {
+      userId = userIdElement.value;
+    }
+  }
+
+  if (!userId || userId.trim() === "") {
+    showErrorToast(
+      "Usuario no seleccionado",
+      "Por favor selecciona un usuario para eliminar su rol"
+    );
+    return;
+  }
+
+  const numericUserId = parseInt(userId);
+  if (isNaN(numericUserId)) {
+    showErrorToast(
+      "ID de usuario inválido",
+      "El usuario seleccionado no es válido"
+    );
+    return;
+  }
+
+  try {
+    // Validate inventoryId is a valid number
+    const numericInventoryId = parseInt(inventoryData.currentInventoryId);
+    if (isNaN(numericInventoryId)) {
+      showErrorToast("Error", "ID de inventario inválido");
+      console.error("Invalid inventory ID:", inventoryData.currentInventoryId);
+      return;
+    }
+
+    let result;
+    const deleteData = {
+      inventoryId: numericInventoryId, // Backend expects numeric ID (Long)
+    };
+
+    if (role === "manager") {
+      deleteData.managerId = numericUserId;
+      console.log("Eliminando manejador:", deleteData);
+      result = await deleteManager(deleteData);
+      showSuccessToast(
+        "Manejador eliminado",
+        "El manejador se ha eliminado correctamente del inventario"
+      );
+    } else if (role === "signatory") {
+      deleteData.signatoryId = numericUserId;
+      console.log("Eliminando firmante:", deleteData);
+      result = await deleteSignatory(deleteData);
+      showSuccessToast(
+        "Firmante eliminado",
+        "El firmante se ha eliminado correctamente del inventario"
+      );
+    }
+
+    // Close modal after successful deletion
+    closeDeleteInventoryModal();
+
+    // Reload inventory data
+    await loadInventoryData();
+  } catch (error) {
+    console.error("Error deleting role:", error);
+
+    let errorMessage = error.message || "Inténtalo de nuevo.";
+
+    if (errorMessage.includes("401") || errorMessage.includes("expired")) {
+      errorMessage = "Sesión expirada. Por favor inicia sesión nuevamente.";
+    } else if (
+      errorMessage.includes("403") ||
+      errorMessage.includes("permission")
+    ) {
+      errorMessage =
+        "No tienes permisos para eliminar roles de este inventario.";
+    } else if (errorMessage.includes("404")) {
+      errorMessage = "Usuario o inventario no encontrado.";
+    }
+
+    showErrorToast("Error al eliminar rol", errorMessage);
+  }
+}
+
+// Make selectDeleteRole and confirmDeleteRole available globally
+window.selectDeleteRole = selectDeleteRole;
+window.confirmDeleteRole = confirmDeleteRole;
+
+async function confirmDeleteInventory() {
+  const inventoryId = parseInt(inventoryData.currentInventoryId);
+  if (!isNaN(inventoryId)) {
+    await window.deleteInventory(inventoryId);
+    closeDeleteInventoryModal();
+  } else {
+    showErrorToast("Error", "ID de inventario inválido");
+    console.error("Invalid inventory ID:", inventoryData.currentInventoryId);
+  }
 }
 
 window.confirmDeleteInventory = confirmDeleteInventory;
@@ -237,151 +621,177 @@ window.closeDeleteInventoryModal = closeDeleteInventoryModal;
 let currentInventoryId = null;
 
 async function showViewInventoryModal(inventoryId) {
-    try {
-        // Set the current inventory ID
-        inventoryData.currentInventoryId = inventoryId;
-        currentInventoryId = inventoryId;
-        if (window.itemsData) {
-            window.itemsData.currentInventoryId = inventoryId;
-        }
-        
-        // Store in sessionStorage for items page
-        sessionStorage.setItem('currentInventoryId', inventoryId.toString());
-        
-        // Show loading state
-        showInventoryLoadingModal();
-        
-        // Fetch inventory details from API
-        const inventoryDetails = await getInventoryById(inventoryId);
-        
-        // Populate the modal with inventory details
-        populateViewInventoryModal(inventoryDetails);
-        
-        // Show the modal
-        const modal = document.getElementById('viewInventoryModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error('Error loading inventory details:', error);
-        showErrorToast('Error', 'No se pudieron cargar los detalles del inventario: ' + error.message);
-        closeViewInventoryModal();
+  try {
+    // Set the current inventory ID
+    inventoryData.currentInventoryId = inventoryId;
+    currentInventoryId = inventoryId;
+    if (window.itemsData) {
+      window.itemsData.currentInventoryId = inventoryId;
     }
+
+    // Store in sessionStorage for items page
+    sessionStorage.setItem("currentInventoryId", inventoryId.toString());
+
+    // Show loading state
+    showInventoryLoadingModal();
+
+    // Fetch inventory details from API
+    const inventoryDetails = await getInventoryById(inventoryId);
+
+    // Populate the modal with inventory details
+    populateViewInventoryModal(inventoryDetails);
+
+    // Show the modal
+    const modal = document.getElementById("viewInventoryModal");
+    if (modal) {
+      modal.classList.remove("hidden");
+    }
+  } catch (error) {
+    console.error("Error loading inventory details:", error);
+    showErrorToast(
+      "Error",
+      "No se pudieron cargar los detalles del inventario: " + error.message
+    );
+    closeViewInventoryModal();
+  }
 }
 
 // Navigate to items page
 function navigateToItems() {
-    if (currentInventoryId) {
-        // Store inventory ID in sessionStorage
-        sessionStorage.setItem('currentInventoryId', currentInventoryId.toString());
-        // Store return URL
-        sessionStorage.setItem('returnToInventory', 'true');
-        // Navigate to items page
-        window.location.href = `/superadmin/items?inventoryId=${currentInventoryId}`;
-    }
+  if (currentInventoryId) {
+    // Store inventory ID in sessionStorage
+    sessionStorage.setItem("currentInventoryId", currentInventoryId.toString());
+    // Store return URL
+    sessionStorage.setItem("returnToInventory", "true");
+    // Navigate to items page
+    window.location.href = `/superadmin/items?inventoryId=${currentInventoryId}`;
+  }
 }
 
 window.navigateToItems = navigateToItems;
 
 function populateViewInventoryModal(inventory) {
-    // Populate inventory image
-    const imageElement = document.getElementById('viewInventoryImage');
-    const imageButton = document.getElementById('viewInventoryImageButton');
-    const imagePlaceholder = document.getElementById('viewInventoryImagePlaceholder');
-    
-    if (inventory.imgUrl) {
-        // Show button with image
-        if (imageButton && imageElement) {
-            imageButton.style.display = 'block';
-            imageElement.innerHTML = `<img src="${inventory.imgUrl}" alt="${inventory.name || 'Inventario'}" class="w-full h-full object-cover rounded-xl">`;
-            // Store image URL for the full size modal
-            imageButton.setAttribute('data-image-url', inventory.imgUrl);
-            
-            // Add click event listener as backup
-            imageButton.onclick = function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                showInventoryImageModal();
-                return false;
-            };
-        }
-        if (imagePlaceholder) {
-            imagePlaceholder.style.display = 'none';
-        }
-    } else {
-        // Show placeholder
-        if (imageButton) {
-            imageButton.style.display = 'none';
-        }
-        if (imagePlaceholder) {
-            imagePlaceholder.style.display = 'flex';
-        }
+  // Populate inventory image
+  const imageElement = document.getElementById("viewInventoryImage");
+  const imageButton = document.getElementById("viewInventoryImageButton");
+  const imagePlaceholder = document.getElementById(
+    "viewInventoryImagePlaceholder"
+  );
+
+  if (inventory.imgUrl) {
+    // Show button with image
+    if (imageButton && imageElement) {
+      imageButton.style.display = "block";
+      imageElement.innerHTML = `<img src="${inventory.imgUrl}" alt="${
+        inventory.name || "Inventario"
+      }" class="w-full h-full object-cover rounded-xl">`;
+      // Store image URL for the full size modal
+      imageButton.setAttribute("data-image-url", inventory.imgUrl);
+
+      // Add click event listener as backup
+      imageButton.onclick = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showInventoryImageModal();
+        return false;
+      };
     }
-    
-    // Populate inventory details
-    const nameElement = document.getElementById('viewInventoryName');
-    const idElement = document.getElementById('viewInventoryId');
-    const uuidElement = document.getElementById('viewInventoryUuid');
-    const locationElement = document.getElementById('viewInventoryLocation');
-    const quantityItemsElement = document.getElementById('viewInventoryQuantityItems');
-    
-    if (nameElement) nameElement.textContent = inventory.name || 'Sin nombre';
-    if (idElement) idElement.textContent = inventory.id || 'N/A';
-    if (uuidElement) uuidElement.textContent = inventory.uuid || 'No asignado';
-    if (locationElement) locationElement.textContent = getLocationText(inventory.location) || 'Sin ubicación';
-    if (quantityItemsElement) quantityItemsElement.textContent = inventory.quantityItems || 0;
-    
-    // Populate owner details
-    const ownerName = document.getElementById('viewInventoryOwnerName');
-    const ownerEmail = document.getElementById('viewInventoryOwnerEmail');
-    const ownerRole = document.getElementById('viewInventoryOwnerRole');
-    const ownerJobTitle = document.getElementById('viewInventoryOwnerJobTitle');
-    const ownerDepartment = document.getElementById('viewInventoryOwnerDepartment');
-    const ownerStatus = document.getElementById('viewInventoryOwnerStatus');
-    const ownerAvatar = document.getElementById('viewInventoryOwnerAvatar');
-    
-    if (inventory.owner) {
-        if (ownerName) ownerName.textContent = inventory.owner.fullName || 'Sin nombre completo';
-        if (ownerEmail) ownerEmail.textContent = inventory.owner.email || 'Sin email';
-        if (ownerRole) ownerRole.textContent = inventory.owner.role || 'Sin rol';
-        if (ownerJobTitle) ownerJobTitle.textContent = inventory.owner.jobTitle || 'Sin cargo';
-        if (ownerDepartment) ownerDepartment.textContent = inventory.owner.laborDepartment || 'Sin departamento';
-        if (ownerStatus) {
-            ownerStatus.textContent = inventory.owner.status ? 'Activo' : 'Inactivo';
-            ownerStatus.className = `px-3 py-1 rounded-full text-xs font-medium ${inventory.owner.status ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'}`;
-        }
-        
-        // Set owner avatar
-        if (ownerAvatar) {
-            if (inventory.owner.imgUrl) {
-                ownerAvatar.innerHTML = `<img src="${inventory.owner.imgUrl}" alt="Avatar del propietario" class="w-full h-full object-cover rounded-full">`;
-            } else {
-                ownerAvatar.textContent = (inventory.owner.fullName || 'U').charAt(0).toUpperCase();
-            }
-        }
-    } else {
-        // Default values when no owner
-        if (ownerName) ownerName.textContent = 'Sin propietario asignado';
-        if (ownerEmail) ownerEmail.textContent = 'N/A';
-        if (ownerRole) ownerRole.textContent = 'N/A';
-        if (ownerJobTitle) ownerJobTitle.textContent = 'N/A';
-        if (ownerDepartment) ownerDepartment.textContent = 'N/A';
-        if (ownerStatus) {
-            ownerStatus.textContent = 'Sin asignar';
-            ownerStatus.className = 'px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-        }
-        if (ownerAvatar) {
-            ownerAvatar.textContent = 'U';
-        }
+    if (imagePlaceholder) {
+      imagePlaceholder.style.display = "none";
     }
+  } else {
+    // Show placeholder
+    if (imageButton) {
+      imageButton.style.display = "none";
+    }
+    if (imagePlaceholder) {
+      imagePlaceholder.style.display = "flex";
+    }
+  }
+
+  // Populate inventory details
+  const nameElement = document.getElementById("viewInventoryName");
+  const idElement = document.getElementById("viewInventoryId");
+  const uuidElement = document.getElementById("viewInventoryUuid");
+  const locationElement = document.getElementById("viewInventoryLocation");
+  const quantityItemsElement = document.getElementById(
+    "viewInventoryQuantityItems"
+  );
+
+  if (nameElement) nameElement.textContent = inventory.name || "Sin nombre";
+  if (idElement) idElement.textContent = inventory.id || "N/A";
+  if (uuidElement) uuidElement.textContent = inventory.uuid || "No asignado";
+  if (locationElement)
+    locationElement.textContent =
+      getLocationText(inventory.location) || "Sin ubicación";
+  if (quantityItemsElement)
+    quantityItemsElement.textContent = inventory.quantityItems || 0;
+
+  // Populate owner details
+  const ownerName = document.getElementById("viewInventoryOwnerName");
+  const ownerEmail = document.getElementById("viewInventoryOwnerEmail");
+  const ownerRole = document.getElementById("viewInventoryOwnerRole");
+  const ownerJobTitle = document.getElementById("viewInventoryOwnerJobTitle");
+  const ownerDepartment = document.getElementById(
+    "viewInventoryOwnerDepartment"
+  );
+  const ownerStatus = document.getElementById("viewInventoryOwnerStatus");
+  const ownerAvatar = document.getElementById("viewInventoryOwnerAvatar");
+
+  if (inventory.owner) {
+    if (ownerName)
+      ownerName.textContent = inventory.owner.fullName || "Sin nombre completo";
+    if (ownerEmail)
+      ownerEmail.textContent = inventory.owner.email || "Sin email";
+    if (ownerRole) ownerRole.textContent = inventory.owner.role || "Sin rol";
+    if (ownerJobTitle)
+      ownerJobTitle.textContent = inventory.owner.jobTitle || "Sin cargo";
+    if (ownerDepartment)
+      ownerDepartment.textContent =
+        inventory.owner.laborDepartment || "Sin departamento";
+    if (ownerStatus) {
+      ownerStatus.textContent = inventory.owner.status ? "Activo" : "Inactivo";
+      ownerStatus.className = `px-3 py-1 rounded-full text-xs font-medium ${
+        inventory.owner.status
+          ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+          : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+      }`;
+    }
+
+    // Set owner avatar
+    if (ownerAvatar) {
+      if (inventory.owner.imgUrl) {
+        ownerAvatar.innerHTML = `<img src="${inventory.owner.imgUrl}" alt="Avatar del propietario" class="w-full h-full object-cover rounded-full">`;
+      } else {
+        ownerAvatar.textContent = (inventory.owner.fullName || "U")
+          .charAt(0)
+          .toUpperCase();
+      }
+    }
+  } else {
+    // Default values when no owner
+    if (ownerName) ownerName.textContent = "Sin propietario asignado";
+    if (ownerEmail) ownerEmail.textContent = "N/A";
+    if (ownerRole) ownerRole.textContent = "N/A";
+    if (ownerJobTitle) ownerJobTitle.textContent = "N/A";
+    if (ownerDepartment) ownerDepartment.textContent = "N/A";
+    if (ownerStatus) {
+      ownerStatus.textContent = "Sin asignar";
+      ownerStatus.className =
+        "px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
+    }
+    if (ownerAvatar) {
+      ownerAvatar.textContent = "U";
+    }
+  }
 }
 
 function showInventoryLoadingModal() {
-    const modal = document.getElementById('viewInventoryModal');
-    if (modal) {
-        const content = modal.querySelector('.modal-content');
-        if (content) {
-            content.innerHTML = `
+  const modal = document.getElementById("viewInventoryModal");
+  if (modal) {
+    const content = modal.querySelector(".modal-content");
+    if (content) {
+      content.innerHTML = `
                 <div class="flex items-center justify-center py-8">
                     <div class="text-center">
                         <i class="fas fa-spinner fa-spin text-2xl text-[#00AF00] mb-4"></i>
@@ -389,85 +799,92 @@ function showInventoryLoadingModal() {
                     </div>
                 </div>
             `;
-        }
     }
+  }
 }
 
 function closeViewInventoryModal() {
-    const modal = document.getElementById('viewInventoryModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-    inventoryData.currentInventoryId = null;
+  const modal = document.getElementById("viewInventoryModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+  inventoryData.currentInventoryId = null;
 }
 
 // Inventory Image Modal Functions
 function showInventoryImageModal() {
-    const imageButton = document.getElementById('viewInventoryImageButton');
-    const imageElement = document.getElementById('viewInventoryImage');
-    
-    // Try to get image URL from button attribute or from the img element inside
-    let imageUrl = null;
-    if (imageButton) {
-        imageUrl = imageButton.getAttribute('data-image-url');
+  const imageButton = document.getElementById("viewInventoryImageButton");
+  const imageElement = document.getElementById("viewInventoryImage");
+
+  // Try to get image URL from button attribute or from the img element inside
+  let imageUrl = null;
+  if (imageButton) {
+    imageUrl = imageButton.getAttribute("data-image-url");
+  }
+
+  // If not found in attribute, try to get from the img element
+  if (!imageUrl && imageElement) {
+    const img = imageElement.querySelector("img");
+    if (img && img.src) {
+      imageUrl = img.src;
     }
-    
-    // If not found in attribute, try to get from the img element
-    if (!imageUrl && imageElement) {
-        const img = imageElement.querySelector('img');
-        if (img && img.src) {
-            imageUrl = img.src;
-        }
-    }
-    
-    if (!imageUrl) {
-        return;
-    }
-    
-    const imageModal = document.getElementById('inventoryImageModal');
-    const fullSizeImage = document.getElementById('inventoryImageFullSize');
-    
-    if (imageModal && fullSizeImage) {
-        fullSizeImage.src = imageUrl;
-        imageModal.classList.remove('hidden');
-        
-        // Prevent body scroll when modal is open
-        document.body.style.overflow = 'hidden';
-    }
+  }
+
+  if (!imageUrl) {
+    return;
+  }
+
+  const imageModal = document.getElementById("inventoryImageModal");
+  const fullSizeImage = document.getElementById("inventoryImageFullSize");
+
+  if (imageModal && fullSizeImage) {
+    fullSizeImage.src = imageUrl;
+    imageModal.classList.remove("hidden");
+
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = "hidden";
+  }
 }
 
 function closeInventoryImageModal() {
-    const imageModal = document.getElementById('inventoryImageModal');
-    
-    if (imageModal) {
-        imageModal.classList.add('hidden');
-        
-        // Restore body scroll
-        document.body.style.overflow = '';
-    }
+  const imageModal = document.getElementById("inventoryImageModal");
+
+  if (imageModal) {
+    imageModal.classList.add("hidden");
+
+    // Restore body scroll
+    document.body.style.overflow = "";
+  }
 }
 
 // Close image modal on Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        const imageModal = document.getElementById('inventoryImageModal');
-        if (imageModal && !imageModal.classList.contains('hidden')) {
-            closeInventoryImageModal();
-        }
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    const imageModal = document.getElementById("inventoryImageModal");
+    if (imageModal && !imageModal.classList.contains("hidden")) {
+      closeInventoryImageModal();
     }
+  }
 });
 
 // Close image modal when clicking outside the image
-document.addEventListener('click', function(e) {
-    const imageModal = document.getElementById('inventoryImageModal');
-    if (imageModal && !imageModal.classList.contains('hidden')) {
-        const modalContent = imageModal.querySelector('.relative');
-        const closeButton = imageModal.querySelector('button[onclick*="closeInventoryImageModal"]');
-        // Don't close if clicking on the image or close button
-        if (modalContent && !modalContent.contains(e.target) && e.target !== closeButton && !closeButton.contains(e.target)) {
-            closeInventoryImageModal();
-        }
+document.addEventListener("click", function (e) {
+  const imageModal = document.getElementById("inventoryImageModal");
+  if (imageModal && !imageModal.classList.contains("hidden")) {
+    const modalContent = imageModal.querySelector(".relative");
+    const closeButton = imageModal.querySelector(
+      'button[onclick*="closeInventoryImageModal"]'
+    );
+    // Don't close if clicking on the image or close button
+    if (
+      modalContent &&
+      !modalContent.contains(e.target) &&
+      e.target !== closeButton &&
+      !closeButton.contains(e.target)
+    ) {
+      closeInventoryImageModal();
     }
+  }
 });
 
 window.showViewInventoryModal = showViewInventoryModal;
@@ -476,60 +893,71 @@ window.showInventoryImageModal = showInventoryImageModal;
 window.closeInventoryImageModal = closeInventoryImageModal;
 
 async function showEditInventoryModal(inventoryId) {
-    try {
-        // Set the current inventory ID
-        inventoryData.currentInventoryId = inventoryId;
-        
-        // Fetch inventory details from API
-        const inventoryDetails = await getInventoryById(inventoryId);
-        
-        // Populate the form with current inventory data
-        populateEditInventoryForm(inventoryDetails);
-        
-        // Show the modal
-        const modal = document.getElementById('editInventoryModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error('Error loading inventory for editing:', error);
-        showErrorToast('Error', 'No se pudieron cargar los datos del inventario para editar: ' + error.message);
+  try {
+    // Set the current inventory ID
+    inventoryData.currentInventoryId = inventoryId;
+
+    // Fetch inventory details from API
+    const inventoryDetails = await getInventoryById(inventoryId);
+
+    // Populate the form with current inventory data
+    populateEditInventoryForm(inventoryDetails);
+
+    // Show the modal
+    const modal = document.getElementById("editInventoryModal");
+    if (modal) {
+      modal.classList.remove("hidden");
     }
+  } catch (error) {
+    console.error("Error loading inventory for editing:", error);
+    showErrorToast(
+      "Error",
+      "No se pudieron cargar los datos del inventario para editar: " +
+        error.message
+    );
+  }
 }
 
 function populateEditInventoryForm(inventory) {
-    const nameInput = document.getElementById('editInventoryName');
-    const locationInput = document.getElementById('editInventoryLocation');
-    const inventoryIdElement = document.getElementById('editInventoryId');
-    
-    if (nameInput) nameInput.value = inventory.name || '';
-    if (locationInput) locationInput.value = inventory.location || '';
-    if (inventoryIdElement) inventoryIdElement.textContent = inventory.id || 'N/A';
+  const nameInput = document.getElementById("editInventoryName");
+  const locationInput = document.getElementById("editInventoryLocation");
+  const inventoryIdElement = document.getElementById("editInventoryId");
+
+  if (nameInput) nameInput.value = inventory.name || "";
+  if (locationInput) locationInput.value = inventory.location || "";
+  if (inventoryIdElement)
+    inventoryIdElement.textContent = inventory.id || "N/A";
 }
 
 function closeEditInventoryModal() {
-    const modal = document.getElementById('editInventoryModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-    
-    // Clear form
-    const nameInput = document.getElementById('editInventoryName');
-    const locationInput = document.getElementById('editInventoryLocation');
-    
-    if (nameInput) nameInput.value = '';
-    if (locationInput) locationInput.value = '';
-    
-    inventoryData.currentInventoryId = null;
+  const modal = document.getElementById("editInventoryModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // Clear form
+  const nameInput = document.getElementById("editInventoryName");
+  const locationInput = document.getElementById("editInventoryLocation");
+
+  if (nameInput) nameInput.value = "";
+  if (locationInput) locationInput.value = "";
+
+  inventoryData.currentInventoryId = null;
 }
 
 // Toast notification helpers for edit operations
 function showEditSuccessToast() {
-    showSuccessToast('Inventario actualizado', 'El inventario se ha actualizado correctamente.');
+  showSuccessToast(
+    "Inventario actualizado",
+    "El inventario se ha actualizado correctamente."
+  );
 }
 
 function showEditErrorToast(message) {
-    showErrorToast('Error al actualizar', message || 'No se pudo actualizar el inventario.');
+  showErrorToast(
+    "Error al actualizar",
+    message || "No se pudo actualizar el inventario."
+  );
 }
 
 window.showEditInventoryModal = showEditInventoryModal;
@@ -538,105 +966,118 @@ window.showEditSuccessToast = showEditSuccessToast;
 window.showEditErrorToast = showEditErrorToast;
 
 async function showAssignInventoryModal(inventoryId) {
-    try {
-        // Set the current inventory ID
-        inventoryData.currentInventoryId = inventoryId;
-        
-        // Fetch inventory details for display
-        const inventoryDetails = await getInventoryById(inventoryId);
-        
-        // Populate the modal with inventory info
-        populateAssignInventoryModal(inventoryDetails);
-        
-        // Show the modal
-        const modal = document.getElementById('assignInventoryModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error('Error loading inventory for assignment:', error);
-        showErrorToast('Error', 'No se pudieron cargar los datos del inventario: ' + error.message);
+  try {
+    // Set the current inventory ID
+    inventoryData.currentInventoryId = inventoryId;
+
+    // Fetch inventory details for display
+    const inventoryDetails = await getInventoryById(inventoryId);
+
+    // Populate the modal with inventory info
+    populateAssignInventoryModal(inventoryDetails);
+
+    // Show the modal
+    const modal = document.getElementById("assignInventoryModal");
+    if (modal) {
+      modal.classList.remove("hidden");
     }
+  } catch (error) {
+    console.error("Error loading inventory for assignment:", error);
+    showErrorToast(
+      "Error",
+      "No se pudieron cargar los datos del inventario: " + error.message
+    );
+  }
 }
 
 async function populateAssignInventoryModal(inventory) {
-    // Validate inventory data
-    if (!inventory) {
-        console.error('No inventory data provided to populateAssignInventoryModal');
-        return;
-    }
+  // Validate inventory data
+  if (!inventory) {
+    console.error("No inventory data provided to populateAssignInventoryModal");
+    return;
+  }
 
-    const inventoryName = document.getElementById('assignInventoryName');
-    const inventoryId = document.getElementById('assignInventoryId');
-    
-    if (inventoryName) {
-        inventoryName.textContent = inventory.name || 'Sin nombre';
-    } else {
-        console.warn('assignInventoryName element not found');
-    }
-    
-    if (inventoryId) {
-        inventoryId.textContent = inventory.id || 'N/A';
-    } else {
-        console.warn('assignInventoryId element not found');
-    }
-    
-    // Load users into the select dropdown
-    await loadUsersForAssignment();
+  // Store current inventory data globally for inventory assignment
+  window.currentInventoryAssignment = inventory;
+
+  const inventoryName = document.getElementById("assignInventoryName");
+  const inventoryId = document.getElementById("assignInventoryId");
+
+  if (inventoryName) {
+    inventoryName.textContent = inventory.name || "Sin nombre";
+  } else {
+    console.warn("assignInventoryName element not found");
+  }
+
+  if (inventoryId) {
+    inventoryId.textContent = inventory.id || "N/A";
+  } else {
+    console.warn("assignInventoryId element not found");
+  }
+
+  // Load users into the select dropdown
+  await loadUsersForAssignment();
 }
 
 async function loadUsersForAssignment() {
-    // Show loading state
-    showUserSelectLoading();
-    
-    try {
-        // Fetch users from API
-        const users = await fetchUsers();
-        
-        if (users.length === 0) {
-            const userSelect = document.getElementById('assignUserId');
-            if (userSelect) {
-                userSelect.innerHTML = '<option value="">No hay usuarios disponibles</option>';
-            }
-            return;
-        }
-        
-        // Populate the select with users
-        populateUserSelect(users);
-        
-    } catch (error) {
-        console.error('Error loading users:', error);
-        const userSelect = document.getElementById('assignUserId');
-        if (userSelect) {
-            userSelect.innerHTML = '<option value="">Error al cargar usuarios</option>';
-        }
-    } finally {
-        // Hide loading state
-        hideUserSelectLoading();
+  // Show loading state
+  showUserSelectLoading();
+
+  try {
+    // Fetch users from API
+    const users = await fetchUsers();
+
+    if (users.length === 0) {
+      const userSelect = document.getElementById("assignUserId");
+      if (userSelect) {
+        userSelect.innerHTML =
+          '<option value="">No hay usuarios disponibles</option>';
+      }
+      return;
     }
+
+    // Populate the select with users
+    populateUserSelect(users);
+  } catch (error) {
+    console.error("Error loading users:", error);
+    const userSelect = document.getElementById("assignUserId");
+    if (userSelect) {
+      userSelect.innerHTML =
+        '<option value="">Error al cargar usuarios</option>';
+    }
+  } finally {
+    // Hide loading state
+    hideUserSelectLoading();
+  }
 }
 
 function closeAssignInventoryModal() {
-    const modal = document.getElementById('assignInventoryModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-    
-    // Clear form
-    if (window.assignUserSelect) {
-        window.assignUserSelect.clear();
-    }
-    
-    inventoryData.currentInventoryId = null;
+  const modal = document.getElementById("assignInventoryModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // Clear form
+  if (window.assignUserSelect) {
+    window.assignUserSelect.clear();
+  }
+
+  inventoryData.currentInventoryId = null;
 }
 
 // Toast notification helpers for assignment operations
 function showAssignSuccessToast() {
-    showSuccessToast('Inventario asignado', 'El inventario se ha asignado correctamente.');
+  showSuccessToast(
+    "Inventario asignado",
+    "El inventario se ha asignado correctamente."
+  );
 }
 
 function showAssignErrorToast(message) {
-    showErrorToast('Error al asignar', message || 'No se pudo asignar el inventario.');
+  showErrorToast(
+    "Error al asignar",
+    message || "No se pudo asignar el inventario."
+  );
 }
 
 window.showAssignInventoryModal = showAssignInventoryModal;
@@ -649,287 +1090,565 @@ window.showUserSelectLoading = showUserSelectLoading;
 window.hideUserSelectLoading = hideUserSelectLoading;
 window.loadUsersForAssignment = loadUsersForAssignment;
 
+// New Inventory Modal Functions
+async function showNewInventoryModal() {
+  const modal = document.getElementById("newInventoryModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  }
+
+  // Load users for owner selection
+  await loadUsersForNewInventory();
+}
+
+async function loadUsersForNewInventory() {
+  // Show loading state
+  showNewInventoryOwnerSelectLoading();
+
+  try {
+    // Fetch users from API
+    const users = await fetchUsers();
+
+    if (users.length === 0) {
+      populateNewInventoryOwnerSelect([]);
+      return;
+    }
+
+    // Populate the select with users
+    populateNewInventoryOwnerSelect(users);
+  } catch (error) {
+    console.error("Error loading users for new inventory:", error);
+    populateNewInventoryOwnerSelect([]);
+  } finally {
+    hideNewInventoryOwnerSelectLoading();
+  }
+}
+
+function populateNewInventoryOwnerSelect(users) {
+  // Initialize CustomSelect if not already done
+  if (!window.newInventoryOwnerSelect) {
+    window.newInventoryOwnerSelect = new CustomSelect(
+      "newInventoryOwnerIdSelect",
+      {
+        placeholder: "Seleccionar propietario...",
+        searchable: true,
+      }
+    );
+  }
+
+  // Format users as options
+  const userOptions = [];
+
+  if (users && users.length > 0) {
+    users.forEach((user) => {
+      // Format display name
+      let displayName = "";
+      if (user.fullName && user.fullName.trim()) {
+        displayName = user.fullName;
+      } else if (user.email) {
+        displayName = user.email;
+      } else {
+        displayName = `Usuario ${user.id || "N/A"}`;
+      }
+
+      // Add additional info if available
+      if (user.jobTitle) {
+        displayName += ` (${user.jobTitle})`;
+      }
+
+      userOptions.push({
+        value: String(user.id),
+        label: displayName,
+      });
+    });
+  } else {
+    // Add no users option (will be shown as disabled in CustomSelect)
+    userOptions.push({
+      value: "",
+      label: "No hay usuarios disponibles",
+      disabled: true,
+    });
+  }
+
+  window.newInventoryOwnerSelect.setOptions(userOptions);
+}
+
+function showNewInventoryOwnerSelectLoading() {
+  // Initialize CustomSelect if not already done
+  if (!window.newInventoryOwnerSelect) {
+    window.newInventoryOwnerSelect = new CustomSelect(
+      "newInventoryOwnerIdSelect",
+      {
+        placeholder: "Cargando usuarios...",
+        searchable: true,
+      }
+    );
+  }
+  window.newInventoryOwnerSelect.setOptions([
+    { value: "", label: "Cargando usuarios...", disabled: true },
+  ]);
+}
+
+function hideNewInventoryOwnerSelectLoading() {
+  // Loading state is cleared when populateNewInventoryOwnerSelect is called
+}
+
+function closeNewInventoryModal() {
+  const modal = document.getElementById("newInventoryModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // Clear form
+  const form = document.getElementById("newInventoryForm");
+  if (form) {
+    form.reset();
+  }
+
+  // Clear image preview
+  const imagePreview = document.getElementById("newInventoryImagePreview");
+  if (imagePreview) {
+    imagePreview.innerHTML = '<i class="fas fa-box"></i>';
+    imagePreview.classList.remove("has-image");
+  }
+
+  // Clear image input
+  const imageInput = document.getElementById("newInventoryPhoto");
+  if (imageInput) {
+    imageInput.value = "";
+  }
+
+  // Clear owner select
+  if (window.newInventoryOwnerSelect) {
+    window.newInventoryOwnerSelect.clear();
+  }
+}
+
+// Export new inventory modal functions
+window.showNewInventoryModal = showNewInventoryModal;
+window.closeNewInventoryModal = closeNewInventoryModal;
+
 // Manager Assignment Functions
 async function showAssignManagerModal(inventoryId) {
-    try {
-        // Set the current inventory ID
-        inventoryData.currentInventoryId = inventoryId;
-        
-        // Fetch inventory details for display
-        const inventoryDetails = await getInventoryById(inventoryId);
-        
-        // Populate the modal with inventory info
-        await populateAssignManagerModal(inventoryDetails);
-        
-        // Show the modal
-        const modal = document.getElementById('assignManagerModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-    } catch (error) {
-        console.error('Error loading inventory for manager assignment:', error);
-        showErrorToast('Error', 'No se pudieron cargar los datos del inventario: ' + error.message);
+  try {
+    // Set the current inventory ID
+    inventoryData.currentInventoryId = inventoryId;
+
+    // Fetch inventory details for display
+    const inventoryDetails = await getInventoryById(inventoryId);
+
+    // Populate the modal with inventory info
+    await populateAssignManagerModal(inventoryDetails);
+
+    // Show the modal
+    const modal = document.getElementById("assignManagerModal");
+    if (modal) {
+      modal.classList.remove("hidden");
     }
+  } catch (error) {
+    console.error("Error loading inventory for manager assignment:", error);
+    showErrorToast(
+      "Error",
+      "No se pudieron cargar los datos del inventario: " + error.message
+    );
+  }
 }
 
 async function populateAssignManagerModal(inventory) {
-    // Validate inventory data
-    if (!inventory) {
-        console.error('No inventory data provided to populateAssignManagerModal');
-        return;
-    }
+  // Validate inventory data
+  if (!inventory) {
+    console.error("No inventory data provided to populateAssignManagerModal");
+    return;
+  }
 
-    const inventoryName = document.getElementById('assignManagerInventoryName');
-    const inventoryId = document.getElementById('assignManagerInventoryId');
-    
-    if (inventoryName) {
-        inventoryName.textContent = inventory.name || 'Sin nombre';
-    } else {
-        console.warn('assignManagerInventoryName element not found');
-    }
-    
-    if (inventoryId) {
-        inventoryId.textContent = inventory.id || 'N/A';
-    } else {
-        console.warn('assignManagerInventoryId element not found');
-    }
-    
-    // Load users into the single select dropdown
-    await loadUsersForRoleAssignment();
-    
-    // Reset role selection
-    resetRoleSelection();
+  const inventoryName = document.getElementById("assignManagerInventoryName");
+  const inventoryId = document.getElementById("assignManagerInventoryId");
+
+  if (inventoryName) {
+    inventoryName.textContent = inventory.name || "Sin nombre";
+  } else {
+    console.warn("assignManagerInventoryName element not found");
+  }
+
+  if (inventoryId) {
+    inventoryId.textContent = inventory.id || "N/A";
+  } else {
+    console.warn("assignManagerInventoryId element not found");
+  }
+
+  // Store current inventory data globally for role assignment
+  window.currentRoleAssignmentInventory = inventory;
+
+  // Load users into the single select dropdown
+  await loadUsersForRoleAssignment(inventory.id);
+
+  // Reset role selection
+  resetRoleSelection();
 }
 
-async function loadUsersForRoleAssignment() {
-    // Show loading state for user select
-    showRoleUserSelectLoading();
-    
+async function loadUsersForRoleAssignment(inventoryId) {
+  // Show loading state for user select
+  showRoleUserSelectLoading();
+
+  try {
+    // Fetch users from API
+    const users = await fetchUsers();
+
+    if (users.length === 0) {
+      populateRoleUserSelect([]);
+      return;
+    }
+
+    // Get current managers and signatories for this inventory
+    let currentManagers = [];
+    let currentSignatories = [];
+
     try {
-        // Fetch users from API
-        const users = await fetchUsers();
-        
-        if (users.length === 0) {
-            populateRoleUserSelect([]);
-            return;
-        }
-        
-        // Populate the user select
-        populateRoleUserSelect(users);
-        
+      const managersResponse = await getInventoryManagers(inventoryId);
+
+      // Handle different response formats
+      if (Array.isArray(managersResponse)) {
+        currentManagers = managersResponse;
+      } else if (managersResponse && Array.isArray(managersResponse.managers)) {
+        currentManagers = managersResponse.managers;
+      } else if (managersResponse && Array.isArray(managersResponse.data)) {
+        currentManagers = managersResponse.data;
+      } else {
+        console.warn(
+          "getInventoryManagers returned unexpected format:",
+          managersResponse
+        );
+        currentManagers = [];
+      }
     } catch (error) {
-        console.error('Error loading users for role assignment:', error);
-        populateRoleUserSelect([]);
-    } finally {
-        // Hide loading state
-        hideRoleUserSelectLoading();
+      console.warn("Could not fetch managers:", error);
+      currentManagers = [];
     }
+
+    try {
+      const signatoriesResponse = await getInventorySignatories(inventoryId);
+
+      // Handle different response formats
+      if (Array.isArray(signatoriesResponse)) {
+        currentSignatories = signatoriesResponse;
+      } else if (
+        signatoriesResponse &&
+        Array.isArray(signatoriesResponse.signatories)
+      ) {
+        currentSignatories = signatoriesResponse.signatories;
+      } else if (
+        signatoriesResponse &&
+        Array.isArray(signatoriesResponse.data)
+      ) {
+        currentSignatories = signatoriesResponse.data;
+      } else {
+        console.warn(
+          "getInventorySignatories returned unexpected format:",
+          signatoriesResponse
+        );
+        currentSignatories = [];
+      }
+    } catch (error) {
+      console.warn("Could not fetch signatories:", error);
+      currentSignatories = [];
+    }
+
+    // Store these for validation (ensure they are arrays)
+    window.currentInventoryManagers = Array.isArray(currentManagers)
+      ? currentManagers
+      : [];
+    window.currentInventorySignatories = Array.isArray(currentSignatories)
+      ? currentSignatories
+      : [];
+
+    // Filter out users who already have roles (managers or signatories)
+    // Ensure we're working with arrays before using map
+    const managerIds = new Set(
+      (Array.isArray(currentManagers) ? currentManagers : [])
+        .filter((m) => m && m.id)
+        .map((m) => parseInt(m.id))
+    );
+    const signatoryIds = new Set(
+      (Array.isArray(currentSignatories) ? currentSignatories : [])
+        .filter((s) => s && s.id)
+        .map((s) => parseInt(s.id))
+    );
+    const usersWithRoles = new Set([...managerIds, ...signatoryIds]);
+
+    // Filter available users
+    const availableUsers = users.filter(
+      (user) => !usersWithRoles.has(parseInt(user.id))
+    );
+
+    // Populate the user select with available users
+    populateRoleUserSelect(
+      availableUsers,
+      users.length - availableUsers.length
+    );
+  } catch (error) {
+    console.error("Error loading users for role assignment:", error);
+    populateRoleUserSelect([]);
+  } finally {
+    // Hide loading state
+    hideRoleUserSelectLoading();
+  }
 }
 
-function populateRoleUserSelect(users) {
-    // Initialize CustomSelect if not already done
-    if (!window.roleUserSelect) {
-        window.roleUserSelect = new CustomSelect('roleUserIdSelect', {
-            placeholder: 'Seleccionar usuario...',
-            searchable: true
-        });
-    }
+function populateRoleUserSelect(users, filteredCount = 0) {
+  // Initialize CustomSelect if not already done
+  if (!window.roleUserSelect) {
+    window.roleUserSelect = new CustomSelect("roleUserIdSelect", {
+      placeholder: "Seleccionar usuario...",
+      searchable: true,
+    });
+  }
 
-    // Format users as options
-    const userOptions = [];
-    
-    if (users && users.length > 0) {
-        users.forEach(user => {
-            // Format display name
-            let displayName = '';
-            if (user.fullName && user.fullName.trim()) {
-                displayName = user.fullName;
-            } else if (user.email) {
-                displayName = user.email;
-            } else {
-                displayName = `Usuario ${user.id || 'N/A'}`;
-            }
-            
-            // Add additional info if available
-            if (user.jobTitle) {
-                displayName += ` (${user.jobTitle})`;
-            }
-            
-            userOptions.push({
-                value: String(user.id),
-                label: displayName
-            });
-        });
-    } else {
-        // Add no users option (will be shown as disabled in CustomSelect)
-        userOptions.push({
-            value: '',
-            label: 'No hay usuarios disponibles',
-            disabled: true
-        });
+  // Format users as options
+  const userOptions = [];
+
+  if (users && users.length > 0) {
+    users.forEach((user) => {
+      // Format display name
+      let displayName = "";
+      if (user.fullName && user.fullName.trim()) {
+        displayName = user.fullName;
+      } else if (user.email) {
+        displayName = user.email;
+      } else {
+        displayName = `Usuario ${user.id || "N/A"}`;
+      }
+
+      // Add additional info if available
+      if (user.jobTitle) {
+        displayName += ` (${user.jobTitle})`;
+      }
+
+      userOptions.push({
+        value: String(user.id),
+        label: displayName,
+      });
+    });
+
+    // Show info if users were filtered
+    if (filteredCount > 0) {
+      showInfoToast(
+        "Usuarios filtrados",
+        `${filteredCount} usuario(s) ya tienen roles asignados en este inventario y no aparecen en la lista.`
+      );
     }
-    
-    window.roleUserSelect.setOptions(userOptions);
+  } else {
+    // Add no users option (will be shown as disabled in CustomSelect)
+    userOptions.push({
+      value: "",
+      label:
+        filteredCount > 0
+          ? "Todos los usuarios ya tienen roles asignados"
+          : "No hay usuarios disponibles",
+      disabled: true,
+    });
+  }
+
+  window.roleUserSelect.setOptions(userOptions);
 }
 
 function showRoleUserSelectLoading() {
-    // Initialize CustomSelect if not already done
-    if (!window.roleUserSelect) {
-        window.roleUserSelect = new CustomSelect('roleUserIdSelect', {
-            placeholder: 'Cargando usuarios...',
-            searchable: true
-        });
-    }
-    window.roleUserSelect.setOptions([{ value: '', label: 'Cargando usuarios...', disabled: true }]);
+  // Initialize CustomSelect if not already done
+  if (!window.roleUserSelect) {
+    window.roleUserSelect = new CustomSelect("roleUserIdSelect", {
+      placeholder: "Cargando usuarios...",
+      searchable: true,
+    });
+  }
+  window.roleUserSelect.setOptions([
+    { value: "", label: "Cargando usuarios...", disabled: true },
+  ]);
 }
 
 function hideRoleUserSelectLoading() {
-    // Loading state is cleared when populateRoleUserSelect is called
+  // Loading state is cleared when populateRoleUserSelect is called
 }
 
 // Role selection function
 function selectRole(role) {
-    const managerBtn = document.getElementById('managerRoleBtn');
-    const signatoryBtn = document.getElementById('signatoryRoleBtn');
-    const selectedRoleInput = document.getElementById('selectedRole');
-    const roleDescription = document.getElementById('roleDescription');
-    
-    // Remove selected class from both buttons
-    if (managerBtn) {
-        managerBtn.classList.remove('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
-        managerBtn.classList.add('border-gray-300', 'text-gray-700');
+  const managerBtn = document.getElementById("managerRoleBtn");
+  const signatoryBtn = document.getElementById("signatoryRoleBtn");
+  const selectedRoleInput = document.getElementById("selectedRole");
+  const roleDescription = document.getElementById("roleDescription");
+
+  // Remove selected class from both buttons
+  if (managerBtn) {
+    managerBtn.classList.remove(
+      "border-[#00AF00]",
+      "bg-green-50",
+      "text-[#00AF00]"
+    );
+    managerBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+  if (signatoryBtn) {
+    signatoryBtn.classList.remove(
+      "border-[#00AF00]",
+      "bg-green-50",
+      "text-[#00AF00]"
+    );
+    signatoryBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+
+  // Add selected class to clicked button
+  if (role === "manager" && managerBtn) {
+    managerBtn.classList.add(
+      "border-[#00AF00]",
+      "bg-green-50",
+      "text-[#00AF00]"
+    );
+    managerBtn.classList.remove("border-gray-300", "text-gray-700");
+    if (roleDescription) {
+      roleDescription.textContent =
+        "El inventario será administrado por el manejador seleccionado";
     }
-    if (signatoryBtn) {
-        signatoryBtn.classList.remove('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
-        signatoryBtn.classList.add('border-gray-300', 'text-gray-700');
+  } else if (role === "signatory" && signatoryBtn) {
+    signatoryBtn.classList.add(
+      "border-[#00AF00]",
+      "bg-green-50",
+      "text-[#00AF00]"
+    );
+    signatoryBtn.classList.remove("border-gray-300", "text-gray-700");
+    if (roleDescription) {
+      roleDescription.textContent =
+        "El usuario seleccionado firmará el inventario";
     }
-    
-    // Add selected class to clicked button
-    if (role === 'manager' && managerBtn) {
-        managerBtn.classList.add('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
-        managerBtn.classList.remove('border-gray-300', 'text-gray-700');
-        if (roleDescription) {
-            roleDescription.textContent = 'El inventario será administrado por el manejador seleccionado';
-        }
-    } else if (role === 'signatory' && signatoryBtn) {
-        signatoryBtn.classList.add('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
-        signatoryBtn.classList.remove('border-gray-300', 'text-gray-700');
-        if (roleDescription) {
-            roleDescription.textContent = 'El usuario seleccionado firmará el inventario';
-        }
-    }
-    
-    // Set the hidden input value
-    if (selectedRoleInput) {
-        selectedRoleInput.value = role;
-    }
+  }
+
+  // Set the hidden input value
+  if (selectedRoleInput) {
+    selectedRoleInput.value = role;
+  }
 }
 
 function resetRoleSelection() {
-    const managerBtn = document.getElementById('managerRoleBtn');
-    const signatoryBtn = document.getElementById('signatoryRoleBtn');
-    const selectedRoleInput = document.getElementById('selectedRole');
-    const roleDescription = document.getElementById('roleDescription');
-    
-    // Remove selected class from both buttons
-    if (managerBtn) {
-        managerBtn.classList.remove('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
-        managerBtn.classList.add('border-gray-300', 'text-gray-700');
-    }
-    if (signatoryBtn) {
-        signatoryBtn.classList.remove('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
-        signatoryBtn.classList.add('border-gray-300', 'text-gray-700');
-    }
-    
-    // Clear hidden input
-    if (selectedRoleInput) {
-        selectedRoleInput.value = '';
-    }
-    
-    // Reset description
-    if (roleDescription) {
-        roleDescription.textContent = 'Selecciona un rol para continuar';
-    }
+  const managerBtn = document.getElementById("managerRoleBtn");
+  const signatoryBtn = document.getElementById("signatoryRoleBtn");
+  const selectedRoleInput = document.getElementById("selectedRole");
+  const roleDescription = document.getElementById("roleDescription");
+
+  // Remove selected class from both buttons
+  if (managerBtn) {
+    managerBtn.classList.remove(
+      "border-[#00AF00]",
+      "bg-green-50",
+      "text-[#00AF00]"
+    );
+    managerBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+  if (signatoryBtn) {
+    signatoryBtn.classList.remove(
+      "border-[#00AF00]",
+      "bg-green-50",
+      "text-[#00AF00]"
+    );
+    signatoryBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+
+  // Clear hidden input
+  if (selectedRoleInput) {
+    selectedRoleInput.value = "";
+  }
+
+  // Reset description
+  if (roleDescription) {
+    roleDescription.textContent = "Selecciona un rol para continuar";
+  }
 }
 
 // Make selectRole available globally
 window.selectRole = selectRole;
 
 async function loadManagersForAssignment() {
-    // This function is now deprecated - use loadUsersForRoleAssignment instead
-    console.warn('loadManagersForAssignment is deprecated');
+  // This function is now deprecated - use loadUsersForRoleAssignment instead
+  console.warn("loadManagersForAssignment is deprecated");
 }
 
 function populateManagerSelect(users) {
-    // This function is now deprecated - use populateRoleUserSelect instead
-    console.warn('populateManagerSelect is deprecated');
+  // This function is now deprecated - use populateRoleUserSelect instead
+  console.warn("populateManagerSelect is deprecated");
 }
 
 function showManagerSelectLoading() {
-    // This function is now deprecated
-    console.warn('showManagerSelectLoading is deprecated');
+  // This function is now deprecated
+  console.warn("showManagerSelectLoading is deprecated");
 }
 
 function hideManagerSelectLoading() {
-    // This function is now deprecated
-    console.warn('hideManagerSelectLoading is deprecated');
+  // This function is now deprecated
+  console.warn("hideManagerSelectLoading is deprecated");
 }
 
 function closeAssignManagerModal() {
-    const modal = document.getElementById('assignManagerModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-    
-    // Clear form
-    if (window.roleUserSelect) {
-        window.roleUserSelect.clear();
-    }
-    
-    // Reset role selection
-    resetRoleSelection();
-    
-    inventoryData.currentInventoryId = null;
+  const modal = document.getElementById("assignManagerModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // Clear form
+  if (window.roleUserSelect) {
+    window.roleUserSelect.clear();
+  }
+
+  // Reset role selection
+  resetRoleSelection();
+
+  inventoryData.currentInventoryId = null;
 }
 
 // Signatory Assignment Functions (now deprecated)
 async function loadSignatoriesForAssignment() {
-    // This function is now deprecated - use loadUsersForRoleAssignment instead
-    console.warn('loadSignatoriesForAssignment is deprecated');
+  // This function is now deprecated - use loadUsersForRoleAssignment instead
+  console.warn("loadSignatoriesForAssignment is deprecated");
 }
 
 function populateSignatorySelect(users) {
-    // This function is now deprecated - use populateRoleUserSelect instead
-    console.warn('populateSignatorySelect is deprecated');
+  // This function is now deprecated - use populateRoleUserSelect instead
+  console.warn("populateSignatorySelect is deprecated");
 }
 
 function showSignatorySelectLoading() {
-    // This function is now deprecated
-    console.warn('showSignatorySelectLoading is deprecated');
+  // This function is now deprecated
+  console.warn("showSignatorySelectLoading is deprecated");
 }
 
 function hideSignatorySelectLoading() {
-    // This function is now deprecated
-    console.warn('hideSignatorySelectLoading is deprecated');
+  // This function is now deprecated
+  console.warn("hideSignatorySelectLoading is deprecated");
 }
 
 // Toast notification helpers for manager assignment operations
 function showAssignManagerSuccessToast() {
-    showSuccessToast('Manejador asignado', 'El manejador se ha asignado correctamente al inventario.');
+  showSuccessToast(
+    "Manejador asignado",
+    "El manejador se ha asignado correctamente al inventario."
+  );
 }
 
 //
 function showAssignManagerErrorToast(message) {
-    showErrorToast('Error al asignar manejador', message || 'No se pudo asignar el manejador.');
+  showErrorToast(
+    "Error al asignar manejador",
+    message || "No se pudo asignar el manejador."
+  );
 }
 
 // Toast notification helpers for signatory assignment operations
 function showAssignSignatorySuccessToast() {
-    showSuccessToast('Firmante asignado', 'El firmante se ha asignado correctamente al inventario.');
+  showSuccessToast(
+    "Firmante asignado",
+    "El firmante se ha asignado correctamente al inventario."
+  );
 }
 
 function showAssignSignatoryErrorToast(message) {
-    showErrorToast('Error al asignar firmante', message || 'No se pudo asignar el firmante.');
+  showErrorToast(
+    "Error al asignar firmante",
+    message || "No se pudo asignar el firmante."
+  );
 }
 
 window.showAssignManagerModal = showAssignManagerModal;
@@ -941,102 +1660,107 @@ window.showAssignSignatoryErrorToast = showAssignSignatoryErrorToast;
 
 // Function to fetch users from API
 async function fetchUsers() {
-    try {
-        const token = localStorage.getItem('jwt');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+  try {
+    const token = localStorage.getItem("jwt");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        // Request all users with a large page size for the select dropdown
-        const response = await fetch('/api/v1/users?page=0&size=1000', {
-            method: 'GET',
-            headers: headers
-        });
+    // Request all users with a large page size for the select dropdown
+    const response = await fetch("/api/v1/users?page=0&size=1000", {
+      method: "GET",
+      headers: headers,
+    });
 
-        if (response.ok) {
-            const pagedResponse = await response.json();
-            
-            // Handle both paginated response (PagedUserResponse) and direct array
-            if (pagedResponse.users && Array.isArray(pagedResponse.users)) {
-                // Paginated response structure
-                return pagedResponse.users;
-            } else if (Array.isArray(pagedResponse)) {
-                // Direct array response (fallback)
-                return pagedResponse;
-            } else {
-                console.warn('Unexpected response format from /api/v1/users:', pagedResponse);
-                return [];
-            }
-        } else {
-            throw new Error(`Failed to fetch users: ${response.status}`);
-        }
-    } catch (error) {
-        console.error('Error fetching users:', error);
+    if (response.ok) {
+      const pagedResponse = await response.json();
+
+      // Handle both paginated response (PagedUserResponse) and direct array
+      if (pagedResponse.users && Array.isArray(pagedResponse.users)) {
+        // Paginated response structure
+        return pagedResponse.users;
+      } else if (Array.isArray(pagedResponse)) {
+        // Direct array response (fallback)
+        return pagedResponse;
+      } else {
+        console.warn(
+          "Unexpected response format from /api/v1/users:",
+          pagedResponse
+        );
         return [];
+      }
+    } else {
+      throw new Error(`Failed to fetch users: ${response.status}`);
     }
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return [];
+  }
 }
 
 // Function to populate user select using CustomSelect
 function populateUserSelect(users) {
-    // Initialize CustomSelect if not already done
-    if (!window.assignUserSelect) {
-        window.assignUserSelect = new CustomSelect('assignUserIdSelect', {
-            placeholder: 'Seleccionar usuario...',
-            searchable: true
-        });
-    }
+  // Initialize CustomSelect if not already done
+  if (!window.assignUserSelect) {
+    window.assignUserSelect = new CustomSelect("assignUserIdSelect", {
+      placeholder: "Seleccionar usuario...",
+      searchable: true,
+    });
+  }
 
-    // Format users as options
-    const userOptions = [];
-    
-    if (users && users.length > 0) {
-        users.forEach(user => {
-            // Format display name
-            let displayName = '';
-            if (user.fullName && user.fullName.trim()) {
-                displayName = user.fullName;
-            } else if (user.email) {
-                displayName = user.email;
-            } else {
-                displayName = `Usuario ${user.id || 'N/A'}`;
-            }
-            
-            // Add additional info if available
-            if (user.jobTitle) {
-                displayName += ` (${user.jobTitle})`;
-            }
-            
-            userOptions.push({
-                value: String(user.id),
-                label: displayName
-            });
-        });
-    } else {
-        // Add no users option (will be shown as disabled in CustomSelect)
-        userOptions.push({
-            value: '',
-            label: 'No hay usuarios disponibles',
-            disabled: true
-        });
-    }
-    
-    window.assignUserSelect.setOptions(userOptions);
+  // Format users as options
+  const userOptions = [];
+
+  if (users && users.length > 0) {
+    users.forEach((user) => {
+      // Format display name
+      let displayName = "";
+      if (user.fullName && user.fullName.trim()) {
+        displayName = user.fullName;
+      } else if (user.email) {
+        displayName = user.email;
+      } else {
+        displayName = `Usuario ${user.id || "N/A"}`;
+      }
+
+      // Add additional info if available
+      if (user.jobTitle) {
+        displayName += ` (${user.jobTitle})`;
+      }
+
+      userOptions.push({
+        value: String(user.id),
+        label: displayName,
+      });
+    });
+  } else {
+    // Add no users option (will be shown as disabled in CustomSelect)
+    userOptions.push({
+      value: "",
+      label: "No hay usuarios disponibles",
+      disabled: true,
+    });
+  }
+
+  window.assignUserSelect.setOptions(userOptions);
 }
 
 // Function to show loading state in user select
 function showUserSelectLoading() {
-    // Initialize CustomSelect if not already done
-    if (!window.assignUserSelect) {
-        window.assignUserSelect = new CustomSelect('assignUserIdSelect', {
-            placeholder: 'Cargando usuarios...',
-            searchable: true
-        });
-    }
-    window.assignUserSelect.setOptions([{ value: '', label: 'Cargando usuarios...', disabled: true }]);
+  // Initialize CustomSelect if not already done
+  if (!window.assignUserSelect) {
+    window.assignUserSelect = new CustomSelect("assignUserIdSelect", {
+      placeholder: "Cargando usuarios...",
+      searchable: true,
+    });
+  }
+  window.assignUserSelect.setOptions([
+    { value: "", label: "Cargando usuarios...", disabled: true },
+  ]);
 }
 
 // Function to hide loading state in user select
 function hideUserSelectLoading() {
-    // Loading state is cleared when populateUserSelect is called
-    // This function is kept for compatibility but doesn't need to do anything
-    // as the CustomSelect will be updated by populateUserSelect
+  // Loading state is cleared when populateUserSelect is called
+  // This function is kept for compatibility but doesn't need to do anything
+  // as the CustomSelect will be updated by populateUserSelect
 }
