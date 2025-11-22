@@ -39,7 +39,8 @@ public class InventoryMapper {
                         : null,
                 entity.getItems() != null ? (long) entity.getItems().size() : null,
                 entity.getImgUrl(),
-                entity.isStatus()
+                entity.isStatus(),
+                entity.getTotalPrice()
         );
     }
 
