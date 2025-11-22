@@ -694,49 +694,49 @@ async function populateAssignManagerModal(inventory) {
         console.warn('assignManagerInventoryId element not found');
     }
     
-    // Load users into both select dropdowns
-    await Promise.all([
-        loadManagersForAssignment(),
-        loadSignatoriesForAssignment()
-    ]);
+    // Load users into the single select dropdown
+    await loadUsersForRoleAssignment();
+    
+    // Reset role selection
+    resetRoleSelection();
 }
 
-async function loadManagersForAssignment() {
-    // Show loading state for manager select
-    showManagerSelectLoading();
+async function loadUsersForRoleAssignment() {
+    // Show loading state for user select
+    showRoleUserSelectLoading();
     
     try {
-        // Fetch users from API for manager selection
+        // Fetch users from API
         const users = await fetchUsers();
         
         if (users.length === 0) {
-            populateManagerSelect([]);
+            populateRoleUserSelect([]);
             return;
         }
         
-        // Populate the manager select with users
-        populateManagerSelect(users);
+        // Populate the user select
+        populateRoleUserSelect(users);
         
     } catch (error) {
-        console.error('Error loading managers:', error);
-        populateManagerSelect([]);
+        console.error('Error loading users for role assignment:', error);
+        populateRoleUserSelect([]);
     } finally {
         // Hide loading state
-        hideManagerSelectLoading();
+        hideRoleUserSelectLoading();
     }
 }
 
-function populateManagerSelect(users) {
+function populateRoleUserSelect(users) {
     // Initialize CustomSelect if not already done
-    if (!window.managerSelect) {
-        window.managerSelect = new CustomSelect('managerIdSelect', {
-            placeholder: 'Seleccionar manejador...',
+    if (!window.roleUserSelect) {
+        window.roleUserSelect = new CustomSelect('roleUserIdSelect', {
+            placeholder: 'Seleccionar usuario...',
             searchable: true
         });
     }
 
     // Format users as options
-    const managerOptions = [];
+    const userOptions = [];
     
     if (users && users.length > 0) {
         users.forEach(user => {
@@ -755,38 +755,124 @@ function populateManagerSelect(users) {
                 displayName += ` (${user.jobTitle})`;
             }
             
-            managerOptions.push({
+            userOptions.push({
                 value: String(user.id),
                 label: displayName
             });
         });
     } else {
-        // Add no managers option (will be shown as disabled in CustomSelect)
-        managerOptions.push({
+        // Add no users option (will be shown as disabled in CustomSelect)
+        userOptions.push({
             value: '',
             label: 'No hay usuarios disponibles',
             disabled: true
         });
     }
     
-    window.managerSelect.setOptions(managerOptions);
+    window.roleUserSelect.setOptions(userOptions);
 }
 
-function showManagerSelectLoading() {
+function showRoleUserSelectLoading() {
     // Initialize CustomSelect if not already done
-    if (!window.managerSelect) {
-        window.managerSelect = new CustomSelect('managerIdSelect', {
-            placeholder: 'Cargando manejadores...',
+    if (!window.roleUserSelect) {
+        window.roleUserSelect = new CustomSelect('roleUserIdSelect', {
+            placeholder: 'Cargando usuarios...',
             searchable: true
         });
     }
-    window.managerSelect.setOptions([{ value: '', label: 'Cargando manejadores...', disabled: true }]);
+    window.roleUserSelect.setOptions([{ value: '', label: 'Cargando usuarios...', disabled: true }]);
+}
+
+function hideRoleUserSelectLoading() {
+    // Loading state is cleared when populateRoleUserSelect is called
+}
+
+// Role selection function
+function selectRole(role) {
+    const managerBtn = document.getElementById('managerRoleBtn');
+    const signatoryBtn = document.getElementById('signatoryRoleBtn');
+    const selectedRoleInput = document.getElementById('selectedRole');
+    const roleDescription = document.getElementById('roleDescription');
+    
+    // Remove selected class from both buttons
+    if (managerBtn) {
+        managerBtn.classList.remove('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
+        managerBtn.classList.add('border-gray-300', 'text-gray-700');
+    }
+    if (signatoryBtn) {
+        signatoryBtn.classList.remove('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
+        signatoryBtn.classList.add('border-gray-300', 'text-gray-700');
+    }
+    
+    // Add selected class to clicked button
+    if (role === 'manager' && managerBtn) {
+        managerBtn.classList.add('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
+        managerBtn.classList.remove('border-gray-300', 'text-gray-700');
+        if (roleDescription) {
+            roleDescription.textContent = 'El inventario será administrado por el manejador seleccionado';
+        }
+    } else if (role === 'signatory' && signatoryBtn) {
+        signatoryBtn.classList.add('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
+        signatoryBtn.classList.remove('border-gray-300', 'text-gray-700');
+        if (roleDescription) {
+            roleDescription.textContent = 'El usuario seleccionado firmará el inventario';
+        }
+    }
+    
+    // Set the hidden input value
+    if (selectedRoleInput) {
+        selectedRoleInput.value = role;
+    }
+}
+
+function resetRoleSelection() {
+    const managerBtn = document.getElementById('managerRoleBtn');
+    const signatoryBtn = document.getElementById('signatoryRoleBtn');
+    const selectedRoleInput = document.getElementById('selectedRole');
+    const roleDescription = document.getElementById('roleDescription');
+    
+    // Remove selected class from both buttons
+    if (managerBtn) {
+        managerBtn.classList.remove('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
+        managerBtn.classList.add('border-gray-300', 'text-gray-700');
+    }
+    if (signatoryBtn) {
+        signatoryBtn.classList.remove('border-[#00AF00]', 'bg-green-50', 'text-[#00AF00]');
+        signatoryBtn.classList.add('border-gray-300', 'text-gray-700');
+    }
+    
+    // Clear hidden input
+    if (selectedRoleInput) {
+        selectedRoleInput.value = '';
+    }
+    
+    // Reset description
+    if (roleDescription) {
+        roleDescription.textContent = 'Selecciona un rol para continuar';
+    }
+}
+
+// Make selectRole available globally
+window.selectRole = selectRole;
+
+async function loadManagersForAssignment() {
+    // This function is now deprecated - use loadUsersForRoleAssignment instead
+    console.warn('loadManagersForAssignment is deprecated');
+}
+
+function populateManagerSelect(users) {
+    // This function is now deprecated - use populateRoleUserSelect instead
+    console.warn('populateManagerSelect is deprecated');
+}
+
+function showManagerSelectLoading() {
+    // This function is now deprecated
+    console.warn('showManagerSelectLoading is deprecated');
 }
 
 function hideManagerSelectLoading() {
-    // Loading state is cleared when populateManagerSelect is called
-    // This function is kept for compatibility but doesn't need to do anything
-    // as the CustomSelect will be updated by populateManagerSelect
+    // This function is now deprecated
+    console.warn('hideManagerSelectLoading is deprecated');
 }
 
 function closeAssignManagerModal() {
@@ -796,107 +882,35 @@ function closeAssignManagerModal() {
     }
     
     // Clear form
-    if (window.managerSelect) {
-        window.managerSelect.clear();
+    if (window.roleUserSelect) {
+        window.roleUserSelect.clear();
     }
     
-    if (window.signatorySelect) {
-        window.signatorySelect.clear();
-    }
+    // Reset role selection
+    resetRoleSelection();
     
     inventoryData.currentInventoryId = null;
 }
 
-// Signatory Assignment Functions
+// Signatory Assignment Functions (now deprecated)
 async function loadSignatoriesForAssignment() {
-    // Show loading state for signatory select
-    showSignatorySelectLoading();
-    
-    try {
-        // Fetch users from API and filter only USER role
-        const users = await fetchUsers();
-        
-        // Filter only users with role USER
-        const normalUsers = users.filter(user => user.role === 'USER');
-        
-        if (normalUsers.length === 0) {
-            populateSignatorySelect([]);
-            return;
-        }
-        
-        // Populate the signatory select with normal users
-        populateSignatorySelect(normalUsers);
-        
-    } catch (error) {
-        console.error('Error loading signatories:', error);
-        populateSignatorySelect([]);
-    } finally {
-        // Hide loading state
-        hideSignatorySelectLoading();
-    }
+    // This function is now deprecated - use loadUsersForRoleAssignment instead
+    console.warn('loadSignatoriesForAssignment is deprecated');
 }
 
 function populateSignatorySelect(users) {
-    // Initialize CustomSelect if not already done
-    if (!window.signatorySelect) {
-        window.signatorySelect = new CustomSelect('signatoryIdSelect', {
-            placeholder: 'Seleccionar firmante...',
-            searchable: true
-        });
-    }
-
-    // Format users as options
-    const signatoryOptions = [];
-    
-    if (users && users.length > 0) {
-        users.forEach(user => {
-            // Format display name
-            let displayName = '';
-            if (user.fullName && user.fullName.trim()) {
-                displayName = user.fullName;
-            } else if (user.email) {
-                displayName = user.email;
-            } else {
-                displayName = `Usuario ${user.id || 'N/A'}`;
-            }
-            
-            // Add additional info if available
-            if (user.jobTitle) {
-                displayName += ` (${user.jobTitle})`;
-            }
-            
-            signatoryOptions.push({
-                value: String(user.id),
-                label: displayName
-            });
-        });
-    } else {
-        // Add no signatories option (will be shown as disabled in CustomSelect)
-        signatoryOptions.push({
-            value: '',
-            label: 'No hay usuarios normales disponibles',
-            disabled: true
-        });
-    }
-    
-    window.signatorySelect.setOptions(signatoryOptions);
+    // This function is now deprecated - use populateRoleUserSelect instead
+    console.warn('populateSignatorySelect is deprecated');
 }
 
 function showSignatorySelectLoading() {
-    // Initialize CustomSelect if not already done
-    if (!window.signatorySelect) {
-        window.signatorySelect = new CustomSelect('signatoryIdSelect', {
-            placeholder: 'Cargando firmantes...',
-            searchable: true
-        });
-    }
-    window.signatorySelect.setOptions([{ value: '', label: 'Cargando firmantes...', disabled: true }]);
+    // This function is now deprecated
+    console.warn('showSignatorySelectLoading is deprecated');
 }
 
 function hideSignatorySelectLoading() {
-    // Loading state is cleared when populateSignatorySelect is called
-    // This function is kept for compatibility but doesn't need to do anything
-    // as the CustomSelect will be updated by populateSignatorySelect
+    // This function is now deprecated
+    console.warn('hideSignatorySelectLoading is deprecated');
 }
 
 // Toast notification helpers for manager assignment operations

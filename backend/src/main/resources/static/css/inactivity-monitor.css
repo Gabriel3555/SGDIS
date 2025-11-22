@@ -17,23 +17,55 @@
 @keyframes heartbeat {
     0% {
         transform: scale(1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
     14% {
         transform: scale(1.15);
+        box-shadow: 0 8px 12px -2px rgba(220, 38, 38, 0.3), 0 4px 8px -2px rgba(220, 38, 38, 0.2);
     }
     28% {
         transform: scale(1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
     42% {
         transform: scale(1.15);
+        box-shadow: 0 8px 12px -2px rgba(220, 38, 38, 0.3), 0 4px 8px -2px rgba(220, 38, 38, 0.2);
     }
     70% {
         transform: scale(1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 }
 
 .heartbeat-animation {
     animation: heartbeat 1.3s ease-in-out infinite;
+}
+
+.dark .heartbeat-animation {
+    animation: heartbeat 1.3s ease-in-out infinite;
+}
+
+@keyframes heartbeat-dark {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    }
+    14% {
+        transform: scale(1.15);
+        box-shadow: 0 8px 12px -2px rgba(248, 113, 113, 0.4), 0 4px 8px -2px rgba(248, 113, 113, 0.3);
+    }
+    28% {
+        transform: scale(1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    }
+    42% {
+        transform: scale(1.15);
+        box-shadow: 0 8px 12px -2px rgba(248, 113, 113, 0.4), 0 4px 8px -2px rgba(248, 113, 113, 0.3);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+    }
 }
 
 /* Animación de entrada del modal */
@@ -72,26 +104,262 @@
 
 /* Barra de progreso animada */
 #inactivityProgressBar {
-    transition: width 1s linear;
+    transition: width 1s linear, background-color 1s ease;
+}
+
+/* Estilos adicionales para modo claro */
+#inactivityWarningModal h2 {
+    font-weight: 800;
+    letter-spacing: -0.025em;
+}
+
+#inactivityWarningModal p {
+    line-height: 1.5;
+}
+
+/* Contador - Estilos mejorados */
+#inactivityCountdown {
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+/* Colores del contador según tiempo restante - Modo Claro */
+#inactivityCountdown.text-\[\#00AF00\] {
+    color: #00AF00 !important;
+    text-shadow: 0 2px 8px rgba(0, 175, 0, 0.2);
+}
+
+#inactivityCountdown.text-yellow-600 {
+    color: #ca8a04 !important;
+    text-shadow: 0 2px 8px rgba(202, 138, 4, 0.3);
+}
+
+#inactivityCountdown.text-orange-600 {
+    color: #ea580c !important;
+    text-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+}
+
+#inactivityCountdown.text-red-600 {
+    color: #dc2626 !important;
+    text-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+}
+
+/* Contenedor del contador */
+#inactivityCounterSection {
+    background: linear-gradient(135deg, rgba(0, 175, 0, 0.02) 0%, rgba(0, 175, 0, 0.05) 100%);
+    border-radius: 1rem;
+}
+
+/* Caja del contador en modo claro */
+.countdown-card {
+    background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);
+    border: 2px solid rgba(0, 175, 0, 0.15) !important;
+    box-shadow: 0 15px 35px rgba(15, 118, 110, 0.08), 0 5px 15px rgba(15, 118, 110, 0.12);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.countdown-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 45px rgba(15, 118, 110, 0.12), 0 10px 25px rgba(15, 118, 110, 0.1);
+}
+
+.countdown-label {
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+/* Barra de progreso - contenedor */
+#inactivityWarningModal .bg-gray-200 {
+    background-color: #e2e8f0;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 /* Efecto hover mejorado para botones */
+#inactivityStayBtn {
+    box-shadow: 0 4px 12px rgba(0, 175, 0, 0.2);
+}
+
 #inactivityStayBtn:hover {
-    box-shadow: 0 10px 25px rgba(0, 175, 0, 0.3);
+    box-shadow: 0 10px 25px rgba(0, 175, 0, 0.4);
 }
 
 #inactivityLogoutBtn:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Modo claro - Estilos mejorados */
+#inactivityWarningModal {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+#inactivityWarningModal > div.bg-white {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Icono de advertencia en modo claro */
+#inactivityWarningModal .bg-yellow-100 {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.3);
+}
+
+#inactivityWarningModal .text-yellow-600 {
+    color: #d97706;
+    text-shadow: 0 2px 4px rgba(217, 119, 6, 0.1);
+}
+
+/* Contador en modo claro */
+#inactivityCounterSection .bg-white {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-color: #cbd5e1;
+}
+
+/* Card del contador en modo claro */
+.countdown-card {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+    border: 2px solid rgba(0, 175, 0, 0.15) !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08), 0 6px 12px rgba(0, 175, 0, 0.1) !important;
+    transition: all 0.3s ease;
+}
+
+.countdown-card:hover {
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 175, 0, 0.15) !important;
+    transform: translateY(-2px);
+}
+
+.countdown-label {
+    color: #475569 !important;
+    font-weight: 600;
+}
+
+/* Botones en modo claro */
+#inactivityLogoutBtn {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
+    border: 2px solid #cbd5e1 !important;
+    color: #475569 !important;
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08) !important;
+    transition: all 0.25s ease;
+}
+
+#inactivityLogoutBtn:hover {
+    background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    border-color: #94a3b8 !important;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.12) !important;
+    transform: translateY(-1px);
+}
+
+/* Barra de progreso en modo claro */
+#inactivityProgressBar {
+    box-shadow: 0 2px 8px rgba(0, 175, 0, 0.3);
+}
+
+/* Textos en modo claro */
+#inactivityWarningModal .text-gray-800 {
+    color: #1e293b;
+}
+
+#inactivityWarningModal .text-gray-600 {
+    color: #475569;
+}
+
+#inactivityWarningModal .text-gray-500 {
+    color: #64748b;
 }
 
 /* Modo oscuro - Ajustes adicionales */
 .dark #inactivityWarningModal {
     background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
-.dark #inactivityWarningModal > div {
-    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-    border: 1px solid rgba(75, 85, 99, 0.3);
+.dark #inactivityWarningModal > div.bg-gray-800 {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+/* Icono de advertencia en modo oscuro */
+.dark #inactivityWarningModal .bg-yellow-100 {
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.2) 0%, rgba(234, 179, 8, 0.3) 100%);
+    box-shadow: 0 0 20px rgba(234, 179, 8, 0.2);
+}
+
+.dark #inactivityWarningModal .text-yellow-600 {
+    color: #fbbf24;
+    text-shadow: 0 2px 4px rgba(251, 191, 36, 0.2);
+}
+
+/* Contador en modo oscuro */
+.dark #inactivityCounterSection {
+    background: linear-gradient(135deg, rgba(0, 175, 0, 0.05) 0%, rgba(0, 175, 0, 0.12) 100%);
+}
+
+.dark .countdown-card {
+    background: linear-gradient(145deg, rgba(51, 65, 85, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+    border: 2px solid rgba(148, 163, 184, 0.2) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.55), 0 5px 15px rgba(14, 116, 144, 0.25) !important;
+}
+
+.dark .countdown-card:hover {
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 10px 25px rgba(14, 116, 144, 0.35) !important;
+}
+
+.dark .countdown-label {
+    color: #cbd5e1 !important;
+}
+
+/* Colores del contador en modo oscuro */
+.dark #inactivityCountdown.text-\[\#00AF00\] {
+    color: #10b981 !important;
+    text-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.dark #inactivityCountdown.text-yellow-600 {
+    color: #fbbf24 !important;
+    text-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+}
+
+.dark #inactivityCountdown.text-orange-600 {
+    color: #fb923c !important;
+    text-shadow: 0 2px 8px rgba(251, 146, 60, 0.3);
+}
+
+.dark #inactivityCountdown.text-red-600 {
+    color: #f87171 !important;
+    text-shadow: 0 2px 8px rgba(248, 113, 113, 0.4);
+}
+
+/* Botones en modo oscuro */
+.dark #inactivityLogoutBtn {
+    background: linear-gradient(145deg, #1f2937 0%, #111827 100%) !important;
+    border: 2px solid rgba(148, 163, 184, 0.25) !important;
+    color: #e2e8f0 !important;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55) !important;
+}
+
+.dark #inactivityLogoutBtn:hover {
+    background: linear-gradient(145deg, #273449 0%, #1e293b 100%) !important;
+    border-color: rgba(148, 163, 184, 0.4) !important;
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.65) !important;
+}
+
+.dark #inactivityStayBtn:hover {
+    box-shadow: 0 10px 25px rgba(0, 175, 0, 0.3);
+}
+
+/* Barra de progreso en modo oscuro */
+.dark #inactivityWarningModal .bg-gray-200 {
+    background-color: #1e293b;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark #inactivityProgressBar {
+    box-shadow: 0 2px 8px rgba(0, 175, 0, 0.4);
 }
 
 /* Animación de entrada para notificaciones */
@@ -166,5 +434,30 @@
 
 #inactivityWarningModal.critical {
     animation: shake 0.5s ease-in-out;
+}
+
+/* Estado crítico - Fondo con tinte rojo sutil */
+#inactivityWarningModal.critical > div {
+    box-shadow: 0 25px 50px -12px rgba(220, 38, 38, 0.4) !important;
+}
+
+.dark #inactivityWarningModal.critical > div {
+    box-shadow: 0 25px 50px -12px rgba(248, 113, 113, 0.3) !important;
+}
+
+/* Animación de pulso para contador en estado crítico */
+#inactivityCountdown.animate-pulse {
+    animation: pulse 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
 }
 

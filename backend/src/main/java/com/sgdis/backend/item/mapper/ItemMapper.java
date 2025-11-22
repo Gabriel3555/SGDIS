@@ -2,14 +2,10 @@ package com.sgdis.backend.item.mapper;
 
 import com.sgdis.backend.item.application.dto.CreateItemRequest;
 import com.sgdis.backend.item.application.dto.ItemDTO;
-import com.sgdis.backend.item.application.dto.CreateItemResponse;
 import com.sgdis.backend.item.application.dto.UpdateItemRequest;
-import com.sgdis.backend.item.application.dto.UpdateItemResponse;
 import com.sgdis.backend.item.domain.Attribute;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public final class ItemMapper {
@@ -18,12 +14,11 @@ public final class ItemMapper {
 
     public static ItemEntity toEntity(CreateItemRequest request) {
         boolean status = request.status() == null ? true : request.status();
-        Map<Attribute, String> attributes = Map.of(
-                Attribute.BRAND, request.brand(),
-                Attribute.SERIAL, request.serial(),
-                Attribute.MODEL, request.model(),
-                Attribute.OBSERVATIONS, request.observations()
-        );
+        Map<Attribute, String> attributes = new java.util.HashMap<>();
+        attributes.put(Attribute.BRAND, request.brand() != null ? request.brand() : "");
+        attributes.put(Attribute.SERIAL, request.serial() != null ? request.serial() : "");
+        attributes.put(Attribute.MODEL, request.model() != null ? request.model() : "");
+        attributes.put(Attribute.OBSERVATIONS, request.observations() != null ? request.observations() : "");
 
         ItemEntity itemEntity = ItemEntity.builder()
                 .irId(request.irId())
@@ -54,12 +49,11 @@ public final class ItemMapper {
     }
 
     public static ItemEntity toEntity(UpdateItemRequest request, ItemEntity existingEntity) {
-        Map<Attribute, String> attributes = Map.of(
-                Attribute.BRAND, request.brand(),
-                Attribute.SERIAL, request.serial(),
-                Attribute.MODEL, request.model(),
-                Attribute.OBSERVATIONS, request.observations()
-        );
+        Map<Attribute, String> attributes = new java.util.HashMap<>();
+        attributes.put(Attribute.BRAND, request.brand() != null ? request.brand() : "");
+        attributes.put(Attribute.SERIAL, request.serial() != null ? request.serial() : "");
+        attributes.put(Attribute.MODEL, request.model() != null ? request.model() : "");
+        attributes.put(Attribute.OBSERVATIONS, request.observations() != null ? request.observations() : "");
 
         existingEntity.setIrId(request.irId());
         existingEntity.setProductName(request.productName());

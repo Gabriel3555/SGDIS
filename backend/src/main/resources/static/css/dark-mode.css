@@ -741,6 +741,22 @@ html.dark button {
     color: var(--dark-text-secondary) !important;
 }
 
+/* Image loading spinner base styles */
+.image-loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(0, 175, 0, 0.2);
+    border-top-color: #00AF00;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* Image loading spinner in dark mode */
 .dark .image-loading-spinner {
     border-color: rgba(0, 175, 0, 0.3) !important;
@@ -749,5 +765,60 @@ html.dark button {
 
 .dark [id^="spinner-"] {
     background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* Modal de Inactividad en modo oscuro */
+.dark #inactivityWarningModal > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #inactivityWarningModal .bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #inactivityWarningModal .bg-gray-800 {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #inactivityWarningModal h2,
+.dark #inactivityWarningModal h3 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #inactivityWarningModal p,
+.dark #inactivityWarningModal span {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #inactivityWarningModal .bg-yellow-100 {
+    background-color: rgba(234, 179, 8, 0.2) !important;
+}
+
+.dark #inactivityWarningModal .text-yellow-600 {
+    color: #fbbf24 !important;
+}
+
+.dark #inactivityWarningModal .bg-gray-200 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #inactivityWarningModal .border-gray-200 {
+    border-color: var(--dark-border) !important;
+}
+
+.dark #inactivityWarningModal .border-gray-300 {
+    border-color: var(--dark-border) !important;
+}
+
+.dark #inactivityWarningModal .text-gray-700 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #inactivityWarningModal .bg-gray-700 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #inactivityWarningModal .border-gray-600 {
+    border-color: var(--dark-border-light) !important;
 }
 

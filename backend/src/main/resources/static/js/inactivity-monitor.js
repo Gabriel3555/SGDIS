@@ -44,8 +44,6 @@ class InactivityMonitor {
         
         // Iniciar el temporizador de inactividad
         this.resetInactivityTimer();
-        
-        console.log('Sistema de monitoreo de inactividad inicializado');
     }
     
     createWarningModal() {
@@ -73,17 +71,17 @@ class InactivityMonitor {
                     </div>
                     
                     <!-- Contador -->
-                    <div id="inactivityCounterSection" class="rounded-xl p-6 mb-6 text-center" style="transition: background-color 1s ease;">
+                    <div id="inactivityCounterSection" class="p-6 mb-6 text-center">
                         <p class="text-gray-800 dark:text-gray-100 mb-2 font-bold text-lg">
                             Tu sesión se cerrará automáticamente en:
                         </p>
                         <div class="flex items-center justify-center gap-3">
-                            <div class="bg-white dark:bg-gray-700 rounded-lg px-6 py-3 shadow-lg border-2 border-gray-200 dark:border-gray-600">
+                            <div class="countdown-card bg-white dark:bg-gray-700 rounded-lg px-6 py-3 shadow-lg border-2 border-gray-200 dark:border-gray-600">
                                 <span id="inactivityCountdown" 
-                                      class="text-4xl font-bold text-yellow-600 dark:text-yellow-400">
+                                      class="text-4xl font-bold text-[#00AF00]">
                                     60
                                 </span>
-                                <span class="text-sm text-gray-600 dark:text-gray-300 block mt-1 font-semibold">
+                                <span class="countdown-label text-sm text-gray-600 dark:text-gray-300 block mt-1 font-semibold">
                                     segundos
                                 </span>
                             </div>
@@ -113,8 +111,8 @@ class InactivityMonitor {
                     <div class="mt-6">
                         <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                             <div id="inactivityProgressBar" 
-                                 class="h-full bg-gradient-to-r from-yellow-400 to-red-500 transition-all duration-1000 ease-linear"
-                                 style="width: 100%;"></div>
+                                 class="h-full transition-all duration-1000 ease-linear"
+                                 style="width: 100%; background-color: #00AF00;"></div>
                         </div>
                     </div>
                 </div>
@@ -132,6 +130,133 @@ class InactivityMonitor {
         document.getElementById('inactivityLogoutBtn').addEventListener('click', () => {
             this.handleLogout();
         });
+        
+        // Configurar observer para detectar cambios de tema
+        this.setupThemeObserver();
+    }
+    
+    setupThemeObserver() {
+        // Observar cambios en la clase 'dark' del elemento html
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.attributeName === 'class') {
+                    this.updateModalTheme();
+                }
+            });
+        });
+        
+        // Observar el elemento html
+        observer.observe(document.documentElement, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+        
+        // Guardar el observer para limpiarlo después
+        this.themeObserver = observer;
+        
+        // Aplicar tema inicial
+        this.updateModalTheme();
+    }
+    
+    updateModalTheme() {
+        const modal = document.getElementById('inactivityWarningModal');
+        if (!modal) return;
+        
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        
+        // Actualizar fondo del modal principal
+        const modalContent = modal.querySelector('div > div');
+        if (modalContent) {
+            if (isDarkMode) {
+                // Aplicar estilos para modo oscuro
+                modalContent.style.backgroundColor = '#1E293B'; // slate-800
+                modalContent.classList.remove('bg-white');
+                modalContent.classList.add('bg-gray-800');
+            } else {
+                // Aplicar estilos para modo claro
+                modalContent.style.backgroundColor = '#ffffff'; // white
+                modalContent.classList.remove('bg-gray-800');
+                modalContent.classList.add('bg-white');
+            }
+        }
+        
+        // Actualizar otros elementos del modal
+        const iconBg = modal.querySelector('.bg-yellow-100');
+        if (iconBg) {
+            if (isDarkMode) {
+                iconBg.style.backgroundColor = 'rgba(234, 179, 8, 0.2)';
+            } else {
+                iconBg.style.backgroundColor = '';
+            }
+        }
+        
+        // Actualizar textos
+        const headings = modal.querySelectorAll('h2, h3');
+        headings.forEach(heading => {
+            if (isDarkMode) {
+                heading.style.color = '#F1F5F9'; // slate-100
+            } else {
+                heading.style.color = '#1E293B'; // slate-800
+            }
+        });
+        
+        const paragraphs = modal.querySelectorAll('p');
+        paragraphs.forEach(p => {
+            if (isDarkMode) {
+                p.style.color = '#CBD5E1'; // slate-300
+            } else {
+                p.style.color = '#475569'; // slate-600
+            }
+        });
+
+        const mutedSpans = modal.querySelectorAll('.text-gray-600, .text-gray-500, .text-gray-300');
+        mutedSpans.forEach(span => {
+            if (isDarkMode) {
+                span.style.color = '#CBD5E1';
+            } else {
+                span.style.color = '#475569';
+            }
+        });
+
+        // Actualizar la card del contador
+        const countdownCard = modal.querySelector('.countdown-card');
+        if (countdownCard) {
+            if (isDarkMode) {
+                countdownCard.style.background = 'linear-gradient(145deg, rgba(51, 65, 85, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)';
+                countdownCard.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+                countdownCard.style.boxShadow = '0 15px 35px rgba(0, 0, 0, 0.55), 0 5px 15px rgba(14, 116, 144, 0.25)';
+            } else {
+                countdownCard.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)';
+                countdownCard.style.borderColor = 'rgba(0, 175, 0, 0.15)';
+                countdownCard.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.08), 0 6px 12px rgba(0, 175, 0, 0.1)';
+            }
+        }
+
+        // Actualizar el botón de cerrar sesión
+        const logoutBtn = modal.querySelector('#inactivityLogoutBtn');
+        if (logoutBtn) {
+            if (isDarkMode) {
+                logoutBtn.style.background = 'linear-gradient(145deg, #1f2937 0%, #111827 100%)';
+                logoutBtn.style.borderColor = 'rgba(148, 163, 184, 0.25)';
+                logoutBtn.style.color = '#e2e8f0';
+                logoutBtn.style.boxShadow = '0 12px 28px rgba(0, 0, 0, 0.55)';
+            } else {
+                logoutBtn.style.background = 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)';
+                logoutBtn.style.borderColor = '#cbd5e1';
+                logoutBtn.style.color = '#475569';
+                logoutBtn.style.boxShadow = '0 10px 20px rgba(15, 23, 42, 0.08)';
+            }
+        }
+
+        // Actualizar la etiqueta del contador
+        const countdownLabel = modal.querySelector('.countdown-label');
+        if (countdownLabel) {
+            if (isDarkMode) {
+                countdownLabel.style.color = '#cbd5e1';
+            } else {
+                countdownLabel.style.color = '#475569';
+            }
+        }
     }
     
     setupActivityListeners() {
@@ -160,11 +285,8 @@ class InactivityMonitor {
     showWarningModal() {
         const modal = document.getElementById('inactivityWarningModal');
         if (!modal) {
-            console.error('❌ ERROR: No se encontró el modal de advertencia');
             return;
         }
-        
-        console.log('🔔 Mostrando modal de advertencia de inactividad');
         
         // Marcar que el modal está abierto
         this.isWarningModalOpen = true;
@@ -172,19 +294,8 @@ class InactivityMonitor {
         // Mostrar el modal
         modal.classList.remove('hidden');
         
-        // Inicializar el color de fondo del modal (verde al inicio)
-        const modalContent = modal.querySelector('div > div');
-        const counterSection = document.getElementById('inactivityCounterSection');
-        
-        if (modalContent) {
-            modalContent.style.backgroundColor = 'rgb(220, 252, 231)'; // green-100
-            modalContent.style.transition = 'background-color 1s ease, box-shadow 0.5s ease';
-        }
-        
-        // Inicializar también la sección del contador en verde
-        if (counterSection) {
-            counterSection.style.backgroundColor = 'rgb(220, 252, 231)'; // green-100
-        }
+        // Aplicar tema actual al modal
+        this.updateModalTheme();
         
         // Reproducir sonido de alerta (opcional)
         this.playAlertSound();
@@ -195,7 +306,7 @@ class InactivityMonitor {
         // Usar setTimeout para asegurar que el DOM esté completamente actualizado
         setTimeout(() => {
             this.updateCountdownDisplay();
-            this.updateModalBackgroundColor(); // Actualizar color inmediatamente
+            this.updateProgressBar();
         }, 50);
         
         this.startCountdown();
@@ -203,7 +314,6 @@ class InactivityMonitor {
         // FAILSAFE: Configurar un timeout adicional que forzará el cierre
         // incluso si el intervalo falla por alguna razón
         this.failsafeTimer = setTimeout(() => {
-            console.error('🚨 FAILSAFE ACTIVADO - Forzando cierre de sesión');
             if (this.isWarningModalOpen) {
                 this.handleLogout();
             }
@@ -214,32 +324,16 @@ class InactivityMonitor {
         const modal = document.getElementById('inactivityWarningModal');
         if (!modal) return;
         
-        console.log('👋 Ocultando modal de advertencia');
-        
         // Limpiar animaciones y estilos del contador
         const countdownElement = document.getElementById('inactivityCountdown');
         if (countdownElement) {
-            countdownElement.classList.remove('animate-pulse', 'text-red-600', 'dark:text-red-400', 
-                                              'text-orange-600', 'dark:text-orange-400');
-            countdownElement.classList.add('text-yellow-600', 'dark:text-yellow-400');
+            countdownElement.classList.remove('animate-pulse', 'text-red-600', 'text-orange-600', 'text-yellow-600');
+            countdownElement.classList.add('text-[#00AF00]');
             
             // Limpiar animación heartbeat del contenedor
             if (countdownElement.parentElement) {
                 countdownElement.parentElement.classList.remove('heartbeat-animation');
             }
-        }
-        
-        // Resetear el color de fondo del modal y la sección del contador
-        const modalContent = modal.querySelector('div > div');
-        const counterSection = document.getElementById('inactivityCounterSection');
-        
-        if (modalContent) {
-            modalContent.style.backgroundColor = '';
-            modalContent.style.boxShadow = '';
-        }
-        
-        if (counterSection) {
-            counterSection.style.backgroundColor = '';
         }
         
         // Ocultar el modal
@@ -255,7 +349,6 @@ class InactivityMonitor {
         if (this.failsafeTimer) {
             clearTimeout(this.failsafeTimer);
             this.failsafeTimer = null;
-            console.log('🛡️ Failsafe timer cancelado');
         }
     }
     
@@ -263,29 +356,15 @@ class InactivityMonitor {
         // Limpiar cualquier contador existente
         this.stopCountdown();
         
-        console.log(`⏱️ Iniciando contador de ${this.WARNING_TIME} segundos`);
-        
         // Iniciar el intervalo de cuenta regresiva
         this.countdownInterval = setInterval(() => {
             this.remainingSeconds--;
-            console.log(`⏳ Tiempo restante: ${this.remainingSeconds} segundos`);
             
             this.updateCountdownDisplay();
             this.updateProgressBar();
             
-            // Advertencia cuando quedan 10 segundos
-            if (this.remainingSeconds === 10) {
-                console.warn('⚠️ ¡Solo quedan 10 segundos!');
-            }
-            
-            // Advertencia crítica cuando quedan 5 segundos
-            if (this.remainingSeconds === 5) {
-                console.error('🔴 ¡CRÍTICO! Solo quedan 5 segundos!');
-            }
-            
             // Si llegó a 0 o menos, cerrar sesión automáticamente
             if (this.remainingSeconds <= 0) {
-                console.error('⏰ ¡TIEMPO AGOTADO! Ejecutando cierre de sesión...');
                 this.stopCountdown();
                 this.handleLogout();
             }
@@ -306,23 +385,22 @@ class InactivityMonitor {
             
             // Cambiar color según el tiempo restante
             if (this.remainingSeconds <= 10) {
-                countdownElement.classList.add('text-red-600', 'dark:text-red-400');
-                countdownElement.classList.remove('text-yellow-600', 'dark:text-yellow-400', 'text-orange-600', 'dark:text-orange-400');
+                countdownElement.classList.add('text-red-600');
+                countdownElement.classList.remove('text-[#00AF00]', 'text-orange-600', 'text-yellow-600');
                 
                 // Activar pulsación cuando quedan 5 segundos o menos
                 if (this.remainingSeconds <= 5) {
                     countdownElement.classList.add('animate-pulse');
-                    // Agregar clase adicional para animación más intensa
                     countdownElement.parentElement.classList.add('heartbeat-animation');
                 }
-            } else if (this.remainingSeconds <= 30) {
-                countdownElement.classList.add('text-orange-600', 'dark:text-orange-400');
-                countdownElement.classList.remove('text-yellow-600', 'dark:text-yellow-400', 'animate-pulse');
+            } else if (this.remainingSeconds <= 20) {
+                countdownElement.classList.add('text-orange-600');
+                countdownElement.classList.remove('text-[#00AF00]', 'text-yellow-600', 'text-red-600', 'animate-pulse');
+            } else if (this.remainingSeconds <= 40) {
+                countdownElement.classList.add('text-yellow-600');
+                countdownElement.classList.remove('text-[#00AF00]', 'text-orange-600', 'text-red-600', 'animate-pulse');
             }
         }
-        
-        // Actualizar color de fondo del modal (gradiente verde -> rojo)
-        this.updateModalBackgroundColor();
     }
     
     updateProgressBar() {
@@ -330,87 +408,39 @@ class InactivityMonitor {
         if (progressBar) {
             const percentage = (this.remainingSeconds / this.WARNING_TIME) * 100;
             progressBar.style.width = percentage + '%';
-        }
-    }
-    
-    updateModalBackgroundColor() {
-        const modal = document.getElementById('inactivityWarningModal');
-        if (!modal) {
-            console.error('❌ No se encontró el modal');
-            return;
-        }
-        
-        const modalContent = modal.querySelector('div > div'); // El div interior del modal
-        const counterSection = document.getElementById('inactivityCounterSection'); // Sección del contador
-        
-        if (!modalContent) {
-            console.error('❌ No se encontró modalContent');
-            return;
-        }
-        
-        if (!counterSection) {
-            console.warn('⚠️ No se encontró counterSection');
-        }
-        
-        // Calcular porcentaje de tiempo restante (100% = verde, 0% = rojo)
-        const percentage = (this.remainingSeconds / this.WARNING_TIME) * 100;
-        console.log(`🎨 Actualizando color: ${this.remainingSeconds}s restantes (${percentage.toFixed(1)}%)`);
-
-        
-        // Interpolar entre verde (inicio) y rojo (final)
-        // Verde: rgb(220, 252, 231) - green-100
-        // Amarillo: rgb(254, 249, 195) - yellow-100
-        // Naranja: rgb(255, 237, 213) - orange-100
-        // Rojo: rgb(254, 226, 226) - red-100
-        
-        let r, g, b;
-        
-        if (percentage > 66) {
-            // Verde a Amarillo
-            const localPercentage = ((percentage - 66) / 34) * 100;
-            r = Math.round(220 + (254 - 220) * (100 - localPercentage) / 100);
-            g = Math.round(252 + (249 - 252) * (100 - localPercentage) / 100);
-            b = Math.round(231 + (195 - 231) * (100 - localPercentage) / 100);
-        } else if (percentage > 33) {
-            // Amarillo a Naranja
-            const localPercentage = ((percentage - 33) / 33) * 100;
-            r = Math.round(254 + (255 - 254) * (100 - localPercentage) / 100);
-            g = Math.round(249 + (237 - 249) * (100 - localPercentage) / 100);
-            b = Math.round(195 + (213 - 195) * (100 - localPercentage) / 100);
-        } else {
-            // Naranja a Rojo
-            const localPercentage = (percentage / 33) * 100;
-            r = Math.round(255 + (254 - 255) * (100 - localPercentage) / 100);
-            g = Math.round(237 + (226 - 237) * (100 - localPercentage) / 100);
-            b = Math.round(213 + (226 - 213) * (100 - localPercentage) / 100);
-        }
-        
-        const backgroundColor = `rgb(${r}, ${g}, ${b})`;
-        console.log(`🎨 Aplicando color: ${backgroundColor}`);
-        
-        // Aplicar el color de fondo con transición suave al modal completo
-        modalContent.style.transition = 'background-color 1s ease';
-        modalContent.style.backgroundColor = backgroundColor;
-        console.log(`✅ Color aplicado a modalContent`);
-        
-        // Aplicar el mismo color a la sección del contador
-        if (counterSection) {
-            counterSection.style.backgroundColor = backgroundColor;
-            console.log(`✅ Color aplicado a counterSection`);
-        } else {
-            console.warn(`⚠️ counterSection no encontrado, no se pudo aplicar color`);
-        }
-        
-        // Agregar sombra más intensa cuando el tiempo es crítico
-        if (this.remainingSeconds <= 10) {
-            modalContent.style.boxShadow = '0 25px 50px -12px rgba(239, 68, 68, 0.5)';
-        } else if (this.remainingSeconds <= 30) {
-            modalContent.style.boxShadow = '0 20px 40px -12px rgba(249, 115, 22, 0.4)';
+            
+            // Calcular color basado en el porcentaje de tiempo restante
+            // Verde (#00AF00) -> Amarillo (#FFD700) -> Naranja (#FF8C00) -> Rojo (#FF0000)
+            let color;
+            
+            if (percentage > 66) {
+                // Verde a Amarillo
+                const localPercentage = ((percentage - 66) / 34);
+                const r = Math.round(0 + (255 - 0) * (1 - localPercentage));
+                const g = Math.round(175 + (215 - 175) * (1 - localPercentage));
+                const b = Math.round(0 + (0 - 0) * (1 - localPercentage));
+                color = `rgb(${r}, ${g}, ${b})`;
+            } else if (percentage > 33) {
+                // Amarillo a Naranja
+                const localPercentage = ((percentage - 33) / 33);
+                const r = Math.round(255);
+                const g = Math.round(215 + (140 - 215) * (1 - localPercentage));
+                const b = Math.round(0);
+                color = `rgb(${r}, ${g}, ${b})`;
+            } else {
+                // Naranja a Rojo
+                const localPercentage = (percentage / 33);
+                const r = Math.round(255);
+                const g = Math.round(140 * localPercentage);
+                const b = Math.round(0);
+                color = `rgb(${r}, ${g}, ${b})`;
+            }
+            
+            progressBar.style.backgroundColor = color;
         }
     }
     
     handleStayActive() {
-        console.log('Usuario decidió permanecer activo');
         
         // Ocultar el modal
         this.hideWarningModal();
@@ -423,8 +453,6 @@ class InactivityMonitor {
     }
     
     handleLogout() {
-        console.log('🚪 Cerrando sesión por inactividad - CONTADOR TERMINADO');
-        
         // Detener todos los temporizadores
         this.stopCountdown();
         if (this.inactivityTimer) {
@@ -449,23 +477,16 @@ class InactivityMonitor {
         this.showNotification('Sesión cerrada', 'Tu sesión ha sido cerrada por inactividad.', 'info');
         
         // Ejecutar cierre de sesión inmediatamente
-        console.log('🔒 Limpiando tokens y cerrando sesión...');
-        
         // Limpiar tokens
         try {
             localStorage.removeItem('jwt');
             document.cookie = 'refreshToken=; path=/; max-age=0';
-            console.log('✅ Tokens eliminados correctamente');
         } catch (error) {
-            console.error('❌ Error al limpiar tokens:', error);
+            // Error al limpiar tokens
         }
         
         // Redirigir después de un breve momento
         setTimeout(() => {
-            console.log('🔄 Redirigiendo a página de login...');
-            // NO usar la función logout() del dashboard porque muestra un modal de confirmación
-            // Cerrar sesión directamente redirigiendo a la página de login
-            console.log('🔗 Cerrando sesión y redirigiendo a página de login');
             window.location.href = '/index.html';
         }, 500);
     }
@@ -524,7 +545,7 @@ class InactivityMonitor {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.5);
         } catch (error) {
-            console.log('No se pudo reproducir el sonido de alerta:', error);
+            // No se pudo reproducir el sonido
         }
     }
     
@@ -546,13 +567,17 @@ class InactivityMonitor {
             document.removeEventListener(event, this.resetInactivityTimer);
         });
         
+        // Desconectar el observer de tema
+        if (this.themeObserver) {
+            this.themeObserver.disconnect();
+            this.themeObserver = null;
+        }
+        
         // Remover el modal
         const modal = document.getElementById('inactivityWarningModal');
         if (modal) {
             modal.remove();
         }
-        
-        console.log('Sistema de monitoreo de inactividad destruido');
     }
 }
 
@@ -574,9 +599,6 @@ function initInactivityMonitor() {
     if (jwt) {
         // Crear instancia global del monitor
         window.inactivityMonitor = new InactivityMonitor();
-        console.log('Monitor de inactividad activado');
-    } else {
-        console.log('Usuario no autenticado, monitor de inactividad no iniciado');
     }
 }
 
