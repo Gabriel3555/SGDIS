@@ -1,5 +1,6 @@
 package com.sgdis.backend.inventory.infrastructure.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
@@ -27,7 +28,6 @@ public class InventoryEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
     private UUID uuid;
     private String location;
     private String name;
@@ -38,10 +38,12 @@ public class InventoryEntity {
     @ManyToOne(fetch = FetchType.EAGER)
     private UserEntity owner;
 
+    @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JoinTable(name = "managers_inventories", joinColumns = @JoinColumn(name = "inventory_id"), inverseJoinColumns = @JoinColumn(name = "manager_id"))
     private List<UserEntity> managers;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "institution_id")
     private InstitutionEntity institution;
@@ -49,7 +51,7 @@ public class InventoryEntity {
     @OneToMany(mappedBy = "inventory")
     private List<ItemEntity> items;
 
-    @OneToMany(mappedBy = "inventory", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToMany(mappedBy = "mySignatories", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<UserEntity> signatories;
 
     @OneToMany(mappedBy = "inventory",cascade = CascadeType.ALL, fetch = FetchType.EAGER)

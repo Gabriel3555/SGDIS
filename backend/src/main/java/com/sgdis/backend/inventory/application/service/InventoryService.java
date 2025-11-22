@@ -1,5 +1,6 @@
 package com.sgdis.backend.inventory.application.service;
 
+import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.application.port.in.*;
@@ -46,6 +47,7 @@ public class InventoryService
 
         private final SpringDataInventoryRepository inventoryRepository;
         private final SpringDataUserRepository userRepository;
+        private final AuthService authService;
 
         @Override
         @Transactional
@@ -289,20 +291,19 @@ public class InventoryService
         InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
 
-        // Initialize signatories list if null
         List<UserEntity> signatories = inventory.getSignatories();
         if (signatories == null) {
             signatories = new java.util.ArrayList<>();
             inventory.setSignatories(signatories);
         }
 
-        // Add signatory only if not already present
-        if (!signatories.contains(user)) {
-            signatories.add(user);
-            user.setInventory(inventory); // Set the bidirectional relationship
-            userRepository.save(user); // Save the user to update the foreign key
+        List<InventoryEntity> inventories = user.getMySignatories();
+        if (inventories == null) {
+            inventories = new java.util.ArrayList<>();
+            user.setMySignatories(inventories);
         }
 
+        userRepository.save(user);
         inventoryRepository.save(inventory);
 
         return new AssignSignatoryInventoryResponse(
@@ -316,20 +317,20 @@ public class InventoryService
     @Override
     @Transactional
     public QuitInventoryResponse quitSignatoryInventory(Long inventoryId) {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+        UserEntity user = authService.getCurrentUser();
 
         InventoryEntity inventory = inventoryRepository.findById(inventoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
+                .orElseThrow(() -> new ResourceNotFoundException("Inventario no encotrado"));
 
-        // Check if user is actually a signatory for this inventory
-        if (user.getInventory() == null || !user.getInventory().getId().equals(inventoryId)) {
-            throw new ResourceNotFoundException("User is not a signatory for inventory with id: " + inventoryId);
+        List<InventoryEntity> userInventories = user.getMySignatories();
+
+        boolean hasAccess = userInventories != null && userInventories.stream()
+                .anyMatch(inv -> inv.getId().equals(inventoryId));
+
+        if (!hasAccess) {
+            throw new ResourceNotFoundException("Este usuario no es firmador en este inventario");
         }
 
-        // Remove user from inventory's signatories list
         List<UserEntity> signatories = inventory.getSignatories();
         if (signatories != null) {
             signatories.remove(user);
@@ -337,12 +338,12 @@ public class InventoryService
             inventoryRepository.save(inventory);
         }
 
-        // Clear the user's inventory reference
-        user.setInventory(null);
+        userInventories.remove(inventory);
+        user.setMySignatories(userInventories);
         userRepository.save(user);
 
         return new QuitInventoryResponse(
-                "Successfully quit as signatory",
+                "Ha renunciado exitosamente al inventario " + inventory.getName(),
                 inventory.getName()
         );
     }
@@ -356,8 +357,13 @@ public class InventoryService
         InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
 
-        if (user.getInventory() == null || !user.getInventory().getId().equals(request.inventoryId())) {
-            throw new ResourceNotFoundException("User is not a signatory for inventory with id: " + request.inventoryId());
+        List<InventoryEntity> userInventories = user.getMySignatories();
+
+        boolean hasAccess = userInventories != null && userInventories.stream()
+                .anyMatch(inv -> inv.getId().equals(request.inventoryId()));
+
+        if (!hasAccess) {
+            throw new ResourceNotFoundException("Este usuario no es firmador en este inventario");
         }
 
         List<UserEntity> signatories = inventory.getSignatories();
@@ -367,8 +373,12 @@ public class InventoryService
             inventoryRepository.save(inventory);
         }
 
-        user.setInventory(null);
-        userRepository.save(user);
+        List<InventoryEntity> inventorySignatories = user.getMySignatories();
+        if (inventorySignatories != null) {
+            inventorySignatories.remove(inventory);
+            user.setMySignatories(inventorySignatories);
+            userRepository.save(user);
+        }
 
         return new DeleteSignatoryInventoryResponse(
                 user.getId(),
@@ -376,19 +386,17 @@ public class InventoryService
                 user.getEmail(),
                 inventory.getId(),
                 inventory.getName(),
-                "Signatory removed from inventory successfully",
+                "Firmador eliminado exitosamente",
                 true
         );
     }
 
     @Override
     public List<InventoryResponse> getMySignatoryInventories() {
-        Long userId = (Long) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new UserNotFoundException(userId));
+        UserEntity user = authService.getCurrentUser();
 
-        if (user.getInventory() != null) {
-            return List.of(InventoryMapper.toResponse(user.getInventory()));
+        if (user.getMySignatories() != null) {
+            return user.getMySignatories().stream().map(InventoryMapper::toResponse).toList();
         }
 
         return List.of();

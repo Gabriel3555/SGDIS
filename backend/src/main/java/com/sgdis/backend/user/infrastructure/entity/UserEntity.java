@@ -38,16 +38,17 @@ public class UserEntity {
 
     @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER, mappedBy = "managers")
-    private List<InventoryEntity> inventories;
+    private List<InventoryEntity> myManagers;
 
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "institution_id")
     private InstitutionEntity institution;
 
-    @ManyToOne
-    @JoinColumn(name = "signatorie_id")
-    private InventoryEntity inventory;
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(name = "signatories_inventories", joinColumns = @JoinColumn(name = "signatory_id"), inverseJoinColumns = @JoinColumn(name = "inventory_id"))
+    private List<InventoryEntity> mySignatories;
 
     @JsonIgnore
     @OneToMany(mappedBy = "user")
