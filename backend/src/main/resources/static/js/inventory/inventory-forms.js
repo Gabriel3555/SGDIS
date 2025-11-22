@@ -3,11 +3,42 @@ async function handleNewInventorySubmit(e) {
 
   const name = document.getElementById("newInventoryName").value;
   const location = document.getElementById("newInventoryLocation").value;
+  
+  // Get owner ID from CustomSelect or hidden input
+  let ownerId = '';
+  if (window.newInventoryOwnerSelect && window.newInventoryOwnerSelect.getValue) {
+    ownerId = window.newInventoryOwnerSelect.getValue();
+  }
+  if (!ownerId) {
+    const ownerIdElement = document.getElementById("newInventoryOwnerId");
+    if (ownerIdElement) {
+      ownerId = ownerIdElement.value;
+    }
+  }
 
   if (!name || !location) {
     showErrorToast(
       "Campos obligatorios",
       "Por favor complete todos los campos obligatorios"
+    );
+    return;
+  }
+  
+  // Validate owner selection
+  if (!ownerId || ownerId.trim() === '') {
+    showErrorToast(
+      "Propietario requerido",
+      "Por favor selecciona un propietario para el inventario"
+    );
+    return;
+  }
+  
+  // Validate owner ID is a valid number
+  const numericOwnerId = parseInt(ownerId);
+  if (isNaN(numericOwnerId)) {
+    showErrorToast(
+      "ID de propietario inválido",
+      "El propietario seleccionado no es válido"
     );
     return;
   }
@@ -50,6 +81,7 @@ async function handleNewInventorySubmit(e) {
     const inventoryDataToCreate = {
       name: name.trim(),
       location: location.trim(),
+      ownerId: numericOwnerId,
     };
 
     const result = await createInventory(inventoryDataToCreate);
@@ -292,12 +324,21 @@ async function handleAssignInventorySubmit(e) {
     return;
   }
 
+  // Validate inventoryId is a valid number
+  const numericInventoryId = parseInt(inventoryData.currentInventoryId);
+  if (isNaN(numericInventoryId)) {
+    showAssignErrorToast("ID de inventario inválido");
+    console.error("Invalid inventory ID:", inventoryData.currentInventoryId);
+    return;
+  }
+
   try {
     const assignmentData = {
-      inventoryId: inventoryData.currentInventoryId,
+      inventoryId: numericInventoryId, // Backend expects numeric ID (Long)
       userId: numericUserId,
     };
 
+    console.log('Asignando inventario:', assignmentData);
     const result = await assignInventory(assignmentData);
 
     showAssignSuccessToast();
@@ -384,21 +425,86 @@ async function handleAssignManagerSubmit(e) {
     return;
   }
 
+  // Additional validation: Check if user already has a role in this inventory
+  const currentManagers = window.currentInventoryManagers || [];
+  const currentSignatories = window.currentInventorySignatories || [];
+
+  const isManager = currentManagers.some((m) => parseInt(m.id) === numericUserId);
+  const isSignatory = currentSignatories.some(
+    (s) => parseInt(s.id) === numericUserId
+  );
+
+  if (isManager) {
+    showWarningToast(
+      "Usuario ya asignado",
+      "Este usuario ya es Manejador de este inventario. No se puede asignar el mismo rol dos veces."
+    );
+    return;
+  }
+
+  if (isSignatory) {
+    showWarningToast(
+      "Usuario ya asignado",
+      "Este usuario ya es Firmante de este inventario. No se puede asignar el mismo rol dos veces."
+    );
+    return;
+  }
+
+  // Check if trying to assign a different role to user with existing role
+  if (selectedRole === "manager" && isSignatory) {
+    showWarningToast(
+      "Usuario ya tiene un rol",
+      "Este usuario ya es Firmante. Por favor, elimina primero el rol de Firmante antes de asignarlo como Manejador."
+    );
+    return;
+  }
+
+  if (selectedRole === "signatory" && isManager) {
+    showWarningToast(
+      "Usuario ya tiene un rol",
+      "Este usuario ya es Manejador. Por favor, elimina primero el rol de Manejador antes de asignarlo como Firmante."
+    );
+    return;
+  }
+
   try {
-    // Execute assignment based on selected role
+    // Store inventory ID before closing modal and ensure it's a number
+    const assignedInventoryId = parseInt(inventoryData.currentInventoryId);
+    
+    // Validate that inventory ID is a valid number
+    if (isNaN(assignedInventoryId)) {
+      showAssignManagerErrorToast("ID de inventario inválido");
+      console.error("Invalid inventory ID:", inventoryData.currentInventoryId);
+      return;
+    }
+
+    console.log('=== PREPARANDO ASIGNACIÓN ===');
+    console.log('Inventory ID (numeric):', assignedInventoryId, typeof assignedInventoryId);
+    console.log('User ID (numeric):', numericUserId, typeof numericUserId);
+    console.log('Selected Role:', selectedRole);
+
+    // Execute assignment based on selected role (backend expects numeric ID, not UUID)
     if (selectedRole === "manager") {
       const managerData = {
-        inventoryId: inventoryData.currentInventoryId,
+        inventoryId: assignedInventoryId, // Numeric ID (Long)
         managerId: numericUserId,
       };
+      console.log('managerData:', managerData);
+      
       await assignManager(managerData);
+      
+      console.log('Manejador asignado exitosamente');
       showAssignManagerSuccessToast();
     } else if (selectedRole === "signatory") {
       const signatoryData = {
-        inventoryId: inventoryData.currentInventoryId,
+        inventoryId: assignedInventoryId, // Numeric ID (Long)
         signatoryId: numericUserId,
       };
+      console.log('signatoryData:', signatoryData);
+      
       await assignSignatory(signatoryData);
+      
+      console.log('Firmante asignado exitosamente');
       showAssignSignatorySuccessToast();
     } else {
       showAssignManagerErrorToast("Rol inválido seleccionado");
@@ -408,6 +514,27 @@ async function handleAssignManagerSubmit(e) {
     // Close modal and reload data
     closeAssignManagerModal();
     await loadInventoryData();
+
+    // Check if inventory tree modal is open and update it
+    const treeModal = document.getElementById("inventoryTreeModal");
+    if (
+      treeModal &&
+      !treeModal.classList.contains("hidden") &&
+      window.inventoryTreeState &&
+      window.inventoryTreeState.currentInventoryId === assignedInventoryId
+    ) {
+      // Add a small delay to ensure backend has processed the assignment
+      setTimeout(async () => {
+        try {
+          // Refresh the tree using the new dedicated function
+          if (window.refreshInventoryTree) {
+            await window.refreshInventoryTree();
+          }
+        } catch (error) {
+          console.error("Error refreshing inventory tree:", error);
+        }
+      }, 500);
+    }
   } catch (error) {
     console.error("Error assigning role:", error);
 
@@ -430,10 +557,17 @@ async function handleAssignManagerSubmit(e) {
       errorMessage = "Los datos de asignación no son válidos.";
     } else if (
       errorMessage.includes("already assigned") ||
-      errorMessage.includes("ya asignado")
+      errorMessage.includes("ya asignado") ||
+      errorMessage.includes("duplicate") ||
+      errorMessage.includes("duplicado") ||
+      errorMessage.includes("ya existe") ||
+      errorMessage.includes("already exists")
     ) {
       errorMessage =
-        "Este usuario ya tiene un rol asignado en este inventario.";
+        "Este usuario ya tiene un rol asignado en este inventario. No se pueden asignar roles duplicados.";
+    } else if (errorMessage.includes("Ha ocurrido un error inesperado")) {
+      errorMessage =
+        "No se pudo asignar el rol. Es posible que el usuario ya tenga un rol asignado en este inventario.";
     }
 
     if (selectedRole === "manager") {
