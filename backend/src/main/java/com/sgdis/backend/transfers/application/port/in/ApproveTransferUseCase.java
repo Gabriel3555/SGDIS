@@ -7,3 +7,4 @@ public interface ApproveTransferUseCase {
     ApproveTransferResponse approveTransfer(Long transferId, ApproveTransferRequest request);
 }
 
+
