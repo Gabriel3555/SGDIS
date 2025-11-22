@@ -425,48 +425,6 @@ async function handleAssignManagerSubmit(e) {
     return;
   }
 
-  // Additional validation: Check if user already has a role in this inventory
-  const currentManagers = window.currentInventoryManagers || [];
-  const currentSignatories = window.currentInventorySignatories || [];
-
-  const isManager = currentManagers.some((m) => parseInt(m.id) === numericUserId);
-  const isSignatory = currentSignatories.some(
-    (s) => parseInt(s.id) === numericUserId
-  );
-
-  if (isManager) {
-    showWarningToast(
-      "Usuario ya asignado",
-      "Este usuario ya es Manejador de este inventario. No se puede asignar el mismo rol dos veces."
-    );
-    return;
-  }
-
-  if (isSignatory) {
-    showWarningToast(
-      "Usuario ya asignado",
-      "Este usuario ya es Firmante de este inventario. No se puede asignar el mismo rol dos veces."
-    );
-    return;
-  }
-
-  // Check if trying to assign a different role to user with existing role
-  if (selectedRole === "manager" && isSignatory) {
-    showWarningToast(
-      "Usuario ya tiene un rol",
-      "Este usuario ya es Firmante. Por favor, elimina primero el rol de Firmante antes de asignarlo como Manejador."
-    );
-    return;
-  }
-
-  if (selectedRole === "signatory" && isManager) {
-    showWarningToast(
-      "Usuario ya tiene un rol",
-      "Este usuario ya es Manejador. Por favor, elimina primero el rol de Manejador antes de asignarlo como Firmante."
-    );
-    return;
-  }
-
   try {
     // Store inventory ID before closing modal and ensure it's a number
     const assignedInventoryId = parseInt(inventoryData.currentInventoryId);
@@ -478,33 +436,22 @@ async function handleAssignManagerSubmit(e) {
       return;
     }
 
-    console.log('=== PREPARANDO ASIGNACIÓN ===');
-    console.log('Inventory ID (numeric):', assignedInventoryId, typeof assignedInventoryId);
-    console.log('User ID (numeric):', numericUserId, typeof numericUserId);
-    console.log('Selected Role:', selectedRole);
-
     // Execute assignment based on selected role (backend expects numeric ID, not UUID)
     if (selectedRole === "manager") {
       const managerData = {
         inventoryId: assignedInventoryId, // Numeric ID (Long)
         managerId: numericUserId,
       };
-      console.log('managerData:', managerData);
       
       await assignManager(managerData);
-      
-      console.log('Manejador asignado exitosamente');
       showAssignManagerSuccessToast();
     } else if (selectedRole === "signatory") {
       const signatoryData = {
         inventoryId: assignedInventoryId, // Numeric ID (Long)
         signatoryId: numericUserId,
       };
-      console.log('signatoryData:', signatoryData);
       
       await assignSignatory(signatoryData);
-      
-      console.log('Firmante asignado exitosamente');
       showAssignSignatorySuccessToast();
     } else {
       showAssignManagerErrorToast("Rol inválido seleccionado");

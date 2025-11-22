@@ -421,6 +421,9 @@ function updateInventoryTable() {
                             }', '${(inventory.name || "").replace(
         /'/g,
         "\\'"
+      )}', '${(inventory.imgUrl || "").replace(
+        /'/g,
+        "\\'"
       )}')" class="p-2 text-[#00AF00] hover:bg-green-50 rounded-lg transition-colors" title="Ver jerarquía">
                                 <i class="fas fa-sitemap text-[#00AF00]"></i>
                             </button>
@@ -626,6 +629,9 @@ function updateInventoryCards() {
                            <button onclick="showInventoryTreeModal('${
                              inventory.id
                             }', '${(inventory.name || "").replace(
+        /'/g,
+        "\\'"
+      )}', '${(inventory.imgUrl || "").replace(
         /'/g,
         "\\'"
       )}')" class="text-[#00AF00] hover:text-green-800 transition-colors" title="Ver jerarquía">

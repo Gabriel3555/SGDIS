@@ -321,9 +321,6 @@ async function assignInventory(assignmentData) {
 
 async function assignManager(managerData) {
     try {
-        console.log('=== ASSIGN MANAGER DEBUG ===');
-        console.log('Datos enviados:', managerData);
-        
         const token = localStorage.getItem('jwt');
         const headers = {
             'Content-Type': 'application/json'
@@ -336,32 +333,22 @@ async function assignManager(managerData) {
             body: JSON.stringify(managerData)
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-
         if (response.ok) {
             const result = await response.json();
-            console.log('Resultado de asignación:', result);
-            console.log('=== FIN DEBUG ===');
             return result;
         } else if (response.status === 400) {
             const errorData = await response.json();
-            console.error('Error 400:', errorData);
             throw new Error(errorData.message || 'Datos de asignación de manejador inválidos');
         } else if (response.status === 401) {
-            console.error('Error 401: No autorizado');
             throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
         } else if (response.status === 403) {
-            console.error('Error 403: Sin permisos');
             throw new Error('No tienes permisos para asignar manejadores.');
         } else {
             const errorData = await response.json();
-            console.error('Error del servidor:', errorData);
             throw new Error(errorData.message || 'Error al asignar el manejador');
         }
     } catch (error) {
-        console.error('=== ERROR EN ASSIGN MANAGER ===');
-        console.error('Error:', error);
+        console.error('Error assigning manager:', error);
         if (error.message && error.message.includes('Failed to fetch')) {
             throw new Error('Error de conexión. Verifica tu conexión a internet.');
         }
@@ -371,9 +358,6 @@ async function assignManager(managerData) {
 
 async function assignSignatory(signatoryData) {
     try {
-        console.log('=== ASSIGN SIGNATORY DEBUG ===');
-        console.log('Datos enviados:', signatoryData);
-        
         const token = localStorage.getItem('jwt');
         const headers = {
             'Content-Type': 'application/json'
@@ -386,32 +370,22 @@ async function assignSignatory(signatoryData) {
             body: JSON.stringify(signatoryData)
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-
         if (response.ok) {
             const result = await response.json();
-            console.log('Resultado de asignación:', result);
-            console.log('=== FIN DEBUG ===');
             return result;
         } else if (response.status === 400) {
             const errorData = await response.json();
-            console.error('Error 400:', errorData);
             throw new Error(errorData.message || 'Datos de asignación de firmante inválidos');
         } else if (response.status === 401) {
-            console.error('Error 401: No autorizado');
             throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
         } else if (response.status === 403) {
-            console.error('Error 403: Sin permisos');
             throw new Error('No tienes permisos para asignar firmantes.');
         } else {
             const errorData = await response.json();
-            console.error('Error del servidor:', errorData);
             throw new Error(errorData.message || 'Error al asignar el firmante');
         }
     } catch (error) {
-        console.error('=== ERROR EN ASSIGN SIGNATORY ===');
-        console.error('Error:', error);
+        console.error('Error assigning signatory:', error);
         if (error.message && error.message.includes('Failed to fetch')) {
             throw new Error('Error de conexión. Verifica tu conexión a internet.');
         }

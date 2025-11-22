@@ -1299,92 +1299,8 @@ async function loadUsersForRoleAssignment(inventoryId) {
       return;
     }
 
-    // Get current managers and signatories for this inventory
-    let currentManagers = [];
-    let currentSignatories = [];
-
-    try {
-      const managersResponse = await getInventoryManagers(inventoryId);
-
-      // Handle different response formats
-      if (Array.isArray(managersResponse)) {
-        currentManagers = managersResponse;
-      } else if (managersResponse && Array.isArray(managersResponse.managers)) {
-        currentManagers = managersResponse.managers;
-      } else if (managersResponse && Array.isArray(managersResponse.data)) {
-        currentManagers = managersResponse.data;
-      } else {
-        console.warn(
-          "getInventoryManagers returned unexpected format:",
-          managersResponse
-        );
-        currentManagers = [];
-      }
-    } catch (error) {
-      console.warn("Could not fetch managers:", error);
-      currentManagers = [];
-    }
-
-    try {
-      const signatoriesResponse = await getInventorySignatories(inventoryId);
-
-      // Handle different response formats
-      if (Array.isArray(signatoriesResponse)) {
-        currentSignatories = signatoriesResponse;
-      } else if (
-        signatoriesResponse &&
-        Array.isArray(signatoriesResponse.signatories)
-      ) {
-        currentSignatories = signatoriesResponse.signatories;
-      } else if (
-        signatoriesResponse &&
-        Array.isArray(signatoriesResponse.data)
-      ) {
-        currentSignatories = signatoriesResponse.data;
-      } else {
-        console.warn(
-          "getInventorySignatories returned unexpected format:",
-          signatoriesResponse
-        );
-        currentSignatories = [];
-      }
-    } catch (error) {
-      console.warn("Could not fetch signatories:", error);
-      currentSignatories = [];
-    }
-
-    // Store these for validation (ensure they are arrays)
-    window.currentInventoryManagers = Array.isArray(currentManagers)
-      ? currentManagers
-      : [];
-    window.currentInventorySignatories = Array.isArray(currentSignatories)
-      ? currentSignatories
-      : [];
-
-    // Filter out users who already have roles (managers or signatories)
-    // Ensure we're working with arrays before using map
-    const managerIds = new Set(
-      (Array.isArray(currentManagers) ? currentManagers : [])
-        .filter((m) => m && m.id)
-        .map((m) => parseInt(m.id))
-    );
-    const signatoryIds = new Set(
-      (Array.isArray(currentSignatories) ? currentSignatories : [])
-        .filter((s) => s && s.id)
-        .map((s) => parseInt(s.id))
-    );
-    const usersWithRoles = new Set([...managerIds, ...signatoryIds]);
-
-    // Filter available users
-    const availableUsers = users.filter(
-      (user) => !usersWithRoles.has(parseInt(user.id))
-    );
-
-    // Populate the user select with available users
-    populateRoleUserSelect(
-      availableUsers,
-      users.length - availableUsers.length
-    );
+    // Populate the user select with all users (backend now handles validation)
+    populateRoleUserSelect(users);
   } catch (error) {
     console.error("Error loading users for role assignment:", error);
     populateRoleUserSelect([]);
@@ -1394,7 +1310,7 @@ async function loadUsersForRoleAssignment(inventoryId) {
   }
 }
 
-function populateRoleUserSelect(users, filteredCount = 0) {
+function populateRoleUserSelect(users) {
   // Initialize CustomSelect if not already done
   if (!window.roleUserSelect) {
     window.roleUserSelect = new CustomSelect("roleUserIdSelect", {
@@ -1428,22 +1344,11 @@ function populateRoleUserSelect(users, filteredCount = 0) {
         label: displayName,
       });
     });
-
-    // Show info if users were filtered
-    if (filteredCount > 0) {
-      showInfoToast(
-        "Usuarios filtrados",
-        `${filteredCount} usuario(s) ya tienen roles asignados en este inventario y no aparecen en la lista.`
-      );
-    }
   } else {
     // Add no users option (will be shown as disabled in CustomSelect)
     userOptions.push({
       value: "",
-      label:
-        filteredCount > 0
-          ? "Todos los usuarios ya tienen roles asignados"
-          : "No hay usuarios disponibles",
+      label: "No hay usuarios disponibles",
       disabled: true,
     });
   }
@@ -1764,3 +1669,182 @@ function hideUserSelectLoading() {
   // This function is kept for compatibility but doesn't need to do anything
   // as the CustomSelect will be updated by populateUserSelect
 }
+
+// User Details Modal Functions (for Tree)
+async function showUserDetailsModal(userId) {
+  const modal = document.getElementById("userDetailsModal");
+  if (!modal) {
+    console.error("User details modal not found");
+    return;
+  }
+
+  // Show modal
+  modal.classList.remove("hidden");
+
+  // Show loading state
+  const loadingSpinner = document.getElementById("userDetailsLoading");
+  const contentDiv = document.getElementById("userDetailsContent");
+
+  if (loadingSpinner) {
+    loadingSpinner.classList.remove("hidden");
+  }
+  if (contentDiv) {
+    contentDiv.style.display = "none";
+  }
+
+  try {
+    // Fetch user data
+    const userData = await fetchUserById(userId);
+
+    // Hide loading
+    if (loadingSpinner) {
+      loadingSpinner.classList.add("hidden");
+    }
+    if (contentDiv) {
+      contentDiv.style.display = "block";
+    }
+
+    // Populate modal with user data
+    populateUserDetailsModal(userData);
+  } catch (error) {
+    console.error("Error loading user details:", error);
+
+    // Hide loading
+    if (loadingSpinner) {
+      loadingSpinner.classList.add("hidden");
+    }
+
+    // Show error in content area
+    if (contentDiv) {
+      contentDiv.style.display = "block";
+      contentDiv.innerHTML = `
+        <div class="flex flex-col items-center justify-center p-8 text-center">
+          <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
+          <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Error al cargar usuario</h3>
+          <p class="text-gray-600 dark:text-gray-400 mb-4">${error.message}</p>
+          <button onclick="showUserDetailsModal(${userId})" 
+            class="px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+            <i class="fas fa-redo mr-2"></i>
+            Reintentar
+          </button>
+        </div>
+      `;
+    }
+  }
+}
+
+function closeUserDetailsModal() {
+  const modal = document.getElementById("userDetailsModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+async function fetchUserById(userId) {
+  try {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+      throw new Error("No se encontró token de autenticación");
+    }
+
+    const response = await fetch(`/api/v1/users/${userId}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error("Usuario no encontrado");
+      } else if (response.status === 401) {
+        throw new Error("Sesión expirada. Por favor inicia sesión nuevamente.");
+      } else if (response.status === 403) {
+        throw new Error("No tienes permisos para ver esta información.");
+      }
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    throw error;
+  }
+}
+
+function populateUserDetailsModal(user) {
+  // Avatar
+  const avatarElement = document.getElementById("userDetailsAvatar");
+  if (avatarElement) {
+    if (user.imgUrl) {
+      avatarElement.innerHTML = `<img src="${user.imgUrl}" alt="Avatar" class="w-full h-full object-cover">`;
+    } else {
+      const initial = (user.fullName || user.email || "U")
+        .charAt(0)
+        .toUpperCase();
+      avatarElement.innerHTML = `<span class="text-white font-bold text-3xl">${initial}</span>`;
+    }
+  }
+
+  // Full Name
+  const fullNameElement = document.getElementById("userDetailsFullName");
+  if (fullNameElement) {
+    fullNameElement.textContent = user.fullName || "Sin nombre completo";
+  }
+
+  // Email
+  const emailElement = document.getElementById("userDetailsEmail");
+  if (emailElement) {
+    emailElement.textContent = user.email || "Sin email";
+  }
+
+  // Status
+  const statusElement = document.getElementById("userDetailsStatus");
+  if (statusElement) {
+    statusElement.textContent = user.status ? "Activo" : "Inactivo";
+    statusElement.className = `px-3 py-1 rounded-full text-xs font-medium ${
+      user.status
+        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+    }`;
+  }
+
+  // ID
+  const idElement = document.getElementById("userDetailsId");
+  if (idElement) {
+    idElement.textContent = user.id || "N/A";
+  }
+
+  // Role
+  const roleElement = document.getElementById("userDetailsRole");
+  if (roleElement) {
+    roleElement.textContent = user.role || "Sin rol";
+  }
+
+  // Job Title
+  const jobTitleElement = document.getElementById("userDetailsJobTitle");
+  if (jobTitleElement) {
+    jobTitleElement.textContent = user.jobTitle || "Sin cargo";
+  }
+
+  // Labor Department
+  const laborDepartmentElement = document.getElementById(
+    "userDetailsLaborDepartment"
+  );
+  if (laborDepartmentElement) {
+    laborDepartmentElement.textContent =
+      user.laborDepartment || "Sin departamento";
+  }
+
+  // Institution
+  const institutionElement = document.getElementById("userDetailsInstitution");
+  if (institutionElement) {
+    institutionElement.textContent = user.institution || "Sin institución";
+  }
+}
+
+// Export user details functions
+window.showUserDetailsModal = showUserDetailsModal;
+window.closeUserDetailsModal = closeUserDetailsModal;
