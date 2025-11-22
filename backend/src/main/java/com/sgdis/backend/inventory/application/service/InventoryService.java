@@ -317,6 +317,16 @@ public class InventoryService
             user.setMySignatories(inventories);
         }
 
+        // Add user to inventory's signatories list
+        if (!signatories.contains(user)) {
+            signatories.add(user);
+        }
+
+        // Add inventory to user's signatories list
+        if (!inventories.contains(inventory)) {
+            inventories.add(inventory);
+        }
+
         userRepository.save(user);
         inventoryRepository.save(inventory);
 
