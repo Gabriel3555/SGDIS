@@ -49,6 +49,7 @@ public class InventoryController {
     private final DeleteManagerInventoryUseCase deleteManagerInventoryUseCase;
     private final GetInventoryManagersUseCase getInventoryManagersUseCase;
     private final GetAllManagedInventoriesUseCase getAllManagedInventoriesUseCase;
+    private final GetMyManagedInventoriesUseCase getMyManagedInventoriesUseCase;
     private final SpringDataInventoryRepository inventoryRepository;
     private final AssignSignatoryInventoryUseCase assignSignatoryInventoryUseCase;
     private final GetMySignatoryInventoriesUseCase getMySignatoryInventoriesUseCase;
@@ -210,6 +211,20 @@ public class InventoryController {
     @GetMapping("/managed/{userId}")
     public List<ManagedInventoryResponse> getAllManagedInventories(@PathVariable Long userId) {
         return getAllManagedInventoriesUseCase.getAllManagedInventories(userId);
+    }
+
+    @Operation(
+            summary = "Get inventories managed by the current user",
+            description = "Retrieves all inventories where the authenticated user is assigned as manager"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Managed inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = ManagedInventoryResponse.class))
+    )
+    @GetMapping("/myManagedInventories")
+    public List<ManagedInventoryResponse> getMyManagedInventories() {
+        return getMyManagedInventoriesUseCase.getMyManagedInventories();
     }
 
     @GetMapping("/myInventory")

@@ -36,6 +36,7 @@ public class InventoryService
                 DeleteManagerInventoryUseCase,
                 GetInventoryManagersUseCase,
                 GetAllManagedInventoriesUseCase,
+                GetMyManagedInventoriesUseCase,
                 FindMyInventoryUseCase,
                 AssignSignatoryInventoryUseCase,
                 GetMySignatoryInventoriesUseCase,
@@ -246,6 +247,12 @@ public class InventoryService
                                                 inventory.getOwner() != null ? inventory.getOwner().getEmail() : null,
                                                 inventory.isStatus()))
                                 .toList();
+        }
+
+        @Override
+        public List<ManagedInventoryResponse> getMyManagedInventories() {
+                UserEntity currentUser = authService.getCurrentUser();
+                return getAllManagedInventories(currentUser.getId());
         }
 
         @Override

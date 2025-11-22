@@ -918,6 +918,7 @@ function showAssignManagerSuccessToast() {
     showSuccessToast('Manejador asignado', 'El manejador se ha asignado correctamente al inventario.');
 }
 
+//
 function showAssignManagerErrorToast(message) {
     showErrorToast('Error al asignar manejador', message || 'No se pudo asignar el manejador.');
 }
