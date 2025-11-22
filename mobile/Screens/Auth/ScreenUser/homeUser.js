@@ -98,11 +98,12 @@ export default function DashboardScreen() {
     try {
       const token = await ensureAuthToken();
       if (!token) return;
-      const response = await api.get("api/v1/users/me/inventories", {
+      const response = await api.get("api/v1/inventory/myManagedInventories", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      console.log("Manager inventories response:", response.data);
       const data = response.data || [];
       setInventories(data);
       setManagerCount(data.length);
@@ -283,7 +284,7 @@ export default function DashboardScreen() {
              </View>
              <View style={styles.statContent}>
                <Text style={styles.statValue}>{assignmentCount}</Text>
-               <Text style={styles.statLabel}>Inventarios Asignados</Text>
+               <Text style={styles.statLabel}>Inventarios Manager</Text>
              </View>
            </View>
 
@@ -547,3 +548,4 @@ const getStyles = (colors) => StyleSheet.create({
     color: colors.text,
   },
 });
+
