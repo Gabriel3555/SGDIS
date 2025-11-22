@@ -1,0 +1,170 @@
+/**
+ * Estilos adicionales para el Monitor de Inactividad
+ * Asegura compatibilidad con modo oscuro y animaciones suaves
+ */
+
+/* Animación de pulsación para el contador en últimos 10 segundos */
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Animación heartbeat (latido del corazón) para últimos 5 segundos */
+@keyframes heartbeat {
+    0% {
+        transform: scale(1);
+    }
+    14% {
+        transform: scale(1.15);
+    }
+    28% {
+        transform: scale(1);
+    }
+    42% {
+        transform: scale(1.15);
+    }
+    70% {
+        transform: scale(1);
+    }
+}
+
+.heartbeat-animation {
+    animation: heartbeat 1.3s ease-in-out infinite;
+}
+
+/* Animación de entrada del modal */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Animación de salida del modal */
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+}
+
+/* Aplicar animación al modal */
+#inactivityWarningModal:not(.hidden) > div {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Estilo para el contador cuando está en modo crítico */
+#inactivityCountdown.critical {
+    animation: pulse 0.5s ease-in-out infinite;
+}
+
+/* Barra de progreso animada */
+#inactivityProgressBar {
+    transition: width 1s linear;
+}
+
+/* Efecto hover mejorado para botones */
+#inactivityStayBtn:hover {
+    box-shadow: 0 10px 25px rgba(0, 175, 0, 0.3);
+}
+
+#inactivityLogoutBtn:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Modo oscuro - Ajustes adicionales */
+.dark #inactivityWarningModal {
+    background: rgba(0, 0, 0, 0.85);
+}
+
+.dark #inactivityWarningModal > div {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+}
+
+/* Animación de entrada para notificaciones */
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Efecto de resplandor sutil en el ícono de advertencia */
+#inactivityWarningModal .fa-exclamation-triangle {
+    filter: drop-shadow(0 0 10px rgba(234, 179, 8, 0.3));
+}
+
+/* Responsive - Ajustes para móviles */
+@media (max-width: 640px) {
+    #inactivityWarningModal > div {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+    
+    #inactivityCountdown {
+        font-size: 2.5rem;
+    }
+    
+    #inactivityWarningModal .flex.gap-3 {
+        flex-direction: column;
+    }
+    
+    #inactivityWarningModal .flex.gap-3 button {
+        width: 100%;
+    }
+}
+
+/* Accesibilidad - Focus visible */
+#inactivityStayBtn:focus,
+#inactivityLogoutBtn:focus {
+    outline: 3px solid rgba(0, 175, 0, 0.5);
+    outline-offset: 2px;
+}
+
+/* Prevenir selección de texto en el contador */
+#inactivityCountdown {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Efecto de vibración sutil cuando queden menos de 5 segundos */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+    20%, 40%, 60%, 80% { transform: translateX(2px); }
+}
+
+#inactivityWarningModal.critical {
+    animation: shake 0.5s ease-in-out;
+}
+
