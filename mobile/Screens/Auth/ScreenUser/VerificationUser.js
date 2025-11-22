@@ -812,6 +812,9 @@ export default function Verification() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.scannerContent}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => setScannerVisible(false)}>
+              <Ionicons name="close" size={24} color={colors.icon} />
+            </TouchableOpacity>
             <Text style={styles.modalTitle}>Escanear Placa</Text>
             <Text style={styles.modalSubtitle}>Alinea el código de barras dentro del recuadro</Text>
             <View style={styles.scannerBox}>
@@ -866,6 +869,9 @@ export default function Verification() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            <TouchableOpacity style={styles.closeButton} onPress={closePreviewModal}>
+              <Ionicons name="close" size={24} color={colors.icon} />
+            </TouchableOpacity>
             <Text style={styles.modalTitle}>Detalle de verificación</Text>
             {previewVerification ? (
               <>
@@ -920,6 +926,9 @@ export default function Verification() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+            <TouchableOpacity style={styles.closeButton} onPress={closeVerificationModal}>
+              <Ionicons name="close" size={24} color={colors.icon} />
+            </TouchableOpacity>
             <Text style={styles.modalTitle}>
               {verificationMode === "serial" ? "Verificar por Serial" : "Verificar por Placa"}
             </Text>
@@ -1757,5 +1766,11 @@ const getStyles = (colors) => StyleSheet.create({
     marginTop: 10,
     textAlign: "center",
     color: colors.text,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 5,
   },
 });
