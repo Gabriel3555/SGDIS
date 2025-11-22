@@ -11,7 +11,7 @@ import Inventary from "../../Screens/Auth/ScreenUser/InventaryUser";
 import Verification from "../../Screens/Auth/ScreenUser/VerificationUser";
 import Notifications from "../../Screens/Auth/ScreenUser/Notifications";
 import ProfileScreen from "../../Screens/Auth/ScreenUser/meUser";
-
+// navegacion 
 const Tab = createBottomTabNavigator();
 
 export default function MainNavigator() {
