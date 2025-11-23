@@ -4,8 +4,8 @@ import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
 import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
-
 
 public interface SpringDataCitiesRepository extends JpaRepository<CityEntity, Long> {
     boolean existsByCityIgnoreCaseAndDepartament(String city, DepartamentEntity departament);
@@ -14,4 +14,6 @@ public interface SpringDataCitiesRepository extends JpaRepository<CityEntity, Lo
 
     // opcional: variante por id si te resulta más cómodo
     Optional<CityEntity> findByCityIgnoreCaseAndDepartament_Id(String city, Long departamentId);
+    
+    List<CityEntity> findByDepartamentId(Long departamentId);
 }
