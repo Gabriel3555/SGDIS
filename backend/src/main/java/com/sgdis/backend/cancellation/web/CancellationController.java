@@ -149,12 +149,19 @@ public class CancellationController {
     @ApiResponse(responseCode = "404", description = "Cancellation not found")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
-    @PostMapping("/{cancellationId}/upload-format-example")
+    @PostMapping(value = "/{cancellationId}/upload-format-example", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadFormatExample(
             @Parameter(description = "Cancellation ID", required = true)
             @NotNull @PathVariable Long cancellationId,
-            @Parameter(description = "Format example file", required = true)
-            @RequestParam("file") MultipartFile file
+            @Parameter(
+                    description = "Format example file",
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            )
+            @RequestPart("file") MultipartFile file
     ) {
         try {
             String message = uploadFormatExampleCancellationUseCase.uploadFormatExample(cancellationId, file);
@@ -237,12 +244,19 @@ public class CancellationController {
     @ApiResponse(responseCode = "404", description = "Cancellation not found")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
-    @PostMapping("/{cancellationId}/upload-format")
+    @PostMapping(value = "/{cancellationId}/upload-format", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadFormat(
             @Parameter(description = "Cancellation ID", required = true)
             @NotNull @PathVariable Long cancellationId,
-            @Parameter(description = "Format file", required = true)
-            @RequestParam("file") MultipartFile file
+            @Parameter(
+                    description = "Format file",
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            )
+            @RequestPart("file") MultipartFile file
     ) {
         try {
             String message = uploadFormatCancellationUseCase.uploadFormat(cancellationId, file);
