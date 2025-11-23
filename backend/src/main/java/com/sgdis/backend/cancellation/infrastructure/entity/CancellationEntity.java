@@ -8,6 +8,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 
 @Data
 @Entity
@@ -20,17 +22,19 @@ public class CancellationEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "item_id")
-    private ItemEntity item;
+    private UUID uuid = UUID.randomUUID();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "cancelations_items")
+    private List<ItemEntity> items;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "requester_id")
     private UserEntity requester;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "approver_id")
-    private UserEntity approver;
+    @JoinColumn(name = "checker_id")
+    private UserEntity checker;
 
     private LocalDateTime requestedAt;
     private String reason;

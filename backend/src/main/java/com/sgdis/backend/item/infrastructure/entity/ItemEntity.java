@@ -1,6 +1,7 @@
 package com.sgdis.backend.item.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
 import com.sgdis.backend.category.infrastructure.entity.CategoryEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.item.domain.Attribute;
@@ -77,4 +78,7 @@ public class ItemEntity {
     @JsonIgnore
     @OneToMany(mappedBy = "item",fetch = FetchType.EAGER)
     private List<TransferEntity> transfers;
+
+    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "items")
+    private List<CancellationEntity> cancellations;
 }

@@ -1,7 +1,7 @@
 package com.sgdis.backend.verification.web;
 
 import com.sgdis.backend.exception.ResourceNotFoundException;
-import com.sgdis.backend.user.application.service.FileUploadService;
+import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.verification.application.dto.CreateVerificationByLicencePlateNumberRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationBySerialRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationResponse;

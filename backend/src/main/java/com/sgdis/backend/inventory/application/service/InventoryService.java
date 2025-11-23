@@ -291,7 +291,7 @@ public class InventoryService
                 .orElseThrow(() -> new UserNotFoundException(request.signatoryId()));
 
         InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Inventario no encontrado "));
 
         if (inventory.getManagers() != null && inventory.getManagers().contains(user)) {
             throw new RuntimeException("Este usuario ya esta asignado como manejador a este inventario");
@@ -317,12 +317,10 @@ public class InventoryService
             user.setMySignatories(inventories);
         }
 
-        // Add user to inventory's signatories list
         if (!signatories.contains(user)) {
             signatories.add(user);
         }
 
-        // Add inventory to user's signatories list
         if (!inventories.contains(inventory)) {
             inventories.add(inventory);
         }

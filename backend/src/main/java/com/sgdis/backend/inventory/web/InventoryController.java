@@ -9,7 +9,7 @@ import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
-import com.sgdis.backend.user.application.service.FileUploadService;
+import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.auth.application.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

@@ -1,15 +1,11 @@
 package com.sgdis.backend.cancellation.application.dto;
 
+import com.sgdis.backend.item.application.dto.ItemDTO;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record AskForCancellationResponse(
         Long id,
-        Long itemId,
-        String itemName, // Opcional, útil para el front
-        Long requesterId,
-        String reason,
-        LocalDateTime requestedAt,
-        Boolean approved, // Debería ser false o null al inicio
-        String statusMessage
-        )
-{}
+        String message
+) {}
