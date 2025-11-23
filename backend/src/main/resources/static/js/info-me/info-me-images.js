@@ -27,7 +27,7 @@ async function changeProfilePhoto() {
                 // Upload photo
                 const imageUrl = await uploadCurrentUserPhoto(file);
                 
-                if (imageUrl) {
+                if (imageUrl && imageUrl.trim() !== '') {
                     // Update profile avatar immediately
                     profileAvatar.src = imageUrl + '?t=' + new Date().getTime();
                     
@@ -54,7 +54,7 @@ async function changeProfilePhoto() {
                     alert('Foto de perfil actualizada exitosamente');
                 } else {
                     profileAvatar.src = originalSrc;
-                    alert('Error al actualizar la foto de perfil');
+                    alert('Error al actualizar la foto de perfil: No se recibió la URL de la imagen');
                 }
             } catch (error) {
                 console.error('Error updating profile photo:', error);

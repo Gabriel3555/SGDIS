@@ -176,7 +176,7 @@ public class UserController {
             user.setImgUrl(imgUrl);
 
             userRepository.save(user);
-            return ResponseEntity.ok("Profile image updated successfully");
+            return ResponseEntity.ok(imgUrl);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Error updating profile image: " + e.getMessage());
         }
@@ -212,7 +212,7 @@ public class UserController {
             user.setImgUrl(imgUrl);
 
             userRepository.save(user);
-            return ResponseEntity.ok("User image updated successfully");
+            return ResponseEntity.ok(imgUrl);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Error updating user image: " + e.getMessage());
         }
