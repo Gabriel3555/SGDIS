@@ -117,8 +117,10 @@ public class FileUploadService {
             throw new IllegalArgumentException("File name cannot be null or empty");
         }
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String filename = "cancellation_" + uuid.toString() + "." + extension;
-        Path targetFile = rootLocation.resolve("cancellation").resolve(filename);
+        String filename = "cancellation_" + uuid.toString() + extension;
+        Path cancellationDir = rootLocation.resolve("cancellation");
+        Files.createDirectories(cancellationDir);
+        Path targetFile = cancellationDir.resolve(filename);
         Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
         return "/uploads/cancellation/" + filename;
     }
@@ -129,8 +131,10 @@ public class FileUploadService {
             throw new IllegalArgumentException("File name cannot be null or empty");
         }
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        String filename = "cancellation_example_" + uuid.toString() + "." + extension;
-        Path targetFile = rootLocation.resolve("cancellation").resolve(filename);
+        String filename = "cancellation_example_" + uuid.toString() + extension;
+        Path cancellationDir = rootLocation.resolve("cancellation");
+        Files.createDirectories(cancellationDir);
+        Path targetFile = cancellationDir.resolve(filename);
         Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
         return "/uploads/cancellation/" + filename;
     }

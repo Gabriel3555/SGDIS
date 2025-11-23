@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -44,7 +45,7 @@ public class CancellationService implements
 
     @Override
     public AskForCancellationResponse askForCancellation(AskForCancellationRequest request) {
-        List<ItemEntity> items = null;
+        List<ItemEntity> items = new ArrayList<>();
         request.itemsId().forEach(id -> {
             items.add(itemRepository.findById(id).orElseThrow(()->new RuntimeException("Item no encontrado")));
         });
