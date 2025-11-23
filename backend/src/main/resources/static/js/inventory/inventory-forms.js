@@ -16,6 +16,18 @@ async function handleNewInventorySubmit(e) {
     }
   }
 
+  // Get institution ID from CustomSelect or hidden input
+  let institutionId = '';
+  if (window.newInventoryInstitutionSelect && window.newInventoryInstitutionSelect.getValue) {
+    institutionId = window.newInventoryInstitutionSelect.getValue();
+  }
+  if (!institutionId) {
+    const institutionIdElement = document.getElementById("newInventoryInstitutionId");
+    if (institutionIdElement) {
+      institutionId = institutionIdElement.value;
+    }
+  }
+
   if (!name || !location) {
     showErrorToast(
       "Campos obligatorios",
@@ -32,6 +44,14 @@ async function handleNewInventorySubmit(e) {
     );
     return;
   }
+
+  if (!institutionId || institutionId.trim() === '') {
+    showErrorToast(
+      "Institución requerida",
+      "Por favor selecciona la institución a la que pertenecerá el inventario"
+    );
+    return;
+  }
   
   // Validate owner ID is a valid number
   const numericOwnerId = parseInt(ownerId);
@@ -39,6 +59,15 @@ async function handleNewInventorySubmit(e) {
     showErrorToast(
       "ID de propietario inválido",
       "El propietario seleccionado no es válido"
+    );
+    return;
+  }
+
+  const numericInstitutionId = parseInt(institutionId);
+  if (isNaN(numericInstitutionId)) {
+    showErrorToast(
+      "ID de institución inválido",
+      "La institución seleccionada no es válida"
     );
     return;
   }
@@ -82,6 +111,7 @@ async function handleNewInventorySubmit(e) {
       name: name.trim(),
       location: location.trim(),
       ownerId: numericOwnerId,
+      institutionId: numericInstitutionId,
     };
 
     const result = await createInventory(inventoryDataToCreate);

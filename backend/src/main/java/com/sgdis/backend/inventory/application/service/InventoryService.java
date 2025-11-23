@@ -2,6 +2,8 @@ package com.sgdis.backend.inventory.application.service;
 
 import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.ResourceNotFoundException;
+import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
+import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
 import com.sgdis.backend.inventory.application.dto.*;
 import com.sgdis.backend.inventory.application.port.in.*;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
@@ -44,10 +46,12 @@ public class InventoryService
                 QuitSignatoryInventoryUseCase,
                 DeleteSignatoryInventoryUseCase,
                 UpdateInventoryOwnerUseCase,
+                UpdateInventoryInstitutionUseCase,
                 QuitManagerInventoryUseCase{
 
         private final SpringDataInventoryRepository inventoryRepository;
         private final SpringDataUserRepository userRepository;
+        private final SpringDataInstitutionRepository institutionRepository;
         private final AuthService authService;
 
         @Override
@@ -62,8 +66,13 @@ public class InventoryService
                         throw new IllegalArgumentException("This owner already has an assigned inventory");
                 }
 
+                InstitutionEntity institution = institutionRepository.findById(request.institutionId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Institution not found with id " + request.institutionId()));
+
                 InventoryEntity inventory = InventoryMapper.fromCreateRequest(request);
                 inventory.setOwner(owner);
+                inventory.setInstitution(institution);
 
                 InventoryEntity savedInventory = inventoryRepository.save(inventory);
                 return InventoryMapper.toCreateResponse(savedInventory);
@@ -134,6 +143,26 @@ public class InventoryService
                         inventory.setOwner(newOwner);
                         inventory = inventoryRepository.save(inventory);
                 }
+
+                return InventoryMapper.toResponse(inventory);
+        }
+
+        @Override
+        @Transactional
+        public InventoryResponse updateInventoryInstitution(Long inventoryId, UpdateInventoryInstitutionRequest request) {
+                if (request.institutionId() == null) {
+                        throw new IllegalArgumentException("Institution id is required");
+                }
+
+                InventoryEntity inventory = inventoryRepository.findById(inventoryId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + inventoryId));
+
+                InstitutionEntity institution = institutionRepository.findById(request.institutionId())
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Institution not found with id " + request.institutionId()));
+
+                inventory.setInstitution(institution);
+                inventory = inventoryRepository.save(inventory);
 
                 return InventoryMapper.toResponse(inventory);
         }

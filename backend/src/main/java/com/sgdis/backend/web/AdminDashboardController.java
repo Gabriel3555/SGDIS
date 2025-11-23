@@ -16,7 +16,7 @@ import java.io.IOException;
 @Controller
 public class AdminDashboardController {
 
-    @GetMapping("/admin_institution/dashboard")
+    @GetMapping({"/admin_institution/dashboard", "/admininstitution/dashboard"})
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminDashboard() throws IOException {
@@ -30,7 +30,7 @@ public class AdminDashboardController {
         }
     }
 
-    @GetMapping("/admin_institution/users")
+    @GetMapping({"/admin_institution/users", "/admininstitution/users"})
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> usersManagement() throws IOException {
@@ -44,7 +44,7 @@ public class AdminDashboardController {
         }
     }
 
-    @GetMapping("/admin_institution/inventory")
+    @GetMapping({"/admin_institution/inventory", "/admininstitution/inventory"})
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> inventoryManagement() throws IOException {
@@ -184,7 +184,7 @@ public class AdminDashboardController {
         }
     }
 
-    @GetMapping("/admin_institution/items")
+    @GetMapping({"/admin_institution/items", "/admininstitution/items"})
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionItemsManagement() throws IOException {
@@ -226,7 +226,7 @@ public class AdminDashboardController {
         }
     }
 
-    @GetMapping("/admin_institution/verification")
+    @GetMapping({"/admin_institution/verification", "/admininstitution/verification"})
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionVerificationManagement() throws IOException {

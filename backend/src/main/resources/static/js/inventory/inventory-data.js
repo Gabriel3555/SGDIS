@@ -8,7 +8,10 @@ let inventoryData = {
     selectedStatus: 'all',
     isLoading: false,
     currentInventoryId: null,
-    viewMode: 'table' // 'table' or 'cards'
+    viewMode: 'table', // 'table' or 'cards'
+    inventoryScope: 'global',
+    serverPagination: null,
+    serverPageSize: 50
 };
 
 function getLocationText(location) {

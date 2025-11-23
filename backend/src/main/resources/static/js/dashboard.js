@@ -142,10 +142,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     await refreshToken();
   }
 
+  rewriteAdminInstitutionSidebarLinks();
+
   // Initialize dashboard if we're on a dashboard page
   if (
     window.location.pathname.includes("/dashboard/") ||
     window.location.pathname.includes("/admin_institution/") ||
+    window.location.pathname.includes("/admininstitution/") ||
     window.location.pathname.includes("/admin_regional/") ||
     window.location.pathname.includes("/superadmin/")
   ) {
@@ -153,12 +156,36 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 });
 
+function rewriteAdminInstitutionSidebarLinks() {
+  const path = window.location.pathname || "";
+  if (!path.includes("/admininstitution")) {
+    return;
+  }
+
+  const links = document.querySelectorAll("a.sidebar-item");
+  links.forEach((link) => {
+    const href = link.getAttribute("href");
+    if (href && href.startsWith("/superadmin")) {
+      link.setAttribute("href", href.replace("/superadmin", "/admininstitution"));
+    }
+
+    const onclickValue = link.getAttribute("onclick");
+    if (onclickValue && onclickValue.includes("'/superadmin")) {
+      link.setAttribute(
+        "onclick",
+        onclickValue.replace(/'\/superadmin/g, "'/admininstitution")
+      );
+    }
+  });
+}
+
 // Initialize dashboard based on current path
 function initializeDashboard() {
   const path = window.location.pathname;
 
   if (
     path.includes("/admin_institution") ||
+    path.includes("/admininstitution") ||
     path.includes("/admin_regional") ||
     path.includes("/superadmin")
   ) {
@@ -189,6 +216,7 @@ async function loadDashboardData() {
       const path = window.location.pathname;
       if (
         path.includes("/admin_institution") ||
+        path.includes("/admininstitution") ||
         path.includes("/admin_regional") ||
         path.includes("/superadmin")
       ) {
@@ -270,7 +298,10 @@ async function loadUserInfo() {
           email: "admin@sena.edu.co",
         };
         updateHeaderProfile("Admin Regional", "ADMIN_REGIONAL");
-      } else if (path.includes("/admin_institution")) {
+      } else if (
+        path.includes("/admin_institution") ||
+        path.includes("/admininstitution")
+      ) {
         dashboardData.user = {
           fullName: "Admin Institución",
           role: "ADMIN_INSTITUTION",
@@ -329,7 +360,10 @@ function getDefaultUserData() {
         role: "ADMIN_REGIONAL",
         email: "admin@sena.edu.co",
       };
-    } else if (path.includes("/admin_institution")) {
+    } else if (
+      path.includes("/admin_institution") ||
+      path.includes("/admininstitution")
+    ) {
       return {
         fullName: "Admin Institución",
         role: "ADMIN_INSTITUTION",

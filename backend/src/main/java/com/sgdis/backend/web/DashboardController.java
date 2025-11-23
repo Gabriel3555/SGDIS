@@ -31,7 +31,7 @@ public class DashboardController {
     }
 
 
-    @GetMapping("/dashboard/admin_institution")
+    @GetMapping({"/dashboard/admin_institution", "/dashboard/admininstitution"})
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminDashboard() throws IOException {

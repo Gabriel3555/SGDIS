@@ -188,6 +188,14 @@ function updateHeaderInfo(userData) {
     }
 }
 
+function resolveAdminInstitutionBasePath() {
+    const path = window.location.pathname || '';
+    if (path.includes('/admin_institution')) {
+        return '/admin_institution';
+    }
+    return '/admininstitution';
+}
+
 // Load sidebar navigation based on user role
 function loadSidebarNavigation(role) {
     // Get base path based on role
@@ -204,7 +212,7 @@ function loadSidebarNavigation(role) {
             showAllMenuItems = true;
             break;
         case 'ADMIN_INSTITUTION':
-            basePath = '/admin_institution';
+            basePath = resolveAdminInstitutionBasePath();
             showAllMenuItems = true;
             break;
         case 'WAREHOUSE':
@@ -308,7 +316,7 @@ function getDashboardPath(role) {
         case 'ADMIN_REGIONAL':
             return '/admin-regional/dashboard';
         case 'ADMIN_INSTITUTION':
-            return '/admin-institution/dashboard';
+            return `${resolveAdminInstitutionBasePath()}/dashboard`;
         case 'WAREHOUSE':
             return '/warehouse/dashboard';
         case 'USER':
