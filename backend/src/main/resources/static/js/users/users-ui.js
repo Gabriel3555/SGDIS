@@ -59,13 +59,6 @@ function updateUserStats() {
   const userCount = window.usersData.users.filter(
     (u) => u && u.role === "USER"
   ).length;
-  const activeCount = window.usersData.users.filter(
-    (u) => u && u.status === true
-  ).length;
-  const inactiveCount = window.usersData.users.filter(
-    (u) => u && u.status === false
-  ).length;
-
   container.innerHTML = `
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">
@@ -130,32 +123,6 @@ function updateUserStats() {
                 </div>
             </div>
             <p class="text-[#00AF00] text-sm font-medium">Usuarios del sistema</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Activos</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${activeCount}</h3>
-                </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user-check text-blue-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-blue-600 text-sm font-medium">Usuarios activos</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Inactivos</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${inactiveCount}</h3>
-                </div>
-                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user-times text-gray-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-gray-600 text-sm font-medium">Usuarios inactivos</p>
         </div>
     `;
 }
