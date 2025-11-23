@@ -1,0 +1,253 @@
+function updateVerificationUI() {
+    updateStatsCards();
+    updateFilters();
+    updateVerificationTable();
+    updatePagination();
+}
+
+function updateUserInfoDisplay(userData) {
+    const headerUserName = document.getElementById('headerUserName');
+    const headerUserRole = document.getElementById('headerUserRole');
+    const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+    if (headerUserName) {
+        headerUserName.textContent = userData.fullName || 'Usuario';
+    }
+
+    if (headerUserRole) {
+        const roleText = {
+            'SUPERADMIN': 'Super Administrador',
+            'ADMIN_INSTITUTIONAL': 'Admin Institucional',
+            'ADMIN_REGIONAL': 'Admin Regional',
+            'WAREHOUSE': 'Almacén',
+            'USER': 'Usuario'
+        }[userData.role] || userData.role;
+        headerUserRole.textContent = roleText;
+    }
+
+    if (headerUserAvatar) {
+        if (userData.profilePhotoUrl) {
+            headerUserAvatar.style.backgroundImage = `url(${userData.profilePhotoUrl})`;
+            headerUserAvatar.style.backgroundSize = 'cover';
+            headerUserAvatar.style.backgroundPosition = 'center';
+            headerUserAvatar.textContent = '';
+        } else {
+            const initials = (userData.fullName || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            headerUserAvatar.textContent = initials;
+            headerUserAvatar.style.backgroundImage = 'none';
+        }
+    }
+}
+
+function updateStatsCards() {
+    const container = document.getElementById('verificationStatsContainer');
+    if (!container) return;
+
+    const total = verificationData.verifications.length;
+    const pending = verificationData.verifications.filter(v => v.status === 'PENDING').length;
+    const completed = verificationData.verifications.filter(v => v.status === 'COMPLETED' || v.status === 'VERIFIED').length;
+    const withEvidence = verificationData.verifications.filter(v => v.hasEvidence).length;
+
+    container.innerHTML = `
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Total Verificaciones</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${total}</h3>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-full flex items-center justify-center">
+                    <i class="fas fa-clipboard-check text-white text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Todas las verificaciones</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Pendientes</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${pending}</h3>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-clock text-white text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Esperando verificación</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Completadas</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${completed}</h3>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-check-circle text-white text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Verificaciones completadas</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">Con Evidencia</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${withEvidence}</h3>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-file-alt text-white text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500">Con archivos adjuntos</p>
+        </div>
+    `;
+}
+
+function updateFilters() {
+    const container = document.getElementById('searchFilterContainer');
+    if (!container) return;
+
+    const inventoryOptions = verificationData.inventories.map(inv => 
+        `<option value="${inv.id}">${inv.name}</option>`
+    ).join('');
+
+    container.innerHTML = `
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Inventario</label>
+            <select id="inventoryFilter" onchange="setInventoryFilter(this.value)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                <option value="all">Todos los Inventarios</option>
+                ${inventoryOptions}
+            </select>
+        </div>
+
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Estado</label>
+            <select id="statusFilter" onchange="setStatusFilter(this.value)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                <option value="all">Todos los Estados</option>
+                <option value="PENDING">Pendiente</option>
+                <option value="IN_PROGRESS">En Progreso</option>
+                <option value="COMPLETED">Completada</option>
+                <option value="VERIFIED">Verificada</option>
+                <option value="REJECTED">Rechazada</option>
+            </select>
+        </div>
+    `;
+}
+
+function updateVerificationTable() {
+    const container = document.getElementById('verificationTableContainer');
+    if (!container) return;
+
+    if (verificationData.filteredVerifications.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-clipboard-check text-gray-300 text-6xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-700 mb-2">No hay verificaciones</h3>
+                <p class="text-gray-500 mb-4">No se encontraron verificaciones con los filtros seleccionados.</p>
+                <button onclick="showNewVerificationModal()" 
+                    class="bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-6 rounded-xl transition-all duration-200">
+                    <i class="fas fa-plus mr-2"></i>
+                    Crear Primera Verificación
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    const startIndex = (verificationData.currentPage - 1) * verificationData.itemsPerPage;
+    const endIndex = startIndex + verificationData.itemsPerPage;
+    const currentVerifications = verificationData.filteredVerifications.slice(startIndex, endIndex);
+
+    const tableRows = currentVerifications.map(verification => {
+        const statusColor = getStatusColor(verification.status);
+        const statusText = getStatusText(verification.status);
+        
+        return `
+            <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4">
+                    <div class="font-semibold text-gray-800">${verification.id || '-'}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-gray-800">${verification.serialNumber || verification.licensePlate || '-'}</div>
+                    <div class="text-xs text-gray-500">${verification.serialNumber ? 'Serie' : 'Placa'}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-gray-800">${verification.itemName || '-'}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-gray-800">${verification.inventoryName || '-'}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="px-3 py-1 rounded-full text-xs font-medium ${statusColor}">
+                        ${statusText}
+                    </span>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                        ${verification.hasEvidence ? 
+                            '<i class="fas fa-check-circle text-green-500"></i>' : 
+                            '<i class="fas fa-times-circle text-gray-300"></i>'
+                        }
+                        <span class="text-sm text-gray-600">${verification.hasEvidence ? 'Sí' : 'No'}</span>
+                    </div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="text-sm text-gray-600">${verification.verificationDate ? new Date(verification.verificationDate).toLocaleDateString('es-ES') : '-'}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-2">
+                        <button onclick="showViewVerificationModal(${verification.id})" 
+                            class="text-blue-600 hover:text-blue-800 transition-colors" title="Ver Detalles">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="showUploadEvidenceModal(${verification.id})" 
+                            class="text-green-600 hover:text-green-800 transition-colors" title="Subir Evidencia">
+                            <i class="fas fa-upload"></i>
+                        </button>
+                        ${verification.hasEvidence ? `
+                            <button onclick="downloadEvidence(${verification.id})" 
+                                class="text-purple-600 hover:text-purple-800 transition-colors" title="Descargar Evidencia">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button onclick="showDeleteVerificationModal(${verification.id})" 
+                                class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar Evidencia">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Identificador</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventario</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evidencia</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tableRows}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+
+window.updateVerificationUI = updateVerificationUI;
+window.updateUserInfoDisplay = updateUserInfoDisplay;
+window.updateStatsCards = updateStatsCards;
+window.updateFilters = updateFilters;
+window.updateVerificationTable = updateVerificationTable;
+
