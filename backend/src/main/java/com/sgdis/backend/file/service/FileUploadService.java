@@ -34,7 +34,7 @@ public class FileUploadService {
         Files.createDirectories(userDir);
         Path targetFile = userDir.resolve(filename);
         Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
-        return "/uploads/" + email + "/" + filename;
+        return "/uploads/users/" + email + "/" + filename;
     }
 
     public void deleteFile(String imgUrl) throws IOException {
