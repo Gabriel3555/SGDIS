@@ -6,6 +6,8 @@ import com.sgdis.backend.item.application.dto.UpdateItemRequest;
 import com.sgdis.backend.item.domain.Attribute;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public final class ItemMapper {

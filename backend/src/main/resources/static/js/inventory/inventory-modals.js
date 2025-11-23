@@ -1845,6 +1845,52 @@ function populateUserDetailsModal(user) {
   }
 }
 
+// Function to manually update user details modal theme
+function updateUserDetailsModalTheme() {
+  const modal = document.getElementById("userDetailsModal");
+  if (!modal || modal.classList.contains("hidden")) {
+    // Modal is not visible, no need to update
+    return;
+  }
+
+  // The CSS in dark-mode.css with specific selectors will handle the styling
+  // This function exists to force a re-render if needed
+  // For now, we just ensure the modal re-evaluates its styles
+}
+
+// Listen for theme changes to update user details modal if open
+document.addEventListener("themeChanged", function (event) {
+  updateUserDetailsModalTheme();
+});
+
+// Setup MutationObserver to detect theme changes on html element
+function setupUserDetailsModalThemeObserver() {
+  const htmlElement = document.documentElement;
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (
+        mutation.type === "attributes" &&
+        mutation.attributeName === "class"
+      ) {
+        // Theme changed, update modal if visible
+        updateUserDetailsModalTheme();
+      }
+    });
+  });
+  observer.observe(htmlElement, { attributes: true });
+}
+
+// Initialize observer when DOM is ready
+if (document.readyState === "loading") {
+  document.addEventListener(
+    "DOMContentLoaded",
+    setupUserDetailsModalThemeObserver
+  );
+} else {
+  setupUserDetailsModalThemeObserver();
+}
+
 // Export user details functions
 window.showUserDetailsModal = showUserDetailsModal;
 window.closeUserDetailsModal = closeUserDetailsModal;
+window.updateUserDetailsModalTheme = updateUserDetailsModalTheme;

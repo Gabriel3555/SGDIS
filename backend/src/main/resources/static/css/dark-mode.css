@@ -98,16 +98,30 @@ html.dark,
 }
 
 /* Contenedores y cards en modo oscuro */
-.dark .bg-white {
+/* Regla general para todos los bg-white, pero se sobrescribe con reglas más específicas para modales */
+html.dark .bg-white {
     background-color: var(--dark-bg-secondary) !important;
 }
 
-.dark .bg-gray-50 {
+html.dark .bg-gray-50 {
     background-color: var(--dark-bg-tertiary) !important;
 }
 
-.dark .bg-gray-100 {
+html.dark .bg-gray-100 {
     background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* Excepciones para modales específicos - estas reglas tienen mayor especificidad */
+html:not(.dark) #inventoryTreeModal .bg-white,
+html:not(.dark) #userDetailsModal .bg-white,
+html:not(.dark) #viewInventoryModal .bg-white {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #inventoryTreeModal .bg-gray-50,
+html:not(.dark) #userDetailsModal .bg-gray-50,
+html:not(.dark) #inventoryTreeContainer {
+    background-color: #f9fafb !important;
 }
 
 /* Contenedor principal en modo oscuro */
@@ -820,5 +834,262 @@ html.dark button {
 
 .dark #inactivityWarningModal .border-gray-600 {
     border-color: var(--dark-border-light) !important;
+}
+
+/* ============================================
+   INVENTORY TREE MODAL - DARK MODE
+   ============================================ */
+
+/* Tree Modal Container - solo aplicar en modo oscuro */
+.dark #inventoryTreeModal {
+    background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+.dark #inventoryTreeModal > div > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #inventoryTreeModal h2.text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #inventoryTreeModal p.text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #inventoryTreeModal .text-gray-400 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #inventoryTreeModal .border-gray-200 {
+    border-color: var(--dark-border) !important;
+}
+
+.dark #inventoryTreeModal .border-gray-700 {
+    border-color: var(--dark-border-light) !important;
+}
+
+.dark #inventoryTreeModal .bg-gray-50 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #inventoryTreeModal .bg-gray-900 {
+    background-color: #000000 !important;
+}
+
+.dark #inventoryTreeModal button.border-gray-300 {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #inventoryTreeModal button.text-gray-700 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #inventoryTreeModal button.hover\:bg-gray-50:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* Asegurar que en modo claro los textos sean visibles */
+html:not(.dark) #inventoryTreeModal h2.text-gray-800 {
+    color: #1F2937 !important;
+}
+
+html:not(.dark) #inventoryTreeModal p.text-gray-600 {
+    color: #4B5563 !important;
+}
+
+html:not(.dark) #inventoryTreeModal .text-gray-400 {
+    color: #9CA3AF !important;
+}
+
+html:not(.dark) #inventoryTreeModal button.text-gray-700 {
+    color: #374151 !important;
+}
+
+/* ============================================
+   USER DETAILS MODAL - DARK MODE
+   ============================================ */
+
+/* User Modal Container - solo aplicar en modo oscuro */
+.dark #userDetailsModal {
+    background-color: rgba(0, 0, 0, 0.75) !important;
+}
+
+.dark #userDetailsModal > div > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+/* Títulos principales */
+.dark #userDetailsModal h2 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #userDetailsModal h3 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #userDetailsModal h4 {
+    color: var(--dark-text-primary) !important;
+}
+
+/* Textos secundarios */
+.dark #userDetailsModal p.text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #userDetailsModal p.text-gray-900 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #userDetailsModal .text-gray-400 {
+    color: var(--dark-text-muted) !important;
+}
+
+/* Labels */
+.dark #userDetailsModal label {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Avatar */
+.dark #userDetailsModal #userDetailsAvatar {
+    background: linear-gradient(135deg, var(--dark-sena-verde) 0%, var(--dark-sena-verde-dark) 100%) !important;
+}
+
+.dark #userDetailsModal #userDetailsAvatar span {
+    color: #ffffff !important;
+}
+
+/* Bordes */
+.dark #userDetailsModal .border-gray-200 {
+    border-color: var(--dark-border) !important;
+}
+
+.dark #userDetailsModal .border-gray-700 {
+    border-color: var(--dark-border-light) !important;
+}
+
+.dark #userDetailsModal .border-gray-600 {
+    border-color: var(--dark-border-light) !important;
+}
+
+.dark #userDetailsModal .border-gray-300 {
+    border-color: var(--dark-border) !important;
+}
+
+/* Fondos */
+.dark #userDetailsModal .bg-gray-50 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #userDetailsModal .bg-gray-900 {
+    background-color: #0F172A !important;
+}
+
+.dark #userDetailsModal .bg-gray-200 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #userDetailsModal .bg-gray-700 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* Botones */
+.dark #userDetailsModal button.border-gray-300 {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #userDetailsModal button.text-gray-700 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #userDetailsModal button.hover\:bg-gray-50:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* Status badges */
+.dark #userDetailsModal #userDetailsStatus.bg-green-100 {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: var(--dark-sena-verde) !important;
+    border: 1px solid rgba(0, 175, 0, 0.3);
+}
+
+.dark #userDetailsModal #userDetailsStatus.bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: #FCA5A5 !important;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.dark #userDetailsModal #userDetailsStatus.bg-gray-100 {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-secondary) !important;
+    border: 1px solid var(--dark-border);
+}
+
+/* ============================================
+   USER DETAILS MODAL - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que en modo claro los textos sean visibles */
+html:not(.dark) #userDetailsModal h2 {
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #userDetailsModal h3 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #userDetailsModal h4 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #userDetailsModal p.text-gray-600 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #userDetailsModal p.text-gray-900 {
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #userDetailsModal label {
+    color: #374151 !important; /* gray-700 */
+}
+
+/* Avatar en modo claro */
+html:not(.dark) #userDetailsModal #userDetailsAvatar {
+    background: linear-gradient(135deg, #00AF00 0%, #008800 100%) !important;
+}
+
+html:not(.dark) #userDetailsModal #userDetailsAvatar span {
+    color: #ffffff !important;
+}
+
+/* Fondos en modo claro */
+html:not(.dark) #userDetailsModal .bg-gray-50 {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+html:not(.dark) #userDetailsModal .bg-gray-900 {
+    background-color: #F3F4F6 !important; /* gray-100 en modo claro */
+}
+
+/* Status badges en modo claro */
+html:not(.dark) #userDetailsModal #userDetailsStatus.bg-green-100 {
+    background-color: #DCFCE7 !important; /* green-100 */
+    color: #166534 !important; /* green-800 */
+    border: 1px solid #BBF7D0; /* green-200 */
+}
+
+html:not(.dark) #userDetailsModal #userDetailsStatus.bg-red-100 {
+    background-color: #FEE2E2 !important; /* red-100 */
+    color: #991B1B !important; /* red-800 */
+    border: 1px solid #FECACA; /* red-200 */
+}
+
+html:not(.dark) #userDetailsModal #userDetailsStatus.bg-gray-100 {
+    background-color: #F3F4F6 !important; /* gray-100 */
+    color: #374151 !important; /* gray-700 */
+    border: 1px solid #E5E7EB; /* gray-200 */
 }
 

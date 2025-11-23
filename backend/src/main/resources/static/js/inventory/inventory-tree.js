@@ -3,67 +3,67 @@
 
 // Encapsulate tree state to avoid variable conflicts
 const inventoryTreeState = {
-  currentInventoryId: null,
-  treeData: null,
-  treeSvg: null,
-  treeG: null,
+    currentInventoryId: null,
+    treeData: null,
+    treeSvg: null,
+    treeG: null,
   treeZoom: null,
 };
 
 // Fetch inventory users (owner, managers, signatories)
 async function fetchInventoryUsers(inventoryId) {
-  try {
+    try {
     const token = localStorage.getItem("jwt");
-    if (!token) {
+        if (!token) {
       throw new Error("No authentication token found");
-    }
+        }
 
-    const response = await fetch(`/api/v1/inventory/${inventoryId}/users`, {
+        const response = await fetch(`/api/v1/inventory/${inventoryId}/users`, {
       method: "GET",
-      headers: {
+            headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-    });
+        });
 
-    if (!response.ok) {
-      if (response.status === 404) {
+        if (!response.ok) {
+            if (response.status === 404) {
         throw new Error("Inventario no encontrado");
-      } else if (response.status === 401) {
+            } else if (response.status === 401) {
         throw new Error("Sesión expirada. Por favor inicia sesión nuevamente.");
-      } else if (response.status === 403) {
+            } else if (response.status === 403) {
         throw new Error("No tienes permisos para ver esta información.");
-      }
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
+            }
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
 
-    const data = await response.json();
-    return data;
-  } catch (error) {
+        const data = await response.json();
+        return data;
+    } catch (error) {
     console.error("Error fetching inventory users:", error);
-    throw error;
-  }
+        throw error;
+    }
 }
 
 // Transform API data to hierarchical structure for D3
 // Structure: Inventario -> Owner -> Signatories (horizontal) -> Managers (horizontal)
 function transformToTreeData(apiData, inventoryName, inventoryImgUrl) {
-  const root = {
+    const root = {
     name: inventoryName || "Inventario",
     type: "inventory",
-    id: inventoryTreeState.currentInventoryId,
+        id: inventoryTreeState.currentInventoryId,
     inventoryImgUrl: inventoryImgUrl || null,
     children: [],
-  };
+    };
 
-  // Nivel 2: Owner (Propietario) - directly connected to inventory
-  let ownerNode = null;
-  if (apiData.owner) {
-    ownerNode = {
+    // Nivel 2: Owner (Propietario) - directly connected to inventory
+    let ownerNode = null;
+    if (apiData.owner) {
+        ownerNode = {
       name: apiData.owner.fullName || "Sin nombre",
       type: "owner",
-      userId: apiData.owner.userId,
-      imgUrl: apiData.owner.imgUrl || null,
+            userId: apiData.owner.userId,
+            imgUrl: apiData.owner.imgUrl || null,
       role: "Propietario",
       children: [],
     };
@@ -74,9 +74,9 @@ function transformToTreeData(apiData, inventoryName, inventoryImgUrl) {
       name: "Sin propietario",
       type: "empty-owner",
       children: [],
-    };
-    root.children.push(ownerNode);
-  }
+        };
+        root.children.push(ownerNode);
+    }
 
   // Nivel 3: Create intermediate node for signatories level
   const signaturesLevelNode = {
@@ -86,18 +86,18 @@ function transformToTreeData(apiData, inventoryName, inventoryImgUrl) {
   };
 
   // Add all signatories as children of the level node
-  if (apiData.signatories && apiData.signatories.length > 0) {
+    if (apiData.signatories && apiData.signatories.length > 0) {
     apiData.signatories.forEach((signatory) => {
       signaturesLevelNode.children.push({
         name: signatory.fullName || "Sin nombre",
         type: "signatory",
-        userId: signatory.userId,
-        imgUrl: signatory.imgUrl || null,
+                userId: signatory.userId,
+                imgUrl: signatory.imgUrl || null,
         role: "Firmante",
         children: [],
       });
     });
-  } else {
+        } else {
     // Add placeholder if no signatories
     signaturesLevelNode.children.push({
       name: "Sin firmantes",
@@ -116,18 +116,18 @@ function transformToTreeData(apiData, inventoryName, inventoryImgUrl) {
   };
 
   // Add all managers as children of the level node
-  if (apiData.managers && apiData.managers.length > 0) {
+    if (apiData.managers && apiData.managers.length > 0) {
     apiData.managers.forEach((manager) => {
       managersLevelNode.children.push({
         name: manager.fullName || "Sin nombre",
         type: "manager",
-        userId: manager.userId,
-        imgUrl: manager.imgUrl || null,
+                userId: manager.userId,
+                imgUrl: manager.imgUrl || null,
         role: "Manejador",
         children: [],
       });
     });
-  } else {
+        } else {
     // Add placeholder if no managers
     managersLevelNode.children.push({
       name: "Sin manejadores",
@@ -138,68 +138,68 @@ function transformToTreeData(apiData, inventoryName, inventoryImgUrl) {
 
   signaturesLevelNode.children.push(managersLevelNode);
 
-  return root;
+    return root;
 }
 
 // Show inventory tree modal
 async function showInventoryTreeModal(inventoryId, inventoryName, inventoryImgUrl) {
-  inventoryTreeState.currentInventoryId = inventoryId;
-
+    inventoryTreeState.currentInventoryId = inventoryId;
+    
   const modal = document.getElementById("inventoryTreeModal");
-  if (!modal) {
+    if (!modal) {
     console.error("Inventory tree modal not found");
-    return;
-  }
+        return;
+    }
 
-  // Show modal
+    // Show modal
   modal.classList.remove("hidden");
-
-  // Show loading state
+    
+    // Show loading state
   const treeContainer = document.getElementById("inventoryTreeContainer");
   const loadingSpinner = document.getElementById("inventoryTreeLoading");
-
-  if (treeContainer) {
+    
+    if (treeContainer) {
     treeContainer.innerHTML = "";
-  }
-  if (loadingSpinner) {
+    }
+    if (loadingSpinner) {
     loadingSpinner.classList.remove("hidden");
-  }
+    }
 
-  // Set inventory name in modal
+    // Set inventory name in modal
   const inventoryNameElement = document.getElementById("inventoryTreeName");
-  if (inventoryNameElement) {
+    if (inventoryNameElement) {
     inventoryNameElement.textContent =
       inventoryName || `Inventario #${inventoryId}`;
-  }
+    }
 
-  try {
-    // Load D3 if not already loaded
-    await loadD3Library();
-
-    // Fetch data
-    const apiData = await fetchInventoryUsers(inventoryId);
-
-    // Transform to tree structure
+    try {
+        // Load D3 if not already loaded
+        await loadD3Library();
+        
+        // Fetch data
+        const apiData = await fetchInventoryUsers(inventoryId);
+        
+        // Transform to tree structure
     inventoryTreeState.treeData = transformToTreeData(apiData, inventoryName, inventoryImgUrl);
-
-    // Hide loading
-    if (loadingSpinner) {
+        
+        // Hide loading
+        if (loadingSpinner) {
       loadingSpinner.classList.add("hidden");
-    }
-
-    // Render tree
-    renderInventoryTree(inventoryTreeState.treeData);
-  } catch (error) {
+        }
+        
+        // Render tree
+        renderInventoryTree(inventoryTreeState.treeData);
+    } catch (error) {
     console.error("Error loading inventory tree:", error);
-
-    // Hide loading
-    if (loadingSpinner) {
+        
+        // Hide loading
+        if (loadingSpinner) {
       loadingSpinner.classList.add("hidden");
-    }
-
-    // Show error
-    if (treeContainer) {
-      treeContainer.innerHTML = `
+        }
+        
+        // Show error
+        if (treeContainer) {
+            treeContainer.innerHTML = `
                 <div class="flex flex-col items-center justify-center p-8 text-center">
                     <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
                     <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Error al cargar el árbol</h3>
@@ -215,32 +215,32 @@ async function showInventoryTreeModal(inventoryId, inventoryName, inventoryImgUr
                     </button>
                 </div>
             `;
+        }
     }
-  }
 }
 
 // Close inventory tree modal
 function closeInventoryTreeModal() {
   const modal = document.getElementById("inventoryTreeModal");
-  if (modal) {
+    if (modal) {
     modal.classList.add("hidden");
-  }
-
-  // Clear tree
-  if (inventoryTreeState.treeSvg) {
-    inventoryTreeState.treeSvg.remove();
-    inventoryTreeState.treeSvg = null;
-    inventoryTreeState.treeG = null;
-    inventoryTreeState.treeZoom = null;
-  }
-
+    }
+    
+    // Clear tree
+    if (inventoryTreeState.treeSvg) {
+        inventoryTreeState.treeSvg.remove();
+        inventoryTreeState.treeSvg = null;
+        inventoryTreeState.treeG = null;
+        inventoryTreeState.treeZoom = null;
+    }
+    
   const treeContainer = document.getElementById("inventoryTreeContainer");
-  if (treeContainer) {
+    if (treeContainer) {
     treeContainer.innerHTML = "";
-  }
-
-  inventoryTreeState.currentInventoryId = null;
-  inventoryTreeState.treeData = null;
+    }
+    
+    inventoryTreeState.currentInventoryId = null;
+    inventoryTreeState.treeData = null;
 }
 
 // Refresh/reload the currently open inventory tree
@@ -303,50 +303,50 @@ async function refreshInventoryTree() {
 
 // Load D3 library from CDN
 function loadD3Library() {
-  return new Promise((resolve, reject) => {
-    // Check if already loaded
+    return new Promise((resolve, reject) => {
+        // Check if already loaded
     if (typeof d3 !== "undefined") {
-      resolve();
-      return;
-    }
+            resolve();
+            return;
+        }
 
     const d3Script = document.createElement("script");
     d3Script.src = "https://d3js.org/d3.v7.min.js";
-    d3Script.onload = () => {
+        d3Script.onload = () => {
       if (typeof d3 !== "undefined") {
-        resolve();
-      } else {
+                resolve();
+            } else {
         reject(new Error("Failed to load D3 library"));
-      }
-    };
+            }
+        };
     d3Script.onerror = () => reject(new Error("Failed to load D3 library"));
-    document.head.appendChild(d3Script);
-  });
+        document.head.appendChild(d3Script);
+    });
 }
 
 // Render tree using D3 - Horizontal levels design
 function renderInventoryTree(data) {
   const container = document.getElementById("inventoryTreeContainer");
-  if (!container) {
+    if (!container) {
     console.error("Tree container not found");
-    return;
-  }
+        return;
+    }
 
-  // Clear previous tree
+    // Clear previous tree
   container.innerHTML = "";
 
-  // Get container dimensions
-  const width = container.clientWidth;
-  const height = container.clientHeight || 600;
+    // Get container dimensions
+    const width = container.clientWidth;
+    const height = container.clientHeight || 600;
 
-  // Create SVG
+    // Create SVG
   inventoryTreeState.treeSvg = d3
     .select(container)
     .append("svg")
     .attr("width", width)
     .attr("height", height);
 
-  // Create main group
+    // Create main group
   inventoryTreeState.treeG = inventoryTreeState.treeSvg.append("g");
 
   // Calculate center and spacing
@@ -492,7 +492,7 @@ function renderInventoryTree(data) {
       .attr("y1", y + 50)
       .attr("x2", width - 50)
       .attr("y2", y + 50)
-      .attr("stroke", isDarkMode ? "#4B5563" : color)
+      .attr("stroke", isDarkMode ? "#4B5563" : color) // Darker line in dark mode, color in light mode
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "5,5")
       .attr("opacity", isDarkMode ? 0.5 : 0.3);
@@ -512,7 +512,7 @@ function renderInventoryTree(data) {
         .append("text")
         .attr("x", -x + 20)
         .attr("y", 5)
-        .attr("fill", isDarkMode ? "#D1D5DB" : "#374151")
+        .attr("fill", isDarkMode ? "#D1D5DB" : "#1F2937") // Light gray in dark mode, dark gray in light mode
         .attr("font-size", 14)
         .attr("font-weight", "bold")
         .attr("text-anchor", "start")
@@ -525,7 +525,7 @@ function renderInventoryTree(data) {
         .append("text")
         .attr("x", 0)
         .attr("y", 5)
-        .attr("fill", isDarkMode ? "#9CA3AF" : "#6B7280")
+        .attr("fill", isDarkMode ? "#9CA3AF" : "#9CA3AF") // Medium gray for both modes
         .attr("font-size", 13)
         .attr("font-style", "italic")
         .attr("text-anchor", "middle")
@@ -594,7 +594,7 @@ function renderInventoryTree(data) {
         }
       });
 
-      // Add hover effect
+      // Add hover effect with tooltip
       circleGroup
         .on("mouseover", function() {
           d3.select(this)
@@ -603,6 +603,32 @@ function renderInventoryTree(data) {
             .duration(200)
             .attr("r", config.radius + 3)
             .style("filter", "drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.3))");
+          
+          // Show tooltip with name
+          const tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "inventory-tree-tooltip")
+            .style("position", "absolute")
+            .style("background-color", isDarkMode ? "#1F2937" : "#ffffff")
+            .style("color", isDarkMode ? "#E5E7EB" : "#1F2937")
+            .style("padding", "8px 12px")
+            .style("border-radius", "8px")
+            .style("font-size", "12px")
+            .style("font-weight", "bold")
+            .style("pointer-events", "none")
+            .style("z-index", "10010")
+            .style("box-shadow", "0 4px 6px rgba(0, 0, 0, 0.2)")
+            .style("border", isDarkMode ? "1px solid #374151" : "1px solid #E5E7EB")
+            .html(node.name);
+          
+          // Position tooltip near mouse
+          const tooltipNode = tooltip.node();
+          const tooltipWidth = tooltipNode.offsetWidth;
+          const tooltipHeight = tooltipNode.offsetHeight;
+          
+          tooltip
+            .style("left", (event.pageX - tooltipWidth / 2) + "px")
+            .style("top", (event.pageY - tooltipHeight - 15) + "px");
         })
         .on("mouseout", function() {
           d3.select(this)
@@ -611,19 +637,10 @@ function renderInventoryTree(data) {
             .duration(200)
             .attr("r", config.radius)
             .style("filter", "drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2))");
+          
+          // Remove tooltip
+          d3.selectAll(".inventory-tree-tooltip").remove();
         });
-
-      // Draw name text to the right of circle
-      group
-        .append("text")
-        .attr("x", config.radius + 15)
-        .attr("y", 5)
-        .attr("fill", isDarkMode ? "#E5E7EB" : "#374151")
-        .attr("font-size", 12)
-        .attr("font-weight", "bold")
-        .attr("text-anchor", "start")
-        .text(node.name)
-        .style("pointer-events", "none");
     }
 
     // Fade in animation
@@ -712,8 +729,54 @@ function renderInventoryTree(data) {
   drawSeparator(levelConfig.manager.y, "", levelConfig.manager.color);
 }
 
+// Refresh tree theme when dark mode changes
+function refreshInventoryTreeTheme() {
+  const modal = document.getElementById("inventoryTreeModal");
+  if (!modal || modal.classList.contains("hidden")) {
+    // Tree modal is not visible, no need to refresh
+    return;
+  }
+
+  // Tree is visible, re-render with current data
+  if (inventoryTreeState.treeData) {
+    const treeContainer = document.getElementById("inventoryTreeContainer");
+    if (treeContainer) {
+      // Clear and re-render
+      treeContainer.innerHTML = "";
+      renderInventoryTree(inventoryTreeState.treeData);
+    }
+  }
+}
+
+// Listen for theme changes via custom event
+document.addEventListener('themeChanged', function(event) {
+  refreshInventoryTreeTheme();
+});
+
+// Setup MutationObserver to detect theme changes on html element
+function setupInventoryTreeThemeObserver() {
+  const htmlElement = document.documentElement;
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        // Theme changed, refresh tree if visible
+        refreshInventoryTreeTheme();
+      }
+    });
+  });
+  observer.observe(htmlElement, { attributes: true });
+}
+
+// Initialize observer when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupInventoryTreeThemeObserver);
+} else {
+  setupInventoryTreeThemeObserver();
+}
+
 // Export functions and state to global scope
 window.showInventoryTreeModal = showInventoryTreeModal;
 window.closeInventoryTreeModal = closeInventoryTreeModal;
 window.refreshInventoryTree = refreshInventoryTree;
+window.refreshInventoryTreeTheme = refreshInventoryTreeTheme;
 window.inventoryTreeState = inventoryTreeState;
