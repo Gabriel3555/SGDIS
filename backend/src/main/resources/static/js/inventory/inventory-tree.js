@@ -47,11 +47,12 @@ async function fetchInventoryUsers(inventoryId) {
 
 // Transform API data to hierarchical structure for D3
 // Structure: Inventario -> Owner -> Signatories (horizontal) -> Managers (horizontal)
-function transformToTreeData(apiData, inventoryName) {
+function transformToTreeData(apiData, inventoryName, inventoryImgUrl) {
   const root = {
     name: inventoryName || "Inventario",
     type: "inventory",
     id: inventoryTreeState.currentInventoryId,
+    inventoryImgUrl: inventoryImgUrl || null,
     children: [],
   };
 
@@ -141,7 +142,7 @@ function transformToTreeData(apiData, inventoryName) {
 }
 
 // Show inventory tree modal
-async function showInventoryTreeModal(inventoryId, inventoryName) {
+async function showInventoryTreeModal(inventoryId, inventoryName, inventoryImgUrl) {
   inventoryTreeState.currentInventoryId = inventoryId;
 
   const modal = document.getElementById("inventoryTreeModal");
@@ -179,7 +180,7 @@ async function showInventoryTreeModal(inventoryId, inventoryName) {
     const apiData = await fetchInventoryUsers(inventoryId);
 
     // Transform to tree structure
-    inventoryTreeState.treeData = transformToTreeData(apiData, inventoryName);
+    inventoryTreeState.treeData = transformToTreeData(apiData, inventoryName, inventoryImgUrl);
 
     // Hide loading
     if (loadingSpinner) {
@@ -275,9 +276,15 @@ async function refreshInventoryTree() {
 
     // Fetch updated data
     const apiData = await fetchInventoryUsers(inventoryId);
+    
+    // Get inventory image URL from stored tree data or fetch it
+    let inventoryImgUrl = null;
+    if (inventoryTreeState.treeData && inventoryTreeState.treeData.inventoryImgUrl) {
+      inventoryImgUrl = inventoryTreeState.treeData.inventoryImgUrl;
+    }
 
     // Transform to tree structure
-    inventoryTreeState.treeData = transformToTreeData(apiData, inventoryName);
+    inventoryTreeState.treeData = transformToTreeData(apiData, inventoryName, inventoryImgUrl);
 
     // Hide loading
     if (loadingSpinner) {
@@ -388,6 +395,7 @@ function renderInventoryTree(data) {
     name: data.name || `Inventario ${data.id}`,
     type: "inventory",
     id: data.id,
+    inventoryImgUrl: data.inventoryImgUrl || null,
   };
 
   const ownerNode =
@@ -523,14 +531,87 @@ function renderInventoryTree(data) {
         .attr("text-anchor", "middle")
         .text(node.name);
     } else {
-      // Draw circle
-      group
+      // Create clickable circle group
+      const circleGroup = group
+        .append("g")
+        .attr("class", "node-circle-group")
+        .style("cursor", "pointer");
+
+      // Draw circle background
+      circleGroup
         .append("circle")
         .attr("r", config.radius)
         .attr("fill", config.color)
         .attr("stroke", isDarkMode ? "#374151" : "#ffffff")
         .attr("stroke-width", config.stroke)
         .style("filter", "drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2))");
+
+      // Add image if available (using clipPath for circular mask)
+      if (node.imgUrl || node.inventoryImgUrl) {
+        const imageUrl = node.imgUrl || node.inventoryImgUrl;
+        
+        // Create circular clip path
+        const clipId = `clip-${Math.random().toString(36).substr(2, 9)}`;
+        circleGroup
+          .append("defs")
+          .append("clipPath")
+          .attr("id", clipId)
+          .append("circle")
+          .attr("r", config.radius - config.stroke / 2)
+          .attr("cx", 0)
+          .attr("cy", 0);
+
+        // Add image with clip path
+        circleGroup
+          .append("image")
+          .attr("xlink:href", imageUrl)
+          .attr("x", -config.radius)
+          .attr("y", -config.radius)
+          .attr("width", config.radius * 2)
+          .attr("height", config.radius * 2)
+          .attr("clip-path", `url(#${clipId})`)
+          .attr("preserveAspectRatio", "xMidYMid slice")
+          .on("error", function() {
+            // If image fails to load, remove it and show colored circle
+            d3.select(this).remove();
+          });
+      }
+
+      // Add click event based on node type
+      circleGroup.on("click", function(event) {
+        event.stopPropagation();
+        
+        if (node.type === "inventory") {
+          // Open inventory detail modal
+          if (typeof showViewInventoryModal === "function" && node.id) {
+            showViewInventoryModal(node.id);
+          }
+        } else if (node.userId) {
+          // Open user detail modal
+          if (typeof showUserDetailsModal === "function") {
+            showUserDetailsModal(node.userId);
+          }
+        }
+      });
+
+      // Add hover effect
+      circleGroup
+        .on("mouseover", function() {
+          d3.select(this)
+            .select("circle")
+            .transition()
+            .duration(200)
+            .attr("r", config.radius + 3)
+            .style("filter", "drop-shadow(0px 5px 10px rgba(0, 0, 0, 0.3))");
+        })
+        .on("mouseout", function() {
+          d3.select(this)
+            .select("circle")
+            .transition()
+            .duration(200)
+            .attr("r", config.radius)
+            .style("filter", "drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2))");
+        });
 
       // Draw name text to the right of circle
       group
@@ -541,7 +622,8 @@ function renderInventoryTree(data) {
         .attr("font-size", 12)
         .attr("font-weight", "bold")
         .attr("text-anchor", "start")
-        .text(node.name);
+        .text(node.name)
+        .style("pointer-events", "none");
     }
 
     // Fade in animation

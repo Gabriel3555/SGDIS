@@ -875,7 +875,7 @@
 
     <!-- View Inventory Modal -->
     <div id="viewInventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
-        style="z-index: 9999;">
+        style="z-index: 10004;">
         <div class="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">Detalles del Inventario</h2>
@@ -993,7 +993,7 @@
 
     <!-- Inventory Image Modal (Full Size) -->
     <div id="inventoryImageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden"
-        style="z-index: 10000;">
+        style="z-index: 10005;">
         <div class="relative max-w-5xl w-full mx-4 flex items-center justify-center">
             <button onclick="closeInventoryImageModal()"
                 class="absolute top-4 right-4 z-20 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full w-12 h-12 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-lg">
@@ -1313,6 +1313,80 @@
 
             <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
                 <button onclick="closeInventoryTreeModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Details Modal (from Tree) -->
+    <div id="userDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 10004;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Información del Usuario</h2>
+                <button onclick="closeUserDetailsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="userDetailsLoading" class="flex flex-col items-center justify-center p-12 hidden">
+                <div class="relative w-16 h-16 mb-4">
+                    <div class="absolute inset-0 border-4 border-[#00AF00] border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">Cargando información...</p>
+            </div>
+
+            <!-- User Details Content -->
+            <div id="userDetailsContent" class="space-y-6">
+                <!-- Profile Section -->
+                <div class="flex items-center gap-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="w-24 h-24 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-full flex items-center justify-center overflow-hidden shadow-lg"
+                        id="userDetailsAvatar">
+                        <span class="text-white font-bold text-3xl">U</span>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-1" id="userDetailsFullName">-</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mb-2" id="userDetailsEmail">-</p>
+                        <span class="px-3 py-1 rounded-full text-xs font-medium" id="userDetailsStatus">-</span>
+                    </div>
+                </div>
+
+                <!-- User Information -->
+                <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <i class="fas fa-id-card text-[#00AF00] mr-2"></i>
+                        Información Personal
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID de Usuario</label>
+                            <p class="text-gray-900 dark:text-gray-100 font-semibold" id="userDetailsId">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
+                            <p class="text-gray-900 dark:text-gray-100" id="userDetailsRole">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
+                            <p class="text-gray-900 dark:text-gray-100" id="userDetailsJobTitle">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento</label>
+                            <p class="text-gray-900 dark:text-gray-100" id="userDetailsLaborDepartment">-</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
+                            <p class="text-gray-900 dark:text-gray-100" id="userDetailsInstitution">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeUserDetailsModal()"
                     class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cerrar
                 </button>
