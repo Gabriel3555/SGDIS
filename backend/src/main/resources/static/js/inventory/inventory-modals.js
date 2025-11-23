@@ -32,8 +32,10 @@ if (
       this.placeholder = options.placeholder || "Seleccionar...";
       this.searchable = options.searchable !== false;
       this.onChange = options.onChange || null;
+      this.isDisabled = !!options.disabled;
 
       this.init();
+      this.setDisabled(this.isDisabled);
     }
 
     init() {
@@ -42,13 +44,32 @@ if (
       this.textElement.classList.add("custom-select-placeholder");
 
       // Event listeners
-      this.trigger.addEventListener("click", () => this.toggle());
-      this.searchInput.addEventListener("input", (e) =>
-        this.filterOptions(e.target.value)
-      );
-      this.searchInput.addEventListener("keydown", (e) =>
-        this.handleKeydown(e)
-      );
+      if (this.trigger) {
+        this.trigger.addEventListener("click", (event) => {
+          if (this.isDisabled) {
+            event.preventDefault();
+            return;
+          }
+          this.toggle();
+        });
+      }
+
+      if (this.searchInput) {
+        this.searchInput.addEventListener("input", (e) => {
+          if (this.isDisabled) {
+            e.preventDefault();
+            return;
+          }
+          this.filterOptions(e.target.value);
+        });
+        this.searchInput.addEventListener("keydown", (e) => {
+          if (this.isDisabled) {
+            e.preventDefault();
+            return;
+          }
+          this.handleKeydown(e);
+        });
+      }
 
       // Close on outside click
       document.addEventListener("click", (e) => {
@@ -89,9 +110,12 @@ if (
         }
 
         if (!option.disabled) {
-          optionElement.addEventListener("click", () =>
-            this.selectOption(option)
-          );
+          optionElement.addEventListener("click", () => {
+            if (this.isDisabled) {
+              return;
+            }
+            this.selectOption(option);
+          });
         }
         this.optionsContainer.appendChild(optionElement);
       });
@@ -127,6 +151,9 @@ if (
     }
 
     toggle() {
+      if (this.isDisabled) {
+        return;
+      }
       const isOpen = this.container.classList.contains("open");
 
       // Close all other selects
@@ -144,6 +171,9 @@ if (
     }
 
     open() {
+      if (this.isDisabled) {
+        return;
+      }
       this.container.classList.add("open");
       if (this.searchable && this.searchInput) {
         this.searchInput.focus();
@@ -159,6 +189,10 @@ if (
     }
 
     handleKeydown(e) {
+      if (this.isDisabled) {
+        e.preventDefault();
+        return;
+      }
       if (e.key === "Escape") {
         this.close();
       } else if (e.key === "Enter") {
@@ -198,6 +232,26 @@ if (
       }
 
       this.renderOptions();
+    }
+
+    setDisabled(disabled) {
+      this.isDisabled = !!disabled;
+      if (!this.container) {
+        return;
+      }
+
+      if (this.isDisabled) {
+        this.container.classList.add("custom-select-disabled");
+        this.close();
+        if (this.searchInput) {
+          this.searchInput.setAttribute("disabled", "disabled");
+        }
+      } else {
+        this.container.classList.remove("custom-select-disabled");
+        if (this.searchInput) {
+          this.searchInput.removeAttribute("disabled");
+        }
+      }
     }
   };
   // Hacer disponible globalmente
@@ -1102,11 +1156,28 @@ async function showNewInventoryModal() {
     modal.classList.remove("hidden");
   }
 
-  // Load users for owner selection
-  await Promise.all([
-    loadUsersForNewInventory(),
-    loadInstitutionsForNewInventory(),
-  ]);
+  resetRegionalSelection();
+
+  const tasks = [loadUsersForNewInventory()];
+
+  if (isInventoryInstitutionLocked()) {
+    hideRegionalField();
+    tasks.push(
+      loadInstitutionsForNewInventory({
+        forceFullList: true,
+        lockToCurrentInstitution: true,
+      })
+    );
+  } else if (shouldDisplayInventoryRegionalSelect()) {
+    showRegionalField();
+    setInstitutionSelectAwaitingRegional();
+    tasks.push(loadRegionalsForNewInventory());
+  } else {
+    hideRegionalField();
+    tasks.push(loadInstitutionsForNewInventory());
+  }
+
+  await Promise.all(tasks);
 }
 
 async function loadUsersForNewInventory() {
@@ -1202,24 +1273,14 @@ function hideNewInventoryOwnerSelectLoading() {
 }
 
 const INVENTORY_INSTITUTION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const INVENTORY_REGIONAL_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 let inventoryInstitutionsCache = null;
 let inventoryInstitutionsCacheTimestamp = 0;
+let inventoryRegionalsCache = null;
+let inventoryRegionalsCacheTimestamp = 0;
+const inventoryInstitutionsByRegionalCache = new Map();
 
-async function loadInstitutionsForNewInventory() {
-  showNewInventoryInstitutionSelectLoading();
-
-  try {
-    const institutions = await fetchInventoryInstitutions();
-    populateNewInventoryInstitutionSelect(institutions);
-  } catch (error) {
-    console.error("Error loading institutions for new inventory:", error);
-    populateNewInventoryInstitutionSelect([]);
-  } finally {
-    hideNewInventoryInstitutionSelectLoading();
-  }
-}
-
-function populateNewInventoryInstitutionSelect(institutions) {
+function ensureNewInventoryInstitutionSelect() {
   if (!window.newInventoryInstitutionSelect) {
     window.newInventoryInstitutionSelect = new CustomSelect(
       "newInventoryInstitutionIdSelect",
@@ -1229,6 +1290,284 @@ function populateNewInventoryInstitutionSelect(institutions) {
       }
     );
   }
+  return window.newInventoryInstitutionSelect;
+}
+
+function ensureNewInventoryRegionalSelect() {
+  if (!window.newInventoryRegionalSelect) {
+    window.newInventoryRegionalSelect = new CustomSelect(
+      "newInventoryRegionalIdSelect",
+      {
+        placeholder: "Seleccionar regional...",
+        searchable: true,
+        onChange: handleRegionalSelection,
+      }
+    );
+  }
+  return window.newInventoryRegionalSelect;
+}
+
+function isInventoryInstitutionLocked() {
+  try {
+    if (
+      typeof window.shouldUseInstitutionInventories === "function" &&
+      window.shouldUseInstitutionInventories()
+    ) {
+      return true;
+    }
+  } catch (error) {
+    console.warn("Error determining inventory scope:", error);
+  }
+
+  const path = window.location.pathname || "";
+  return (
+    path.includes("/admin_institution") || path.includes("/admininstitution")
+  );
+}
+
+function shouldDisplayInventoryRegionalSelect() {
+  if (isInventoryInstitutionLocked()) {
+    return false;
+  }
+
+  const path = window.location.pathname || "";
+  if (path.includes("/superadmin")) {
+    return true;
+  }
+
+  const role = (window.currentUserRole || "").toUpperCase();
+  return role === "SUPERADMIN";
+}
+
+function showRegionalField() {
+  const field = document.getElementById("newInventoryRegionalField");
+  if (field) {
+    field.classList.remove("hidden");
+  }
+}
+
+function hideRegionalField() {
+  const field = document.getElementById("newInventoryRegionalField");
+  if (field) {
+    field.classList.add("hidden");
+  }
+}
+
+function updateRegionalHelperText(text) {
+  const helper = document.getElementById("newInventoryRegionalHelper");
+  if (helper) {
+    helper.textContent =
+      text ||
+      "Selecciona una regional para ver sus instituciones disponibles";
+  }
+}
+
+function updateInstitutionHelperText(text) {
+  const helper = document.getElementById("newInventoryInstitutionHelper");
+  if (helper) {
+    helper.textContent =
+      text || "Selecciona la institución a la que pertenecerá el inventario";
+  }
+}
+
+function showLockedInstitutionInfo(name) {
+  const info = document.getElementById("newInventoryInstitutionLockedInfo");
+  const institutionName = document.getElementById(
+    "newInventoryLockedInstitutionName"
+  );
+
+  if (institutionName) {
+    institutionName.textContent = name || "Tu institución actual";
+  }
+  if (info) {
+    info.classList.remove("hidden");
+  }
+}
+
+function hideLockedInstitutionInfo() {
+  const info = document.getElementById("newInventoryInstitutionLockedInfo");
+  if (info) {
+    info.classList.add("hidden");
+  }
+}
+
+function setInstitutionSelectAwaitingRegional() {
+  const selectInstance = ensureNewInventoryInstitutionSelect();
+  selectInstance.clear();
+  selectInstance.setOptions([
+    {
+      value: "",
+      label: "Selecciona una regional para ver las instituciones",
+      disabled: true,
+    },
+  ]);
+  if (selectInstance.setDisabled) {
+    selectInstance.setDisabled(true);
+  }
+  updateInstitutionHelperText(
+    "Selecciona una regional para habilitar las instituciones disponibles"
+  );
+  hideLockedInstitutionInfo();
+}
+
+function enableInstitutionSelect() {
+  const selectInstance = ensureNewInventoryInstitutionSelect();
+  if (selectInstance.setDisabled) {
+    selectInstance.setDisabled(false);
+  }
+  hideLockedInstitutionInfo();
+  updateInstitutionHelperText();
+}
+
+function enforceInstitutionLock() {
+  const selectInstance = ensureNewInventoryInstitutionSelect();
+  if (selectInstance.setDisabled) {
+    selectInstance.setDisabled(true);
+  }
+  const lockedName =
+    (window.currentUserData && window.currentUserData.institution) ||
+    "tu institución actual";
+  showLockedInstitutionInfo(lockedName);
+  updateInstitutionHelperText(
+    "Tu rol asigna los inventarios a tu institución actual"
+  );
+
+  if (!selectInstance.getValue || !selectInstance.getValue()) {
+    console.warn("No se pudo asignar la institución del usuario actual");
+    if (typeof showErrorToast === "function") {
+      showErrorToast(
+        "Institución no encontrada",
+        "No se pudo identificar la institución de tu usuario. Contacta al administrador."
+      );
+    }
+  }
+}
+
+function resetRegionalSelection() {
+  const regionalInput = document.getElementById("newInventoryRegionalId");
+  if (regionalInput) {
+    regionalInput.value = "";
+  }
+  if (window.newInventoryRegionalSelect && window.newInventoryRegionalSelect.clear) {
+    window.newInventoryRegionalSelect.clear();
+  }
+  updateRegionalHelperText();
+}
+
+async function handleRegionalSelection(option) {
+  const regionalId = option && option.value ? option.value : "";
+  const regionalName = option && option.label ? option.label : "";
+
+  if (!regionalId) {
+    setInstitutionSelectAwaitingRegional();
+    return;
+  }
+
+  updateRegionalHelperText(
+    `Instituciones disponibles en ${regionalName || "la regional seleccionada"}`
+  );
+
+  const institutionSelect = ensureNewInventoryInstitutionSelect();
+  institutionSelect.clear();
+  if (institutionSelect.setDisabled) {
+    institutionSelect.setDisabled(true);
+  }
+
+  await loadInstitutionsForNewInventory({ regionalId });
+}
+
+async function loadRegionalsForNewInventory() {
+  showNewInventoryRegionalSelectLoading();
+
+  try {
+    const regionals = await fetchInventoryRegionals();
+    populateNewInventoryRegionalSelect(regionals);
+  } catch (error) {
+    console.error("Error loading regionals for new inventory:", error);
+    populateNewInventoryRegionalSelect([]);
+  }
+}
+
+function populateNewInventoryRegionalSelect(regionals) {
+  const selectInstance = ensureNewInventoryRegionalSelect();
+
+  const regionalOptions = Array.isArray(regionals)
+    ? regionals.map((regional) => ({
+        value: String(regional.id),
+        label: regional.name,
+      }))
+    : [];
+
+  if (regionalOptions.length === 0) {
+    regionalOptions.push({
+      value: "",
+      label: "No hay regionales disponibles",
+      disabled: true,
+    });
+    updateRegionalHelperText("No hay regionales disponibles");
+    selectInstance.setDisabled(true);
+  } else {
+    updateRegionalHelperText();
+    selectInstance.setDisabled(false);
+  }
+
+  selectInstance.setOptions(regionalOptions);
+}
+
+function showNewInventoryRegionalSelectLoading() {
+  const selectInstance = ensureNewInventoryRegionalSelect();
+  selectInstance.setOptions([
+    { value: "", label: "Cargando regionales...", disabled: true },
+  ]);
+  selectInstance.setDisabled(true);
+  updateRegionalHelperText("Cargando regionales disponibles...");
+}
+
+window.isInventoryInstitutionLocked = isInventoryInstitutionLocked;
+window.shouldDisplayInventoryRegionalSelect = shouldDisplayInventoryRegionalSelect;
+
+async function loadInstitutionsForNewInventory(options = {}) {
+  const {
+    regionalId = null,
+    forceFullList = false,
+    lockToCurrentInstitution = false,
+  } = options;
+
+  const requiresRegional = shouldDisplayInventoryRegionalSelect();
+
+  if (!forceFullList && requiresRegional && !regionalId) {
+    setInstitutionSelectAwaitingRegional();
+    return;
+  }
+
+  showNewInventoryInstitutionSelectLoading();
+
+  try {
+    let institutions = [];
+
+    if (!forceFullList && regionalId) {
+      institutions = await fetchInstitutionsByRegionalId(regionalId);
+    } else {
+      institutions = await fetchInventoryInstitutions();
+    }
+
+    populateNewInventoryInstitutionSelect(institutions);
+
+    if (lockToCurrentInstitution || isInventoryInstitutionLocked()) {
+      enforceInstitutionLock();
+    } else {
+      enableInstitutionSelect();
+    }
+  } catch (error) {
+    console.error("Error loading institutions for new inventory:", error);
+    populateNewInventoryInstitutionSelect([]);
+  } finally {
+    hideNewInventoryInstitutionSelectLoading();
+  }
+}
+
+function populateNewInventoryInstitutionSelect(institutions) {
+  const selectInstance = ensureNewInventoryInstitutionSelect();
 
   const institutionOptions = [];
 
@@ -1257,25 +1596,28 @@ function populateNewInventoryInstitutionSelect(institutions) {
       label: "No hay instituciones disponibles",
       disabled: true,
     });
+    selectInstance.setDisabled(true);
+    updateInstitutionHelperText("No hay instituciones disponibles para la selección actual");
   }
 
-  window.newInventoryInstitutionSelect.setOptions(institutionOptions);
+  if (!isInventoryInstitutionLocked() && institutionOptions.length > 0) {
+    selectInstance.setDisabled(false);
+    hideLockedInstitutionInfo();
+  }
+
+  selectInstance.setOptions(institutionOptions);
   autoSelectInstitutionForCurrentUser(institutions);
 }
 
 function showNewInventoryInstitutionSelectLoading() {
-  if (!window.newInventoryInstitutionSelect) {
-    window.newInventoryInstitutionSelect = new CustomSelect(
-      "newInventoryInstitutionIdSelect",
-      {
-        placeholder: "Cargando instituciones...",
-        searchable: true,
-      }
-    );
-  }
-  window.newInventoryInstitutionSelect.setOptions([
+  const selectInstance = ensureNewInventoryInstitutionSelect();
+  selectInstance.setOptions([
     { value: "", label: "Cargando instituciones...", disabled: true },
   ]);
+  if (selectInstance.setDisabled) {
+    selectInstance.setDisabled(true);
+  }
+  updateInstitutionHelperText("Cargando instituciones disponibles...");
 }
 
 function hideNewInventoryInstitutionSelectLoading() {
@@ -1332,6 +1674,51 @@ function getInstitutionIdFromResponse(institution) {
   return null;
 }
 
+async function fetchInstitutionsByRegionalId(regionalId) {
+  if (!regionalId) {
+    return [];
+  }
+
+  const cacheKey = String(regionalId);
+  const now = Date.now();
+  const cached = inventoryInstitutionsByRegionalCache.get(cacheKey);
+
+  if (cached && now - cached.timestamp < INVENTORY_INSTITUTION_CACHE_TTL) {
+    return cached.data;
+  }
+
+  try {
+    const token = localStorage.getItem("jwt");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch(
+      `/api/v1/institutions/institutionsByRegionalId/${regionalId}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch institutions for regional ${regionalId}: ${response.status}`
+      );
+    }
+
+    const data = await response.json();
+    const institutions = Array.isArray(data) ? data : [];
+    inventoryInstitutionsByRegionalCache.set(cacheKey, {
+      data: institutions,
+      timestamp: now,
+    });
+    return institutions;
+  } catch (error) {
+    console.error("Error fetching institutions by regional:", error);
+    return [];
+  }
+}
+
 async function fetchInventoryInstitutions() {
   const now = Date.now();
   if (
@@ -1362,6 +1749,40 @@ async function fetchInventoryInstitutions() {
     return institutions;
   } catch (error) {
     console.error("Error fetching institutions:", error);
+    return [];
+  }
+}
+
+async function fetchInventoryRegionals() {
+  const now = Date.now();
+  if (
+    inventoryRegionalsCache &&
+    now - inventoryRegionalsCacheTimestamp < INVENTORY_REGIONAL_CACHE_TTL
+  ) {
+    return inventoryRegionalsCache;
+  }
+
+  try {
+    const token = localStorage.getItem("jwt");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch("/api/v1/regional", {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch regionals: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const regionals = Array.isArray(data) ? data : [];
+    inventoryRegionalsCache = regionals;
+    inventoryRegionalsCacheTimestamp = now;
+    return regionals;
+  } catch (error) {
+    console.error("Error fetching regionals:", error);
     return [];
   }
 }
@@ -1399,6 +1820,16 @@ function closeNewInventoryModal() {
   // Clear institution select
   if (window.newInventoryInstitutionSelect) {
     window.newInventoryInstitutionSelect.clear();
+  }
+
+  if (window.newInventoryInstitutionSelect && window.newInventoryInstitutionSelect.setDisabled && !isInventoryInstitutionLocked()) {
+    window.newInventoryInstitutionSelect.setDisabled(false);
+  }
+
+  hideLockedInstitutionInfo();
+  resetRegionalSelection();
+  if (shouldDisplayInventoryRegionalSelect()) {
+    setInstitutionSelectAwaitingRegional();
   }
 }
 
