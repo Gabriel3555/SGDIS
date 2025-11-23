@@ -1,4 +1,4 @@
-package com.sgdis.backend.user.application.service;
+package com.sgdis.backend.file.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 @Service
 public class FileUploadService {
@@ -29,7 +30,7 @@ public class FileUploadService {
         }
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         String filename = "profile" + extension;
-        Path userDir = rootLocation.resolve(email);
+        Path userDir = rootLocation.resolve("users").resolve(email);
         Files.createDirectories(userDir);
         Path targetFile = userDir.resolve(filename);
         Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
@@ -38,18 +39,15 @@ public class FileUploadService {
 
     public void deleteFile(String imgUrl) throws IOException {
         if (imgUrl != null && imgUrl.startsWith("/uploads/")) {
-            // Remove the leading "/uploads/" to get the relative path
             String relativePath = imgUrl.substring(8);
             Path filePath = rootLocation.resolve(relativePath);
             Files.deleteIfExists(filePath);
-            
-            // Try to delete the parent directory if it's empty (for inventories)
+
             Path parentDir = filePath.getParent();
             if (parentDir != null && Files.exists(parentDir)) {
                 try {
                     Files.deleteIfExists(parentDir);
                 } catch (Exception e) {
-                    // Ignore if directory is not empty
                 }
             }
         }
@@ -104,13 +102,36 @@ public class FileUploadService {
         }
         String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         String filename = "verification_" + verificationId + "_" + fileIndex + extension;
-        
-        // Crear estructura: uploads/verifications/{licencePlateNumber}/
+
         Path verificationDir = rootLocation.resolve("verifications").resolve(licencePlateNumber);
         Files.createDirectories(verificationDir);
         
         Path targetFile = verificationDir.resolve(filename);
         Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
         return "/uploads/verifications/" + licencePlateNumber + "/" + filename;
+    }
+
+    public String saveCancellationFormatFile(MultipartFile file, UUID uuid) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be null or empty");
+        }
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String filename = "cancellation_" + uuid.toString() + "." + extension;
+        Path targetFile = rootLocation.resolve("cancellation").resolve(filename);
+        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        return "/uploads/cancellation/" + filename;
+    }
+
+    public String saveCancellationFormatExampleFile(MultipartFile file, UUID uuid) throws IOException {
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be null or empty");
+        }
+        String extension = originalFilename.substring(originalFilename.lastIndexOf("."));
+        String filename = "cancellation_example_" + uuid.toString() + "." + extension;
+        Path targetFile = rootLocation.resolve("cancellation").resolve(filename);
+        Files.copy(file.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
+        return "/uploads/cancellation/" + filename;
     }
 }

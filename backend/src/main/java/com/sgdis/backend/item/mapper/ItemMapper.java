@@ -104,4 +104,12 @@ public final class ItemMapper {
                 itemEntity.isStatus()
         );
     }
+
+    public static List<ItemDTO> toDTOList(List<ItemEntity> itemEntities) {
+        List<ItemDTO> dtos = new ArrayList<>();
+        for(ItemEntity itemEntity : itemEntities) {
+            dtos.add(toDTO(itemEntity));
+        }
+        return dtos;
+    }
 }

@@ -12,7 +12,7 @@ import com.sgdis.backend.loan.application.port.LendItemUseCase;
 import com.sgdis.backend.loan.application.port.ReturnItemUseCase;
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository;
-import com.sgdis.backend.user.application.service.FileUploadService;
+import com.sgdis.backend.file.service.FileUploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
