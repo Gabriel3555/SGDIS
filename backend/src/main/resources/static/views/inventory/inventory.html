@@ -328,6 +328,29 @@
                     </div>
                     <p class="text-xs text-gray-500 mt-1">Selecciona el usuario propietario de este inventario</p>
                 </div>
+                <div id="newInventoryRegionalField" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Regional del Inventario</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="newInventoryRegionalIdSelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Seleccionar regional...</span>
+                                <div class="custom-select-arrow">
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                <div class="custom-select-options" id="newInventoryRegionalIdOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="newInventoryRegionalId" name="regionalId">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1" id="newInventoryRegionalHelper">
+                        Selecciona una regional para ver sus instituciones disponibles
+                    </p>
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Institución del Inventario</label>
                     <div class="custom-select-container">
@@ -347,7 +370,14 @@
                         </div>
                         <input type="hidden" id="newInventoryInstitutionId" name="institutionId" required>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Selecciona la institución a la que pertenecerá el inventario</p>
+                    <p class="text-xs text-gray-500 mt-1" id="newInventoryInstitutionHelper">
+                        Selecciona la institución a la que pertenecerá el inventario
+                    </p>
+                    <div id="newInventoryInstitutionLockedInfo"
+                        class="hidden mt-2 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700">
+                        Este inventario se asignará a: <span class="font-semibold"
+                            id="newInventoryLockedInstitutionName"></span>
+                    </div>
                 </div>
 
                 <div class="flex gap-3 pt-4">
@@ -401,6 +431,21 @@
 
         .custom-select {
             position: relative;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border-color: #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger:hover {
+            border-color: #e5e7eb;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-arrow {
+            color: #d1d5db;
         }
 
         .custom-select-trigger {
