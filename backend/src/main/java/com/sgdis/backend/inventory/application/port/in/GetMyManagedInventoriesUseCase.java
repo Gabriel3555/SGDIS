@@ -8,3 +8,5 @@ public interface GetMyManagedInventoriesUseCase {
     List<ManagedInventoryResponse> getMyManagedInventories();
 }
 
+
+
