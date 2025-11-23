@@ -5,12 +5,14 @@ import com.sgdis.backend.user.application.dto.UserResponse;
 
 import java.util.UUID;
 
-@JsonPropertyOrder({ "id", "uuid","name","location","imgUrl","owner" })
+@JsonPropertyOrder({ "id", "uuid","name","location","imgUrl","institutionId","institutionName","owner" })
 public record CreateInventoryResponse(
         Long id,
         UUID uuid,
         String name,
         String location,
         String imgUrl,
+        Long institutionId,
+        String institutionName,
         UserResponse owner
 ) {}

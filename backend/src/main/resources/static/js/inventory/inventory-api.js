@@ -1,3 +1,5 @@
+const DEFAULT_INSTITUTION_PAGE_SIZE = 50;
+
 async function loadInventoryData() {
     if (inventoryData.isLoading) return;
 
@@ -51,6 +53,8 @@ async function loadCurrentUserInfo() {
 
         if (response.ok) {
             const userData = await response.json();
+            window.currentUserData = userData;
+            window.currentUserRole = userData.role;
             updateUserInfoDisplay(userData);
         } else {
             throw new Error('Failed to load user info');
@@ -65,7 +69,41 @@ async function loadCurrentUserInfo() {
     }
 }
 
-async function loadInventories() {
+function shouldUseInstitutionInventories() {
+    const role = (window.currentUserRole || '').toUpperCase();
+    if (role === 'ADMIN_INSTITUTION') {
+        return true;
+    }
+
+    const path = window.location.pathname || '';
+    return path.includes('/admin_institution') || path.includes('/admininstitution');
+}
+
+function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) {
+    if (shouldUseInstitutionInventories()) {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            size: size.toString()
+        });
+        return `/api/v1/inventory/institutionAdminInventories?${params.toString()}`;
+    }
+    return '/api/v1/inventory';
+}
+
+function updateInventoryScopeMessage(scope = 'global') {
+    const welcomeMessage = document.getElementById('inventoryWelcomeMessage');
+    if (!welcomeMessage) {
+        return;
+    }
+
+    if (scope === 'institution') {
+        welcomeMessage.textContent = 'Inventarios asociados a tu institución.';
+    } else {
+        welcomeMessage.textContent = 'Administración y control de inventarios del sistema';
+    }
+}
+
+async function loadInventories(options = {}) {
     try {
         const token = localStorage.getItem('jwt');
         const headers = { 'Content-Type': 'application/json' };
@@ -74,33 +112,74 @@ async function loadInventories() {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await fetch('/api/v1/inventory', {
+        const page = typeof options.page === 'number' ? options.page : 0;
+        const size = typeof options.size === 'number' ? options.size : (inventoryData?.serverPageSize || DEFAULT_INSTITUTION_PAGE_SIZE);
+        const useInstitutionScope = shouldUseInstitutionInventories();
+        const endpoint = buildInventoryEndpoint(page, size);
+
+        if (inventoryData) {
+            inventoryData.serverPageSize = size;
+        }
+
+        const response = await fetch(endpoint, {
             method: 'GET',
             headers: headers
         });
 
         if (response.ok) {
-            const inventories = await response.json();
+            const payload = await response.json();
+            let inventories = [];
+
+            if (Array.isArray(payload)) {
+                inventories = payload;
+                if (inventoryData) {
+                    inventoryData.serverPagination = null;
+                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : 'global';
+                }
+            } else if (payload && Array.isArray(payload.content)) {
+                inventories = payload.content;
+                if (inventoryData) {
+                    inventoryData.serverPagination = {
+                        page: payload.number ?? page,
+                        size: payload.size ?? size,
+                        totalPages: payload.totalPages ?? 1,
+                        totalElements: payload.totalElements ?? payload.content.length
+                    };
+                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : 'global';
+                }
+            } else {
+                inventories = [];
+                if (inventoryData) {
+                    inventoryData.serverPagination = null;
+                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : 'global';
+                }
+            }
+
+            updateInventoryScopeMessage(inventoryData?.inventoryScope);
 
             inventoryData.inventories = Array.isArray(inventories) ? inventories : [];
             inventoryData.filteredInventories = [...inventoryData.inventories];
 
             if (inventoryData.inventories.length === 0) {
-                showInfoToast('Información', 'No hay inventarios registrados en el sistema. Crea el primero usando el botón "Nuevo Inventario".');
+                const scopeMessage = useInstitutionScope
+                    ? 'Tu institución aún no tiene inventarios registrados. Usa "Nuevo Inventario" para crear el primero.'
+                    : 'No hay inventarios registrados en el sistema. Crea el primero usando el botón "Nuevo Inventario".';
+                showInfoToast('Información', scopeMessage);
             }
         } else {
             const errorText = await response.text();
 
             if (response.status === 401) {
                 showErrorToast('Sesión expirada', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
-                // Redirect to login page after a short delay
                 setTimeout(() => {
                     window.location.href = '/';
                 }, 3000);
             } else if (response.status === 403) {
                 showErrorToast('Acceso denegado', 'No tienes permisos para ver los inventarios.');
+            } else if (response.status === 404) {
+                throw new Error('No se encontró información de la institución asociada al usuario.');
             } else {
-                throw new Error(`Failed to load inventories: ${response.status} ${response.statusText}`);
+                throw new Error(errorText || `Failed to load inventories: ${response.status} ${response.statusText}`);
             }
         }
     } catch (error) {
@@ -112,8 +191,11 @@ async function loadInventories() {
             showErrorToast('Error', 'Error al cargar los inventarios: ' + error.message);
         }
 
-        inventoryData.inventories = [];
-        inventoryData.filteredInventories = [];
+        if (inventoryData) {
+            inventoryData.inventories = [];
+            inventoryData.filteredInventories = [];
+            inventoryData.serverPagination = null;
+        }
     }
 }
 
@@ -182,6 +264,47 @@ async function updateInventory(inventoryId, updateData) {
         } else {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Error al actualizar el inventario');
+        }
+    } catch (error) {
+        if (error.message && error.message.includes('Failed to fetch')) {
+            throw new Error('Error de conexión. Verifica tu conexión a internet.');
+        }
+        throw error;
+    }
+}
+
+async function updateInventoryInstitution(inventoryId, institutionData) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const payload = (institutionData && typeof institutionData === 'object' && institutionData.institutionId !== undefined)
+            ? institutionData
+            : { institutionId: institutionData };
+
+        const response = await fetch(`/api/v1/inventory/${inventoryId}/institution`, {
+            method: 'PATCH',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            return await response.json();
+        } else if (response.status === 404) {
+            throw new Error('Inventario o institución no encontrado');
+        } else if (response.status === 400) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Datos de actualización de institución inválidos');
+        } else if (response.status === 401) {
+            throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
+        } else if (response.status === 403) {
+            throw new Error('No tienes permisos para actualizar la institución de este inventario.');
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al actualizar la institución del inventario');
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {
@@ -546,6 +669,7 @@ window.loadCurrentUserInfo = loadCurrentUserInfo;
 window.loadInventories = loadInventories;
 window.createInventory = createInventory;
 window.updateInventory = updateInventory;
+window.updateInventoryInstitution = updateInventoryInstitution;
 window.deleteInventory = deleteInventoryFromApi;
 window.getInventoryById = getInventoryById;
 window.assignInventory = assignInventory;

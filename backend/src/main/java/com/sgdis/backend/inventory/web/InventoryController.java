@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -57,6 +58,7 @@ public class InventoryController {
     private final DeleteSignatoryInventoryUseCase deleteSignatoryInventoryUseCase;
     private final GetAllSignatoriesUseCase getAllSignatoriesUseCase;
     private final QuitManagerInventoryUseCase quitManagerInventoryUseCase;
+    private final UpdateInventoryInstitutionUseCase updateInventoryInstitutionUseCase;
     private final FileUploadService fileUploadService;
     private final AuthService authService;
 
@@ -71,7 +73,7 @@ public class InventoryController {
     )
     @ApiResponse(responseCode = "400", description = "Invalid request")
     @PostMapping
-    public CreateInventoryResponse createInventory(@RequestBody CreateInventoryRequest request) {
+    public CreateInventoryResponse createInventory(@Valid @RequestBody CreateInventoryRequest request) {
         return createInventoryUseCase.createInventory(request);
     }
 
@@ -135,6 +137,23 @@ public class InventoryController {
     @PatchMapping("/{id}/owner")
     public InventoryResponse updateInventoryOwner(@PathVariable Long id, @RequestBody UpdateInventoryOwnerRequest request) {
         return updateInventoryOwnerUseCase.updateInventoryOwner(id, request);
+    }
+
+    @Operation(
+            summary = "Change inventory institution",
+            description = "Updates the institution assigned to an inventory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Institution updated successfully",
+            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory or institution not found")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @PatchMapping("/{id}/institution")
+    public InventoryResponse updateInventoryInstitution(@PathVariable Long id,
+                                                        @Valid @RequestBody UpdateInventoryInstitutionRequest request) {
+        return updateInventoryInstitutionUseCase.updateInventoryInstitution(id, request);
     }
 
     @Operation(

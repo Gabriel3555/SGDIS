@@ -664,7 +664,12 @@ function navigateToItems() {
     // Store return URL
     sessionStorage.setItem("returnToInventory", "true");
     // Navigate to items page
-    window.location.href = `/superadmin/items?inventoryId=${currentInventoryId}`;
+    const targetPath = `/items?inventoryId=${currentInventoryId}`;
+    if (typeof window.buildAdminUrl === "function") {
+      window.location.href = window.buildAdminUrl(targetPath);
+    } else {
+      window.location.href = `/superadmin${targetPath}`;
+    }
   }
 }
 
@@ -1098,7 +1103,10 @@ async function showNewInventoryModal() {
   }
 
   // Load users for owner selection
-  await loadUsersForNewInventory();
+  await Promise.all([
+    loadUsersForNewInventory(),
+    loadInstitutionsForNewInventory(),
+  ]);
 }
 
 async function loadUsersForNewInventory() {
@@ -1193,6 +1201,171 @@ function hideNewInventoryOwnerSelectLoading() {
   // Loading state is cleared when populateNewInventoryOwnerSelect is called
 }
 
+const INVENTORY_INSTITUTION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let inventoryInstitutionsCache = null;
+let inventoryInstitutionsCacheTimestamp = 0;
+
+async function loadInstitutionsForNewInventory() {
+  showNewInventoryInstitutionSelectLoading();
+
+  try {
+    const institutions = await fetchInventoryInstitutions();
+    populateNewInventoryInstitutionSelect(institutions);
+  } catch (error) {
+    console.error("Error loading institutions for new inventory:", error);
+    populateNewInventoryInstitutionSelect([]);
+  } finally {
+    hideNewInventoryInstitutionSelectLoading();
+  }
+}
+
+function populateNewInventoryInstitutionSelect(institutions) {
+  if (!window.newInventoryInstitutionSelect) {
+    window.newInventoryInstitutionSelect = new CustomSelect(
+      "newInventoryInstitutionIdSelect",
+      {
+        placeholder: "Seleccionar institución...",
+        searchable: true,
+      }
+    );
+  }
+
+  const institutionOptions = [];
+
+  if (institutions && institutions.length > 0) {
+    institutions.forEach((institution) => {
+      const institutionId = getInstitutionIdFromResponse(institution);
+      if (!institutionId) {
+        return;
+      }
+
+      const label =
+        institution.name ||
+        institution.institutionName ||
+        `Institución ${institutionId}`;
+
+      institutionOptions.push({
+        value: String(institutionId),
+        label,
+      });
+    });
+  }
+
+  if (institutionOptions.length === 0) {
+    institutionOptions.push({
+      value: "",
+      label: "No hay instituciones disponibles",
+      disabled: true,
+    });
+  }
+
+  window.newInventoryInstitutionSelect.setOptions(institutionOptions);
+  autoSelectInstitutionForCurrentUser(institutions);
+}
+
+function showNewInventoryInstitutionSelectLoading() {
+  if (!window.newInventoryInstitutionSelect) {
+    window.newInventoryInstitutionSelect = new CustomSelect(
+      "newInventoryInstitutionIdSelect",
+      {
+        placeholder: "Cargando instituciones...",
+        searchable: true,
+      }
+    );
+  }
+  window.newInventoryInstitutionSelect.setOptions([
+    { value: "", label: "Cargando instituciones...", disabled: true },
+  ]);
+}
+
+function hideNewInventoryInstitutionSelectLoading() {
+  // Loading state cleared in populate function
+}
+
+function autoSelectInstitutionForCurrentUser(institutions) {
+  if (
+    !window.currentUserData ||
+    !window.currentUserData.institution ||
+    !Array.isArray(institutions) ||
+    institutions.length === 0 ||
+    !window.newInventoryInstitutionSelect
+  ) {
+    return;
+  }
+
+  const targetInstitutionName = window.currentUserData.institution.toLowerCase();
+  const matchingInstitution = institutions.find((institution) => {
+    const name =
+      (institution.name || institution.institutionName || "").toLowerCase();
+    return name && name === targetInstitutionName;
+  });
+
+  if (matchingInstitution) {
+    const institutionId = getInstitutionIdFromResponse(matchingInstitution);
+    if (institutionId) {
+      window.newInventoryInstitutionSelect.setValue(String(institutionId));
+    }
+  }
+}
+
+function getInstitutionIdFromResponse(institution) {
+  if (!institution || typeof institution !== "object") {
+    return null;
+  }
+
+  if (
+    institution.id !== undefined &&
+    institution.id !== null &&
+    institution.id !== ""
+  ) {
+    return institution.id;
+  }
+
+  if (
+    institution.institutionId !== undefined &&
+    institution.institutionId !== null &&
+    institution.institutionId !== ""
+  ) {
+    return institution.institutionId;
+  }
+
+  return null;
+}
+
+async function fetchInventoryInstitutions() {
+  const now = Date.now();
+  if (
+    inventoryInstitutionsCache &&
+    now - inventoryInstitutionsCacheTimestamp < INVENTORY_INSTITUTION_CACHE_TTL
+  ) {
+    return inventoryInstitutionsCache;
+  }
+
+  try {
+    const token = localStorage.getItem("jwt");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch("/api/v1/institutions", {
+      method: "GET",
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch institutions: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const institutions = Array.isArray(data) ? data : [];
+    inventoryInstitutionsCache = institutions;
+    inventoryInstitutionsCacheTimestamp = now;
+    return institutions;
+  } catch (error) {
+    console.error("Error fetching institutions:", error);
+    return [];
+  }
+}
+
 function closeNewInventoryModal() {
   const modal = document.getElementById("newInventoryModal");
   if (modal) {
@@ -1221,6 +1394,11 @@ function closeNewInventoryModal() {
   // Clear owner select
   if (window.newInventoryOwnerSelect) {
     window.newInventoryOwnerSelect.clear();
+  }
+
+  // Clear institution select
+  if (window.newInventoryInstitutionSelect) {
+    window.newInventoryInstitutionSelect.clear();
   }
 }
 

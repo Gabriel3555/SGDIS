@@ -12,6 +12,8 @@ public record InventoryResponse(
         String location,
         String name,
         UserResponse owner,
+        Long institutionId,
+        String institutionName,
         Long quantityItems,
         String imgUrl,
         Boolean status,
