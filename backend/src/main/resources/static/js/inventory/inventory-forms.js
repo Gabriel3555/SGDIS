@@ -16,6 +16,37 @@ async function handleNewInventorySubmit(e) {
     }
   }
 
+  const requiresRegionalSelection =
+    typeof window.shouldDisplayInventoryRegionalSelect === "function" &&
+    window.shouldDisplayInventoryRegionalSelect();
+  let regionalId = "";
+
+  if (requiresRegionalSelection) {
+    if (
+      window.newInventoryRegionalSelect &&
+      window.newInventoryRegionalSelect.getValue
+    ) {
+      regionalId = window.newInventoryRegionalSelect.getValue();
+    }
+
+    if (!regionalId) {
+      const regionalIdElement = document.getElementById(
+        "newInventoryRegionalId"
+      );
+      if (regionalIdElement) {
+        regionalId = regionalIdElement.value;
+      }
+    }
+
+    if (!regionalId || regionalId.trim() === "") {
+      showErrorToast(
+        "Regional requerida",
+        "Por favor selecciona la regional para continuar"
+      );
+      return;
+    }
+  }
+
   // Get institution ID from CustomSelect or hidden input
   let institutionId = '';
   if (window.newInventoryInstitutionSelect && window.newInventoryInstitutionSelect.getValue) {
