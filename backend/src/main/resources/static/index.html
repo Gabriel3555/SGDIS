@@ -147,6 +147,81 @@
             animation: fadeInUp 0.6s ease-out;
         }
 
+        /* Scroll Animations */
+        .scroll-animate {
+            opacity: 0 !important;
+            transform: translateY(50px) !important;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out !important;
+        }
+
+        .scroll-animate.animate-in {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        /* Staggered animations for child elements */
+        .scroll-animate-stagger > * {
+            opacity: 0 !important;
+            transform: translateY(30px) !important;
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out !important;
+        }
+
+        .scroll-animate-stagger.animate-in > * {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+
+        .scroll-animate-stagger.animate-in > *:nth-child(1) {
+            transition-delay: 0.1s !important;
+        }
+
+        .scroll-animate-stagger.animate-in > *:nth-child(2) {
+            transition-delay: 0.2s !important;
+        }
+
+        .scroll-animate-stagger.animate-in > *:nth-child(3) {
+            transition-delay: 0.3s !important;
+        }
+
+        .scroll-animate-stagger.animate-in > *:nth-child(4) {
+            transition-delay: 0.4s !important;
+        }
+
+        .scroll-animate-stagger.animate-in > *:nth-child(5) {
+            transition-delay: 0.5s !important;
+        }
+
+        .scroll-animate-stagger.animate-in > *:nth-child(6) {
+            transition-delay: 0.6s !important;
+        }
+
+        .scroll-animate-stagger.animate-in > *:nth-child(7) {
+            transition-delay: 0.7s !important;
+        }
+
+        .scroll-animate-stagger.animate-in > *:nth-child(8) {
+            transition-delay: 0.8s !important;
+        }
+
+        /* Fade in from left and right */
+        .scroll-fade-left {
+            opacity: 0 !important;
+            transform: translateX(-50px) !important;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out !important;
+        }
+
+        .scroll-fade-right {
+            opacity: 0 !important;
+            transform: translateX(50px) !important;
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out !important;
+        }
+
+        .scroll-fade-left.animate-in,
+        .scroll-fade-right.animate-in {
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+        }
+
         /* Asegurar texto blanco en botones de iniciar sesión */
         a[href="/login"].bg-sena-verde,
         a[href="/login"].bg-sena-verde:hover,
@@ -211,7 +286,7 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="gradient-hero pt-32 pb-20 px-4 sm:px-6 lg:px-8">
+    <section class="gradient-hero pt-32 px-4 sm:px-6 lg:px-8 relative" style="padding-bottom: 220px;">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div class="animate-fade-in-up">
@@ -280,16 +355,16 @@
     <!-- Features Section -->
     <section id="features" class="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
         <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
+            <div class="text-center mb-16 scroll-animate">
                 <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
                     Características Principales
                 </h2>
                 <p class="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
                     Herramientas optimizadas diseñadas para optimizar la gestión de inventarios en el SENA
                 </p>
-</div>
+            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 scroll-animate-stagger">
                 <!-- Feature 1 -->
                 <div
                     class="feature-card bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-lg border border-gray-200 dark:border-gray-700">
@@ -376,7 +451,7 @@
     <!-- Image Gallery Section -->
     <section class="py-20 px-4 sm:px-6 lg:px-8 gradient-bg">
         <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
+            <div class="text-center mb-16 scroll-animate">
                 <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
                     Gestión total de Inventarios
                 </h2>
@@ -385,7 +460,7 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 scroll-animate-stagger">
                 <!-- Image 1 - Inventario de Bodega -->
                 <div class="image-gallery-item bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg">
                     <div class="aspect-video relative overflow-hidden bg-gray-100 dark:bg-gray-700">
@@ -462,7 +537,7 @@
     <section id="about" class="py-20 px-4 sm:px-6 lg:px-8 bg-white dark:bg-gray-800">
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                <div>
+                <div class="scroll-fade-left">
                     <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-6">
                         ¿Qué es SGDIS?
                     </h2>
@@ -499,7 +574,7 @@
                     </div>
                 </div>
                 <div
-                    class="bg-gradient-to-br from-sena-verde/10 to-sena-verde-oscuro/10 dark:from-sena-verde/20 dark:to-sena-verde-oscuro/20 rounded-3xl p-8">
+                    class="bg-gradient-to-br from-sena-verde/10 to-sena-verde-oscuro/10 dark:from-sena-verde/20 dark:to-sena-verde-oscuro/20 rounded-3xl p-8 scroll-fade-right">
                     <div class="space-y-6">
                         <div class="flex items-start gap-4">
                             <div
@@ -545,7 +620,7 @@
     <!-- Creators Section -->
     <section id="creators" class="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
         <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
+            <div class="text-center mb-16 scroll-animate">
                 <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">
                     Nuestro Equipo de Desarrollo
                 </h2>
@@ -554,7 +629,7 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 scroll-animate-stagger">
                 <!-- Creator 1 - Gabriel Barrantes -->
                 <div
                     class="creator-card bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center">
@@ -705,6 +780,117 @@
     </button>
 
     <script src="js/dark-mode.js"></script>
+    
+    <!-- Scroll Arrow Script -->
+    <script>
+        // Hide scroll arrow when user scrolls down
+        window.addEventListener('scroll', function() {
+            const scrollArrow = document.getElementById('scrollArrow');
+            if (scrollArrow) {
+                if (window.scrollY > 100) {
+                    scrollArrow.style.opacity = '0';
+                    scrollArrow.style.pointerEvents = 'none';
+                } else {
+                    scrollArrow.style.opacity = '1';
+                    scrollArrow.style.pointerEvents = 'auto';
+                }
+            }
+        });
+
+        // Smooth scroll when clicking the arrow
+        document.addEventListener('DOMContentLoaded', function() {
+            const scrollArrow = document.getElementById('scrollArrow');
+            if (scrollArrow) {
+                scrollArrow.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const featuresSection = document.getElementById('features');
+                    if (featuresSection) {
+                        featuresSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- Scroll Animation Script -->
+    <script>
+        // Ejecutar después de que la página esté completamente cargada
+        window.addEventListener('load', function() {
+            // Pequeño delay para asegurar que todo esté renderizado
+            setTimeout(function() {
+                // Configurar Intersection Observer con margen negativo para activar antes
+                const observerOptions = {
+                    root: null,
+                    rootMargin: '-50px', // Activar 50px antes de que el elemento sea visible
+                    threshold: 0.1 // Activar cuando el 10% del elemento es visible
+                };
+
+                // Callback cuando un elemento entra en el viewport
+                const observerCallback = (entries, observer) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            // Agregar clase de animación
+                            entry.target.classList.add('animate-in');
+                            
+                            // Log para debugging (puedes remover esto después)
+                            console.log('Animando elemento:', entry.target.className);
+                        }
+                    });
+                };
+
+                // Crear el observer
+                const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+                // Observar todos los elementos con clases de animación
+                const animatedElements = document.querySelectorAll(
+                    '.scroll-animate, .scroll-animate-stagger, .scroll-fade-left, .scroll-fade-right'
+                );
+
+                console.log('Elementos encontrados para animar:', animatedElements.length);
+
+                animatedElements.forEach(element => {
+                    observer.observe(element);
+                });
+
+                // Verificar elementos que ya están visibles al cargar la página
+                animatedElements.forEach(element => {
+                    const rect = element.getBoundingClientRect();
+                    const isVisible = (
+                        rect.top >= 0 &&
+                        rect.left >= 0 &&
+                        rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                        rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+                    );
+                    
+                    // Si el elemento ya está visible, animarlo inmediatamente
+                    if (isVisible || rect.top < window.innerHeight * 0.8) {
+                        setTimeout(() => {
+                            element.classList.add('animate-in');
+                        }, 100);
+                    }
+                });
+
+                // Efecto especial: animar las tarjetas de características con delay escalonado
+                const featureCards = document.querySelectorAll('.feature-card');
+                featureCards.forEach((card, index) => {
+                    card.style.transitionDelay = `${index * 0.1}s`;
+                });
+
+                // Efecto especial: animar las tarjetas de galería con delay escalonado
+                const galleryItems = document.querySelectorAll('.image-gallery-item');
+                galleryItems.forEach((item, index) => {
+                    item.style.transitionDelay = `${index * 0.1}s`;
+                });
+
+                // Efecto especial: animar las tarjetas de creadores con delay escalonado
+                const creatorCards = document.querySelectorAll('.creator-card');
+                creatorCards.forEach((card, index) => {
+                    card.style.transitionDelay = `${index * 0.15}s`;
+                });
+
+            }, 100); // Delay de 100ms para asegurar renderizado completo
+        });
+    </script>
 </body>
 
 </html>
