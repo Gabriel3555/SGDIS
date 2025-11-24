@@ -45,7 +45,12 @@ public final class ItemMapper {
         }
 
         itemEntity.setAttributes(attributes);
-        itemEntity.setAllAttributes(allAttributes.toString());
+        // Truncar allAttributes a máximo 255 caracteres para evitar errores de base de datos
+        String allAttributesStr = allAttributes.toString();
+        if (allAttributesStr.length() > 255) {
+            allAttributesStr = allAttributesStr.substring(0, 252) + "...";
+        }
+        itemEntity.setAllAttributes(allAttributesStr);
 
         return itemEntity;
     }
@@ -80,7 +85,12 @@ public final class ItemMapper {
         }
 
         existingEntity.setAttributes(attributes);
-        existingEntity.setAllAttributes(allAttributes.toString());
+        // Truncar allAttributes a máximo 255 caracteres para evitar errores de base de datos
+        String allAttributesStr = allAttributes.toString();
+        if (allAttributesStr.length() > 255) {
+            allAttributesStr = allAttributesStr.substring(0, 252) + "...";
+        }
+        existingEntity.setAllAttributes(allAttributesStr);
 
         return existingEntity;
     }
