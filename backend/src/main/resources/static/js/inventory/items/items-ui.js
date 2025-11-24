@@ -432,7 +432,7 @@ function updateItemsPagination() {
     for (let i = startPage; i <= endPage; i++) {
         paginationHtml += `
             <button onclick="changeItemsPage(${i})" 
-                    class="px-4 py-2 rounded-xl ${i === currentPage ? 'bg-[#00AF00] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'} transition-colors">
+                    class="px-4 py-2 rounded-xl ${i === currentPage ? 'bg-[#00AF00] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-300 dark:text-black dark:hover:bg-gray-400'} transition-colors">
                 ${i + 1}
             </button>
         `;

@@ -26,11 +26,11 @@ public class RegionalEntity {
 
     private String name;
     private String regionalCode;
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     private DepartamentEntity departament;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "regional")
+    @OneToMany(mappedBy = "regional", fetch = FetchType.LAZY)
     private List<InstitutionEntity> institutions;
 
 }

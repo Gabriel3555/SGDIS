@@ -34,6 +34,6 @@ public class CityEntity {
     private DepartamentEntity departament;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "city")
+    @OneToMany(mappedBy = "city", fetch = FetchType.LAZY)
     private List<InstitutionEntity> institutions;
 }
