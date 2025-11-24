@@ -1,9 +1,12 @@
 package com.sgdis.backend.user.infrastructure.repository;
 
+import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,4 +19,19 @@ public interface SpringDataUserRepository extends JpaRepository<UserEntity, Long
 
     @Query("SELECT i FROM InventoryEntity i WHERE i.owner.id = :userId")
     List<InventoryEntity> findInventoriesByOwnerId(Long userId);
+    
+    @Query("SELECT u FROM UserEntity u WHERE u.institution = :institution AND u.role != :role1 AND u.role != :role2")
+    List<UserEntity> findByInstitutionExcludingRoles(
+            @Param("institution") InstitutionEntity institution,
+            @Param("role1") Role role1,
+            @Param("role2") Role role2
+    );
+    
+    @Query("SELECT u FROM UserEntity u WHERE u.institution = :institution AND u.role != :role1 AND u.role != :role2")
+    org.springframework.data.domain.Page<UserEntity> findByInstitutionExcludingRoles(
+            @Param("institution") InstitutionEntity institution,
+            @Param("role1") Role role1,
+            @Param("role2") Role role2,
+            org.springframework.data.domain.Pageable pageable
+    );
 }

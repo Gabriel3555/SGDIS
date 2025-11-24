@@ -1,7 +1,11 @@
 package com.sgdis.backend.user.web;
 
+import com.sgdis.backend.auth.application.service.AuthService;
+import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
+import com.sgdis.backend.user.domain.Role;
+import com.sgdis.backend.user.mapper.UserMapper;
 import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
@@ -43,6 +47,7 @@ public class UserController {
     private final GetManagedInventoriesUseCase getManagedInventoriesUseCase;
     private final SpringDataUserRepository userRepository;
     private final FileUploadService fileUploadService;
+    private final AuthService authService;
 
     @Operation(
             summary = "Get user by ID",
@@ -259,5 +264,50 @@ public class UserController {
     @PostMapping("/changePasswordToUser")
     public ChangePasswordResponse changePasswordToUser(@RequestBody @Valid ChangePasswordToUserRequest changePasswordRequest) {
         return changePasswordToUserUseCase.changePasswordToUser(changePasswordRequest);
+    }
+
+    @Operation(
+            summary = "Get users by current user's institution",
+            description = "Retrieves all users from the current user's institution with pagination, excluding SUPERADMIN and ADMIN_REGIONAL roles"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Users retrieved successfully",
+            content = @Content(schema = @Schema(implementation = PagedUserResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @ApiResponse(responseCode = "404", description = "Current user or institution not found")
+    @GetMapping("/institution")
+    public PagedUserResponse getUsersByInstitution(
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "6") int size) {
+        UserEntity currentUser = authService.getCurrentUser();
+        
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("Current user does not have an institution assigned");
+        }
+        
+        Pageable pageable = PageRequest.of(page, size);
+        org.springframework.data.domain.Page<UserEntity> userPage = userRepository.findByInstitutionExcludingRoles(
+                currentUser.getInstitution(),
+                Role.SUPERADMIN,
+                Role.ADMIN_REGIONAL,
+                pageable
+        );
+        
+        List<UserResponse> userResponses = userPage.getContent()
+                .stream()
+                .map(UserMapper::toResponse)
+                .toList();
+        
+        return PagedUserResponse.builder()
+                .users(userResponses)
+                .currentPage(userPage.getNumber())
+                .totalPages(userPage.getTotalPages())
+                .totalUsers(userPage.getTotalElements())
+                .pageSize(userPage.getSize())
+                .first(userPage.isFirst())
+                .last(userPage.isLast())
+                .build();
     }
 }
