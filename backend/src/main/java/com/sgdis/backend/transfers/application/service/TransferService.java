@@ -65,7 +65,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
 
         UserEntity requester = authService.getCurrentUser();
-        if (!belongsToInventory(requester, sourceInventory)) {
+        if (!belongsToInventory(requester, sourceInventory) || requester.getRole() != Role.SUPERADMIN) {
             throw new DomainValidationException("No cuentas con permisos para solicitar la transferencia de este ítem");
         }
 
