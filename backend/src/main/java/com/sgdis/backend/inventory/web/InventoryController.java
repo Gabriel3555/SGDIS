@@ -6,6 +6,7 @@ import com.sgdis.backend.inventory.application.port.in.*;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
+import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
@@ -61,6 +62,7 @@ public class InventoryController {
     private final UpdateInventoryInstitutionUseCase updateInventoryInstitutionUseCase;
     private final FileUploadService fileUploadService;
     private final AuthService authService;
+    private final SpringDataItemRepository itemRepository;
 
     @Operation(
             summary = "Create new inventory",
@@ -591,6 +593,37 @@ public class InventoryController {
         Page<InventoryEntity> inventoryPage = inventoryRepository.findPageByRegionalIdAndInstitutionId(
                 regionalId, institutionId, pageable);
         return inventoryPage.map(InventoryMapper::toResponse);
+    }
+
+    @Operation(
+            summary = "Get inventory statistics",
+            description = "Retrieves statistics for a specific inventory including total items and total value."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @GetMapping("/{id}/statistics")
+    public InventoryStatisticsResponse getInventoryStatistics(
+            @Parameter(description = "Inventory ID", required = true)
+            @PathVariable Long id
+    ) {
+        InventoryEntity inventory = inventoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + id));
+
+        // Get all items for this inventory
+        List<com.sgdis.backend.item.infrastructure.entity.ItemEntity> items = 
+                itemRepository.findAllByInventoryId(id);
+
+        // Calculate statistics
+        Long totalItems = (long) items.size();
+        
+        // Use totalPrice from inventory entity (already calculated and maintained)
+        Double totalValue = inventory.getTotalPrice() != null ? inventory.getTotalPrice() : 0.0;
+
+        return new InventoryStatisticsResponse(totalItems, totalValue);
     }
 
 }

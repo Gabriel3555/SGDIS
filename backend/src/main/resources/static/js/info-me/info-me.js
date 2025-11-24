@@ -234,9 +234,7 @@ function loadSidebarNavigation(role) {
     const navUsers = document.getElementById('navUsers');
     const navVerification = document.getElementById('navVerification');
     const navReports = document.getElementById('navReports');
-    const navMaintenance = document.getElementById('navMaintenance');
     const navNotifications = document.getElementById('navNotifications');
-    const navAudit = document.getElementById('navAudit');
     const navImportExport = document.getElementById('navImportExport');
     const navSettings = document.getElementById('navSettings');
 
@@ -270,20 +268,10 @@ function loadSidebarNavigation(role) {
             navReports.href = `${basePath}/reports`;
             navReports.onclick = (e) => handleSidebarClick(e, `${basePath}/reports`);
         }
-        if (navMaintenance) {
-            navMaintenance.style.display = 'flex';
-            navMaintenance.href = `${basePath}/maintenance`;
-            navMaintenance.onclick = (e) => handleSidebarClick(e, `${basePath}/maintenance`);
-        }
         if (navNotifications) {
             navNotifications.style.display = 'flex';
             navNotifications.href = `${basePath}/notifications`;
             navNotifications.onclick = (e) => handleSidebarClick(e, `${basePath}/notifications`);
-        }
-        if (navAudit) {
-            navAudit.style.display = 'flex';
-            navAudit.href = `${basePath}/audit`;
-            navAudit.onclick = (e) => handleSidebarClick(e, `${basePath}/audit`);
         }
         if (navImportExport) {
             navImportExport.style.display = 'flex';
@@ -300,9 +288,7 @@ function loadSidebarNavigation(role) {
         if (navUsers) navUsers.style.display = 'none';
         if (navVerification) navVerification.style.display = 'none';
         if (navReports) navReports.style.display = 'none';
-        if (navMaintenance) navMaintenance.style.display = 'none';
         if (navNotifications) navNotifications.style.display = 'none';
-        if (navAudit) navAudit.style.display = 'none';
         if (navImportExport) navImportExport.style.display = 'none';
         if (navSettings) navSettings.style.display = 'none';
     }

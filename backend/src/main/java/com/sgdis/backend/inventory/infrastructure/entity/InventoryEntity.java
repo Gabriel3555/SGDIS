@@ -34,7 +34,7 @@ public class InventoryEntity {
     private String imgUrl;
     private Double totalPrice = 0.0;
 
-    @Default
+    @Default    
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean status = true;
 

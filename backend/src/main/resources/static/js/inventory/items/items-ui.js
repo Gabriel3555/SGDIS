@@ -48,69 +48,71 @@ function updateItemsUI() {
     updateItemsPagination();
 }
 
-function updateItemsStats() {
+async function updateItemsStats() {
     const container = document.getElementById('itemsStatsContainer');
-    if (!container || !window.itemsData) return;
+    if (!container || !window.itemsData || !window.itemsData.currentInventoryId) {
+        return;
+    }
     
-    const items = window.itemsData.items || [];
-    const totalItems = window.itemsData.totalElements || 0;
-    const itemsWithImages = items.filter(item => item.urlImg || (item.attributes && item.attributes.IMAGE)).length;
-    const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
-    const categories = new Set(items.map(item => item.categoryName).filter(Boolean));
-    
+    // Show loading state
     container.innerHTML = `
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${totalItems}</h3>
-                </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-cubes text-blue-600 text-xl"></i>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Cargando...</p>
+                    <h3 class="text-3xl font-bold text-gray-800">-</h3>
                 </div>
             </div>
-            <p class="text-blue-600 text-sm font-medium">Items en el inventario</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Con Imágenes</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${itemsWithImages}</h3>
-                </div>
-                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-image text-[#00AF00] text-xl"></i>
-                </div>
-            </div>
-            <p class="text-[#00AF00] text-sm font-medium">Items con fotos</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Categorías</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${categories.size}</h3>
-                </div>
-                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-tags text-purple-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-purple-600 text-sm font-medium">Categorías diferentes</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
-                    <h3 class="text-3xl font-bold text-gray-800">$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</h3>
-                </div>
-                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-dollar-sign text-emerald-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-emerald-600 text-sm font-medium">Valor de adquisición</p>
         </div>
     `;
+    
+    try {
+        const statistics = await window.fetchInventoryStatistics(window.itemsData.currentInventoryId);
+        
+        const totalItems = statistics.totalItems || 0;
+        const totalValue = statistics.totalValue || 0;
+        
+        container.innerHTML = `
+            <div class="stat-card">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
+                        <h3 class="text-3xl font-bold text-gray-800">${totalItems}</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-cubes text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-blue-600 text-sm font-medium">Items en el inventario</p>
+            </div>
+
+            <div class="stat-card">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
+                        <h3 class="text-3xl font-bold text-gray-800">$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</h3>
+                    </div>
+                    <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <i class="fas fa-dollar-sign text-emerald-600 text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-emerald-600 text-sm font-medium">Valor de adquisición</p>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+        // Show error state
+        container.innerHTML = `
+            <div class="stat-card">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <p class="text-red-600 text-sm font-medium mb-1">Error al cargar estadísticas</p>
+                        <h3 class="text-3xl font-bold text-gray-800">-</h3>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 }
 
 function updateItemsSearchAndFilters() {
@@ -121,7 +123,7 @@ function updateItemsSearchAndFilters() {
         <div class="flex-1 relative">
             <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
             <input type="text" id="itemSearch" 
-                   placeholder="Buscar items por nombre, categoría, placa..." 
+                   placeholder="Buscar items por nombre, placa..." 
                    class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] transition-all duration-200">
         </div>
         <button onclick="handleItemSearch()" class="px-4 py-3 border border-[#00AF00] text-white rounded-xl hover:bg-[#008800] transition-colors bg-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]" title="Buscar">
@@ -172,11 +174,9 @@ function filterItems() {
     // Filter items
     const filteredItems = allItems.filter(item => {
         const productName = (item.productName || '').toLowerCase();
-        const categoryName = (item.categoryName || '').toLowerCase();
         const licencePlateNumber = (item.licencePlateNumber || '').toLowerCase();
         
         return productName.includes(searchTerm) || 
-               categoryName.includes(searchTerm) || 
                licencePlateNumber.includes(searchTerm);
     });
     
@@ -250,7 +250,6 @@ function updateItemsCards() {
     items.forEach(item => {
         const imageUrl = item.urlImg || (item.attributes && item.attributes.IMAGE) || null;
         const productName = item.productName || 'Sin nombre';
-        const categoryName = item.categoryName || 'Sin categoría';
         const acquisitionDate = item.acquisitionDate ? new Date(item.acquisitionDate).toLocaleDateString('es-ES') : 'N/A';
         const acquisitionValue = item.acquisitionValue ? `$${item.acquisitionValue.toLocaleString('es-ES')}` : 'N/A';
         
@@ -260,7 +259,6 @@ function updateItemsCards() {
                     ${createItemImageWithSpinner(imageUrl, productName, 'w-full h-full object-cover', 'w-20 h-20', 'rounded-lg', item.id)}
                     <div class="flex-1">
                         <h3 class="font-semibold text-gray-800 mb-1">${productName}</h3>
-                        <p class="text-sm text-gray-600">${categoryName}</p>
                     </div>
                 </div>
                 <div class="space-y-2 text-sm">
@@ -321,7 +319,6 @@ function updateItemsList() {
                     <tr class="border-b border-gray-200">
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Imagen</th>
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Nombre</th>
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Categoría</th>
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Fecha Adquisición</th>
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Valor</th>
                         <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Acciones</th>
@@ -333,7 +330,6 @@ function updateItemsList() {
     items.forEach(item => {
         const imageUrl = item.urlImg || (item.attributes && item.attributes.IMAGE) || null;
         const productName = item.productName || 'Sin nombre';
-        const categoryName = item.categoryName || 'Sin categoría';
         const acquisitionDate = item.acquisitionDate ? new Date(item.acquisitionDate).toLocaleDateString('es-ES') : 'N/A';
         const acquisitionValue = item.acquisitionValue ? `$${item.acquisitionValue.toLocaleString('es-ES')}` : 'N/A';
         
@@ -344,9 +340,6 @@ function updateItemsList() {
                 </td>
                 <td class="py-3 px-4">
                     <span class="font-medium text-gray-800">${productName}</span>
-                </td>
-                <td class="py-3 px-4">
-                    <span class="text-gray-600">${categoryName}</span>
                 </td>
                 <td class="py-3 px-4">
                     <span class="text-gray-600">${acquisitionDate}</span>

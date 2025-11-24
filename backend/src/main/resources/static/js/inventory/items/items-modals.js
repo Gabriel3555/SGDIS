@@ -80,7 +80,6 @@ function populateViewItemModal(item) {
     
     const imageUrl = item.urlImg || (item.attributes && item.attributes.IMAGE) || null;
     const productName = item.productName || 'Sin nombre';
-    const categoryName = item.categoryName || 'Sin categoría';
     const acquisitionDate = item.acquisitionDate ? new Date(item.acquisitionDate).toLocaleDateString('es-ES') : 'N/A';
     const acquisitionValue = item.acquisitionValue ? `$${item.acquisitionValue.toLocaleString('es-ES')}` : 'N/A';
     const licencePlateNumber = item.licencePlateNumber || 'N/A';
@@ -126,10 +125,6 @@ function populateViewItemModal(item) {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Producto</label>
                     <p class="text-gray-900 font-semibold">${productName}</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                    <p class="text-gray-900">${categoryName}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Placa</label>

@@ -23,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import com.sgdis.backend.item.mapper.ItemMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -41,6 +42,7 @@ public class ItemService implements
     private final SpringDataCategoryRepository categoryRepository;
 
     @Override
+    @Transactional
     public CreateItemResponse createItem(CreateItemRequest request) {
         ItemEntity itemEntity = ItemMapper.toEntity(request);
         InventoryEntity inventoryEntity = inventoryRepository.getReferenceById(request.inventoryId());
@@ -72,7 +74,8 @@ public class ItemService implements
         // Asegurar que todos los campos String no excedan 255 caracteres
         truncateItemStringFields(itemEntity);
 
-        if (request.acquisitionValue() != null) {
+        // Actualizar totalPrice del inventario al agregar el item
+        if (request.acquisitionValue() != null && request.acquisitionValue() > 0) {
             Double currentTotal = inventoryEntity.getTotalPrice() != null ? inventoryEntity.getTotalPrice() : 0.0;
             inventoryEntity.setTotalPrice(currentTotal + request.acquisitionValue());
         }
@@ -84,11 +87,30 @@ public class ItemService implements
     }
 
     @Override
+    @Transactional
     public UpdateItemResponse updateItem(UpdateItemRequest request) {
         ItemEntity existingItem = itemRepository.findById(request.itemId())
                 .orElseThrow(() -> new DomainNotFoundException("Item not found with id: " + request.itemId()));
 
+        // Guardar el valor anterior de acquisitionValue para actualizar el totalPrice del inventario
+        Double oldAcquisitionValue = existingItem.getAcquisitionValue() != null ? existingItem.getAcquisitionValue() : 0.0;
+        Double newAcquisitionValue = request.acquisitionValue() != null ? request.acquisitionValue() : 0.0;
+
+        // Obtener el inventario antes de actualizar el item (cargar la relación LAZY)
+        InventoryEntity inventoryEntity = existingItem.getInventory();
+        
         ItemEntity updatedItem = ItemMapper.toEntity(request, existingItem);
+        
+        // Actualizar totalPrice del inventario si cambió el acquisitionValue
+        if (inventoryEntity != null && !oldAcquisitionValue.equals(newAcquisitionValue)) {
+            Double currentTotal = inventoryEntity.getTotalPrice() != null ? inventoryEntity.getTotalPrice() : 0.0;
+            // Restar el valor anterior y sumar el nuevo
+            Double updatedTotal = currentTotal - oldAcquisitionValue + newAcquisitionValue;
+            // Asegurar que el total no sea negativo
+            inventoryEntity.setTotalPrice(Math.max(0.0, updatedTotal));
+            inventoryRepository.save(inventoryEntity);
+        }
+        
         itemRepository.save(updatedItem);
 
         return new UpdateItemResponse(updatedItem.getId(), "Item updated successfully");
