@@ -36,5 +36,17 @@ public interface SpringDataTransferRepository extends JpaRepository<TransferEnti
             ORDER BY t.requestedAt DESC
             """)
     List<TransferEntity> findAllByInventory(@Param("inventoryId") Long inventoryId);
+
+    @Query("""
+            SELECT t FROM TransferEntity t
+            LEFT JOIN FETCH t.item
+            LEFT JOIN FETCH t.inventory
+            LEFT JOIN FETCH t.sourceInventory
+            LEFT JOIN FETCH t.requestedBy
+            LEFT JOIN FETCH t.approvedBy
+            WHERE t.item.id = :itemId
+            ORDER BY t.requestedAt DESC
+            """)
+    List<TransferEntity> findAllByItemId(@Param("itemId") Long itemId);
 }
 

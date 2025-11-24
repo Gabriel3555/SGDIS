@@ -332,12 +332,12 @@ function updateInventoryTable() {
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead>
-                        <tr class="border-b border-gray-200">
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Inventario</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Ubicación</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Estado</th>
-                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Cantidad de Items</th>
-                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Acciones</th>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Inventario</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Ubicación</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</th>
+                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Cantidad de Items</th>
+                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -364,7 +364,7 @@ function updateInventoryTable() {
                 </div>`;
 
       inventoryTableHtml += `
-                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     <td class="py-3 px-4">
                         <div class="flex items-center gap-3">
                             <button onclick="changeInventoryPhoto('${
@@ -378,23 +378,27 @@ function updateInventoryTable() {
                                 </div>
                             </button>
                             <div>
-                                <div class="font-semibold text-gray-800">${fullName}</div>
-                                <div class="text-sm text-gray-500">ID: ${
+                                <div class="font-semibold text-gray-800 dark:text-gray-200">${fullName}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">ID: ${
                                   inventory.id
                                 }</div>
                             </div>
                         </div>
                     </td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">${locationText}</span>
+                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium">${locationText}</span>
                     </td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-1 bg-[#00AF00]/20 text-[#00AF00] rounded-full text-xs font-medium">Activo</span>
+                        ${
+                          inventory.status !== false
+                            ? '<span class="status-badge-active px-2 py-1 bg-[#00AF00]/20 text-[#00AF00] dark:bg-green-900/30 dark:text-green-400 rounded-full text-xs font-medium">Activo</span>'
+                            : '<span class="status-badge-inactive badge px-2 py-1 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-semibold">Inactivo</span>'
+                        }
                     </td>
                     <td class="py-3 px-4">
                         <div class="flex items-center justify-center gap-2">
-                            <i class="fas fa-cubes text-blue-500 text-sm"></i>
-                            <span class="text-sm font-semibold text-gray-800">${
+                            <i class="fas fa-cubes text-blue-500 dark:text-blue-400 text-sm"></i>
+                            <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">${
                               inventory.quantityItems || 0
                             }</span>
                         </div>
@@ -403,17 +407,17 @@ function updateInventoryTable() {
                         <div class="flex items-center justify-center gap-2">
                             <button onclick="viewInventory('${
                               inventory.id
-                            }')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
+                            }')" class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Ver detalles">
                                 <i class="fas fa-eye"></i>
                             </button>
                             <button onclick="editInventory('${
                               inventory.id
-                            }')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar inventario">
+                            }')" class="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg transition-colors" title="Editar inventario">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button onclick="showInventoryManagerAssignment('${
                               inventory.id
-                            }')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Asignar Rol">
+                            }')" class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="Asignar Rol">
                                 <i class="fas fa-user-tie"></i>
                             </button>
                             <button onclick="showInventoryTreeModal('${
@@ -424,12 +428,12 @@ function updateInventoryTable() {
       )}', '${(inventory.imgUrl || "").replace(
         /'/g,
         "\\'"
-      )}')" class="p-2 text-[#00AF00] hover:bg-green-50 rounded-lg transition-colors" title="Ver jerarquía">
+      )}')" class="p-2 text-[#00AF00] hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="Ver jerarquía">
                                 <i class="fas fa-sitemap text-[#00AF00]"></i>
                             </button>
                             <button onclick="showDeleteInventoryModal('${
                               inventory.id
-                            }')" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar inventario">
+                            }')" class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Eliminar inventario">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -575,55 +579,59 @@ function updateInventoryCards() {
                                 </div>
                             </button>
                             <div>
-                                <h3 class="font-bold text-lg text-gray-800 mb-1">${
+                                <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200 mb-1">${
                                   inventory.name || "Sin nombre"
                                 }</h3>
-                                <p class="text-gray-600 text-sm">${locationText}</p>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">${locationText}</p>
                             </div>
                         </div>
-                        <span class="badge bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-semibold">Activo</span>
+                        ${
+                          inventory.status !== false
+                            ? '<span class="status-badge-active badge bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 rounded-full text-xs font-semibold">Activo</span>'
+                            : '<span class="status-badge-inactive badge bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 px-3 py-1 rounded-full text-xs font-semibold">Inactivo</span>'
+                        }
                     </div>
 
                     <div class="grid grid-cols-3 gap-4 mb-4">
                         <div>
-                            <p class="text-gray-600 text-sm mb-1">ID</p>
-                            <p class="font-bold text-xl text-gray-800">${
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">ID</p>
+                            <p class="font-bold text-xl text-gray-800 dark:text-gray-200">${
                               inventory.id || "N/A"
                             }</p>
                         </div>
                         <div>
-                            <p class="text-gray-600 text-sm mb-1">Items</p>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">Items</p>
                             <div class="flex items-center gap-1">
-                                <i class="fas fa-cubes text-blue-500 text-sm"></i>
-                                <p class="font-bold text-xl text-gray-800">${
+                                <i class="fas fa-cubes text-blue-500 dark:text-blue-400 text-sm"></i>
+                                <p class="font-bold text-xl text-gray-800 dark:text-gray-200">${
                                   inventory.quantityItems || 0
                                 }</p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="text-gray-600 text-sm mb-1">UUID</p>
-                            <p class="font-bold text-sm text-gray-800" title="${
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">UUID</p>
+                            <p class="font-bold text-sm text-gray-800 dark:text-gray-200" title="${
                               inventory.uuid || "No asignado"
                             }">${uuidDisplay}</p>
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
-                        <small class="text-gray-500">Inventario registrado</small>
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+                        <small class="text-gray-500 dark:text-gray-400">Inventario registrado</small>
                         <div class="flex gap-2">
                             <button onclick="viewInventory('${
                               inventory.id
-                            }')" class="text-blue-600 hover:text-blue-800 transition-colors" title="Ver detalles">
+                            }')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors" title="Ver detalles">
                                 <i class="fas fa-eye text-lg"></i>
                             </button>
                             <button onclick="editInventory('${
                               inventory.id
-                            }')" class="text-yellow-600 hover:text-yellow-800 transition-colors" title="Editar inventario">
+                            }')" class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 transition-colors" title="Editar inventario">
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
                             <button onclick="showInventoryManagerAssignment('${
                               inventory.id
-                            }')" class="text-purple-600 hover:text-purple-800 transition-colors" title="Asignar Rol">
+                            }')" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors" title="Asignar Rol">
                                 <i class="fas fa-user-tie text-lg"></i>
                            </button>
                            <button onclick="showInventoryTreeModal('${
@@ -634,12 +642,12 @@ function updateInventoryCards() {
       )}', '${(inventory.imgUrl || "").replace(
         /'/g,
         "\\'"
-      )}')" class="text-[#00AF00] hover:text-green-800 transition-colors" title="Ver jerarquía">
+      )}')" class="text-[#00AF00] hover:text-green-800 dark:hover:text-green-600 transition-colors" title="Ver jerarquía">
                                 <i class="fas fa-sitemap text-lg text-[#00AF00]"></i>
                            </button>
                            <button onclick="showDeleteInventoryModal('${
                              inventory.id
-                           }')" class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar inventario">
+                           }')" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors" title="Eliminar inventario">
                                <i class="fas fa-trash text-lg"></i>
                             </button>
                         </div>
