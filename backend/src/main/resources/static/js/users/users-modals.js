@@ -4,13 +4,93 @@ async function showNewUserModal() {
          modal.classList.remove('hidden');
      }
 
+     // Get current user info to check role and institution
+     const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+     const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+     
+     // Hide/disable regional and institution selectors for ADMIN_INSTITUTION
+     const regionalSelect = document.getElementById('newUserRegionalSelect');
+     const institutionSelect = document.getElementById('newUserInstitutionSelect');
+     
+     if (isAdminInstitution) {
+         // Hide regional and institution selectors by finding their parent divs in the grid
+         const grid = document.querySelector('#newUserModal .grid');
+         if (grid) {
+             const gridDivs = grid.querySelectorAll('div');
+             gridDivs.forEach(div => {
+                 if (div.contains(regionalSelect)) {
+                     div.style.display = 'none';
+                 }
+                 if (div.contains(institutionSelect)) {
+                     div.style.display = 'none';
+                 }
+             });
+         }
+         
+         // Get current user's institution info
+         try {
+             const token = localStorage.getItem('jwt');
+             const headers = { 'Content-Type': 'application/json' };
+             if (token) headers['Authorization'] = `Bearer ${token}`;
+             
+             const response = await fetch('/api/v1/users/me', {
+                 method: 'GET',
+                 headers: headers
+             });
+             
+             if (response.ok) {
+                 const currentUser = await response.json();
+                 // Store current user's institution name for later use
+                 window.currentUserInstitutionName = currentUser.institution;
+                 
+                 // Get institution ID from institutions list
+                 const institutionsResponse = await fetch('/api/v1/institutions', {
+                     method: 'GET',
+                     headers: headers
+                 });
+                 
+                 if (institutionsResponse.ok) {
+                     const institutions = await institutionsResponse.json();
+                     const institution = institutions.find(inst => inst.name === currentUser.institution);
+                     if (institution) {
+                         // Store institution ID for form submission (GetAllInstitutionResponse uses institutionId, InstitutionResponse uses id)
+                         window.currentUserInstitutionId = institution.institutionId || institution.id;
+                         if (!window.currentUserInstitutionId) {
+                             console.error('Could not find institution ID in response:', institution);
+                         }
+                     } else {
+                         console.error('Could not find institution with name:', currentUser.institution);
+                     }
+                 }
+             }
+         } catch (error) {
+             console.error('Error loading current user institution:', error);
+         }
+     } else {
+         // Show regional and institution selectors for other roles
+         const grid = document.querySelector('#newUserModal .grid');
+         if (grid) {
+             const gridDivs = grid.querySelectorAll('div');
+             gridDivs.forEach(div => {
+                 if (div.contains(regionalSelect) || div.contains(institutionSelect)) {
+                     div.style.display = '';
+                 }
+             });
+         }
+     }
+
      // Initialize custom selects if not already done
      if (!window.roleSelect || !window.regionalSelect || !window.institutionSelect) {
          initializeCustomSelects();
+     } else {
+         // Update role options based on current user role
+         updateRoleOptionsForCurrentUser();
      }
 
-     // Load regionals
-     await loadRegionalsForNewUser();
+     // Load regionals only if not ADMIN_INSTITUTION
+     if (!isAdminInstitution) {
+         await loadRegionalsForNewUser();
+     }
  }
 
 function closeNewUserModal() {
@@ -42,6 +122,23 @@ function closeNewUserModal() {
             window.institutionSelect.clear();
         }
      }
+     
+     // Reset display of regional and institution fields
+     const regionalSelect = document.getElementById('newUserRegionalSelect');
+     const institutionSelect = document.getElementById('newUserInstitutionSelect');
+     const grid = document.querySelector('#newUserModal .grid');
+     if (grid) {
+         const gridDivs = grid.querySelectorAll('div');
+         gridDivs.forEach(div => {
+             if (div.contains(regionalSelect) || div.contains(institutionSelect)) {
+                 div.style.display = '';
+             }
+         });
+     }
+     
+     // Clear stored institution info
+     window.currentUserInstitutionId = null;
+     window.currentUserInstitutionName = null;
  }
 
 async function showViewUserModal(userId) {
@@ -771,16 +868,55 @@ class CustomSelect {
     }
 }
 
-// Initialize custom selects for new user modal
-function initializeCustomSelects() {
-    // Role select
-    const roleOptions = [
+// Update role options based on current user role
+function updateRoleOptionsForCurrentUser() {
+    const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+    const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+    
+    let roleOptions = [
         { value: 'SUPERADMIN', label: 'Super Admin' },
         { value: 'ADMIN_INSTITUTION', label: 'Admin Institución' },
         { value: 'ADMIN_REGIONAL', label: 'Admin Regional' },
         { value: 'WAREHOUSE', label: 'Admin Almacén' },
         { value: 'USER', label: 'Usuario' }
     ];
+    
+    // Filter out restricted roles for ADMIN_INSTITUTION
+    if (isAdminInstitution) {
+        roleOptions = roleOptions.filter(option => 
+            option.value !== 'SUPERADMIN' && 
+            option.value !== 'ADMIN_REGIONAL' && 
+            option.value !== 'ADMIN_INSTITUTION'
+        );
+    }
+    
+    if (window.roleSelect) {
+        window.roleSelect.setOptions(roleOptions);
+    }
+}
+
+// Initialize custom selects for new user modal
+function initializeCustomSelects() {
+    // Role select - will be filtered based on current user role
+    const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+    const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+    
+    let roleOptions = [
+        { value: 'SUPERADMIN', label: 'Super Admin' },
+        { value: 'ADMIN_INSTITUTION', label: 'Admin Institución' },
+        { value: 'ADMIN_REGIONAL', label: 'Admin Regional' },
+        { value: 'WAREHOUSE', label: 'Admin Almacén' },
+        { value: 'USER', label: 'Usuario' }
+    ];
+    
+    // Filter out restricted roles for ADMIN_INSTITUTION
+    if (isAdminInstitution) {
+        roleOptions = roleOptions.filter(option => 
+            option.value !== 'SUPERADMIN' && 
+            option.value !== 'ADMIN_REGIONAL' && 
+            option.value !== 'ADMIN_INSTITUTION'
+        );
+    }
     
     window.roleSelect = new CustomSelect('newUserRoleSelect', {
         placeholder: 'Seleccionar rol',
