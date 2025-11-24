@@ -180,6 +180,8 @@ async function handleEditInventorySubmit(e) {
 
   const name = document.getElementById("editInventoryName").value;
   const location = document.getElementById("editInventoryLocation").value;
+  const statusCheckbox = document.getElementById("editInventoryStatus");
+  const status = statusCheckbox ? statusCheckbox.checked : true;
 
   if (!name || !location) {
     showEditErrorToast("Por favor complete todos los campos obligatorios");
@@ -214,8 +216,10 @@ async function handleEditInventorySubmit(e) {
 
   try {
     const updateData = {
+      id: inventoryData.currentInventoryId,
       name: name.trim(),
       location: location.trim(),
+      status: status
     };
 
     const result = await updateInventory(

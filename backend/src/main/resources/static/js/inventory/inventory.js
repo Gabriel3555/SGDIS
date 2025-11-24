@@ -51,6 +51,17 @@ function setupEventListeners() {
         editInventoryForm.addEventListener('submit', handleEditInventorySubmit);
     }
 
+    // Edit inventory status switch
+    const editInventoryStatus = document.getElementById('editInventoryStatus');
+    if (editInventoryStatus) {
+        editInventoryStatus.addEventListener('change', function() {
+            const statusLabel = document.getElementById('editInventoryStatusLabel');
+            if (statusLabel) {
+                statusLabel.textContent = this.checked ? 'Activo' : 'Inactivo';
+            }
+        });
+    }
+
     // Assign inventory form (if it exists)
     const assignInventoryForm = document.getElementById('assignInventoryForm');
     if (assignInventoryForm) {
