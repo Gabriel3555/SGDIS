@@ -457,7 +457,10 @@
             const headerUserAvatar = document.getElementById('headerUserAvatar');
 
             if (headerUserName) headerUserName.textContent = userData.fullName || 'Super Admin';
-            if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN';
+            if (headerUserRole) {
+                const role = userData.role || 'ADMIN';
+                headerUserRole.textContent = role === 'ADMIN_INSTITUTION' ? 'ADMIN INSTITUCIÓN' : role;
+            }
             
             if (headerUserAvatar) {
                 if (userData.imgUrl) {

@@ -405,16 +405,27 @@ function updateUsersTable() {
     window.usersData.selectedRole !== "all" ||
     window.usersData.selectedStatus !== "all";
 
+  // Get current user role and ID to filter out current user for SUPERADMIN and ADMIN_INSTITUTION
+  const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+  const currentUserId = window.usersData ? window.usersData.currentLoggedInUserId : null;
+  const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION') && currentUserId;
+
+  // Filter out current user if needed
+  let usersToDisplay = window.usersData.filteredUsers;
+  if (shouldExcludeCurrentUser) {
+    usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+  }
+
   let paginatedUsers;
   if (hasFilters) {
     // Local pagination for filtered results
     const startIndex =
       (window.usersData.currentPage - 1) * window.usersData.itemsPerPage;
     const endIndex = startIndex + window.usersData.itemsPerPage;
-    paginatedUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
+    paginatedUsers = usersToDisplay.slice(startIndex, endIndex);
   } else {
     // Users are already paginated from backend
-    paginatedUsers = window.usersData.filteredUsers;
+    paginatedUsers = usersToDisplay;
   }
 
   let usersTableHtml = ``;
@@ -966,16 +977,27 @@ function updateUsersCards() {
     window.usersData.selectedRole !== "all" ||
     window.usersData.selectedStatus !== "all";
 
+  // Get current user role and ID to filter out current user for SUPERADMIN and ADMIN_INSTITUTION
+  const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+  const currentUserId = window.usersData ? window.usersData.currentLoggedInUserId : null;
+  const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION') && currentUserId;
+
+  // Filter out current user if needed
+  let usersToDisplay = window.usersData.filteredUsers;
+  if (shouldExcludeCurrentUser) {
+    usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+  }
+
   let paginatedUsers;
   if (hasFilters) {
     // Local pagination for filtered results
     const startIndex =
       (window.usersData.currentPage - 1) * window.usersData.itemsPerPage;
     const endIndex = startIndex + window.usersData.itemsPerPage;
-    paginatedUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
+    paginatedUsers = usersToDisplay.slice(startIndex, endIndex);
   } else {
     // Users are already paginated from backend
-    paginatedUsers = window.usersData.filteredUsers;
+    paginatedUsers = usersToDisplay;
   }
 
   let usersCardsHtml = ``;

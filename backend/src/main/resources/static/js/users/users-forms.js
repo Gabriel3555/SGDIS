@@ -6,87 +6,140 @@ async function handleNewUserSubmit(e) {
      // Get role from hidden input (CustomSelect)
     const roleInput = document.getElementById('newUserRole');
     const role = roleInput?.value || (window.roleSelect ? window.roleSelect.getValue() : '');
-     const regionalInput = document.getElementById('newUserRegional');
-     const institutionInput = document.getElementById('newUserInstitution');
+     const password = document.getElementById('newUserPassword')?.value?.trim();
      
-     // Get values from hidden inputs, also check CustomSelect objects if available
-     let regional = regionalInput?.value?.trim();
-     let institution = institutionInput?.value?.trim();
+     // Check if current user is ADMIN_INSTITUTION
+     const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+     const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
      
-     // Fallback: check CustomSelect objects directly
-     if (!regional && window.regionalSelect) {
-         regional = window.regionalSelect.getValue();
+     let institutionId;
+     
+     if (isAdminInstitution) {
+         // Use the stored institution ID from current user
+         institutionId = window.currentUserInstitutionId;
+         if (!institutionId) {
+             showErrorToast('Error', 'No se pudo obtener la información de la institución. Por favor recarga la página.');
+             return;
+         }
+     } else {
+         // For other roles, get institution from form
+         const regionalInput = document.getElementById('newUserRegional');
+         const institutionInput = document.getElementById('newUserInstitution');
+         
+         // Get values from hidden inputs, also check CustomSelect objects if available
+         let regional = regionalInput?.value?.trim();
+         let institution = institutionInput?.value?.trim();
+         
+         // Fallback: check CustomSelect objects directly
+         if (!regional && window.regionalSelect) {
+             regional = window.regionalSelect.getValue();
+         }
+         if (!institution && window.institutionSelect) {
+             institution = window.institutionSelect.getValue();
+         }
+         
+         // Validate required fields with specific error messages
+         const missingFields = [];
+         
+         if (!fullName) missingFields.push('Nombre Completo');
+         if (!email) missingFields.push('Email');
+         if (!role || role === '') missingFields.push('Rol');
+         if (!regional || regional === '') missingFields.push('Regional');
+         if (!institution || institution === '') missingFields.push('Institución');
+         if (!password) missingFields.push('Contraseña');
+
+         if (missingFields.length > 0) {
+             const fieldsList = missingFields.join(', ');
+             showErrorToast('Campos obligatorios', `Por favor complete los siguientes campos: ${fieldsList}`);
+             
+             // Highlight missing fields visually
+             if (!fullName) document.getElementById('newUserFullName')?.classList.add('border-red-500');
+             if (!email) document.getElementById('newUserEmail')?.classList.add('border-red-500');
+             if (!role) {
+                const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
+                if (roleSelectTrigger) {
+                    roleSelectTrigger.classList.add('border-red-500');
+                }
+            }
+             if (!regional) {
+                 const regionalSelect = document.getElementById('newUserRegionalSelect');
+                 if (regionalSelect) {
+                     regionalSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
+                 }
+             }
+             if (!institution) {
+                 const institutionSelect = document.getElementById('newUserInstitutionSelect');
+                 if (institutionSelect) {
+                     institutionSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
+                 }
+             }
+             if (!password) document.getElementById('newUserPassword')?.classList.add('border-red-500');
+             
+             return;
+         }
+         
+         // Remove error highlighting
+         document.getElementById('newUserFullName')?.classList.remove('border-red-500');
+         document.getElementById('newUserEmail')?.classList.remove('border-red-500');
+         const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
+        if (roleSelectTrigger) {
+            roleSelectTrigger.classList.remove('border-red-500');
+        }
+         document.getElementById('newUserRegionalSelect')?.querySelector('.custom-select-trigger')?.classList.remove('border-red-500');
+         document.getElementById('newUserInstitutionSelect')?.querySelector('.custom-select-trigger')?.classList.remove('border-red-500');
+         document.getElementById('newUserPassword')?.classList.remove('border-red-500');
+
+        // Validate that institution is a valid number
+        institutionId = parseInt(institution);
+        if (isNaN(institutionId) || institutionId <= 0) {
+            showErrorToast('Institución inválida', 'Por favor seleccione una institución válida');
+            const institutionSelect = document.getElementById('newUserInstitutionSelect');
+            if (institutionSelect) {
+                institutionSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
+            }
+            return;
+        }
      }
-     if (!institution && window.institutionSelect) {
-         institution = window.institutionSelect.getValue();
+     
+     // Validate required fields for ADMIN_INSTITUTION
+     if (isAdminInstitution) {
+         const missingFields = [];
+         if (!fullName) missingFields.push('Nombre Completo');
+         if (!email) missingFields.push('Email');
+         if (!role || role === '') missingFields.push('Rol');
+         if (!password) missingFields.push('Contraseña');
+         
+         if (missingFields.length > 0) {
+             const fieldsList = missingFields.join(', ');
+             showErrorToast('Campos obligatorios', `Por favor complete los siguientes campos: ${fieldsList}`);
+             
+             // Highlight missing fields visually
+             if (!fullName) document.getElementById('newUserFullName')?.classList.add('border-red-500');
+             if (!email) document.getElementById('newUserEmail')?.classList.add('border-red-500');
+             if (!role) {
+                const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
+                if (roleSelectTrigger) {
+                    roleSelectTrigger.classList.add('border-red-500');
+                }
+            }
+             if (!password) document.getElementById('newUserPassword')?.classList.add('border-red-500');
+             
+             return;
+         }
+         
+         // Remove error highlighting
+         document.getElementById('newUserFullName')?.classList.remove('border-red-500');
+         document.getElementById('newUserEmail')?.classList.remove('border-red-500');
+         const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
+        if (roleSelectTrigger) {
+            roleSelectTrigger.classList.remove('border-red-500');
+        }
+         document.getElementById('newUserPassword')?.classList.remove('border-red-500');
      }
      
      const jobTitle = document.getElementById('newUserJobTitle')?.value?.trim();
      const laborDepartment = document.getElementById('newUserLaborDepartment')?.value?.trim();
-     const password = document.getElementById('newUserPassword')?.value?.trim();
      const photoFile = document.getElementById('newUserPhoto')?.files[0];
-
-     // Validate required fields with specific error messages
-     const missingFields = [];
-     
-     if (!fullName) missingFields.push('Nombre Completo');
-     if (!email) missingFields.push('Email');
-     if (!role || role === '') missingFields.push('Rol');
-     if (!regional || regional === '') missingFields.push('Regional');
-     if (!institution || institution === '') missingFields.push('Institución');
-     if (!password) missingFields.push('Contraseña');
-
-     if (missingFields.length > 0) {
-         const fieldsList = missingFields.join(', ');
-         showErrorToast('Campos obligatorios', `Por favor complete los siguientes campos: ${fieldsList}`);
-         
-         // Highlight missing fields visually
-         if (!fullName) document.getElementById('newUserFullName')?.classList.add('border-red-500');
-         if (!email) document.getElementById('newUserEmail')?.classList.add('border-red-500');
-         if (!role) {
-            const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
-            if (roleSelectTrigger) {
-                roleSelectTrigger.classList.add('border-red-500');
-            }
-        }
-         if (!regional) {
-             const regionalSelect = document.getElementById('newUserRegionalSelect');
-             if (regionalSelect) {
-                 regionalSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
-             }
-         }
-         if (!institution) {
-             const institutionSelect = document.getElementById('newUserInstitutionSelect');
-             if (institutionSelect) {
-                 institutionSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
-             }
-         }
-         if (!password) document.getElementById('newUserPassword')?.classList.add('border-red-500');
-         
-         return;
-     }
-     
-     // Remove error highlighting
-     document.getElementById('newUserFullName')?.classList.remove('border-red-500');
-     document.getElementById('newUserEmail')?.classList.remove('border-red-500');
-     const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
-    if (roleSelectTrigger) {
-        roleSelectTrigger.classList.remove('border-red-500');
-    }
-     document.getElementById('newUserRegionalSelect')?.querySelector('.custom-select-trigger')?.classList.remove('border-red-500');
-     document.getElementById('newUserInstitutionSelect')?.querySelector('.custom-select-trigger')?.classList.remove('border-red-500');
-     document.getElementById('newUserPassword')?.classList.remove('border-red-500');
-
-    // Validate that institution is a valid number
-    const institutionId = parseInt(institution);
-    if (isNaN(institutionId) || institutionId <= 0) {
-        showErrorToast('Institución inválida', 'Por favor seleccione una institución válida');
-        const institutionSelect = document.getElementById('newUserInstitutionSelect');
-        if (institutionSelect) {
-            institutionSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
-        }
-        return;
-    }
 
     try {
         const token = localStorage.getItem('jwt');

@@ -76,13 +76,48 @@ async function loadInventories() {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await fetch('/api/v1/inventory', {
+        // Check if current user is ADMIN_INSTITUTION
+        let endpoint = '/api/v1/inventory';
+        let isPaginated = false;
+        
+        // Get current user info to determine role
+        try {
+            const userResponse = await fetch('/api/v1/users/me', {
+                method: 'GET',
+                headers: headers
+            });
+            
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                const currentRole = userData.role || '';
+                
+                // If ADMIN_INSTITUTION, use institution-specific endpoint
+                if (currentRole === 'ADMIN_INSTITUTION') {
+                    // Use paginated endpoint for institution inventories
+                    endpoint = '/api/v1/inventory/institutionAdminInventories?page=0&size=1000';
+                    isPaginated = true;
+                }
+            }
+        } catch (userError) {
+            console.error('Error checking user role:', userError);
+            // Continue with default endpoint if user check fails
+        }
+
+        const response = await fetch(endpoint, {
             method: 'GET',
             headers: headers
         });
 
         if (response.ok) {
-            const inventories = await response.json();
+            let inventories;
+            if (isPaginated) {
+                // Handle paginated response
+                const pageData = await response.json();
+                inventories = pageData.content || [];
+            } else {
+                // Handle non-paginated response
+                inventories = await response.json();
+            }
             verificationData.inventories = Array.isArray(inventories) ? inventories : [];
         } else {
             verificationData.inventories = [];
