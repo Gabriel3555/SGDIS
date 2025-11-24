@@ -19,6 +19,7 @@ import com.sgdis.backend.transfers.domain.TransferStatus;
 import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
 import com.sgdis.backend.transfers.infrastructure.repository.SpringDataTransferRepository;
 import com.sgdis.backend.transfers.mapper.TransferMapper;
+import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -136,7 +137,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
 
         UserEntity approver = authService.getCurrentUser();
-        if (!isAuthorizedToApprove(approver, sourceInventory, destinationInventory)) {
+        if (!isAuthorizedToApprove(approver, sourceInventory, destinationInventory) || approver.getRole() == Role.SUPERADMIN) {
             throw new DomainValidationException("No cuentas con permisos para aprobar esta transferencia");
         }
 
