@@ -693,6 +693,396 @@ html.dark button {
     border-color: var(--dark-border) !important;
 }
 
+/* Cards con gradientes en modal de inventario */
+.dark #viewInventoryModal .bg-gradient-to-br.from-green-50 {
+    background: linear-gradient(to bottom right, rgba(0, 175, 0, 0.15), rgba(0, 175, 0, 0.1)) !important;
+}
+
+.dark #viewInventoryModal .from-green-50 {
+    --tw-gradient-from: rgba(0, 175, 0, 0.15) !important;
+}
+
+.dark #viewInventoryModal .to-emerald-50 {
+    --tw-gradient-to: rgba(0, 175, 0, 0.1) !important;
+}
+
+.dark #viewInventoryModal .border-green-200 {
+    border-color: rgba(0, 175, 0, 0.3) !important;
+}
+
+.dark #viewInventoryModal .border-green-700 {
+    border-color: rgba(0, 175, 0, 0.5) !important;
+}
+
+.dark #viewInventoryModal .bg-green-100 {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+}
+
+.dark #viewInventoryModal .text-green-800 {
+    color: #4ADE80 !important;
+}
+
+.dark #viewInventoryModal .text-green-300 {
+    color: #86EFAC !important;
+}
+
+.dark #viewInventoryModal .bg-green-500 {
+    background-color: var(--dark-sena-verde) !important;
+}
+
+.dark #viewInventoryModal .from-green-500 {
+    --tw-gradient-from: var(--dark-sena-verde) !important;
+}
+
+.dark #viewInventoryModal .to-green-600 {
+    --tw-gradient-to: #008800 !important;
+}
+
+.dark #viewInventoryModal .text-green-500 {
+    color: var(--dark-sena-verde) !important;
+}
+
+.dark #viewInventoryModal .text-gray-500 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #viewInventoryModal .text-gray-600 {
+    color: var(--dark-text-muted) !important;
+}
+
+/* Elementos específicos de las cards de información */
+.dark #viewInventoryModal .space-y-6 > div {
+    background-color: transparent !important;
+}
+
+.dark #viewInventoryModal .text-gray-700 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #viewInventoryModal .text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #viewInventoryModal .text-gray-900 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #viewInventoryModal .text-blue-900 {
+    color: #93C5FD !important;
+}
+
+.dark #viewInventoryModal .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.dark #viewInventoryModal .border-l-4.border-blue-500 {
+    border-left-color: #3B82F6 !important;
+}
+
+.dark #viewInventoryModal .border-l-4.border-green-500 {
+    border-left-color: var(--dark-sena-verde) !important;
+}
+
+.dark #viewInventoryModal .rounded-r-lg {
+    background-color: transparent !important;
+}
+
+/* Labels y textos dentro de las cards */
+.dark #viewInventoryModal label.text-sm {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #viewInventoryModal label.text-xs {
+    color: var(--dark-text-muted) !important;
+}
+
+/* Asegurar que los iconos mantengan su color verde */
+.dark #viewInventoryModal i.fa-map-marker-alt,
+.dark #viewInventoryModal i.fa-building,
+.dark #viewInventoryModal i.fa-cubes,
+.dark #viewInventoryModal i.fa-dollar-sign,
+.dark #viewInventoryModal i.fa-envelope,
+.dark #viewInventoryModal i.fa-user-shield,
+.dark #viewInventoryModal i.fa-box {
+    color: var(--dark-sena-verde) !important;
+}
+
+/* Fondo del contenedor del avatar del propietario */
+.dark #viewInventoryModal #viewInventoryOwnerAvatar {
+    background: linear-gradient(to bottom right, #00AF00, #008800) !important;
+}
+
+.dark #viewInventoryModal #viewInventoryOwnerAvatar span {
+    color: #FFFFFF !important;
+}
+
+/* Badges de rol del propietario */
+.dark #viewInventoryModal #viewInventoryOwnerRole {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: #4ADE80 !important;
+}
+
+/* Flecha indicadora en modo oscuro */
+.dark #viewInventoryModal .fa-arrow-right,
+.dark #viewInventoryModal .fa-arrow-down {
+    color: var(--dark-sena-verde) !important;
+}
+
+/* Placeholder de imagen en modo oscuro */
+.dark #viewInventoryImagePlaceholder {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #viewInventoryImage {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-muted) !important;
+}
+
+/* Switch toggle en modo oscuro */
+.dark #editInventoryModal input[type="checkbox"].sr-only + div {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #editInventoryModal input[type="checkbox"].sr-only:checked + div {
+    background-color: var(--dark-sena-verde) !important;
+}
+
+.dark #editInventoryModal input[type="checkbox"].sr-only:focus + div {
+    box-shadow: 0 0 0 4px rgba(0, 175, 0, 0.2) !important;
+}
+
+/* Estilos para el modal de editar inventario */
+.dark #editInventoryModal .bg-gray-50 {
+    background-color: rgba(0, 175, 0, 0.05) !important;
+}
+
+.dark #editInventoryModal .border-gray-200 {
+    border-color: rgba(0, 175, 0, 0.2) !important;
+}
+
+/* ============================================
+   INVENTORY TABLE - DARK MODE
+   ============================================ */
+
+/* Estilos para la tabla de inventarios - solo en modo oscuro */
+.dark #inventoryTableContainer table {
+    background-color: transparent !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #inventoryTableContainer table thead {
+    background-color: transparent !important;
+}
+
+.dark #inventoryTableContainer table thead th {
+    color: var(--dark-text-primary) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.dark #inventoryTableContainer table tbody tr {
+    border-color: var(--dark-border) !important;
+}
+
+.dark #inventoryTableContainer table tbody tr:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #inventoryTableContainer table tbody td {
+    color: var(--dark-text-secondary) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.dark #inventoryTableContainer .bg-gray-100 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #inventoryTableContainer .text-gray-700 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #inventoryTableContainer .text-gray-500 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #inventoryTableContainer .text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #inventoryTableContainer .text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #inventoryTableContainer .border-gray-100 {
+    border-color: var(--dark-border) !important;
+}
+
+.dark #inventoryTableContainer .border-gray-200 {
+    border-color: var(--dark-border) !important;
+}
+
+/* ============================================
+   INVENTORY TABLE - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que en modo claro los colores se mantengan correctamente */
+html:not(.dark) #inventoryTableContainer table {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+html:not(.dark) #inventoryTableContainer table thead {
+    background-color: transparent !important;
+}
+
+html:not(.dark) #inventoryTableContainer table thead th {
+    color: #374151 !important; /* gray-700 */
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #inventoryTableContainer table thead th.text-gray-700 {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #inventoryTableContainer table thead th.text-gray-300 {
+    color: #D1D5DB !important; /* gray-300 */
+}
+
+html:not(.dark) #inventoryTableContainer table tbody tr {
+    border-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #inventoryTableContainer table tbody tr:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+html:not(.dark) #inventoryTableContainer table tbody td {
+    color: inherit !important;
+    border-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #inventoryTableContainer table tbody td .status-badge-active {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: #00AF00 !important;
+}
+
+html:not(.dark) #inventoryTableContainer table tbody td .status-badge-inactive {
+    background-color: #FEE2E2 !important; /* red-100 */
+    color: #DC2626 !important; /* red-600 */
+}
+
+html:not(.dark) #inventoryTableContainer .text-gray-700:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #inventoryTableContainer .text-gray-500:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) #inventoryTableContainer .text-gray-800:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #inventoryTableContainer .text-gray-600:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #inventoryTableContainer .bg-gray-100 {
+    background-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #inventoryTableContainer .border-gray-100 {
+    border-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #inventoryTableContainer .border-gray-200 {
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* ============================================
+   STATUS BADGES - LIGHT MODE
+   ============================================ */
+
+/* Badges de estado activo/inactivo en modo claro - asegurar colores correctos */
+html:not(.dark) .status-badge-active {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: #00AF00 !important;
+}
+
+html:not(.dark) .status-badge-active.bg-\[#00AF00\]\/20 {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+}
+
+html:not(.dark) .status-badge-active.text-\[#00AF00\] {
+    color: #00AF00 !important;
+}
+
+html:not(.dark) .status-badge-active.bg-green-100 {
+    background-color: #DCFCE7 !important; /* green-100 */
+}
+
+html:not(.dark) .status-badge-active.text-green-800 {
+    color: #166534 !important; /* green-800 */
+}
+
+html:not(.dark) .status-badge-inactive {
+    background-color: #FEE2E2 !important; /* red-100 */
+    color: #DC2626 !important; /* red-600 */
+}
+
+html:not(.dark) .status-badge-inactive.bg-red-100 {
+    background-color: #FEE2E2 !important; /* red-100 */
+}
+
+html:not(.dark) .status-badge-inactive.text-red-600 {
+    color: #DC2626 !important; /* red-600 */
+}
+
+/* Badges en cards - asegurar colores consistentes */
+html:not(.dark) .stat-card .status-badge-active {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: #00AF00 !important;
+}
+
+html:not(.dark) .stat-card .status-badge-inactive,
+html:not(.dark) .stat-card .status-badge-inactive.badge {
+    background-color: #FEE2E2 !important; /* red-100 */
+    color: #DC2626 !important; /* red-600 */
+}
+
+html:not(.dark) .stat-card .status-badge-inactive.bg-red-100 {
+    background-color: #FEE2E2 !important; /* red-100 */
+}
+
+html:not(.dark) .stat-card .status-badge-inactive.text-red-600 {
+    color: #DC2626 !important; /* red-600 */
+}
+
+/* Asegurar que los colores no se sobrescriban por estilos generales */
+html:not(.dark) .status-badge-active,
+html:not(.dark) .status-badge-inactive {
+    /* Prevenir que estilos generales de texto gris afecten los badges */
+}
+
+html:not(.dark) #inventoryTableContainer .status-badge-active {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: #00AF00 !important;
+}
+
+html:not(.dark) #inventoryTableContainer .status-badge-inactive,
+html:not(.dark) #inventoryTableContainer .status-badge-inactive.badge {
+    background-color: #FEE2E2 !important; /* red-100 */
+    color: #DC2626 !important; /* red-600 */
+}
+
+html:not(.dark) #inventoryTableContainer .status-badge-inactive.bg-red-100 {
+    background-color: #FEE2E2 !important; /* red-100 */
+}
+
+html:not(.dark) #inventoryTableContainer .status-badge-inactive.text-red-600 {
+    color: #DC2626 !important; /* red-600 */
+}
+
 /* Modal de imagen grande en modo oscuro */
 .dark #inventoryImageModal {
     background-color: rgba(0, 0, 0, 0.85) !important;

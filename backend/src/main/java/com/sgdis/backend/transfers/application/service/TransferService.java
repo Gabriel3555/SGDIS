@@ -14,6 +14,7 @@ import com.sgdis.backend.transfers.application.dto.RequestTransferResponse;
 import com.sgdis.backend.transfers.application.dto.TransferSummaryResponse;
 import com.sgdis.backend.transfers.application.port.in.ApproveTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
+import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.RequestTransferUseCase;
 import com.sgdis.backend.transfers.domain.TransferStatus;
 import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
@@ -31,7 +32,8 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class TransferService implements ApproveTransferUseCase, RequestTransferUseCase, GetInventoryTransfersUseCase {
+public class TransferService implements ApproveTransferUseCase, RequestTransferUseCase, GetInventoryTransfersUseCase,
+        GetItemTransfersUseCase {
 
     private final AuthService authService;
     private final SpringDataTransferRepository transferRepository;
@@ -54,7 +56,8 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
 
         InventoryEntity destinationInventory = inventoryRepository.findById(request.destinationInventoryId())
-                .orElseThrow(() -> new ResourceNotFoundException("Inventario no encontrado con id: " + request.destinationInventoryId()));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Inventario no encontrado con id: " + request.destinationInventoryId()));
 
         if (sourceInventory.getId().equals(destinationInventory.getId())) {
             throw new DomainValidationException("El inventario de destino debe ser diferente al actual");
@@ -65,7 +68,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
 
         UserEntity requester = authService.getCurrentUser();
-        if (!belongsToInventory(requester, sourceInventory) || requester.getRole() != Role.SUPERADMIN) {
+        if (!belongsToInventory(requester, sourceInventory) && requester.getRole() != Role.SUPERADMIN) {
             throw new DomainValidationException("No cuentas con permisos para solicitar la transferencia de este ítem");
         }
 
@@ -94,7 +97,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                 .orElseThrow(() -> new ResourceNotFoundException("Inventario no encontrado con id: " + inventoryId));
 
         UserEntity currentUser = authService.getCurrentUser();
-        if (!belongsToInventory(currentUser, inventory)) {
+        if (!belongsToInventory(currentUser, inventory) && currentUser.getRole() != Role.SUPERADMIN) {
             throw new DomainValidationException("No cuentas con permisos para consultar este inventario");
         }
 
@@ -137,7 +140,8 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
 
         UserEntity approver = authService.getCurrentUser();
-        if (!isAuthorizedToApprove(approver, sourceInventory, destinationInventory) || approver.getRole() == Role.SUPERADMIN) {
+        if (!isAuthorizedToApprove(approver, sourceInventory, destinationInventory)
+                && approver.getRole() != Role.SUPERADMIN) {
             throw new DomainValidationException("No cuentas con permisos para aprobar esta transferencia");
         }
 
@@ -159,8 +163,35 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         return TransferMapper.toApproveResponse(transfer);
     }
 
-    private boolean isAuthorizedToApprove(UserEntity user, InventoryEntity sourceInventory, InventoryEntity destinationInventory) {
+    private boolean isAuthorizedToApprove(UserEntity user, InventoryEntity sourceInventory,
+            InventoryEntity destinationInventory) {
         return belongsToInventory(user, sourceInventory) || belongsToInventory(user, destinationInventory);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TransferSummaryResponse> getTransfersByItemId(Long itemId) {
+        if (itemId == null) {
+            throw new DomainValidationException("El id del item es obligatorio");
+        }
+
+        ItemEntity item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Item no encontrado con id: " + itemId));
+
+        UserEntity currentUser = authService.getCurrentUser();
+        InventoryEntity itemInventory = item.getInventory();
+
+        // Check if user has permission to view transfers for this item
+        if (itemInventory != null && !belongsToInventory(currentUser, itemInventory)
+                && currentUser.getRole() != Role.SUPERADMIN) {
+            throw new DomainValidationException(
+                    "No cuentas con permisos para consultar las transferencias de este item");
+        }
+
+        return transferRepository.findAllByItemId(itemId)
+                .stream()
+                .map(TransferMapper::toSummaryResponse)
+                .collect(Collectors.toList());
     }
 
     private boolean belongsToInventory(UserEntity user, InventoryEntity inventory) {
@@ -181,4 +212,3 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                 inventory.getSignatories().stream().anyMatch(signatory -> signatory.getId().equals(user.getId()));
     }
 }
-
