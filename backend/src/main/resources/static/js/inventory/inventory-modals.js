@@ -770,44 +770,88 @@ function populateViewInventoryModal(inventory) {
 
   // Populate inventory details
   const nameElement = document.getElementById("viewInventoryName");
-  const idElement = document.getElementById("viewInventoryId");
-  const uuidElement = document.getElementById("viewInventoryUuid");
   const locationElement = document.getElementById("viewInventoryLocation");
-  const quantityItemsElement = document.getElementById(
-    "viewInventoryQuantityItems"
-  );
+  const quantityItemsElement = document.getElementById("viewInventoryQuantityItems");
+  const statusElement = document.getElementById("viewInventoryStatus");
+  const institutionElement = document.getElementById("viewInventoryInstitution");
+  const totalPriceElement = document.getElementById("viewInventoryTotalPrice");
 
+  // Basic info
   if (nameElement) nameElement.textContent = inventory.name || "Sin nombre";
-  if (idElement) idElement.textContent = inventory.id || "N/A";
-  if (uuidElement) uuidElement.textContent = inventory.uuid || "No asignado";
-  if (locationElement)
-    locationElement.textContent =
-      getLocationText(inventory.location) || "Sin ubicación";
+  
+  // Location with icon
+  if (locationElement) {
+    const locationText = getLocationText(inventory.location) || "Sin ubicación";
+    locationElement.innerHTML = `<i class="fas fa-map-marker-alt text-[#00AF00]"></i><span>${locationText}</span>`;
+  }
+  
+  // Quantity Items
   if (quantityItemsElement)
     quantityItemsElement.textContent = inventory.quantityItems || 0;
+
+  // Status
+  if (statusElement) {
+    const isActive = inventory.status !== false;
+    statusElement.textContent = isActive ? "Activo" : "Inactivo";
+    statusElement.className = `px-3 py-1 rounded-full text-xs font-medium ${
+      isActive
+        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
+    }`;
+  }
+
+  // Institution
+  if (institutionElement) {
+    const institutionName = inventory.institutionName || "Sin institución";
+    institutionElement.innerHTML = `<i class="fas fa-building text-[#00AF00]"></i><span>${institutionName}</span>`;
+  }
+
+  // Total Price
+  if (totalPriceElement) {
+    const totalPrice = inventory.totalPrice || 0;
+    totalPriceElement.textContent = `$${totalPrice.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+  }
 
   // Populate owner details
   const ownerName = document.getElementById("viewInventoryOwnerName");
   const ownerEmail = document.getElementById("viewInventoryOwnerEmail");
   const ownerRole = document.getElementById("viewInventoryOwnerRole");
   const ownerJobTitle = document.getElementById("viewInventoryOwnerJobTitle");
-  const ownerDepartment = document.getElementById(
-    "viewInventoryOwnerDepartment"
-  );
+  const ownerDepartment = document.getElementById("viewInventoryOwnerDepartment");
+  const ownerInstitution = document.getElementById("viewInventoryOwnerInstitution");
   const ownerStatus = document.getElementById("viewInventoryOwnerStatus");
   const ownerAvatar = document.getElementById("viewInventoryOwnerAvatar");
 
   if (inventory.owner) {
+    // Owner Name
     if (ownerName)
       ownerName.textContent = inventory.owner.fullName || "Sin nombre completo";
-    if (ownerEmail)
-      ownerEmail.textContent = inventory.owner.email || "Sin email";
+    
+    // Owner Email with icon
+    if (ownerEmail) {
+      const email = inventory.owner.email || "Sin email";
+      ownerEmail.innerHTML = `<i class="fas fa-envelope text-[#00AF00]"></i><span>${email}</span>`;
+    }
+    
+    // Owner Role
     if (ownerRole) ownerRole.textContent = inventory.owner.role || "Sin rol";
+    
+    // Owner Job Title
     if (ownerJobTitle)
       ownerJobTitle.textContent = inventory.owner.jobTitle || "Sin cargo";
+    
+    // Owner Department
     if (ownerDepartment)
       ownerDepartment.textContent =
         inventory.owner.laborDepartment || "Sin departamento";
+    
+    // Owner Institution
+    if (ownerInstitution) {
+      const institution = inventory.owner.institution || "Sin institución asignada";
+      ownerInstitution.innerHTML = `<i class="fas fa-building text-[#00AF00]"></i><span>${institution}</span>`;
+    }
+    
+    // Owner Status
     if (ownerStatus) {
       ownerStatus.textContent = inventory.owner.status ? "Activo" : "Inactivo";
       ownerStatus.className = `px-3 py-1 rounded-full text-xs font-medium ${
@@ -822,25 +866,29 @@ function populateViewInventoryModal(inventory) {
       if (inventory.owner.imgUrl) {
         ownerAvatar.innerHTML = `<img src="${inventory.owner.imgUrl}" alt="Avatar del propietario" class="w-full h-full object-cover rounded-full">`;
       } else {
-        ownerAvatar.textContent = (inventory.owner.fullName || "U")
-          .charAt(0)
-          .toUpperCase();
+        const initial = (inventory.owner.fullName || "U").charAt(0).toUpperCase();
+        ownerAvatar.innerHTML = `<span class="text-white font-bold text-2xl">${initial}</span>`;
       }
     }
   } else {
     // Default values when no owner
     if (ownerName) ownerName.textContent = "Sin propietario asignado";
-    if (ownerEmail) ownerEmail.textContent = "N/A";
+    if (ownerEmail) {
+      ownerEmail.innerHTML = `<i class="fas fa-envelope text-[#00AF00]"></i><span>N/A</span>`;
+    }
     if (ownerRole) ownerRole.textContent = "N/A";
     if (ownerJobTitle) ownerJobTitle.textContent = "N/A";
     if (ownerDepartment) ownerDepartment.textContent = "N/A";
+    if (ownerInstitution) {
+      ownerInstitution.innerHTML = `<i class="fas fa-building text-[#00AF00]"></i><span>N/A</span>`;
+    }
     if (ownerStatus) {
       ownerStatus.textContent = "Sin asignar";
       ownerStatus.className =
         "px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300";
     }
     if (ownerAvatar) {
-      ownerAvatar.textContent = "U";
+      ownerAvatar.innerHTML = `<span class="text-white font-bold text-2xl">U</span>`;
     }
   }
 }
@@ -981,11 +1029,23 @@ function populateEditInventoryForm(inventory) {
   const nameInput = document.getElementById("editInventoryName");
   const locationInput = document.getElementById("editInventoryLocation");
   const inventoryIdElement = document.getElementById("editInventoryId");
+  const statusCheckbox = document.getElementById("editInventoryStatus");
+  const statusLabel = document.getElementById("editInventoryStatusLabel");
 
   if (nameInput) nameInput.value = inventory.name || "";
   if (locationInput) locationInput.value = inventory.location || "";
   if (inventoryIdElement)
     inventoryIdElement.textContent = inventory.id || "N/A";
+  
+  // Set status checkbox
+  if (statusCheckbox) {
+    statusCheckbox.checked = inventory.status !== false;
+  }
+  
+  // Update status label
+  if (statusLabel) {
+    statusLabel.textContent = inventory.status !== false ? "Activo" : "Inactivo";
+  }
 }
 
 function closeEditInventoryModal() {
@@ -997,9 +1057,13 @@ function closeEditInventoryModal() {
   // Clear form
   const nameInput = document.getElementById("editInventoryName");
   const locationInput = document.getElementById("editInventoryLocation");
+  const statusCheckbox = document.getElementById("editInventoryStatus");
+  const statusLabel = document.getElementById("editInventoryStatusLabel");
 
   if (nameInput) nameInput.value = "";
   if (locationInput) locationInput.value = "";
+  if (statusCheckbox) statusCheckbox.checked = true;
+  if (statusLabel) statusLabel.textContent = "Activo";
 
   inventoryData.currentInventoryId = null;
 }

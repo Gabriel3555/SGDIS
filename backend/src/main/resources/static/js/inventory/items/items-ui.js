@@ -263,7 +263,7 @@ function updateItemsCards() {
                         <p class="text-sm text-gray-600">${categoryName}</p>
                     </div>
                 </div>
-                <div class="space-y-2 text-sm">
+                <div class="space-y-2 text-sm mb-4">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Fecha de adquisición:</span>
                         <span class="font-medium">${acquisitionDate}</span>
@@ -273,16 +273,23 @@ function updateItemsCards() {
                         <span class="font-medium">${acquisitionValue}</span>
                     </div>
                 </div>
-                <div class="mt-4 flex gap-2">
-                    <button onclick="event.stopPropagation(); showViewItemModal(${item.id})" class="flex-1 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors">
-                        <i class="fas fa-eye mr-1"></i>
-                        Ver
+                <div class="flex flex-wrap gap-1.5 justify-start">
+                    <button onclick="event.stopPropagation(); showViewItemModal(${item.id})" class="px-2.5 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition-colors" title="Ver detalles">
+                        <i class="fas fa-eye"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); showEditItemModal(${item.id})" class="flex-1 px-3 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-lg text-sm transition-colors">
-                        <i class="fas fa-edit mr-1"></i>
-                        Editar
+                    <button onclick="event.stopPropagation(); showEditItemModal(${item.id})" class="px-2.5 py-1.5 bg-[#00AF00] hover:bg-[#008800] text-white rounded-lg text-xs transition-colors" title="Editar Item">
+                        <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); showDeleteItemModal(${item.id})" class="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors">
+                    <button onclick="event.stopPropagation(); showTransferItemModal(${item.id})" class="px-2.5 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs transition-colors" title="Transferir Item">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); showApproveTransferModal(${item.id})" class="px-2.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs transition-colors" title="Aprobar Transferencia">
+                        <i class="fas fa-check-circle"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); showItemTransferHistoryModal(${item.id})" class="px-2.5 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs transition-colors" title="Historial de Transferencias">
+                        <i class="fas fa-history"></i>
+                    </button>
+                    <button onclick="event.stopPropagation(); showDeleteItemModal(${item.id})" class="px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition-colors" title="Eliminar Item">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -359,10 +366,19 @@ function updateItemsList() {
                         <button onclick="showViewItemModal(${item.id})" class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button onclick="showEditItemModal(${item.id})" class="px-3 py-1 bg-[#00AF00] hover:bg-[#008800] text-white rounded-lg text-sm transition-colors">
+                        <button onclick="showEditItemModal(${item.id})" class="px-3 py-1 bg-[#00AF00] hover:bg-[#008800] text-white rounded-lg text-sm transition-colors" title="Editar Item">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="showDeleteItemModal(${item.id})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors">
+                        <button onclick="showTransferItemModal(${item.id})" class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm transition-colors" title="Transferir Item">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>
+                        <button onclick="showApproveTransferModal(${item.id})" class="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm transition-colors" title="Aprobar Transferencia">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                        <button onclick="showItemTransferHistoryModal(${item.id})" class="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-sm transition-colors" title="Historial de Transferencias">
+                            <i class="fas fa-history"></i>
+                        </button>
+                        <button onclick="showDeleteItemModal(${item.id})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors" title="Eliminar Item">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>

@@ -8,6 +8,7 @@ import com.sgdis.backend.transfers.application.dto.TransferSummaryResponse;
 import com.sgdis.backend.transfers.application.port.in.ApproveTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.RequestTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
+import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -31,6 +32,7 @@ public class TransferController {
     private final ApproveTransferUseCase approveTransferUseCase;
     private final RequestTransferUseCase requestTransferUseCase;
     private final GetInventoryTransfersUseCase getInventoryTransfersUseCase;
+    private final GetItemTransfersUseCase getItemTransfersUseCase;
 
     @Operation(
             summary = "Retrieves transfers related to an inventory",
@@ -45,6 +47,22 @@ public class TransferController {
             @PathVariable Long inventoryId
     ) {
         List<TransferSummaryResponse> transfers = getInventoryTransfersUseCase.getTransfersByInventory(inventoryId);
+        return ResponseEntity.ok(transfers);
+    }
+
+    @Operation(
+            summary = "Retrieves transfers for a specific item",
+            description = "Returns all transfers associated with a specific item"
+    )
+    @ApiResponse(responseCode = "200", description = "Transfers retrieved successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "404", description = "Item not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/item/{itemId}")
+    public ResponseEntity<List<TransferSummaryResponse>> getItemTransfers(
+            @PathVariable Long itemId
+    ) {
+        List<TransferSummaryResponse> transfers = getItemTransfersUseCase.getTransfersByItemId(itemId);
         return ResponseEntity.ok(transfers);
     }
 
