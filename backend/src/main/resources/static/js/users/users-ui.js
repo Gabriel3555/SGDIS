@@ -40,27 +40,48 @@ function updateUserStats() {
   const container = document.getElementById("userStatsContainer");
   if (!container) return;
 
-  if (!window.usersData || !window.usersData.users) {
+  if (!window.usersData) {
     return;
   }
-  const totalUsers = window.usersData.users.length;
-  const superadminCount = window.usersData.users.filter(
-    (u) => u && u.role === "SUPERADMIN"
-  ).length;
-  const adminInstitutionCount = window.usersData.users.filter(
-    (u) => u && u.role === "ADMIN_INSTITUTION"
-  ).length;
-  const adminRegionalCount = window.usersData.users.filter(
-    (u) => u && u.role === "ADMIN_REGIONAL"
-  ).length;
-  const warehouseCount = window.usersData.users.filter(
-    (u) => u && u.role === "WAREHOUSE"
-  ).length;
-  const userCount = window.usersData.users.filter(
-    (u) => u && u.role === "USER"
-  ).length;
+
   const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
   const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+  const isSuperAdmin = currentRole === 'SUPERADMIN';
+
+  // Use statistics from endpoint if available (for SUPERADMIN), otherwise calculate from current page
+  let totalUsers, superadminCount, adminInstitutionCount, adminRegionalCount, warehouseCount, userCount;
+
+  if (isSuperAdmin && window.usersData.statistics) {
+    // Use total statistics from endpoint
+    const stats = window.usersData.statistics;
+    totalUsers = stats.totalUsers || 0;
+    superadminCount = stats.superadminCount || 0;
+    adminInstitutionCount = stats.adminInstitutionCount || 0;
+    adminRegionalCount = stats.adminRegionalCount || 0;
+    warehouseCount = stats.warehouseCount || 0;
+    userCount = stats.userCount || 0;
+  } else {
+    // Fallback to local calculation from current page data
+    if (!window.usersData.users) {
+      return;
+    }
+    totalUsers = window.usersData.users.length;
+    superadminCount = window.usersData.users.filter(
+      (u) => u && u.role === "SUPERADMIN"
+    ).length;
+    adminInstitutionCount = window.usersData.users.filter(
+      (u) => u && u.role === "ADMIN_INSTITUTION"
+    ).length;
+    adminRegionalCount = window.usersData.users.filter(
+      (u) => u && u.role === "ADMIN_REGIONAL"
+    ).length;
+    warehouseCount = window.usersData.users.filter(
+      (u) => u && u.role === "WAREHOUSE"
+    ).length;
+    userCount = window.usersData.users.filter(
+      (u) => u && u.role === "USER"
+    ).length;
+  }
   
   container.innerHTML = `
         ${!isAdminInstitution ? `<div class="stat-card">
@@ -446,7 +467,6 @@ function updateUsersTable() {
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Usuario</th>
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Rol</th>
                             <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Estado</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">Contraseña</th>
                             <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">Acciones</th>
                         </tr>
                     </thead>
@@ -523,14 +543,12 @@ function updateUsersTable() {
                         <span class="px-2 py-1 bg-${statusColor}-100 text-${statusColor}-700 rounded-full text-xs font-medium">${statusText}</span>
                     </td>
                     <td class="py-3 px-4">
-                        <button onclick="showUserPassword('${
-                          user.id
-                        }')" class="text-[#00AF00] hover:text-[#008800] text-sm font-medium">
-                            Cambiar contraseña
-                        </button>
-                    </td>
-                    <td class="py-3 px-4">
                         <div class="flex items-center justify-center gap-2">
+                            <button onclick="showUserPassword('${
+                              user.id
+                            }')" class="user-action-btn p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Cambiar contraseña">
+                                <i class="fas fa-lock"></i>
+                            </button>
                             <button data-user-id="${
                               user.id
                             }" data-action="view" class="user-action-btn p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver">
@@ -1082,33 +1100,31 @@ function updateUsersCards() {
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div class="flex items-center justify-center gap-2 pt-3 border-t border-gray-100">
                         <button onclick="showUserPassword('${
                           user.id
-                        }')" class="text-[#00AF00] hover:text-[#008800] text-sm font-medium">
-                            Cambiar contraseña
+                        }')" class="p-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Cambiar contraseña">
+                            <i class="fas fa-lock"></i>
                         </button>
-                        <div class="flex gap-2">
-                            <button onclick="viewUser('${
-                              user.id
-                            }')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button onclick="editUser('${
-                              user.id
-                            }')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar usuario">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="deleteUser('${user.id}')" class="${
+                        <button onclick="viewUser('${
+                          user.id
+                        }')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="editUser('${
+                          user.id
+                        }')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar usuario">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteUser('${user.id}')" class="${
         isAdmin
           ? "text-gray-400 cursor-not-allowed opacity-50"
           : "text-red-600 hover:bg-red-50"
       } p-2 rounded-lg transition-colors" title="Eliminar usuario" ${
         isAdmin ? "disabled" : ""
       }>
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             `;

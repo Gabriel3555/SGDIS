@@ -6,6 +6,8 @@ async function loadUsersData() {
 
     try {
         await loadCurrentUserInfo();
+        // Load statistics for SUPERADMIN
+        await loadUserStatistics();
         // Reset to page 0 when loading fresh data
         await loadUsers(0);
         updateUsersUI();
@@ -371,3 +373,41 @@ async function loadInstitutionsByRegional(regionalId) {
 
 window.loadRegionalsForNewUser = loadRegionalsForNewUser;
 window.loadInstitutionsByRegional = loadInstitutionsByRegional;
+
+// Function to load user statistics (only for SUPERADMIN)
+async function loadUserStatistics() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Check if current user is SUPERADMIN
+        const currentRole = usersData.currentLoggedInUserRole || '';
+        if (currentRole !== 'SUPERADMIN') {
+            // For non-SUPERADMIN users, return null to use local calculation
+            return null;
+        }
+
+        const response = await fetch('/api/v1/users/statistics', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const statistics = await response.json();
+            // Store statistics in usersData
+            if (window.usersData) {
+                window.usersData.statistics = statistics;
+            }
+            return statistics;
+        } else {
+            console.warn('Failed to load user statistics, falling back to local calculation');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error loading user statistics:', error);
+        return null;
+    }
+}
+
+window.loadUserStatistics = loadUserStatistics;

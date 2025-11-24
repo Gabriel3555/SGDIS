@@ -187,6 +187,32 @@ async function deleteItemImage(itemId, imageUrl) {
     }
 }
 
+async function fetchInventoryStatistics(inventoryId) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`/api/v1/inventory/${inventoryId}/statistics`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching inventory statistics:', error);
+        throw error;
+    }
+}
+
 // Export functions globally
 window.fetchItemsByInventory = fetchItemsByInventory;
 window.createItem = createItem;
@@ -194,4 +220,5 @@ window.updateItem = updateItem;
 window.uploadItemImage = uploadItemImage;
 window.getItemImages = getItemImages;
 window.deleteItemImage = deleteItemImage;
+window.fetchInventoryStatistics = fetchInventoryStatistics;
 

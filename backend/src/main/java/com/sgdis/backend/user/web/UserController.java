@@ -5,6 +5,7 @@ import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
 import com.sgdis.backend.user.domain.Role;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sgdis.backend.user.mapper.UserMapper;
 import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
@@ -308,6 +309,36 @@ public class UserController {
                 .pageSize(userPage.getSize())
                 .first(userPage.isFirst())
                 .last(userPage.isLast())
+                .build();
+    }
+
+    @Operation(
+            summary = "Get user statistics",
+            description = "Retrieves total statistics of users by role (Superadmin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = UserStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "403", description = "Access denied - SUPERADMIN role required")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping("/statistics")
+    public UserStatisticsResponse getUserStatistics() {
+        long totalUsers = userRepository.count();
+        long superadminCount = userRepository.countByRole(Role.SUPERADMIN);
+        long adminInstitutionCount = userRepository.countByRole(Role.ADMIN_INSTITUTION);
+        long adminRegionalCount = userRepository.countByRole(Role.ADMIN_REGIONAL);
+        long warehouseCount = userRepository.countByRole(Role.WAREHOUSE);
+        long userCount = userRepository.countByRole(Role.USER);
+
+        return UserStatisticsResponse.builder()
+                .totalUsers(totalUsers)
+                .superadminCount(superadminCount)
+                .adminInstitutionCount(adminInstitutionCount)
+                .adminRegionalCount(adminRegionalCount)
+                .warehouseCount(warehouseCount)
+                .userCount(userCount)
                 .build();
     }
 }
