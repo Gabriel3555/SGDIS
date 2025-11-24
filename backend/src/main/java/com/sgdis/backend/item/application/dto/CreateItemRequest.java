@@ -17,6 +17,7 @@ public record CreateItemRequest(
     LocalDate acquisitionDate,
     Double acquisitionValue,
     String ivId,
+    String location,
     Long inventoryId,
     Long categoryId,
     Boolean status

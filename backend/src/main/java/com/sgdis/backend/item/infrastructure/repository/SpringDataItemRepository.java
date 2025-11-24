@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -24,4 +25,7 @@ public interface SpringDataItemRepository extends JpaRepository<ItemEntity, Long
 
     @Query("SELECT DISTINCT i FROM ItemEntity i, IN(i.attributes) a WHERE KEY(a) = :attributeKey AND VALUE(a) = :attributeValue")
     Optional<ItemEntity> findByAttribute(@Param("attributeKey") Attribute attributeKey, @Param("attributeValue") String attributeValue);
+
+    @Query("SELECT i FROM ItemEntity i WHERE i.inventory.id = :inventoryId")
+    List<ItemEntity> findAllByInventoryId(@Param("inventoryId") Long inventoryId);
 }

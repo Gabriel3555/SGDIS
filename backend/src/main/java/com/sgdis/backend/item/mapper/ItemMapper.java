@@ -33,6 +33,8 @@ public final class ItemMapper {
                 .acquisitionDate(request.acquisitionDate())
                 .acquisitionValue(request.acquisitionValue())
                 .ivId(request.ivId())
+                // location se establecerá en ItemService usando el del inventario si no está presente
+                .location(request.location())
                 .status(status)
                 .build();
 
