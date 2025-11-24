@@ -128,6 +128,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/import-export")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminImportExport() throws IOException {
+        Resource resource = new ClassPathResource("static/views/import-export/import-export.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/superadmin/inventory")
     @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseBody

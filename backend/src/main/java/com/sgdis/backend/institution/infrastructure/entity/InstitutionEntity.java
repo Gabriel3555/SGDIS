@@ -23,6 +23,8 @@ public class InstitutionEntity {
 
     private String name;
 
+    private String codeInstitution;
+
     @ManyToOne
     @JoinColumn(name = "regional_id")
     private RegionalEntity regional;

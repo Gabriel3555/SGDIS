@@ -85,6 +85,7 @@ public class ExcelItemService {
                 LocalDate acquisitionDate = getCellValueAsDate(row, 10); // Columna K
                 Double acquisitionValue = getCellValueAsDouble(row, 11); // Columna L
                 String ivId = getCellValueAsString(row, 14); // Columna O
+                String location = getCellValueAsString(row, 15); // Columna P
 
                 // Parsear atributos de la columna I
                 String brand = "";
@@ -134,6 +135,7 @@ public class ExcelItemService {
                 skuDescription = truncateString(skuDescription);
                 descriptionElement = truncateString(descriptionElement);
                 ivId = truncateString(ivId);
+                location = truncateString(location);
                 brand = truncateString(brand);
                 serial = truncateString(serial);
                 model = truncateString(model);
@@ -155,6 +157,7 @@ public class ExcelItemService {
                     acquisitionDate,
                     acquisitionValue,
                     ivId,
+                    location,
                     inventoryId,
                     null, // categoryId será null, se agregará manualmente después
                     true // status por defecto

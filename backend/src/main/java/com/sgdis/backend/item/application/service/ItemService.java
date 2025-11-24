@@ -58,8 +58,12 @@ public class ItemService implements
         itemEntity.setInventory(inventoryEntity);
         itemEntity.setCategory(categoryEntity);
         
+        // Usar location del request si está presente, sino usar el del inventario
+        String location = request.location();
+        if (location == null || location.trim().isEmpty()) {
+            location = inventoryEntity.getLocation() != null ? inventoryEntity.getLocation() : "";
+        }
         // Truncar location a máximo 255 caracteres
-        String location = inventoryEntity.getLocation() != null ? inventoryEntity.getLocation() : "";
         if (location.length() > 255) {
             location = location.substring(0, 252) + "...";
         }

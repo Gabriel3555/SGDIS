@@ -8,6 +8,7 @@ import com.sgdis.backend.item.application.dto.ItemDTO;
 import com.sgdis.backend.item.application.dto.UpdateItemRequest;
 import com.sgdis.backend.item.application.dto.UpdateItemResponse;
 import com.sgdis.backend.item.application.service.ExcelItemService;
+import com.sgdis.backend.item.application.service.ExcelExportService;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
 import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
 import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
@@ -27,6 +28,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +57,7 @@ public class ItemController {
     private final SpringDataItemRepository itemRepository;
     private final FileUploadService fileUploadService;
     private final ExcelItemService excelItemService;
+    private final ExcelExportService excelExportService;
 
     @Operation(
             summary = "Create new item",
@@ -440,6 +445,42 @@ public class ItemController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new BulkUploadResponse(0, 0, 0, List.of("Error: " + e.getMessage())));
+        }
+    }
+
+    @Operation(
+            summary = "Export inventory items to Excel",
+            description = "Exports all items from a specific inventory to an Excel file (.xlsx). " +
+                    "The file includes: ir_id, Cód. regional, Cód. Centro, Desc. Almacen, " +
+                    "No. de placa, Consecutivo, Desc. SKU, Descripción elemento, Atributos, " +
+                    "Fecha adq, Valor adq, iv_id, and Ubicación."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Excel file generated successfully",
+            content = @Content(mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @GetMapping(value = "/inventory/{inventoryId}/export", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public ResponseEntity<Resource> exportInventoryItemsToExcel(
+            @Parameter(description = "Inventory ID to export items from", required = true)
+            @PathVariable Long inventoryId
+    ) {
+        try {
+            byte[] excelData = excelExportService.exportInventoryItemsToExcel(inventoryId);
+            ByteArrayResource resource = new ByteArrayResource(excelData);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=items_inventario_" + inventoryId + ".xlsx");
+            headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(excelData.length)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

@@ -17,6 +17,7 @@ public final class InstitutionMapper {
         return new GetAllInstitutionResponse(
                 entity.getId(),
                 entity.getName(),
+                entity.getCodeInstitution(),
                 entity.getRegional() != null ? entity.getRegional().getId() : null,
                 entity.getCity() != null ? entity.getCity().getId() : null
         );
@@ -27,6 +28,7 @@ public final class InstitutionMapper {
         return new GetByIdResponse(
                 entity.getId(),
                 entity.getName(),
+                entity.getCodeInstitution(),
                 entity.getRegional() != null ? entity.getRegional().getId() : null,
                 entity.getCity() != null ? entity.getCity().getId() : null
         );
@@ -37,6 +39,7 @@ public final class InstitutionMapper {
         return new InstitutionResponse(
                 entity.getId(),
                 entity.getName(),
+                entity.getCodeInstitution(),
                 entity.getRegional() != null ? entity.getRegional().getId() : null,
                 entity.getCity() != null ? entity.getCity().getId() : null
         );
@@ -47,6 +50,7 @@ public final class InstitutionMapper {
         return new UpdateInstitutionResponse(
                 entity.getId(),
                 entity.getName(),
+                entity.getCodeInstitution(),
                 entity.getRegional() != null ? entity.getRegional().getId() : null,
                 entity.getCity() != null ? entity.getCity().getId() : null
         );
@@ -57,6 +61,7 @@ public final class InstitutionMapper {
         return new CreateInstitutionResponse(
                 entity.getId(),
                 entity.getName(),
+                entity.getCodeInstitution(),
                 entity.getRegional() != null ? entity.getRegional().getId() : null,
                 entity.getCity() != null ? entity.getCity().getId() : null
         );
@@ -65,6 +70,7 @@ public final class InstitutionMapper {
     public static InstitutionEntity fromCreateRequest(CreateInstitutionRequest dto) {
         if (dto == null) return null;
         var builder = InstitutionEntity.builder()
+                .codeInstitution(dto.codeInstitution())
                 .name(dto.name());
 
         if (dto.regionalId() != null) {
@@ -84,6 +90,7 @@ public final class InstitutionMapper {
         if (dto == null) return null;
         var builder = InstitutionEntity.builder()
                 .id(id)
+                .codeInstitution(dto.codeInstitution())
                 .name(dto.name());
 
         if (dto.regionalId() != null) {
@@ -103,6 +110,7 @@ public final class InstitutionMapper {
         return new InstitutionResponseWithoutRegionalResponse(
                 entity.getId(),
                 entity.getName(),
+                entity.getCodeInstitution(),
                 entity.getCity().getId()
         );
     }
