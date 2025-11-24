@@ -5,6 +5,18 @@
  * - Cierra sesión automáticamente si no hay respuesta
  */
 
+// Helper function to get cookie value
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(";");
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) === " ") c = c.substring(1, c.length);
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+}
+
 class InactivityMonitor {
     constructor() {
         // Configuración de tiempos (en milisegundos)
@@ -440,7 +452,55 @@ class InactivityMonitor {
         }
     }
     
-    handleStayActive() {
+    async handleStayActive() {
+        // Obtener el refresh token de las cookies
+        const refreshTokenValue = getCookie("refreshToken");
+        
+        if (!refreshTokenValue) {
+            console.error("No refresh token found");
+            this.showNotification('Error', 'No se pudo renovar la sesión. Redirigiendo...', 'error');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 2000);
+            return;
+        }
+
+        try {
+            // Llamar al endpoint de refresh token
+            const response = await fetch("/api/v1/auth/token/refresh", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    refreshToken: refreshTokenValue,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                // Guardar el nuevo access token en localStorage
+                // El endpoint devuelve 'accessToken' según el DTO RefreshTokenResponse
+                const newAccessToken = data.accessToken || data.jwt;
+                if (newAccessToken) {
+                    localStorage.setItem("jwt", newAccessToken);
+                    console.log("Token refreshed successfully");
+                } else {
+                    console.error("No access token in response");
+                }
+            } else {
+                console.error("Token refresh failed");
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Error al renovar el token");
+            }
+        } catch (error) {
+            console.error("Error refreshing token:", error);
+            this.showNotification('Error', 'No se pudo renovar la sesión. Redirigiendo...', 'error');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 2000);
+            return;
+        }
         
         // Ocultar el modal
         this.hideWarningModal();
@@ -448,7 +508,7 @@ class InactivityMonitor {
         // Resetear el temporizador de inactividad
         this.resetInactivityTimer();
         
-        // Mostrar notificación de confirmación (opcional)
+        // Mostrar notificación de confirmación
         this.showNotification('Sesión extendida', 'Tu sesión continuará activa.', 'success');
     }
     
