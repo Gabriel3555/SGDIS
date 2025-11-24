@@ -59,15 +59,11 @@ function updateUserStats() {
   const userCount = window.usersData.users.filter(
     (u) => u && u.role === "USER"
   ).length;
-  const activeCount = window.usersData.users.filter(
-    (u) => u && u.status === true
-  ).length;
-  const inactiveCount = window.usersData.users.filter(
-    (u) => u && u.status === false
-  ).length;
-
+  const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+  const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+  
   container.innerHTML = `
-        <div class="stat-card">
+        ${!isAdminInstitution ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Super Admin</p>
@@ -78,7 +74,7 @@ function updateUserStats() {
                 </div>
             </div>
             <p class="text-red-600 text-sm font-medium">Administradores del sistema</p>
-        </div>
+        </div>` : ''}
 
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">
@@ -93,7 +89,7 @@ function updateUserStats() {
             <p class="text-purple-600 text-sm font-medium">Administradores de institución</p>
         </div>
 
-        <div class="stat-card">
+        ${!isAdminInstitution ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Admin Regional</p>
@@ -104,7 +100,7 @@ function updateUserStats() {
                 </div>
             </div>
             <p class="text-orange-600 text-sm font-medium">Administradores regionales</p>
-        </div>
+        </div>` : ''}
 
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">
@@ -130,32 +126,6 @@ function updateUserStats() {
                 </div>
             </div>
             <p class="text-[#00AF00] text-sm font-medium">Usuarios del sistema</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Activos</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${activeCount}</h3>
-                </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user-check text-blue-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-blue-600 text-sm font-medium">Usuarios activos</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Inactivos</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${inactiveCount}</h3>
-                </div>
-                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user-times text-gray-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-gray-600 text-sm font-medium">Usuarios inactivos</p>
         </div>
     `;
 }
@@ -389,13 +359,16 @@ function updateViewModeButtons() {
   const isTableActive = usersData.viewMode === "table";
   const isCardsActive = usersData.viewMode === "cards";
 
+  const currentRole = usersData ? usersData.currentLoggedInUserRole : '';
+  const shouldHideCount = currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION';
+  
   container.innerHTML = `
         <div class="flex items-center gap-2 mb-4">
             <i class="fas fa-users text-[#00AF00] text-xl"></i>
             <h2 class="text-xl font-bold text-gray-800">Usuarios del Sistema</h2>
-            <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${
+            ${!shouldHideCount ? `<span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${
               usersData ? usersData.filteredUsers.length : 0
-            } usuarios</span>
+            } usuarios</span>` : ''}
             <div class="flex items-center gap-2 ml-auto">
                 <button onclick="setViewMode('table')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                   isTableActive
@@ -813,11 +786,14 @@ function initializeFilterSelects() {
   }
 
   if (!window.filterRoleSelect) {
+    const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+    const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+    
     const roleOptions = [
       { value: "all", label: "Todos los roles" },
-      { value: "SUPERADMIN", label: "Super Admin" },
+      ...(isAdminInstitution ? [] : [{ value: "SUPERADMIN", label: "Super Admin" }]),
       { value: "ADMIN_INSTITUTION", label: "Admin Institución" },
-      { value: "ADMIN_REGIONAL", label: "Admin Regional" },
+      ...(isAdminInstitution ? [] : [{ value: "ADMIN_REGIONAL", label: "Admin Regional" }]),
       { value: "WAREHOUSE", label: "Almacén" },
       { value: "USER", label: "Usuario" },
     ];

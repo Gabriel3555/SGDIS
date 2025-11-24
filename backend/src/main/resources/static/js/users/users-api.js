@@ -62,16 +62,32 @@ async function loadUsers(page = 0) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
+        // Check if current user is ADMIN_INSTITUTION
+        const currentRole = usersData.currentLoggedInUserRole || '';
+        const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+        
         // Check if filters are active
         const hasFilters = usersData.searchTerm || usersData.selectedRole !== 'all' || usersData.selectedStatus !== 'all';
         
         let url;
-        if (hasFilters) {
-            // Load all users for filtering (set a large page size)
-            url = `/api/v1/users?page=0&size=1000`;
+        if (isAdminInstitution) {
+            // Use institution endpoint for ADMIN_INSTITUTION
+            if (hasFilters) {
+                // Load all users for filtering (set a large page size)
+                url = `/api/v1/users/institution?page=0&size=1000`;
+            } else {
+                // Use pagination
+                url = `/api/v1/users/institution?page=${page}&size=${usersData.itemsPerPage}`;
+            }
         } else {
-            // Use pagination
-            url = `/api/v1/users?page=${page}&size=${usersData.itemsPerPage}`;
+            // Use regular endpoint for other roles
+            if (hasFilters) {
+                // Load all users for filtering (set a large page size)
+                url = `/api/v1/users?page=0&size=1000`;
+            } else {
+                // Use pagination
+                url = `/api/v1/users?page=${page}&size=${usersData.itemsPerPage}`;
+            }
         }
 
         const response = await fetch(url, {
