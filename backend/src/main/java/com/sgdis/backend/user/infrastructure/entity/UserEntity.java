@@ -37,24 +37,24 @@ public class UserEntity {
     private boolean status = true;
 
     @JsonIgnore
-    @OneToOne(mappedBy = "owner")
+    @OneToOne(mappedBy = "owner", fetch = FetchType.LAZY)
     private InventoryEntity myOwnedInventory;
 
     @JsonIgnore
-    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "managers")
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "managers")
     private List<InventoryEntity> myManagers;
 
     @JsonIgnore
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "institution_id")
     private InstitutionEntity institution;
 
     @JsonIgnore
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "signatories_inventories", joinColumns = @JoinColumn(name = "signatory_id"), inverseJoinColumns = @JoinColumn(name = "inventory_id"))
     private List<InventoryEntity> mySignatories;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<VerificationEntity> verifications;
 }

@@ -53,7 +53,7 @@ public class ItemEntity {
     private boolean status = true;
 
     @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "item")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "item")
     private List<LoanEntity> loans;
 
     @ElementCollection
@@ -62,23 +62,23 @@ public class ItemEntity {
     private Map<Attribute, String> attributes;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inventory_id")
     private InventoryEntity inventory;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private CategoryEntity category;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "item")
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
     private List<VerificationEntity> verifications;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "item",fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "item",fetch = FetchType.LAZY)
     private List<TransferEntity> transfers;
 
-    @ManyToMany(fetch = FetchType.EAGER, mappedBy = "items")
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "items")
     private List<CancellationEntity> cancellations;
 }

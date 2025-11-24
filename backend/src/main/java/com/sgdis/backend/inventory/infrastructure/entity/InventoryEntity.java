@@ -38,27 +38,27 @@ public class InventoryEntity {
     @Column(nullable = false, columnDefinition = "boolean default true")
     private boolean status = true;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", unique = true)
     private UserEntity owner;
 
     @JsonIgnore
-    @ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinTable(name = "managers_inventories", joinColumns = @JoinColumn(name = "inventory_id"), inverseJoinColumns = @JoinColumn(name = "manager_id"))
     private List<UserEntity> managers;
 
     @JsonIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "institution_id")
     private InstitutionEntity institution;
 
-    @OneToMany(mappedBy = "inventory")
+    @OneToMany(mappedBy = "inventory", fetch = FetchType.LAZY)
     private List<ItemEntity> items;
 
-    @ManyToMany(mappedBy = "mySignatories", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToMany(mappedBy = "mySignatories", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<UserEntity> signatories;
 
-    @OneToMany(mappedBy = "inventory",cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "inventory",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TransferEntity> transfers;
 
 }

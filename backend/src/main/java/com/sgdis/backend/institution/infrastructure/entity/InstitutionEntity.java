@@ -25,17 +25,17 @@ public class InstitutionEntity {
 
     private String codeInstitution;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "regional_id")
     private RegionalEntity regional;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "city_id")
     private CityEntity city;
 
-    @OneToMany(mappedBy = "institution")
+    @OneToMany(mappedBy = "institution", fetch = FetchType.LAZY)
     private List<InventoryEntity> inventories;
 
-    @OneToMany(mappedBy = "institution")
+    @OneToMany(mappedBy = "institution", fetch = FetchType.LAZY)
     private List<UserEntity> users;
 }

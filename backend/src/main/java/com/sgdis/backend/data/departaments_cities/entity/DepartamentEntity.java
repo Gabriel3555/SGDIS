@@ -27,6 +27,6 @@ public class DepartamentEntity {
 
     @JsonIgnore
     @Builder.Default
-    @OneToMany(mappedBy = "departament", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "departament", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CityEntity> cities = new ArrayList<>();
 }

@@ -24,15 +24,15 @@ public class CancellationEntity {
 
     private UUID uuid = UUID.randomUUID();
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "cancelations_items")
     private List<ItemEntity> items;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "requester_id")
     private UserEntity requester;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "checker_id")
     private UserEntity checker;
 
