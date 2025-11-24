@@ -1,11 +1,14 @@
 package com.sgdis.backend.category.web;
 
+import com.sgdis.backend.category.application.dto.CategoryDTO;
 import com.sgdis.backend.category.application.dto.CreateCategoryRequest;
 import com.sgdis.backend.category.application.dto.CreateCategoryResponse;
 import com.sgdis.backend.category.application.dto.UpdateCategoryRequest;
 import com.sgdis.backend.category.application.dto.UpdateCategoryResponse;
 import com.sgdis.backend.category.application.port.CreateCategoryUseCase;
 import com.sgdis.backend.category.application.port.UpdateCategoryUseCase;
+import com.sgdis.backend.category.infrastructure.repository.SpringDataCategoryRepository;
+import com.sgdis.backend.category.mapper.CategoryMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -26,6 +29,7 @@ public class CategoryController {
 
     private final CreateCategoryUseCase createCategoryUseCase;
     private final UpdateCategoryUseCase updateCategoryUseCase;
+    private final SpringDataCategoryRepository categoryRepository;
 
     // Crear category
     @Operation(
@@ -79,5 +83,24 @@ public class CategoryController {
     ) {
         var updated = updateCategoryUseCase.updateCategory(request);
         return ResponseEntity.ok(updated);
+    }
+
+    // Obtener todas las categorías
+    @Operation(
+            summary = "Get all categories",
+            description = "Retrieves all categories"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Categories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = CategoryDTO.class))
+    )
+    @GetMapping
+    public ResponseEntity<java.util.List<CategoryDTO>> getAllCategories() {
+        var categories = categoryRepository.findAll()
+                .stream()
+                .map(CategoryMapper::toDTO)
+                .toList();
+        return ResponseEntity.ok(categories);
     }
 }

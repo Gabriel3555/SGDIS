@@ -1,11 +1,13 @@
 package com.sgdis.backend.item.web;
 
 import com.sgdis.backend.exception.ResourceNotFoundException;
+import com.sgdis.backend.item.application.dto.BulkUploadResponse;
 import com.sgdis.backend.item.application.dto.CreateItemRequest;
 import com.sgdis.backend.item.application.dto.CreateItemResponse;
 import com.sgdis.backend.item.application.dto.ItemDTO;
 import com.sgdis.backend.item.application.dto.UpdateItemRequest;
 import com.sgdis.backend.item.application.dto.UpdateItemResponse;
+import com.sgdis.backend.item.application.service.ExcelItemService;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
 import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
 import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
@@ -50,10 +52,11 @@ public class ItemController {
     private final GetItemVerificationsUseCase getItemVerificationsUseCase;
     private final SpringDataItemRepository itemRepository;
     private final FileUploadService fileUploadService;
+    private final ExcelItemService excelItemService;
 
     @Operation(
             summary = "Create new item",
-            description = "Creates a new item",
+            description = "Creates a new item. Category is optional and can be added manually later.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
@@ -394,6 +397,49 @@ public class ItemController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error deleting image: " + e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Bulk upload items from Excel file",
+            description = "Uploads items from an Excel file (.xls or .xlsx). " +
+                    "The file should start from row 2 (row 1 is header). " +
+                    "Column mapping: A=irId, D=wareHouseDescription, E=licencePlateNumber, " +
+                    "F=consecutiveNumber, G=skuDescription/productName, H=descriptionElement, " +
+                    "I=attributes (MARCA:...; SERIAL:...; MODELO:...; OBSERVACIONES:...), " +
+                    "K=acquisitionDate, L=acquisitionValue, O=ivId. " +
+                    "Category will be null and can be added manually later."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Items uploaded successfully",
+            content = @Content(schema = @Schema(implementation = BulkUploadResponse.class))
+    )
+    @ApiResponse(responseCode = "400", description = "Invalid file or request")
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @PostMapping(value = "/bulk-upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<BulkUploadResponse> bulkUploadItems(
+            @Parameter(
+                    description = "Excel file (.xls or .xlsx) with items data",
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            schema = @Schema(type = "string", format = "binary")
+                    )
+            )
+            @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Inventory ID where items will be added", required = true)
+            @RequestParam("inventoryId") Long inventoryId
+    ) {
+        try {
+            BulkUploadResponse response = excelItemService.processExcelFile(file, inventoryId);
+            return ResponseEntity.ok(response);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BulkUploadResponse(0, 0, 0, List.of("Error al procesar el archivo: " + e.getMessage())));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new BulkUploadResponse(0, 0, 0, List.of("Error: " + e.getMessage())));
         }
     }
 }
