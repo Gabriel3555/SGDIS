@@ -93,6 +93,9 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
             }
             itemRepository.save(item);
             
+            // Actualizar totalPrice de ambos inventarios
+            updateInventoryTotalPrices(sourceInventory, destinationInventory, item.getAcquisitionValue());
+            
             transfer.setApprovedAt(LocalDateTime.now());
             transfer.setApprovedBy(requester);
             transfer.setApprovalNotes("Transferencia directa por " + requester.getRole().name());
@@ -167,6 +170,9 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
         itemRepository.save(item);
 
+        // Actualizar totalPrice de ambos inventarios
+        updateInventoryTotalPrices(sourceInventory, destinationInventory, item.getAcquisitionValue());
+
         transfer.setSourceInventory(sourceInventory);
         transfer.setApprovalStatus(TransferStatus.APPROVED);
         transfer.setApprovedAt(LocalDateTime.now());
@@ -240,5 +246,29 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                user.getRole() == Role.ADMIN_INSTITUTION ||
                user.getRole() == Role.ADMIN_REGIONAL ||
                user.getRole() == Role.WAREHOUSE;
+    }
+
+    /**
+     * Actualiza el totalPrice de los inventarios origen y destino durante una transferencia.
+     * Resta el valor del inventario origen y lo suma al inventario destino.
+     * 
+     * @param sourceInventory Inventario de origen (se resta el valor)
+     * @param destinationInventory Inventario de destino (se suma el valor)
+     * @param itemValue Valor del item a transferir (acquisitionValue)
+     */
+    private void updateInventoryTotalPrices(InventoryEntity sourceInventory, 
+                                            InventoryEntity destinationInventory, 
+                                            Double itemValue) {
+        if (itemValue != null && itemValue > 0) {
+            // Restar del inventario origen
+            Double sourceTotal = sourceInventory.getTotalPrice() != null ? sourceInventory.getTotalPrice() : 0.0;
+            sourceInventory.setTotalPrice(Math.max(0.0, sourceTotal - itemValue));
+            inventoryRepository.save(sourceInventory);
+
+            // Sumar al inventario destino
+            Double destTotal = destinationInventory.getTotalPrice() != null ? destinationInventory.getTotalPrice() : 0.0;
+            destinationInventory.setTotalPrice(destTotal + itemValue);
+            inventoryRepository.save(destinationInventory);
+        }
     }
 }
