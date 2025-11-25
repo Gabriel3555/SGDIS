@@ -73,11 +73,7 @@ async function startBatchScanner() {
         // Start scanning - simple configuration that works
         await batchVerificationState.html5QrCode.start(
             { facingMode: "environment" }, // Use back camera if available
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            },
+            config,
             (decodedText, decodedResult) => {
                 if (!batchVerificationState.isPaused) {
                     handleScannedCode(decodedText);
