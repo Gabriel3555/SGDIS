@@ -130,23 +130,33 @@ async function loadInventories() {
 
 async function loadLatestVerifications() {
     try {
+        // Check if we have inventories
+        if (!verificationData.inventories || verificationData.inventories.length === 0) {
+            verificationData.verifications = [];
+            verificationData.filteredVerifications = [];
+            return;
+        }
+
         // Load verifications for all inventories
         const allVerifications = [];
         
         for (const inventory of verificationData.inventories) {
-            try {
-                const verifications = await getLatestVerifications(inventory.id);
+            if (!inventory || !inventory.id) {
+                continue; // Skip invalid inventories
+            }
+            
+            const verifications = await getLatestVerifications(inventory.id);
+            if (verifications && verifications.length > 0) {
                 allVerifications.push(...verifications);
-            } catch (error) {
-                console.error(`Error loading verifications for inventory ${inventory.id}:`, error);
             }
         }
 
         verificationData.verifications = allVerifications;
         verificationData.filteredVerifications = [...verificationData.verifications];
 
-        if (verificationData.verifications.length === 0) {
-            showInfoToast('Información', 'No hay verificaciones registradas en el sistema.');
+        // Only show info toast if we actually tried to load but got no results
+        if (verificationData.verifications.length === 0 && verificationData.inventories.length > 0) {
+            // Don't show toast for empty results - it's normal if there are no verifications
         }
     } catch (error) {
         console.error('Error loading verifications:', error);
@@ -158,24 +168,58 @@ async function loadLatestVerifications() {
 async function getLatestVerifications(inventoryId) {
     try {
         const token = localStorage.getItem('jwt');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (!token) {
+            console.warn('No authentication token found for getting verifications');
+            return [];
+        }
+
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
 
         const response = await fetch(`/api/v1/verifications/inventories/${inventoryId}/verifications/latest`, {
             method: 'GET',
-            headers: headers
+            headers: headers,
+            credentials: 'same-origin'
         });
 
         if (response.ok) {
             const verifications = await response.json();
-            return Array.isArray(verifications) ? verifications : [];
+            // Transform the response to match frontend expectations
+            const transformedVerifications = Array.isArray(verifications) 
+                ? verifications.map(v => ({
+                    id: v.id || v.verificationId,
+                    itemId: v.itemId,
+                    licensePlate: v.itemLicencePlateNumber,
+                    itemName: v.itemName,
+                    inventoryId: v.inventoryId,
+                    inventoryName: v.inventoryName,
+                    status: v.status || 'PENDING',
+                    hasEvidence: v.photoUrls && v.photoUrls.length > 0,
+                    verificationDate: v.verifiedAt,
+                    photoUrls: v.photoUrls || [],
+                    userId: v.userId,
+                    userFullName: v.userFullName,
+                    userEmail: v.userEmail
+                }))
+                : [];
+            return transformedVerifications;
         } else if (response.status === 404) {
+            // Inventory not found or no verifications - return empty array
+            return [];
+        } else if (response.status === 401 || response.status === 403) {
+            // Authentication/Authorization error - log but don't throw
+            console.warn(`Authentication/Authorization error for inventory ${inventoryId}: ${response.status}`);
             return [];
         } else {
-            throw new Error('Error al obtener las verificaciones');
+            // Other error - log but return empty array to continue processing
+            console.warn(`Error getting verifications for inventory ${inventoryId}: ${response.status}`);
+            return [];
         }
     } catch (error) {
-        console.error('Error getting latest verifications:', error);
+        // Network errors, CORS errors, etc. - log but return empty array
+        console.warn(`Error getting latest verifications for inventory ${inventoryId}:`, error.message || error);
         return [];
     }
 }
@@ -249,7 +293,7 @@ async function createVerificationByPlate(licensePlate) {
         const response = await fetch(`/api/v1/verifications/by-licence-plate`, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify({ licencePlate: licensePlate })
+            body: JSON.stringify({ licencePlateNumber: licensePlate })
         });
 
         if (response.ok) {
