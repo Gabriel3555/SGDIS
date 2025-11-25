@@ -1,6 +1,7 @@
 package com.sgdis.backend.inventory.application.service;
 
 import com.sgdis.backend.auth.application.service.AuthService;
+import com.sgdis.backend.exception.DomainConflictException;
 import com.sgdis.backend.exception.DomainValidationException;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;

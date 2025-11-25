@@ -1,5 +1,5 @@
 package com.sgdis.backend;
-/*
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
@@ -81,7 +81,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // Usuarios demo (opcional)
         createUserIfNotExists("gabriel@soy.sena.edu.co", "ayuda123", "Gabriel", "Desarrollador", "Tecnología", Role.USER);
-        createUserIfNotExists("admin@soy.sena.edu.co", "admin123", "Admin", "Administrador", "Sistemas", Role.ADMIN_INSTITUTION);
+        createUserIfNotExists("admin@soy.sena.edu.co", "admin123", "Admin", "Administrador", "Sistemas", Role.SUPERADMIN);
         createUserIfNotExists("warehouse@soy.sena.edu.co", "wh123", "Warehouse", "Almacenista", "Logística", Role.WAREHOUSE);
 
         // Create inventories with owners and managers
@@ -259,7 +259,3 @@ public class DataInitializer implements CommandLineRunner {
         private List<String> ciudades;
     }
 }
-
- */
-
-
