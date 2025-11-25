@@ -114,13 +114,15 @@ html.dark .bg-gray-100 {
 /* Excepciones para modales específicos - estas reglas tienen mayor especificidad */
 html:not(.dark) #inventoryTreeModal .bg-white,
 html:not(.dark) #userDetailsModal .bg-white,
-html:not(.dark) #viewInventoryModal .bg-white {
+html:not(.dark) #viewInventoryModal .bg-white,
+html:not(.dark) #editInventoryModal .bg-white {
     background-color: #ffffff !important;
 }
 
 html:not(.dark) #inventoryTreeModal .bg-gray-50,
 html:not(.dark) #userDetailsModal .bg-gray-50,
-html:not(.dark) #inventoryTreeContainer {
+html:not(.dark) #inventoryTreeContainer,
+html:not(.dark) #editInventoryModal .bg-gray-50 {
     background-color: #f9fafb !important;
 }
 
@@ -859,6 +861,100 @@ html.dark button {
 
 .dark #editInventoryModal .border-gray-200 {
     border-color: rgba(0, 175, 0, 0.2) !important;
+}
+
+/* ============================================
+   EDIT INVENTORY MODAL - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que en modo claro el modal use colores correctos */
+html:not(.dark) #editInventoryModal > div.bg-white,
+html:not(.dark) #editInventoryModal > div.bg-white.dark\:bg-gray-800,
+html:not(.dark) #editInventoryModal .bg-white {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #editInventoryModal h2.text-gray-800,
+html:not(.dark) #editInventoryModal h2.dark\:text-gray-100 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #editInventoryModal p.text-gray-600,
+html:not(.dark) #editInventoryModal p.dark\:text-gray-400 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #editInventoryModal label.text-gray-700,
+html:not(.dark) #editInventoryModal label.dark\:text-gray-300 {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #editInventoryModal input[type="text"] {
+    background-color: #ffffff !important;
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #editInventoryModal input[type="text"].dark\:bg-gray-700 {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #editInventoryModal input[type="text"].dark\:border-gray-600 {
+    border-color: #D1D5DB !important; /* gray-300 */
+}
+
+html:not(.dark) #editInventoryModal input[type="text"].dark\:text-gray-100 {
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #editInventoryModal .bg-gray-50 {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+html:not(.dark) #editInventoryModal .bg-gray-50.dark\:bg-gray-700\/50 {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+html:not(.dark) #editInventoryModal .border-gray-200 {
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #editInventoryModal .border-gray-200.dark\:border-gray-600 {
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #editInventoryModal p.text-gray-800,
+html:not(.dark) #editInventoryModal p.dark\:text-gray-100 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #editInventoryModal span.text-gray-600,
+html:not(.dark) #editInventoryModal span.dark\:text-gray-400 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #editInventoryModal button.text-gray-400,
+html:not(.dark) #editInventoryModal button.dark\:hover\:text-gray-300 {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+html:not(.dark) #editInventoryModal button.text-gray-400:hover {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #editInventoryModal button.border-gray-300,
+html:not(.dark) #editInventoryModal button.dark\:border-gray-600 {
+    border-color: #D1D5DB !important; /* gray-300 */
+}
+
+html:not(.dark) #editInventoryModal button.text-gray-700,
+html:not(.dark) #editInventoryModal button.dark\:text-gray-300 {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #editInventoryModal button.hover\:bg-gray-50,
+html:not(.dark) #editInventoryModal button.dark\:hover\:bg-gray-700:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
 }
 
 /* ============================================
@@ -1832,5 +1928,252 @@ html:not(.dark) #deleteUserModal ul {
 .dark .user-action-btn[data-action="delete"][disabled] {
     color: var(--dark-text-muted) !important;
     background-color: transparent !important;
+}
+
+/* ============================================
+   INVENTORY TABLE ACTION BUTTONS - LIGHT MODE
+   ============================================ */
+
+/* Botones de acciones CRUD en la tabla de inventarios - modo claro */
+html:not(.dark) #inventoryTableContainer button.p-2.text-blue-600:hover,
+html:not(.dark) #inventoryTableContainer button.p-2.hover\:bg-blue-50:hover {
+    background-color: #DBEAFE !important; /* blue-100 - más visible que blue-50 */
+    color: #1E40AF !important; /* blue-800 - más oscuro para mejor contraste */
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+html:not(.dark) #inventoryTableContainer button.p-2.text-yellow-600:hover,
+html:not(.dark) #inventoryTableContainer button.p-2.hover\:bg-yellow-50:hover {
+    background-color: #FEF3C7 !important; /* yellow-100 - más visible que yellow-50 */
+    color: #92400E !important; /* yellow-800 - más oscuro para mejor contraste */
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(234, 179, 8, 0.2);
+}
+
+html:not(.dark) #inventoryTableContainer button.p-2.text-purple-600:hover,
+html:not(.dark) #inventoryTableContainer button.p-2.hover\:bg-purple-50:hover {
+    background-color: #E9D5FF !important; /* purple-100 - más visible que purple-50 */
+    color: #6B21A8 !important; /* purple-800 - más oscuro para mejor contraste */
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(147, 51, 234, 0.2);
+}
+
+html:not(.dark) #inventoryTableContainer button.p-2.text-\[#00AF00\]:hover,
+html:not(.dark) #inventoryTableContainer button.p-2.hover\:bg-green-50:hover {
+    background-color: #D1FAE5 !important; /* green-100 - más visible que green-50 */
+    color: #065F46 !important; /* green-800 - más oscuro para mejor contraste */
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 175, 0, 0.2);
+}
+
+html:not(.dark) #inventoryTableContainer button.p-2.text-red-600:hover,
+html:not(.dark) #inventoryTableContainer button.p-2.hover\:bg-red-50:hover {
+    background-color: #FEE2E2 !important; /* red-100 - más visible que red-50 */
+    color: #991B1B !important; /* red-800 - más oscuro para mejor contraste */
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+/* Asegurar que los iconos dentro de los botones también cambien de color en hover */
+html:not(.dark) #inventoryTableContainer button.p-2.text-blue-600:hover i,
+html:not(.dark) #inventoryTableContainer button.p-2.text-yellow-600:hover i,
+html:not(.dark) #inventoryTableContainer button.p-2.text-purple-600:hover i,
+html:not(.dark) #inventoryTableContainer button.p-2.text-\[#00AF00\]:hover i,
+html:not(.dark) #inventoryTableContainer button.p-2.text-red-600:hover i {
+    color: inherit !important;
+}
+
+/* Transición suave para el efecto hover */
+html:not(.dark) #inventoryTableContainer button.p-2 {
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* Botones de acciones en vista de cards - modo claro */
+html:not(.dark) #inventoryTableContainer button.text-blue-600:hover,
+html:not(.dark) #inventoryTableContainer button.hover\:text-blue-800:hover {
+    color: #1E3A8A !important; /* blue-900 - más oscuro y visible */
+    transform: scale(1.1);
+}
+
+html:not(.dark) #inventoryTableContainer button.text-yellow-600:hover,
+html:not(.dark) #inventoryTableContainer button.hover\:text-yellow-800:hover {
+    color: #78350F !important; /* yellow-900 - más oscuro y visible */
+    transform: scale(1.1);
+}
+
+html:not(.dark) #inventoryTableContainer button.text-purple-600:hover,
+html:not(.dark) #inventoryTableContainer button.hover\:text-purple-800:hover {
+    color: #581C87 !important; /* purple-900 - más oscuro y visible */
+    transform: scale(1.1);
+}
+
+html:not(.dark) #inventoryTableContainer button.text-\[#00AF00\]:hover,
+html:not(.dark) #inventoryTableContainer button.hover\:text-green-800:hover {
+    color: #065F46 !important; /* green-800 - más oscuro y visible */
+    transform: scale(1.1);
+}
+
+html:not(.dark) #inventoryTableContainer button.text-red-600:hover,
+html:not(.dark) #inventoryTableContainer button.hover\:text-red-800:hover {
+    color: #7F1D1D !important; /* red-900 - más oscuro y visible */
+    transform: scale(1.1);
+}
+
+/* Transición suave para botones en vista de cards */
+html:not(.dark) #inventoryTableContainer button.text-blue-600,
+html:not(.dark) #inventoryTableContainer button.text-yellow-600,
+html:not(.dark) #inventoryTableContainer button.text-purple-600,
+html:not(.dark) #inventoryTableContainer button.text-\[#00AF00\],
+html:not(.dark) #inventoryTableContainer button.text-red-600 {
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* ============================================
+   ITEMS MODALS - DARK MODE
+   ============================================ */
+
+/* Modales de items en modo oscuro */
+.dark #newItemModal > div.bg-white,
+.dark #editItemModal > div.bg-white,
+.dark #viewItemModal > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark #newItemModal h2,
+.dark #editItemModal h2,
+.dark #viewItemModal h2 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #newItemModal label,
+.dark #editItemModal label,
+.dark #viewItemModal label {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #newItemModal input[type="text"],
+.dark #newItemModal input[type="date"],
+.dark #newItemModal input[type="number"],
+.dark #newItemModal textarea,
+.dark #editItemModal input[type="text"],
+.dark #editItemModal input[type="date"],
+.dark #editItemModal input[type="number"],
+.dark #editItemModal textarea {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #newItemModal input[type="text"]::placeholder,
+.dark #newItemModal input[type="number"]::placeholder,
+.dark #newItemModal textarea::placeholder,
+.dark #editItemModal input[type="text"]::placeholder,
+.dark #editItemModal input[type="number"]::placeholder,
+.dark #editItemModal textarea::placeholder {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #newItemModal input[type="text"]:focus,
+.dark #newItemModal input[type="date"]:focus,
+.dark #newItemModal input[type="number"]:focus,
+.dark #newItemModal textarea:focus,
+.dark #editItemModal input[type="text"]:focus,
+.dark #editItemModal input[type="date"]:focus,
+.dark #editItemModal input[type="number"]:focus,
+.dark #editItemModal textarea:focus {
+    border-color: var(--dark-sena-verde) !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #newItemModal button.text-gray-400,
+.dark #editItemModal button.text-gray-400,
+.dark #viewItemModal button.text-gray-400 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #newItemModal button.text-gray-400:hover,
+.dark #editItemModal button.text-gray-400:hover,
+.dark #viewItemModal button.text-gray-400:hover {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #newItemModal button.border-gray-300,
+.dark #editItemModal button.border-gray-300,
+.dark #viewItemModal button.border-gray-300 {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #newItemModal button.border-gray-300:hover,
+.dark #editItemModal button.border-gray-300:hover,
+.dark #viewItemModal button.border-gray-300:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #newItemModal input[type="checkbox"],
+.dark #editItemModal input[type="checkbox"] {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.dark #newItemModal input[type="checkbox"]:checked,
+.dark #editItemModal input[type="checkbox"]:checked {
+    background-color: var(--dark-sena-verde) !important;
+    border-color: var(--dark-sena-verde) !important;
+}
+
+/* ============================================
+   ITEMS MODALS - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que en modo claro los modales de items usen colores correctos */
+html:not(.dark) #newItemModal > div.bg-white,
+html:not(.dark) #editItemModal > div.bg-white,
+html:not(.dark) #viewItemModal > div.bg-white {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #newItemModal h2,
+html:not(.dark) #editItemModal h2,
+html:not(.dark) #viewItemModal h2 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #newItemModal label,
+html:not(.dark) #editItemModal label,
+html:not(.dark) #viewItemModal label {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #newItemModal input[type="text"],
+html:not(.dark) #newItemModal input[type="date"],
+html:not(.dark) #newItemModal input[type="number"],
+html:not(.dark) #newItemModal textarea,
+html:not(.dark) #editItemModal input[type="text"],
+html:not(.dark) #editItemModal input[type="date"],
+html:not(.dark) #editItemModal input[type="number"],
+html:not(.dark) #editItemModal textarea {
+    background-color: #ffffff !important;
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #newItemModal button.border-gray-300,
+html:not(.dark) #editItemModal button.border-gray-300,
+html:not(.dark) #viewItemModal button.border-gray-300 {
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #newItemModal button.border-gray-300:hover,
+html:not(.dark) #editItemModal button.border-gray-300:hover,
+html:not(.dark) #viewItemModal button.border-gray-300:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+    color: #1F2937 !important; /* gray-800 */
 }
 

@@ -137,7 +137,9 @@ async function handleNewUserSubmit(e) {
          document.getElementById('newUserPassword')?.classList.remove('border-red-500');
      }
      
-     const jobTitle = document.getElementById('newUserJobTitle')?.value?.trim();
+     // Get job title from hidden input (CustomSelect) or directly from CustomSelect
+     const jobTitleInput = document.getElementById('newUserJobTitle');
+     const jobTitle = jobTitleInput?.value?.trim() || (window.jobTitleSelect ? window.jobTitleSelect.getValue() : '');
      const laborDepartment = document.getElementById('newUserLaborDepartment')?.value?.trim();
      const photoFile = document.getElementById('newUserPhoto')?.files[0];
 
@@ -200,7 +202,9 @@ async function handleEditUserSubmit(e) {
     // Get role from hidden input (CustomSelect)
     const roleInput = document.getElementById('editUserRole');
     const role = roleInput?.value || (window.editRoleSelect ? window.editRoleSelect.getValue() : '');
-    const jobTitle = document.getElementById('editUserJobTitle').value;
+    // Get job title from hidden input (CustomSelect) or directly from CustomSelect
+    const jobTitleInput = document.getElementById('editUserJobTitle');
+    const jobTitle = jobTitleInput?.value?.trim() || (window.editJobTitleSelect ? window.editJobTitleSelect.getValue() : '');
     const laborDepartment = document.getElementById('editUserLaborDepartment').value;
     const statusValue = document.getElementById('editUserStatus').value;
     const status = statusValue === 'true';

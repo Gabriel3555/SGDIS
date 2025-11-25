@@ -109,7 +109,8 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
     
     if (isSuperAdmin) {
         // Use window.inventoryData to ensure we get the latest values
-        const data = window.inventoryData || inventoryData || {};
+        // Safely get inventoryData - check if we're in items page context
+        const data = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : {});
         const selectedRegional = data.selectedRegional;
         const selectedInstitution = data.selectedInstitution;
         
@@ -770,6 +771,12 @@ window.deleteManager = deleteManager;
 
 // Load regionals for filter dropdown (super admin only)
 async function loadRegionalsForFilter() {
+    // Only run on inventory page, not on items page
+    const path = window.location.pathname || '';
+    if (path.includes('/items')) {
+        return; // Don't run on items page
+    }
+    
     try {
         const token = localStorage.getItem('jwt');
         const headers = { 'Content-Type': 'application/json' };
@@ -790,7 +797,9 @@ async function loadRegionalsForFilter() {
                 }
                 
                 // Add regional options
-                const currentRegional = (window.inventoryData || inventoryData)?.selectedRegional || '';
+                // Safely get inventoryData - check if we're in items page context
+                const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
+                const currentRegional = inventoryDataRef?.selectedRegional || '';
                 regionals.forEach(regional => {
                     const option = document.createElement('option');
                     option.value = regional.id.toString();
@@ -811,6 +820,12 @@ async function loadRegionalsForFilter() {
 
 // Load institutions for filter dropdown based on selected regional (super admin only)
 async function loadInstitutionsForFilter(regionalId) {
+    // Only run on inventory page, not on items page
+    const path = window.location.pathname || '';
+    if (path.includes('/items')) {
+        return; // Don't run on items page
+    }
+    
     try {
         if (!regionalId) {
             console.error('No regional ID provided');
@@ -845,7 +860,9 @@ async function loadInstitutionsForFilter(regionalId) {
                 
                 // Add institution options
                 if (institutions && Array.isArray(institutions) && institutions.length > 0) {
-                    const currentInstitution = (window.inventoryData || inventoryData)?.selectedInstitution || '';
+                    // Safely get inventoryData - check if we're in items page context
+                    const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
+                    const currentInstitution = inventoryDataRef?.selectedInstitution || '';
                     institutions.forEach(institution => {
                         const option = document.createElement('option');
                         option.value = institution.id.toString();
