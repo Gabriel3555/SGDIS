@@ -14,13 +14,13 @@ import java.io.IOException;
 
 @Hidden
 @Controller
-public class DashboardController {
+public class WarehouseDashboardController {
 
-    @GetMapping("/dashboard/user")
-    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/dashboard/warehouse")
+    @PreAuthorize("hasRole('WAREHOUSE')")
     @ResponseBody
-    public ResponseEntity<Resource> userDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/user/dashboard.html");
+    public ResponseEntity<Resource> warehouseDashboard() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -30,12 +30,11 @@ public class DashboardController {
         }
     }
 
-
-    @GetMapping({"/dashboard/admin_institution", "/dashboard/admininstitution"})
-    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/warehouse/dashboard")
+    @PreAuthorize("hasRole('WAREHOUSE')")
     @ResponseBody
-    public ResponseEntity<Resource> adminDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
+    public ResponseEntity<Resource> warehouseDashboardAlt() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -45,12 +44,11 @@ public class DashboardController {
         }
     }
 
-
-    @GetMapping("/dashboard/admin_regional")
-    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/warehouse/inventory")
+    @PreAuthorize("hasRole('WAREHOUSE')")
     @ResponseBody
-    public ResponseEntity<Resource> adminRegionalDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
+    public ResponseEntity<Resource> warehouseInventoryManagement() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/inventory.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -60,11 +58,11 @@ public class DashboardController {
         }
     }
 
-    @GetMapping("/dashboard/superadmin")
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping("/warehouse/items")
+    @PreAuthorize("hasRole('WAREHOUSE')")
     @ResponseBody
-    public ResponseEntity<Resource> superadminDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
+    public ResponseEntity<Resource> warehouseItemsManagement() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/items.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -73,5 +71,4 @@ public class DashboardController {
             return ResponseEntity.notFound().build();
         }
     }
-
 }

@@ -84,12 +84,8 @@ async function startBatchScanner() {
         // Start scanning
         console.log('Iniciando escaneo...');
         await batchVerificationState.html5QrCode.start(
-            cameraId,
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            },
+            { facingMode: "environment" }, // Use back camera if available
+            config,
             (decodedText, decodedResult) => {
                 console.log('Código escaneado:', decodedText);
                 handleScannedCode(decodedText);

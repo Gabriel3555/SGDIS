@@ -283,15 +283,9 @@ function loadSidebarNavigation(role) {
             navSettings.href = `${basePath}/settings`;
             navSettings.onclick = (e) => handleSidebarClick(e, `${basePath}/settings`);
         }
-    } else {
-        // Regular users only see basic menu items
-        if (navUsers) navUsers.style.display = 'none';
-        if (navVerification) navVerification.style.display = 'none';
-        if (navReports) navReports.style.display = 'none';
-        if (navNotifications) navNotifications.style.display = 'none';
-        if (navImportExport) navImportExport.style.display = 'none';
-        if (navSettings) navSettings.style.display = 'none';
     }
+    // Regular users (including WAREHOUSE) only see basic menu items (Dashboard, Inventory, Profile)
+    // Admin menu items are already hidden by default in HTML
 }
 
 // Get dashboard path based on role

@@ -68,9 +68,12 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
 
         UserEntity requester = authService.getCurrentUser();
-        if (!belongsToInventory(requester, sourceInventory) && requester.getRole() != Role.SUPERADMIN) {
+        if (!belongsToInventory(requester, sourceInventory) && !hasTransferPrivilegedRole(requester)) {
             throw new DomainValidationException("No cuentas con permisos para solicitar la transferencia de este ítem");
         }
+
+        // Check if user has privileged role for direct transfer
+        boolean isDirectTransfer = hasTransferPrivilegedRole(requester);
 
         TransferEntity transfer = TransferEntity.builder()
                 .details(request.details() != null ? request.details().trim() : null)
@@ -78,9 +81,22 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                 .inventory(destinationInventory)
                 .sourceInventory(sourceInventory)
                 .requestedBy(requester)
-                .approvalStatus(TransferStatus.PENDING)
+                .approvalStatus(isDirectTransfer ? TransferStatus.APPROVED : TransferStatus.PENDING)
                 .status(true)
                 .build();
+
+        // If direct transfer, move the item immediately
+        if (isDirectTransfer) {
+            item.setInventory(destinationInventory);
+            if (destinationInventory.getLocation() != null) {
+                item.setLocation(destinationInventory.getLocation());
+            }
+            itemRepository.save(item);
+            
+            transfer.setApprovedAt(LocalDateTime.now());
+            transfer.setApprovedBy(requester);
+            transfer.setApprovalNotes("Transferencia directa por " + requester.getRole().name());
+        }
 
         TransferEntity saved = transferRepository.save(transfer);
         return TransferMapper.toRequestResponse(saved);
@@ -97,7 +113,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                 .orElseThrow(() -> new ResourceNotFoundException("Inventario no encontrado con id: " + inventoryId));
 
         UserEntity currentUser = authService.getCurrentUser();
-        if (!belongsToInventory(currentUser, inventory) && currentUser.getRole() != Role.SUPERADMIN) {
+        if (!belongsToInventory(currentUser, inventory) && !hasTransferPrivilegedRole(currentUser)) {
             throw new DomainValidationException("No cuentas con permisos para consultar este inventario");
         }
 
@@ -141,7 +157,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
 
         UserEntity approver = authService.getCurrentUser();
         if (!isAuthorizedToApprove(approver, sourceInventory, destinationInventory)
-                && approver.getRole() != Role.SUPERADMIN) {
+                && !hasTransferPrivilegedRole(approver)) {
             throw new DomainValidationException("No cuentas con permisos para aprobar esta transferencia");
         }
 
@@ -183,7 +199,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
 
         // Check if user has permission to view transfers for this item
         if (itemInventory != null && !belongsToInventory(currentUser, itemInventory)
-                && currentUser.getRole() != Role.SUPERADMIN) {
+                && !hasTransferPrivilegedRole(currentUser)) {
             throw new DomainValidationException(
                     "No cuentas con permisos para consultar las transferencias de este item");
         }
@@ -210,5 +226,19 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
 
         return inventory.getSignatories() != null &&
                 inventory.getSignatories().stream().anyMatch(signatory -> signatory.getId().equals(user.getId()));
+    }
+
+    /**
+     * Checks if the user has a role that allows direct transfer operations
+     * Roles allowed: SUPERADMIN, ADMIN_INSTITUTION, ADMIN_REGIONAL, WAREHOUSE
+     */
+    private boolean hasTransferPrivilegedRole(UserEntity user) {
+        if (user == null || user.getRole() == null) {
+            return false;
+        }
+        return user.getRole() == Role.SUPERADMIN ||
+               user.getRole() == Role.ADMIN_INSTITUTION ||
+               user.getRole() == Role.ADMIN_REGIONAL ||
+               user.getRole() == Role.WAREHOUSE;
     }
 }
