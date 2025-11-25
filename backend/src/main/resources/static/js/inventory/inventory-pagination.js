@@ -14,7 +14,7 @@ function updatePagination() {
     const endItem = Math.min(inventoryData.currentPage * inventoryData.itemsPerPage, inventoryData.filteredInventories.length);
 
     let paginationHtml = `
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between w-full">
             <div class="text-sm text-gray-600">
                 Mostrando ${startItem}-${endItem} de ${inventoryData.filteredInventories.length} inventarios
             </div>

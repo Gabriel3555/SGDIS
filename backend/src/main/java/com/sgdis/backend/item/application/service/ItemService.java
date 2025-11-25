@@ -1,8 +1,5 @@
 package com.sgdis.backend.item.application.service;
 
-import com.sgdis.backend.category.infrastructure.entity.CategoryEntity;
-import com.sgdis.backend.category.infrastructure.repository.SpringDataCategoryRepository;
-import com.sgdis.backend.category.mapper.CategoryMapper;
 import com.sgdis.backend.exception.DomainNotFoundException;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
@@ -11,7 +8,6 @@ import com.sgdis.backend.item.application.dto.*;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
 import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
 import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
-import com.sgdis.backend.item.application.port.GetItemsByInventoryAndCategoryUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
 import com.sgdis.backend.item.application.port.UpdateItemUseCase;
 import com.sgdis.backend.item.domain.Attribute;
@@ -33,32 +29,23 @@ public class ItemService implements
         CreateItemUseCase,
         UpdateItemUseCase,
         GetItemsByInventoryUseCase,
-        GetItemsByInventoryAndCategoryUseCase,
         GetItemByLicencePlateNumberUseCase,
         GetItemBySerialUseCase {
 
     private final SpringDataItemRepository itemRepository;
     private final SpringDataInventoryRepository inventoryRepository;
-    private final SpringDataCategoryRepository categoryRepository;
 
     @Override
     @Transactional
     public CreateItemResponse createItem(CreateItemRequest request) {
         ItemEntity itemEntity = ItemMapper.toEntity(request);
         InventoryEntity inventoryEntity = inventoryRepository.getReferenceById(request.inventoryId());
-        
-        // Category is optional - can be null and added manually later
-        CategoryEntity categoryEntity = null;
-        if (request.categoryId() != null) {
-            categoryEntity = categoryRepository.getReferenceById(request.categoryId());
-        }
 
         List<ItemEntity> itemEntityList = inventoryEntity.getItems();
         itemEntityList.add(itemEntity);
 
         inventoryEntity.setItems(itemEntityList);
         itemEntity.setInventory(inventoryEntity);
-        itemEntity.setCategory(categoryEntity);
         
         // Usar location del request si está presente, sino usar el del inventario
         String location = request.location();
@@ -120,13 +107,6 @@ public class ItemService implements
     public Page<ItemDTO> getItemsByInventory(Long inventoryId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<ItemEntity> itemEntities = itemRepository.findByInventoryId(inventoryId, pageable);
-        return itemEntities.map(ItemMapper::toDTO);
-    }
-
-    @Override
-    public Page<ItemDTO> getItemsByInventoryAndCategory(Long inventoryId, Long categoryId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ItemEntity> itemEntities = itemRepository.findByInventoryIdAndCategoryId(inventoryId, categoryId, pageable);
         return itemEntities.map(ItemMapper::toDTO);
     }
 
