@@ -6,42 +6,13 @@ let verificationData = {
     itemsPerPage: 10,
     searchTerm: '',
     selectedInventory: 'all',
-    selectedStatus: 'all',
     isLoading: false,
     currentVerificationId: null,
     verificationType: 'serial' // 'serial' or 'plate'
 };
 
-function getStatusText(status) {
-    switch(status) {
-        case 'PENDING': return 'Pendiente';
-        case 'IN_PROGRESS': return 'En Progreso';
-        case 'COMPLETED': return 'Completada';
-        case 'VERIFIED': return 'Verificada';
-        case 'REJECTED': return 'Rechazada';
-        default: return status || 'Sin estado';
-    }
-}
-
-function getStatusColor(status) {
-    switch(status) {
-        case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-        case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800';
-        case 'COMPLETED': return 'bg-green-100 text-green-800';
-        case 'VERIFIED': return 'bg-green-100 text-green-800';
-        case 'REJECTED': return 'bg-red-100 text-red-800';
-        default: return 'bg-gray-100 text-gray-800';
-    }
-}
-
 function setInventoryFilter(inventoryId) {
     verificationData.selectedInventory = inventoryId;
-    verificationData.currentPage = 1;
-    filterVerifications();
-}
-
-function setStatusFilter(status) {
-    verificationData.selectedStatus = status;
     verificationData.currentPage = 1;
     filterVerifications();
 }
@@ -60,11 +31,8 @@ function changePage(page) {
 
 window.verificationData = verificationData;
 window.setInventoryFilter = setInventoryFilter;
-window.setStatusFilter = setStatusFilter;
 window.changePage = changePage;
 window.applySearchFilter = applySearchFilter;
-window.getStatusText = getStatusText;
-window.getStatusColor = getStatusColor;
 window.showLoadingState = showLoadingState;
 window.hideLoadingState = hideLoadingState;
 
