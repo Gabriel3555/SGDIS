@@ -612,7 +612,7 @@ function updatePagination() {
         <div class="text-sm text-gray-600">
             Mostrando ${startItem}-${endItem} de ${totalUsers} usuarios
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 ml-auto">
     `;
 
   if (window.usersData && totalPages > 0) {
