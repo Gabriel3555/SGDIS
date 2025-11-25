@@ -740,7 +740,7 @@ function populateViewInventoryModal(inventory) {
   if (inventory.imgUrl) {
     // Show button with image
     if (imageButton && imageElement) {
-      imageButton.style.display = "block";
+      imageButton.style.display = "flex";
       imageElement.innerHTML = `<img src="${inventory.imgUrl}" alt="${
         inventory.name || "Inventario"
       }" class="w-full h-full object-cover rounded-xl">`;
