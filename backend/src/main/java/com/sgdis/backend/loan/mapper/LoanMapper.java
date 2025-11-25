@@ -15,11 +15,11 @@ public final class LoanMapper {
 
     private LoanMapper() {}
 
-    public static LoanEntity toEntity(LendItemRequest request, ItemEntity item, UserEntity lender) {
+    public static LoanEntity toEntity(LendItemRequest request, ItemEntity item, UserEntity lender, UserEntity responsible) {
         return LoanEntity.builder()
                 .lendAt(LocalDateTime.now())
                 .detailsLend(request.details())
-                .responsibleName(request.responsibleName())
+                .responsible(responsible)
                 .item(item)
                 .lender(lender)
                 .build();
@@ -31,7 +31,8 @@ public final class LoanMapper {
                 entity.getLender() != null ? entity.getLender().getId() : null,
                 entity.getLender() != null ? entity.getLender().getFullName() : null,
                 entity.getItem() != null ? entity.getItem().getId() : null,
-                entity.getResponsibleName(),
+                entity.getResponsible() != null ? entity.getResponsible().getId() : null,
+                entity.getResponsible() != null ? entity.getResponsible().getFullName() : null,
                 entity.getDetailsLend(),
                 entity.getDetailsReturn(),
                 entity.getLendAt(),

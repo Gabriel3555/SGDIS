@@ -2,7 +2,6 @@ package com.sgdis.backend.loan.application.service;
 
 import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.ResourceNotFoundException;
-import com.sgdis.backend.exception.userExceptions.RegionalNotFoundException;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import com.sgdis.backend.loan.application.dto.LendItemRequest;
@@ -12,6 +11,7 @@ import com.sgdis.backend.loan.application.dto.ReturnItemRequest;
 import com.sgdis.backend.loan.application.dto.ReturnItemResponse;
 import com.sgdis.backend.loan.application.port.GetLastLoanByItemUseCase;
 import com.sgdis.backend.loan.application.port.GetLoansByItemUseCase;
+import com.sgdis.backend.loan.application.port.GetMyLoansUseCase;
 import com.sgdis.backend.loan.application.port.LendItemUseCase;
 import com.sgdis.backend.loan.application.port.ReturnItemUseCase;
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
@@ -32,11 +32,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoansByItemUseCase, GetLastLoanByItemUseCase {
+public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoansByItemUseCase, GetLastLoanByItemUseCase, GetMyLoansUseCase {
 
     private final AuthService authService;
     private final SpringDataLoanRepository loanRepository;
     private final SpringDataItemRepository itemRepository;
+    private final SpringDataUserRepository userRepository;
 
     @Override
     public LendItemResponse lendItem(LendItemRequest request) {
@@ -45,12 +46,15 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         ItemEntity item = itemRepository.findById(request.itemId())
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
 
+        UserEntity responsible = userRepository.findById(request.responsibleId())
+                .orElseThrow(() -> new ResourceNotFoundException("Responsible user not found"));
+
         Optional<LoanEntity> lastLoan = loanRepository.findLastLoanByItemId(request.itemId());
         if (lastLoan.isPresent() && !Boolean.TRUE.equals(lastLoan.get().getReturned())) {
             throw new IllegalStateException("Item cannot be lent because it has not been returned from its last loan");
         }
 
-        LoanEntity loanEntity = LoanMapper.toEntity(request, item, user);
+        LoanEntity loanEntity = LoanMapper.toEntity(request, item, user, responsible);
 
         loanEntity.setItem(item);
         if (item.getLoans() == null) {
@@ -61,12 +65,12 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         }
 
         item.setLocation("");
-        item.setResponsible(request.responsibleName());
+        item.setResponsible(responsible.getFullName());
 
         itemRepository.save(item);
         loanRepository.save(loanEntity);
 
-        return new LendItemResponse(user.getFullName(), "Item prestado exitosamente a " + loanEntity.getResponsibleName());
+        return new LendItemResponse(user.getFullName(), "Item prestado exitosamente a " + responsible.getFullName());
     }
 
     @Override
@@ -122,5 +126,16 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
         Optional<LoanEntity> lastLoan = loanRepository.findLastLoanByItemId(itemId);
         return lastLoan.map(LoanMapper::toDto);
+    }
+
+    @Override
+    public List<LoanResponse> getMyLoans(Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        List<LoanEntity> loans = loanRepository.findAllByResponsibleId(userId);
+        return loans.stream()
+                .map(LoanMapper::toDto)
+                .collect(Collectors.toList());
     }
 }

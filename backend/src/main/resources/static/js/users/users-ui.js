@@ -570,6 +570,11 @@ function updateUsersTable() {
       } onclick="${isAdmin ? "return false" : `deleteUser('${user.id}')`}">
                                 <i class="fas fa-trash"></i>
                             </button>
+                            <button onclick="showUserLoansModal('${
+                              user.id
+                            }')" class="user-action-btn p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
+                                <i class="fas fa-hand-holding"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -1124,6 +1129,11 @@ function updateUsersCards() {
         isAdmin ? "disabled" : ""
       }>
                             <i class="fas fa-trash"></i>
+                        </button>
+                        <button onclick="showUserLoansModal('${
+                          user.id
+                        }')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
+                            <i class="fas fa-hand-holding"></i>
                         </button>
                     </div>
                 </div>

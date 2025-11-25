@@ -21,6 +21,8 @@ export default function MeUserScreen() {
     const { colors, isDarkMode } = useTheme();
     const [user, setUser] = useState(null);
      const [loading, setLoading] = useState(true);
+     const [loans, setLoans] = useState([]);
+     const [loansLoading, setLoansLoading] = useState(false);
      const [localImageUri, setLocalImageUri] = useState(null);
      const [imageLoading, setImageLoading] = useState(false);
      const [imageError, setImageError] = useState(false);
@@ -30,11 +32,13 @@ export default function MeUserScreen() {
 
   useEffect(() => {
     fetchUserData();
+    fetchUserLoans();
   }, []);
 
   useFocusEffect(
     React.useCallback(() => {
       fetchUserData();
+      fetchUserLoans();
     }, [])
   );
 
@@ -80,6 +84,29 @@ export default function MeUserScreen() {
     }
   };
 
+  const fetchUserLoans = async () => {
+    try {
+      setLoansLoading(true);
+      const token = await ensureAuthToken();
+      if (!token) {
+        return;
+      }
+
+      const response = await api.get("api/v1/users/me/loans", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setLoans(response.data || []);
+    } catch (error) {
+      console.error("Error fetching user loans:", error);
+      setLoans([]);
+    } finally {
+      setLoansLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await clearSessionAndRedirect({ showAlert: false });
@@ -87,6 +114,18 @@ export default function MeUserScreen() {
       console.error("Error during logout:", error);
       Alert.alert("Error", "No se pudo cerrar la sesión");
     }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Fecha no disponible';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const styles = getStyles(colors);
@@ -213,6 +252,86 @@ export default function MeUserScreen() {
             </View>
           </View>
         </View>
+      </View>
+
+      {/* Préstamos Section */}
+      <View style={styles.loansSection}>
+        <Text style={styles.sectionTitle}>Items que me han prestado</Text>
+        
+        {loansLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={colors.buttonBackground} />
+            <Text style={styles.loadingText}>Cargando préstamos...</Text>
+          </View>
+        ) : loans.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="inbox-outline" size={48} color={colors.placeholder} />
+            <Text style={styles.emptyText}>No tienes items prestados actualmente</Text>
+          </View>
+        ) : (
+          <View style={styles.loansList}>
+            {loans.map((loan) => (
+              <View key={loan.id} style={styles.loanCard}>
+                <View style={styles.loanHeader}>
+                  <View style={styles.loanIconContainer}>
+                    <Ionicons name="cube-outline" size={24} color={colors.buttonBackground} />
+                  </View>
+                  <View style={styles.loanInfo}>
+                    <Text style={styles.loanTitle}>Item #{loan.itemId || 'N/A'}</Text>
+                    <Text style={styles.loanSubtitle}>Prestado por: {loan.lenderName || 'N/A'}</Text>
+                  </View>
+                  <View style={[
+                    styles.statusBadge,
+                    loan.returned ? styles.statusReturned : styles.statusActive
+                  ]}>
+                    <Text style={[
+                      styles.statusText,
+                      loan.returned ? styles.statusReturnedText : styles.statusActiveText
+                    ]}>
+                      {loan.returned ? 'Devuelto' : 'Prestado'}
+                    </Text>
+                  </View>
+                </View>
+                
+                {loan.detailsLend && (
+                  <View style={styles.loanDetail}>
+                    <Ionicons name="information-circle-outline" size={16} color={colors.placeholder} />
+                    <Text style={styles.loanDetailText}>{loan.detailsLend}</Text>
+                  </View>
+                )}
+                
+                {loan.returned && loan.detailsReturn && (
+                  <View style={styles.loanDetail}>
+                    <Ionicons name="checkmark-circle-outline" size={16} color={colors.subtitle} />
+                    <Text style={styles.loanDetailText}>
+                      <Text style={styles.loanDetailLabel}>Detalles de devolución: </Text>
+                      {loan.detailsReturn}
+                    </Text>
+                  </View>
+                )}
+                
+                <View style={styles.loanDates}>
+                  <View style={styles.loanDateRow}>
+                    <Ionicons name="calendar-outline" size={16} color={colors.placeholder} />
+                    <Text style={styles.loanDateText}>
+                      <Text style={styles.loanDateLabel}>Fecha de préstamo: </Text>
+                      {formatDate(loan.lendAt)}
+                    </Text>
+                  </View>
+                  {loan.returnAt && (
+                    <View style={styles.loanDateRow}>
+                      <Ionicons name="calendar-check-outline" size={16} color={colors.placeholder} />
+                      <Text style={styles.loanDateText}>
+                        <Text style={styles.loanDateLabel}>Fecha de devolución: </Text>
+                        {formatDate(loan.returnAt)}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Acciones */}
@@ -461,5 +580,123 @@ const getStyles = (colors) => StyleSheet.create({
   },
   logoutText: {
     color: "#f44336",
+  },
+  loansSection: {
+    padding: 20,
+  },
+  loansList: {
+    gap: 12,
+  },
+  loanCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+  },
+  loanHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  loanIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.buttonBackground + "20",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  loanInfo: {
+    flex: 1,
+  },
+  loanTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: colors.text,
+    marginBottom: 2,
+  },
+  loanSubtitle: {
+    fontSize: 12,
+    color: colors.placeholder,
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusActive: {
+    backgroundColor: "#FFF3CD",
+  },
+  statusReturned: {
+    backgroundColor: "#D1E7DD",
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: "600",
+  },
+  statusActiveText: {
+    color: "#856404",
+  },
+  statusReturnedText: {
+    color: "#0F5132",
+  },
+  loanDetail: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 8,
+    paddingLeft: 4,
+  },
+  loanDetailText: {
+    fontSize: 13,
+    color: colors.text,
+    marginLeft: 6,
+    flex: 1,
+  },
+  loanDetailLabel: {
+    fontWeight: "600",
+    color: colors.text,
+  },
+  loanDates: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.inputBorder,
+  },
+  loanDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
+  },
+  loanDateText: {
+    fontSize: 12,
+    color: colors.placeholder,
+    marginLeft: 6,
+  },
+  loanDateLabel: {
+    fontWeight: "600",
+    color: colors.text,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: colors.placeholder,
+    marginTop: 12,
+    textAlign: "center",
   },
 });

@@ -84,6 +84,11 @@
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
             <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
@@ -525,6 +530,83 @@
 
             <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
                 <button onclick="closeItemTransferHistoryModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Item Loans History Modal -->
+    <div id="itemLoansHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-5xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-hand-holding text-cyan-600 text-3xl"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Historial de Préstamos</h2>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1" id="loansHistoryItemName">Item</p>
+                    </div>
+                </div>
+                <button onclick="closeItemLoansHistoryModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div id="itemLoansStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" style="display: none;">
+                <div class="bg-cyan-50 dark:bg-cyan-900/20 border border-cyan-200 dark:border-cyan-800 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-cyan-600 dark:text-cyan-400 font-medium">Total Préstamos</p>
+                            <p class="text-2xl font-bold text-cyan-800 dark:text-cyan-300" id="itemTotalLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-list text-cyan-400 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-yellow-600 dark:text-yellow-400 font-medium">Préstamos Activos</p>
+                            <p class="text-2xl font-bold text-yellow-800 dark:text-yellow-300" id="itemActiveLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-clock text-yellow-400 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-green-600 dark:text-green-400 font-medium">Préstamos Devueltos</p>
+                            <p class="text-2xl font-bold text-green-800 dark:text-green-300" id="itemReturnedLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div id="itemLoansFilters" class="flex gap-2 mb-6" style="display: none;">
+                <button onclick="filterItemLoans('all')" id="itemFilterAll" class="px-4 py-2 rounded-lg font-medium transition-colors bg-cyan-600 text-white">
+                    Todos
+                </button>
+                <button onclick="filterItemLoans('active')" id="itemFilterActive" class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                    Activos
+                </button>
+                <button onclick="filterItemLoans('returned')" id="itemFilterReturned" class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                    Devueltos
+                </button>
+            </div>
+
+            <div id="itemLoansHistoryContent" class="space-y-4">
+                <!-- Content loaded dynamically -->
+                <div class="flex items-center justify-center py-8">
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeItemLoansHistoryModal()"
                     class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cerrar
                 </button>

@@ -7,6 +7,7 @@ public record LoanResponse(
         Long lenderId,
         String lenderName,
         Long itemId,
+        Long responsibleId,
         String responsibleName,
         String detailsLend,
         String detailsReturn,

@@ -12,6 +12,7 @@ import com.sgdis.backend.loan.application.port.LendItemUseCase;
 import com.sgdis.backend.loan.application.port.ReturnItemUseCase;
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository;
+import com.sgdis.backend.loan.mapper.LoanMapper;
 import com.sgdis.backend.file.service.FileUploadService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -215,6 +216,47 @@ public class LoanController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @GetMapping("/filter")
+    @Operation(
+            summary = "Filter loans by regional, institution, and inventory",
+            description = "Retrieves loans filtered by regional, institution, and/or inventory IDs. All parameters are optional."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Loans retrieved successfully"
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    public ResponseEntity<List<LoanResponse>> filterLoans(
+            @Parameter(description = "Regional ID (optional)")
+            @RequestParam(required = false) Long regionalId,
+            @Parameter(description = "Institution ID (optional)")
+            @RequestParam(required = false) Long institutionId,
+            @Parameter(description = "Inventory ID (optional)")
+            @RequestParam(required = false) Long inventoryId
+    ) {
+        List<LoanEntity> loans;
+        
+        if (regionalId != null && institutionId != null && inventoryId != null) {
+            loans = loanRepository.findAllByRegionalIdAndInstitutionIdAndInventoryId(regionalId, institutionId, inventoryId);
+        } else if (regionalId != null && institutionId != null) {
+            loans = loanRepository.findAllByRegionalIdAndInstitutionId(regionalId, institutionId);
+        } else if (regionalId != null) {
+            loans = loanRepository.findAllByRegionalId(regionalId);
+        } else if (institutionId != null) {
+            loans = loanRepository.findAllByInstitutionId(institutionId);
+        } else if (inventoryId != null) {
+            loans = loanRepository.findAllByInventoryId(inventoryId);
+        } else {
+            loans = loanRepository.findAll();
+        }
+        
+        List<LoanResponse> loanResponses = loans.stream()
+                .map(LoanMapper::toDto)
+                .collect(java.util.stream.Collectors.toList());
+        
+        return ResponseEntity.ok(loanResponses);
     }
 
 }

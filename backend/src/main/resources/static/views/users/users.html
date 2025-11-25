@@ -84,6 +84,11 @@
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
             <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
@@ -650,6 +655,82 @@
         </div>
     </div>
 
+    <!-- User Loans Modal -->
+    <div id="userLoansModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-history text-purple-600 text-3xl"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Historial de Préstamos</h2>
+                        <p class="text-sm text-gray-600" id="userLoansUserName">Cargando...</p>
+                    </div>
+                </div>
+                <button onclick="closeUserLoansModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div id="userLoansStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" style="display: none;">
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-purple-600 font-medium">Total Préstamos</p>
+                            <p class="text-2xl font-bold text-purple-800" id="totalLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-list text-purple-400 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-yellow-600 font-medium">Préstamos Activos</p>
+                            <p class="text-2xl font-bold text-yellow-800" id="activeLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-clock text-yellow-400 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-green-600 font-medium">Préstamos Devueltos</p>
+                            <p class="text-2xl font-bold text-green-800" id="returnedLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div id="userLoansFilters" class="flex gap-2 mb-6" style="display: none;">
+                <button onclick="filterUserLoans('all')" id="filterAll" class="px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white">
+                    Todos
+                </button>
+                <button onclick="filterUserLoans('active')" id="filterActive" class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Activos
+                </button>
+                <button onclick="filterUserLoans('returned')" id="filterReturned" class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Devueltos
+                </button>
+            </div>
+
+            <div id="userLoansLoading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-3xl text-purple-600 mb-4"></i>
+                <p class="text-gray-600">Cargando historial de préstamos...</p>
+            </div>
+
+            <div id="userLoansContent" style="display: none;">
+                <div id="userLoansList" class="space-y-4"></div>
+                <div id="userLoansEmpty" class="text-center py-12" style="display: none;">
+                    <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 text-lg">Este usuario no tiene préstamos registrados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="../../js/dashboard.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
     <!-- Users module scripts -->
@@ -872,6 +953,24 @@
             to {
                 transform: rotate(360deg);
             }
+        }
+
+        .loan-card {
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .loan-card:hover {
+            border-color: #9333ea;
+        }
+
+        .dark .loan-card {
+            background: #1f2937;
+            border-color: #374151;
+        }
+
+        .dark .loan-card:hover {
+            border-color: #9333ea;
         }
 
         /* Responsive adjustments */

@@ -226,6 +226,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/loans")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminLoansManagement() throws IOException {
+        Resource resource = new ClassPathResource("static/views/loans/loans.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/admin_regional/verification")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody

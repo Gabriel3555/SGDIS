@@ -3,6 +3,7 @@ package com.sgdis.backend.user.infrastructure.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import jakarta.persistence.*;
@@ -57,4 +58,8 @@ public class UserEntity {
     @JsonIgnore
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private List<VerificationEntity> verifications;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "responsible", fetch = FetchType.LAZY)
+    private List<LoanEntity> loans;
 }
