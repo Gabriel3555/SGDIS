@@ -1,7 +1,11 @@
 // Load loans data
 async function loadLoansData() {
-    if (loansData.isLoading) return;
+    if (loansData.isLoading) {
+        console.log('Already loading, skipping...');
+        return;
+    }
 
+    console.log('Starting loadLoansData');
     loansData.isLoading = true;
     showLoadingState();
 
@@ -10,12 +14,23 @@ async function loadLoansData() {
         await loadRegionals();
         await loadInventories('all', 'all');
         await loadLoans();
-        updateLoansUI();
-
+        // loadLoans() will call filterLoans() which updates the UI
+        // But ensure UI is updated as a fallback
+        setTimeout(() => {
+            if (typeof updateLoansUI === 'function') {
+                console.log('Fallback: calling updateLoansUI');
+                updateLoansUI();
+            }
+        }, 200);
     } catch (error) {
         console.error('Error loading loans data:', error);
         showErrorState('Error al cargar los datos de préstamos: ' + error.message);
-        updateLoansUI();
+        // Initialize empty arrays if load fails
+        loansData.loans = [];
+        loansData.filteredLoans = [];
+        if (typeof updateLoansUI === 'function') {
+            updateLoansUI();
+        }
     } finally {
         loansData.isLoading = false;
         hideLoadingState();
@@ -155,17 +170,55 @@ async function loadLoans() {
             params.append('inventoryId', loansData.selectedInventory);
         }
 
-        const endpoint = `/api/v1/loan/filter?${params.toString()}`;
+        let endpoint = '/api/v1/loan/filter';
+        const paramsString = params.toString();
+        if (paramsString) {
+            endpoint += `?${paramsString}`;
+        }
+        
+        console.log('Loading loans from:', endpoint);
         const response = await fetch(endpoint, {
             method: 'GET',
             headers: headers
         });
 
         if (response.ok) {
-            loansData.loans = await response.json();
-            filterLoans();
+            const loans = await response.json();
+            loansData.loans = Array.isArray(loans) ? loans : [];
+            console.log('Loaded loans:', loansData.loans.length, loans);
+            
+            // Always initialize filteredLoans with all loans first
+            loansData.filteredLoans = [...loansData.loans];
+            console.log('Initialized filteredLoans:', loansData.filteredLoans.length);
+            
+            // Apply filters immediately - filterLoans should be available by now
+            if (typeof window.filterLoans === 'function') {
+                console.log('Calling filterLoans()');
+                window.filterLoans();
+            } else {
+                console.warn('filterLoans function not available, updating UI directly');
+                // Directly update UI components
+                if (typeof window.updateLoansUI === 'function') {
+                    window.updateLoansUI();
+                } else {
+                    // Fallback: update each component individually
+                    if (typeof window.updateLoansTable === 'function') {
+                        window.updateLoansTable();
+                    }
+                    if (typeof window.updatePagination === 'function') {
+                        window.updatePagination();
+                    }
+                    if (typeof window.updateLoansStats === 'function') {
+                        window.updateLoansStats();
+                    }
+                }
+            }
         } else {
-            throw new Error('Failed to load loans');
+            const errorText = await response.text();
+            console.error('Failed to load loans:', response.status, errorText);
+            loansData.loans = [];
+            loansData.filteredLoans = [];
+            throw new Error(`Failed to load loans: ${response.status} - ${errorText}`);
         }
     } catch (error) {
         console.error('Error loading loans:', error);
