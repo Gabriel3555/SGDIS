@@ -70,6 +70,11 @@ public class InventoryService
                         throw new DomainConflictException("Este propietario ya tiene un inventario asignado");
                 }
 
+                // Validar que institutionId no sea null
+                if (request.institutionId() == null) {
+                        throw new DomainValidationException("La institución es obligatoria para crear un inventario");
+                }
+
                 InstitutionEntity institution = institutionRepository.findById(request.institutionId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Institution not found with id " + request.institutionId()));

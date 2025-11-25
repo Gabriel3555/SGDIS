@@ -1,6 +1,7 @@
 package com.sgdis.backend.item.application.service;
 
 import com.sgdis.backend.exception.DomainNotFoundException;
+import com.sgdis.backend.exception.DomainConflictException;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
@@ -47,6 +48,16 @@ public class ItemService implements
     @Override
     @Transactional
     public CreateItemResponse createItem(CreateItemRequest request) {
+        // Validar que el licencePlateNumber no exista
+        if (request.licencePlateNumber() != null && !request.licencePlateNumber().trim().isEmpty()) {
+            itemRepository.findByLicencePlateNumber(request.licencePlateNumber())
+                    .ifPresent(existingItem -> {
+                        throw new DomainConflictException(
+                                "Ya existe un item con el número de placa: " + request.licencePlateNumber()
+                        );
+                    });
+        }
+        
         ItemEntity itemEntity = ItemMapper.toEntity(request);
         InventoryEntity inventoryEntity = inventoryRepository.getReferenceById(request.inventoryId());
 

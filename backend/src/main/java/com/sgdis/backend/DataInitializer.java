@@ -77,7 +77,7 @@ public class DataInitializer implements CommandLineRunner {
 
         // Usuarios demo
         createUserIfNotExists("gabriel@soy.sena.edu.co", "ayuda123", "Gabriel", "Desarrollador", "Tecnología", Role.USER);
-        createUserIfNotExists("admin@soy.sena.edu.co", "admin123", "Admin", "Administrador", "Sistemas", Role.ADMIN_INSTITUTION);
+        createUserIfNotExists("admin@soy.sena.edu.co", "admin123", "Admin", "Administrador", "Sistemas", Role.SUPERADMIN);
         createUserIfNotExists("warehouse@soy.sena.edu.co", "wh123", "Warehouse", "Almacenista", "Logística", Role.WAREHOUSE);
 
         // Parsear el objeto (en el MISMO archivo)
@@ -227,4 +227,3 @@ public class DataInitializer implements CommandLineRunner {
         private List<String> ciudades;
     }
 }
-
