@@ -123,7 +123,7 @@ async function stopBatchScanner() {
 }
 
 // Handle Scanned Code
-function handleScannedCode(code) {
+async function handleScannedCode(code) {
     const now = Date.now();
     
     // Cooldown check to prevent duplicate scans
@@ -144,19 +144,60 @@ function handleScannedCode(code) {
         return;
     }
 
-    // Capture photo automatically
-    capturePhotoForScannedCode(cleanedCode);
+    // Search for item by licence plate to get item name
+    try {
+        const item = await getItemByLicencePlate(cleanedCode);
+        const itemName = item ? item.productName : null;
+        
+        // Capture photo automatically
+        capturePhotoForScannedCode(cleanedCode, itemName);
+    } catch (error) {
+        console.error('Error fetching item:', error);
+        // Continue with scan even if item lookup fails
+        capturePhotoForScannedCode(cleanedCode, null);
+    }
+}
+
+// Get Item by Licence Plate
+async function getItemByLicencePlate(licencePlate) {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            return null;
+        }
+
+        const encodedPlate = encodeURIComponent(licencePlate);
+        const response = await fetch(`/api/v1/items/licence-plate/${encodedPlate}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const item = await response.json();
+            return item;
+        } else if (response.status === 404) {
+            return null; // Item not found
+        } else {
+            throw new Error('Error fetching item');
+        }
+    } catch (error) {
+        console.error('Error getting item by licence plate:', error);
+        return null;
+    }
 }
 
 // Capture Photo for Scanned Code
-async function capturePhotoForScannedCode(licencePlate) {
+async function capturePhotoForScannedCode(licencePlate, itemName = null) {
     try {
         const container = document.getElementById('cameraContainer');
         const canvasElement = document.getElementById('cameraCanvas');
 
         if (!container || !canvasElement || !batchVerificationState.isScanning || !batchVerificationState.html5QrCode) {
             // If camera not available, add without photo
-            addScannedItem(licencePlate, null);
+            addScannedItem(licencePlate, null, itemName);
             return;
         }
 
@@ -165,27 +206,27 @@ async function capturePhotoForScannedCode(licencePlate) {
         
         if (!videoElement) {
             // If no video element found, add without photo
-            addScannedItem(licencePlate, null);
+            addScannedItem(licencePlate, null, itemName);
             return;
         }
 
         // Wait for video to be ready
         if (videoElement.readyState < 2) {
             videoElement.addEventListener('loadeddata', () => {
-                captureFrameToCanvas(videoElement, canvasElement, licencePlate);
+                captureFrameToCanvas(videoElement, canvasElement, licencePlate, false, itemName);
             }, { once: true });
         } else {
-            captureFrameToCanvas(videoElement, canvasElement, licencePlate);
+            captureFrameToCanvas(videoElement, canvasElement, licencePlate, false, itemName);
         }
 
     } catch (error) {
         console.error('Error capturing photo:', error);
-        addScannedItem(licencePlate, null);
+        addScannedItem(licencePlate, null, itemName);
     }
 }
 
 // Helper function to capture frame from video to canvas
-function captureFrameToCanvas(videoElement, canvasElement, licencePlate, isManual = false) {
+function captureFrameToCanvas(videoElement, canvasElement, licencePlate, isManual = false, itemName = null) {
     try {
         // Create canvas from video frame
         canvasElement.width = videoElement.videoWidth || 640;
@@ -194,32 +235,39 @@ function captureFrameToCanvas(videoElement, canvasElement, licencePlate, isManua
         ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
 
         // Convert canvas to blob
-        canvasElement.toBlob((blob) => {
+        canvasElement.toBlob(async (blob) => {
             if (blob) {
                 if (isManual) {
                     // Manual capture - prompt for licence plate
                     const file = new File([blob], `manual_capture_${Date.now()}.jpg`, { type: 'image/jpeg' });
                     const licencePlate = prompt('Ingresa el número de placa para esta foto:');
                     if (licencePlate && licencePlate.trim()) {
-                        addScannedItem(licencePlate.trim(), file);
+                        // Search for item when manually entered
+                        try {
+                            const item = await getItemByLicencePlate(licencePlate.trim());
+                            const itemName = item ? item.productName : null;
+                            addScannedItem(licencePlate.trim(), file, itemName);
+                        } catch (error) {
+                            addScannedItem(licencePlate.trim(), file, null);
+                        }
                     } else {
                         showErrorToast('Error', 'Debes ingresar un número de placa');
                     }
                 } else {
                     // Automatic capture from scan
                     const file = new File([blob], `plate_${licencePlate}_${Date.now()}.jpg`, { type: 'image/jpeg' });
-                    addScannedItem(licencePlate, file);
+                    addScannedItem(licencePlate, file, itemName);
                 }
             } else {
                 if (!isManual) {
-                    addScannedItem(licencePlate, null);
+                    addScannedItem(licencePlate, null, itemName);
                 }
             }
         }, 'image/jpeg', 0.8);
     } catch (error) {
         console.error('Error capturing frame:', error);
         if (!isManual) {
-            addScannedItem(licencePlate, null);
+            addScannedItem(licencePlate, null, itemName);
         }
     }
 }
@@ -256,16 +304,21 @@ function captureBatchPhoto() {
 }
 
 // Add Scanned Item
-function addScannedItem(licencePlate, photoFile) {
+function addScannedItem(licencePlate, photoFile, itemName = null) {
     const item = {
         licencePlate: licencePlate,
+        itemName: itemName,
         photo: photoFile,
         timestamp: new Date()
     };
 
     batchVerificationState.scannedItems.push(item);
     updateScannedItemsList();
-    showSuccessToast('Placa escaneada', `Placa ${licencePlate} agregada`);
+    
+    const message = itemName 
+        ? `Placa ${licencePlate} - ${itemName} agregada`
+        : `Placa ${licencePlate} agregada`;
+    showSuccessToast('Placa escaneada', message);
 }
 
 // Remove Scanned Item
@@ -310,7 +363,8 @@ function updateScannedItemsList() {
                 ${photoPreview}
                 <div class="flex-1">
                     <div class="font-semibold text-gray-800">${item.licencePlate}</div>
-                    <div class="text-sm text-gray-500">
+                    ${item.itemName ? `<div class="text-sm text-gray-600 mt-1">${item.itemName}</div>` : ''}
+                    <div class="text-sm text-gray-500 mt-1">
                         ${new Date(item.timestamp).toLocaleString('es-ES')}
                     </div>
                 </div>
