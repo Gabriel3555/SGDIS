@@ -36,7 +36,7 @@ function updateInventoryUI() {
   updatePagination();
 }
 
-function updateInventoryStats() {
+async function updateInventoryStats() {
   const container = document.getElementById("inventoryStatsContainer");
   if (!container) return;
 
@@ -48,6 +48,54 @@ function updateInventoryStats() {
   const activeInventories = window.inventoryData.inventories.filter(
     (i) => i && i.status !== false
   ).length;
+
+  // Calculate total value and total items of all inventories
+  let totalValue = 0;
+  let totalItems = 0;
+  try {
+    const token = localStorage.getItem('jwt');
+    if (token && totalInventories > 0) {
+      // Fetch statistics for each inventory to get its total value and total items
+      const statisticsPromises = window.inventoryData.inventories.map(async (inventory) => {
+        try {
+          const response = await fetch(`/api/v1/inventory/${inventory.id}/statistics`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (response.ok) {
+            const stats = await response.json();
+            return {
+              totalValue: stats.totalValue || 0,
+              totalItems: stats.totalItems || 0
+            };
+          }
+          return { totalValue: 0, totalItems: 0 };
+        } catch (error) {
+          console.error(`Error fetching statistics for inventory ${inventory.id}:`, error);
+          return { totalValue: 0, totalItems: 0 };
+        }
+      });
+      
+      const statistics = await Promise.all(statisticsPromises);
+      totalValue = statistics.reduce((sum, stat) => sum + (stat.totalValue || 0), 0);
+      totalItems = statistics.reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+    }
+  } catch (error) {
+    console.error('Error calculating total value and items:', error);
+  }
+
+  // Format currency
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
 
   container.innerHTML = `
         <div class="stat-card">
@@ -74,6 +122,32 @@ function updateInventoryStats() {
                 </div>
             </div>
             <p class="text-emerald-600 text-sm font-medium">Inventarios activos</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${totalItems.toLocaleString('es-CO')}</h3>
+                </div>
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-cubes text-orange-600 text-xl"></i>
+                </div>
+            </div>
+            <p class="text-orange-600 text-sm font-medium">Items en todos los inventarios</p>
+        </div>
+
+        <div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
+                    <h3 class="text-2xl font-bold text-gray-800">${formatCurrency(totalValue)}</h3>
+                </div>
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
+                </div>
+            </div>
+            <p class="text-purple-600 text-sm font-medium">Valor de todos los inventarios</p>
         </div>
     `;
 }
