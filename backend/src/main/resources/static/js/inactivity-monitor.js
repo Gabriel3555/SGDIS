@@ -453,11 +453,16 @@ class InactivityMonitor {
     }
     
     async handleStayActive() {
-        // Obtener el refresh token de las cookies
-        const refreshTokenValue = getCookie("refreshToken");
+        // Obtener el refresh token de las cookies o localStorage
+        let refreshTokenValue = getCookie("refreshToken");
+        
+        // Si no está en cookies, intentar obtenerlo de localStorage
+        if (!refreshTokenValue) {
+            refreshTokenValue = localStorage.getItem("refreshToken");
+        }
         
         if (!refreshTokenValue) {
-            console.error("No refresh token found");
+            console.error("No refresh token found in cookies or localStorage");
             this.showNotification('Error', 'No se pudo renovar la sesión. Redirigiendo...', 'error');
             setTimeout(() => {
                 window.location.href = '/index.html';
