@@ -17,6 +17,8 @@ import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import com.sgdis.backend.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,11 +81,9 @@ public class InventoryService
         }
 
         @Override
-        public List<InventoryResponse> listInventoryes() {
-                return inventoryRepository.findAll()
-                                .stream()
-                                .map(InventoryMapper::toResponse)
-                                .collect(Collectors.toList());
+        public Page<InventoryResponse> listInventoryes(Pageable pageable) {
+                return inventoryRepository.findAll(pageable)
+                                .map(InventoryMapper::toResponse);
         }
 
         @Override

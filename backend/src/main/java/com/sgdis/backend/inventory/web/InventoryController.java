@@ -101,11 +101,17 @@ public class InventoryController {
     @ApiResponse(
             responseCode = "200",
             description = "Inventories retrieved successfully",
-            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+            content = @Content(schema = @Schema(implementation = Page.class))
     )
     @GetMapping()
-    public List<InventoryResponse> listInventoryes() {
-        return listInventoryUseCase.listInventoryes();
+    public Page<InventoryResponse> listInventoryes(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "6") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return listInventoryUseCase.listInventoryes(pageable);
     }
 
     @Operation(
@@ -438,29 +444,6 @@ public class InventoryController {
 
         InventoryUsersResponse response = new InventoryUsersResponse(owner, managers, signatories);
         return ResponseEntity.ok(response);
-    }
-
-    @Operation(
-            summary = "Get all inventories (Superadmin only)",
-            description = "Retrieves all paginated inventories. Only accessible by SUPERADMIN role."
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Inventories retrieved successfully",
-            content = @Content(schema = @Schema(implementation = Page.class))
-    )
-    @ApiResponse(responseCode = "403", description = "Access denied - SUPERADMIN role required")
-    @PreAuthorize("hasRole('SUPERADMIN')")
-    @GetMapping("/superAdminInventories")
-    public Page<InventoryResponse> getSuperAdminInventories(
-            @Parameter(description = "Page number (0-indexed)", required = false)
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size", required = false)
-            @RequestParam(defaultValue = "3") int size
-    ) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<InventoryEntity> inventoryPage = inventoryRepository.findAll(pageable);
-        return inventoryPage.map(InventoryMapper::toResponse);
     }
 
     @Operation(

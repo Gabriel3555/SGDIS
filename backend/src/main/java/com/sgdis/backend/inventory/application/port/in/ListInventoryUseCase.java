@@ -1,9 +1,9 @@
 package com.sgdis.backend.inventory.application.port.in;
 
 import com.sgdis.backend.inventory.application.dto.InventoryResponse;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface ListInventoryUseCase {
-    List<InventoryResponse> listInventoryes();
+    Page<InventoryResponse> listInventoryes(Pageable pageable);
 }

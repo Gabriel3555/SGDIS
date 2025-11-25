@@ -410,17 +410,22 @@ function updateItemsPagination() {
     const endItem = Math.min((currentPage + 1) * window.itemsData.pageSize, totalElements);
     
     let paginationHtml = `
-        <div class="text-sm text-gray-600">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
             Mostrando ${startItem}-${endItem} de ${totalElements} items
         </div>
         <div class="flex gap-2">
     `;
     
     // Previous button
+    const prevDisabled = currentPage === 0;
     paginationHtml += `
         <button onclick="changeItemsPage(${currentPage - 1})" 
-                ${currentPage === 0 ? 'disabled' : ''}
-                class="px-4 py-2 rounded-xl ${currentPage === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#00AF00] hover:bg-[#008800] text-white'} transition-colors">
+                ${prevDisabled ? 'disabled' : ''}
+                class="px-4 py-2 rounded-xl transition-colors ${
+                    prevDisabled 
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'bg-[#00AF00] hover:bg-[#008800] text-white'
+                }">
             <i class="fas fa-chevron-left"></i>
         </button>
     `;
@@ -435,19 +440,29 @@ function updateItemsPagination() {
     }
     
     for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentPage;
         paginationHtml += `
             <button onclick="changeItemsPage(${i})" 
-                    class="px-4 py-2 rounded-xl ${i === currentPage ? 'bg-[#00AF00] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-300 dark:text-black dark:hover:bg-gray-400'} transition-colors">
+                    class="px-4 py-2 rounded-xl transition-colors ${
+                        isActive 
+                            ? 'bg-[#00AF00] text-white' 
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }">
                 ${i + 1}
             </button>
         `;
     }
     
     // Next button
+    const nextDisabled = currentPage >= totalPages - 1;
     paginationHtml += `
         <button onclick="changeItemsPage(${currentPage + 1})" 
-                ${currentPage >= totalPages - 1 ? 'disabled' : ''}
-                class="px-4 py-2 rounded-xl ${currentPage >= totalPages - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#00AF00] hover:bg-[#008800] text-white'} transition-colors">
+                ${nextDisabled ? 'disabled' : ''}
+                class="px-4 py-2 rounded-xl transition-colors ${
+                    nextDisabled 
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'bg-[#00AF00] hover:bg-[#008800] text-white'
+                }">
             <i class="fas fa-chevron-right"></i>
         </button>
     `;
