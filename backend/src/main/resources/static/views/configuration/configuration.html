@@ -1,10 +1,931 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configuración - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <script>
+        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
+        // Este script debe ejecutarse ANTES de cualquier otro script o CSS
+        (function () {
+            try {
+                const saved = localStorage.getItem('sgdis-dark-mode');
+                const html = document.documentElement;
+                let isDark = false;
 
+                // Determinar si debe estar en modo oscuro
+                if (saved === 'true') {
+                    isDark = true;
+                    html.classList.add('dark');
+                } else if (saved === 'false') {
+                    isDark = false;
+                    html.classList.remove('dark');
+                } else {
+                    // Si no hay preferencia guardada, usar la preferencia del sistema
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        isDark = true;
+                        html.classList.add('dark');
+                    } else {
+                        isDark = false;
+                        html.classList.remove('dark');
+                    }
+                }
+
+                // Aplicar estilos críticos inmediatamente para evitar flash
+                // Esto se ejecuta antes de que el DOM esté listo
+                const style = document.createElement('style');
+                style.id = 'prevent-flash-styles';
+                style.textContent = `
+                    /* Aplicar estilos críticos inmediatamente */
+                    .sidebar {
+                        background-color: ${isDark ? '#1e293b' : '#ffffff'} !important;
+                    }
+                    header {
+                        background-color: ${isDark ? '#1e293b' : '#ffffff'} !important;
+                    }
+                    header .text-gray-600 {
+                        color: ${isDark ? '#d1d5db' : '#4b5563'} !important;
+                    }
+                    header .text-gray-800 {
+                        color: ${isDark ? '#f1f5f9' : '#1f2937'} !important;
+                    }
+                    header .text-gray-500 {
+                        color: ${isDark ? '#9ca3af' : '#6b7280'} !important;
+                    }
+                    body {
+                        background-color: ${isDark ? '#0f172a' : '#ffffff'} !important;
+                        color: ${isDark ? '#f1f5f9' : '#111827'} !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            } catch (e) {
+                // Si hay error, aplicar modo claro por defecto
+                const style = document.createElement('style');
+                style.id = 'prevent-flash-styles';
+                style.textContent = `
+                    .sidebar {
+                        background-color: #ffffff !important;
+                    }
+                    header {
+                        background-color: #ffffff !important;
+                    }
+                    header .text-gray-600 {
+                        color: #4b5563 !important;
+                    }
+                    header .text-gray-800 {
+                        color: #1f2937 !important;
+                    }
+                    header .text-gray-500 {
+                        color: #6b7280 !important;
+                    }
+                    body {
+                        background-color: #ffffff !important;
+                        color: #111827 !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        })();
+    </script>
+    <script>
+        // Establecer estilo del sidebar inmediatamente para evitar flash
+        // Este script se ejecuta después del anterior pero antes del renderizado
+        (function() {
+            try {
+                const saved = localStorage.getItem('sgdis-dark-mode');
+                const isDark = saved === 'true' || 
+                    (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                
+                // Crear estilos específicos para sidebar y header que se aplicarán inmediatamente
+                if (!document.getElementById('sidebar-inline-styles')) {
+                    const sidebarStyle = document.createElement('style');
+                    sidebarStyle.id = 'sidebar-inline-styles';
+                    sidebarStyle.textContent = `
+                        #sidebar {
+                            background-color: ${isDark ? '#1e293b' : '#ffffff'} !important;
+                        }
+                        #sidebar .bg-white {
+                            background-color: ${isDark ? '#1e293b' : '#ffffff'} !important;
+                        }
+                        header {
+                            background-color: ${isDark ? '#1e293b' : '#ffffff'} !important;
+                        }
+                        header .text-gray-600 {
+                            color: ${isDark ? '#d1d5db' : '#4b5563'} !important;
+                        }
+                        header .text-gray-800 {
+                            color: ${isDark ? '#f1f5f9' : '#1f2937'} !important;
+                        }
+                        header .text-gray-500 {
+                            color: ${isDark ? '#9ca3af' : '#6b7280'} !important;
+                        }
+                    `;
+                    document.head.appendChild(sidebarStyle);
+                }
+            } catch (e) {
+                // Si hay error, aplicar modo claro
+                if (!document.getElementById('sidebar-inline-styles')) {
+                    const sidebarStyle = document.createElement('style');
+                    sidebarStyle.id = 'sidebar-inline-styles';
+                    sidebarStyle.textContent = `
+                        #sidebar {
+                            background-color: #ffffff !important;
+                        }
+                        #sidebar .bg-white {
+                            background-color: #ffffff !important;
+                        }
+                        header {
+                            background-color: #ffffff !important;
+                        }
+                        header .text-gray-600 {
+                            color: #4b5563 !important;
+                        }
+                        header .text-gray-800 {
+                            color: #1f2937 !important;
+                        }
+                        header .text-gray-500 {
+                            color: #6b7280 !important;
+                        }
+                    `;
+                    document.head.appendChild(sidebarStyle);
+                }
+            }
+        })();
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'sena-verde': '#00AF00',
+                        'sena-verde-oscuro': '#008800'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <style>
+        /* Prevenir flash de contenido - aplicar inmediatamente según preferencia */
+        html {
+            color-scheme: light dark;
+        }
+
+        html.dark {
+            color-scheme: dark;
+        }
+
+        html:not(.dark) {
+            color-scheme: light;
+        }
+    </style>
+</head>
+
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64 bg-white dark:bg-gray-800" id="sidebar"
+        style="box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <!-- Sidebar header -->
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2">
+                <div
+                    class="w-12 h-12 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-center overflow-hidden">
+                    <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                </div>
+                <div class="text-gray-800 dark:text-gray-200">
+                    <div class="font-bold text-lg">SGDIS</div>
+                    <div class="text-xs opacity-70">Configuración</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar navigation -->
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/superadmin/dashboard"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/superadmin/inventory"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/inventory')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="/superadmin/users"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>
+            <a href="/superadmin/verification"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/superadmin/reports"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/notifications"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/superadmin/import-export"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/import-export')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="/superadmin/settings"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2 active"
+                onclick="handleSidebarClick(event, '/superadmin/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/info-me"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+                onclick="handleSidebarClick(event, '/info-me')">
+                <i class="fas fa-user-circle text-lg"></i>
+                <span class="font-medium">Mi Perfil</span>
+            </a>
+        </nav>
+
+        <!-- Logout button -->
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
+            <button onclick="logout()"
+                class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content min-h-screen">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 flex-1">
+                    <button
+                        class="sidebar-toggle text-gray-600 dark:text-gray-300 hover:text-[#00AF00] transition-colors"
+                        id="menuToggle">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div class="relative flex-1 max-w-xl">
+                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="configurationSearch" placeholder="Buscar configuraciones..."
+                            class="search-input">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="relative cursor-pointer">
+                        <i
+                            class="fas fa-bell text-gray-600 dark:text-gray-300 text-xl hover:text-[#00AF00] transition-colors"></i>
+                        <span class="notification-badge">3</span>
+                    </div>
+
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        onclick="window.location.href='/info-me'">
+                        <div class="user-avatar" id="headerUserAvatar"></div>
+                        <div class="hidden sm:block">
+                            <div class="font-semibold text-gray-800 dark:text-gray-200 text-sm" id="headerUserName">
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400" id="headerUserRole"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Configuration Content -->
+        <main class="p-6">
+            <!-- Header Section -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-1">Configuración</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Personaliza tu experiencia en SGDIS</p>
+                </div>
+            </div>
+
+            <!-- Configuration Cards -->
+            <div class="max-w-2xl">
+                <!-- Appearance Settings Card -->
+                <div class="stat-card">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="w-12 h-12 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-xl flex items-center justify-center">
+                                <i class="fas fa-palette text-white text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-800 dark:text-white">Apariencia</h2>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Personaliza el tema visual</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dark Mode Toggle -->
+                    <div class="space-y-4">
+                        <div
+                            class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600">
+                            <div class="flex items-center gap-4">
+                                <div
+                                    class="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-moon text-gray-600 dark:text-gray-300"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-800 dark:text-white">Modo Oscuro</h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">Activa o desactiva el tema
+                                        oscuro</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="darkModeToggle" class="sr-only peer">
+                                <div
+                                    class="w-14 h-7 bg-gray-300 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-[#00AF00]">
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">¿Está seguro que desea cerrar
+                    sesión?</h3>
+                <p class="text-gray-600 dark:text-gray-400">Será redirigido a la página de inicio de sesión.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeLogoutModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmLogout()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/inventory/inventory-role-utils.js"></script>
+    <script src="../../js/dashboard.js"></script>
+    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/dark-mode.js"></script>
+
+    <style>
+        /* Smooth transition animation for dark/light mode changes - 0.5 seconds */
+        html,
+        html *:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
+            transition: background-color 0.5s ease-in-out, 
+                        color 0.5s ease-in-out, 
+                        border-color 0.5s ease-in-out,
+                        box-shadow 0.5s ease-in-out !important;
+        }
+
+        /* Specific transitions for key elements */
+        .sidebar,
+        header,
+        .stat-card,
+        .bg-gray-50,
+        .bg-white,
+        .bg-gray-200,
+        .bg-gray-300,
+        .bg-gray-600,
+        .bg-gray-700,
+        .bg-gray-800,
+        .bg-gray-900 {
+            transition: background-color 0.5s ease-in-out !important;
+        }
+
+        .text-gray-600,
+        .text-gray-700,
+        .text-gray-800,
+        .text-gray-900,
+        .text-white,
+        .text-gray-300,
+        .text-gray-400,
+        .text-gray-500 {
+            transition: color 0.5s ease-in-out !important;
+        }
+
+        /* Títulos sin animaciones - mayor especificidad */
+        h1, h2, h3, h4, h5, h6,
+        h1 *, h2 *, h3 *, h4 *, h5 *, h6 *,
+        .text-3xl, .text-2xl, .text-xl, .text-lg,
+        h1.text-gray-800, h1.dark\:text-white,
+        h2.text-gray-800, h2.dark\:text-white,
+        h3.text-gray-800, h3.dark\:text-white,
+        h4.text-gray-800, h4.dark\:text-white,
+        h5.text-gray-800, h5.dark\:text-white,
+        h6.text-gray-800, h6.dark\:text-white {
+            transition: none !important;
+        }
+
+        /* Texto del sidebar SGDIS/Configuración sin animaciones */
+        .sidebar .text-gray-800,
+        .sidebar .dark\:text-gray-200,
+        .sidebar .font-bold,
+        .sidebar .text-xs,
+        .sidebar .text-lg {
+            transition: none !important;
+        }
+
+        /* Todo el texto dentro de la card de apariencia sin animaciones */
+        .stat-card *,
+        .stat-card p,
+        .stat-card span,
+        .stat-card div,
+        .stat-card label,
+        .stat-card h2,
+        .stat-card h3 {
+            transition: none !important;
+        }
+
+        .border-gray-200,
+        .border-gray-300,
+        .border-gray-600,
+        .border-gray-700 {
+            transition: border-color 0.5s ease-in-out !important;
+        }
+
+        /* Exclude certain elements from transition for better performance */
+        html img,
+        html svg,
+        html canvas,
+        html video,
+        html iframe {
+            transition: opacity 0.5s ease-in-out !important;
+        }
+
+        /* Adjust main content margin to account for fixed sidebar */
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Ensure sidebar background in light mode */
+        html:not(.dark) .sidebar {
+            background-color: white !important;
+        }
+
+        html:not(.dark) .sidebar .bg-white {
+            background-color: white !important;
+        }
+
+        html:not(.dark) header {
+            background-color: white !important;
+        }
+
+        html:not(.dark) .text-gray-800 {
+            color: #1f2937 !important;
+        }
+
+        html:not(.dark) .text-gray-600 {
+            color: #4b5563 !important;
+        }
+
+        html:not(.dark) .text-gray-500 {
+            color: #6b7280 !important;
+        }
+
+        html:not(.dark) .border-gray-200 {
+            border-color: #e5e7eb !important;
+        }
+
+        html:not(.dark) .bg-gray-50 {
+            background-color: #f9fafb !important;
+        }
+
+        html:not(.dark) .sidebar-item {
+            color: #374151 !important;
+        }
+
+        html:not(.dark) .sidebar-item:hover {
+            background-color: #f0fdf4 !important;
+        }
+
+        html:not(.dark) .stat-card {
+            background-color: white !important;
+            border-color: #e5e7eb !important;
+        }
+
+        html:not(.dark) .stat-card h2,
+        html:not(.dark) .stat-card h3 {
+            color: #1f2937 !important;
+        }
+
+        html:not(.dark) .stat-card p {
+            color: #4b5563 !important;
+        }
+
+        /* Dark mode toggle card - modo claro */
+        html:not(.dark) .bg-gray-50 {
+            background-color: #f9fafb !important;
+        }
+
+        html:not(.dark) .bg-gray-200 {
+            background-color: #e5e7eb !important;
+        }
+
+        html:not(.dark) .bg-gray-300 {
+            background-color: #d1d5db !important;
+        }
+
+        html:not(.dark) .border-gray-200 {
+            border-color: #e5e7eb !important;
+        }
+
+        html:not(.dark) .border-gray-600 {
+            border-color: #4b5563 !important;
+        }
+
+        /* Textos dentro de la card del toggle */
+        html:not(.dark) .bg-gray-50 h3 {
+            color: #1f2937 !important;
+        }
+
+        html:not(.dark) .bg-gray-50 p {
+            color: #4b5563 !important;
+        }
+
+        html:not(.dark) .bg-gray-50 .text-gray-600 {
+            color: #4b5563 !important;
+        }
+
+        html:not(.dark) .bg-gray-50 .text-gray-800 {
+            color: #1f2937 !important;
+        }
+
+        /* Toggle switch en modo claro */
+        html:not(.dark) .peer-checked\:bg-\[#00AF00\] {
+            background-color: #00AF00 !important;
+        }
+
+        /* Icono dentro de bg-gray-200 en modo claro */
+        html:not(.dark) .bg-gray-200 .text-gray-600 {
+            color: #4b5563 !important;
+        }
+
+        /* Asegurar que los elementos dentro de la card del toggle tengan colores correctos */
+        html:not(.dark) .bg-gray-50 .bg-gray-200 {
+            background-color: #e5e7eb !important;
+        }
+
+        html:not(.dark) .bg-gray-50 .bg-gray-200 .text-gray-600 {
+            color: #4b5563 !important;
+        }
+
+        /* Toggle switch background en modo claro */
+        html:not(.dark) .peer:not(.peer-checked) {
+            background-color: #d1d5db !important;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .overlay {
+                display: none;
+            }
+
+            .overlay.active {
+                display: block;
+            }
+        }
+    </style>
+
+    <script>
+        // Handle sidebar click with debounce
+        function handleSidebarClick(event, link) {
+            if (link === '#') {
+                event.preventDefault();
+                return;
+            }
+
+            event.preventDefault();
+
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+
+            if (link.startsWith('/')) {
+                if (typeof debouncedNavigate === 'function') {
+                    debouncedNavigate(link);
+                } else {
+                    window.location.href = link;
+                }
+            }
+        }
+
+        // Setup mobile menu toggle
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+
+                    if (isHidden) {
+                        sidebar.style.transform = 'translateX(0)';
+                        overlay.style.display = 'block';
+                    } else {
+                        sidebar.style.transform = 'translateX(-100%)';
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Initialize mobile menu toggle when DOM is ready
+        document.addEventListener('DOMContentLoaded', function () {
+            setupMobileMenuToggle();
+        });
+
+        // Logout function - shows confirmation modal
+        function logout() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        // Close logout modal
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Confirm logout - actually logs out
+        function confirmLogout() {
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
+        }
+
+        // Initialize dark mode toggle - debe guardar cambios globalmente
+        function initializeDarkModeToggle() {
+            const toggle = document.getElementById('darkModeToggle');
+            if (!toggle) return;
+
+            // Función para aplicar cambios con animación suave de 2 segundos
+            function applyDarkMode(isDark) {
+                const html = document.documentElement;
+                // Guardar en localStorage inmediatamente
+                localStorage.setItem('sgdis-dark-mode', isDark.toString());
+
+                // Aplicar clase - las transiciones CSS se encargarán de la animación
+                // Las clases de Tailwind (bg-white dark:bg-gray-800, etc.) cambiarán automáticamente
+                // y las transiciones CSS de 2 segundos animarán el cambio
+                if (isDark) {
+                    html.classList.add('dark');
+                } else {
+                    html.classList.remove('dark');
+                }
+
+                // Actualizar estilos inline para permitir transiciones suaves
+                // Solo establecer transiciones, no colores, para que las clases de Tailwind hagan el trabajo
+                let sidebarStyle = document.getElementById('sidebar-inline-styles');
+                if (sidebarStyle) {
+                    sidebarStyle.textContent = `
+                        #sidebar {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        #sidebar .bg-white {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        header {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        header .text-gray-600,
+                        header .text-gray-800,
+                        header .text-gray-500 {
+                            transition: color 0.5s ease-in-out !important;
+                        }
+                    `;
+                }
+
+                let preventFlashStyle = document.getElementById('prevent-flash-styles');
+                if (preventFlashStyle) {
+                    preventFlashStyle.textContent = `
+                        .sidebar {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        header {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        header .text-gray-600,
+                        header .text-gray-800,
+                        header .text-gray-500 {
+                            transition: color 0.5s ease-in-out !important;
+                        }
+                        body {
+                            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out !important;
+                        }
+                    `;
+                }
+
+                // Actualizar toggle
+                toggle.checked = isDark;
+
+                // Notificar a darkModeManager si está disponible
+                if (window.darkModeManager) {
+                    window.darkModeManager.isDarkMode = isDark;
+                    window.darkModeManager.savePreference(isDark);
+                }
+
+                // Disparar evento para otros componentes
+                const event = new CustomEvent('themeChanged', {
+                    detail: { isDark: isDark, isDarkMode: isDark }
+                });
+                document.dispatchEvent(event);
+                window.dispatchEvent(event);
+            }
+
+            // Sincronizar estado inicial
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            const isDarkMode = saved === 'true' ||
+                (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ||
+                document.documentElement.classList.contains('dark');
+
+            toggle.checked = isDarkMode;
+
+            // Escuchar cambios del toggle - siempre guardar directamente
+            toggle.addEventListener('change', function () {
+                const isDark = toggle.checked;
+
+                // Guardar y aplicar inmediatamente
+                applyDarkMode(isDark);
+
+                // Si darkModeManager está disponible, sincronizarlo
+                if (window.darkModeManager) {
+                    // Actualizar darkModeManager sin llamar toggle() para evitar doble aplicación
+                    window.darkModeManager.isDarkMode = isDark;
+                    window.darkModeManager.savePreference(isDark);
+                    window.darkModeManager.applyDarkMode(isDark);
+                }
+            });
+
+            // Escuchar cambios de tema desde otras fuentes (para mantener sincronizado)
+            document.addEventListener('themeChanged', function (event) {
+                if (toggle) {
+                    const isDark = event.detail.isDarkMode !== undefined
+                        ? event.detail.isDarkMode
+                        : event.detail.isDark;
+                    // Solo actualizar el toggle si el estado es diferente
+                    if (toggle.checked !== isDark) {
+                        toggle.checked = isDark;
+                    }
+                }
+            });
+
+            // Sincronizar estado inicial con darkModeManager si está disponible
+            if (window.darkModeManager) {
+                toggle.checked = window.darkModeManager.isDarkMode;
+            }
+        }
+
+        // Función para inicializar cuando todo esté listo
+        function initWhenReady() {
+            // Esperar a que el DOM esté listo
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function () {
+                    waitForDarkModeManager();
+                });
+            } else {
+                waitForDarkModeManager();
+            }
+        }
+
+        // Esperar a que darkModeManager esté disponible
+        function waitForDarkModeManager() {
+            // Intentar inicializar inmediatamente
+            initializeDarkModeToggle();
+
+            // Si darkModeManager no está disponible, intentar varias veces
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            const checkInterval = setInterval(function () {
+                attempts++;
+
+                if (window.darkModeManager || attempts >= maxAttempts) {
+                    clearInterval(checkInterval);
+                    // Reinicializar con darkModeManager si está disponible
+                    if (window.darkModeManager) {
+                        initializeDarkModeToggle();
+                    }
+                }
+            }, 50); // Verificar cada 50ms
+        }
+
+        // Inicializar
+        initWhenReady();
+
+        // Después de que la página se carga completamente, permitir transiciones
+        // Modificar estilos inline para que solo establezcan transiciones, no colores
+        // Esto permite que las clases de Tailwind establezcan los colores y las transiciones animen el cambio
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                // Modificar estilos inline para permitir transiciones en cambios dinámicos
+                // Solo establecer transiciones, no colores, para que las clases de Tailwind hagan el trabajo
+                let sidebarStyle = document.getElementById('sidebar-inline-styles');
+                if (sidebarStyle) {
+                    sidebarStyle.textContent = `
+                        #sidebar {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        #sidebar .bg-white {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        header {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        header .text-gray-600,
+                        header .text-gray-800,
+                        header .text-gray-500 {
+                            transition: color 0.5s ease-in-out !important;
+                        }
+                    `;
+                }
+
+                let preventFlashStyle = document.getElementById('prevent-flash-styles');
+                if (preventFlashStyle) {
+                    preventFlashStyle.textContent = `
+                        .sidebar {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        header {
+                            transition: background-color 0.5s ease-in-out !important;
+                        }
+                        header .text-gray-600,
+                        header .text-gray-800,
+                        header .text-gray-500 {
+                            transition: color 0.5s ease-in-out !important;
+                        }
+                        body {
+                            transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out !important;
+                        }
+                    `;
+                }
+            }, 100); // Pequeño delay después de la carga para permitir que la página se renderice
+        });
+    </script>
 </body>
+
 </html>

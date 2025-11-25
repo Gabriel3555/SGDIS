@@ -253,4 +253,88 @@ public class AdminDashboardController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/superadmin/settings")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminConfiguration() throws IOException {
+        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/settings")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalConfiguration() throws IOException {
+        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/settings", "/admininstitution/settings"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionConfiguration() throws IOException {
+        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/warehouse/settings")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseConfiguration() throws IOException {
+        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/user/settings")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userConfiguration() throws IOException {
+        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/settings")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION', 'WAREHOUSE', 'USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> configuration() throws IOException {
+        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
