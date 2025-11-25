@@ -1,6 +1,60 @@
+// Cache for institutions to avoid multiple API calls
+let institutionsCache = null;
+let institutionsCacheTimestamp = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+async function loadInstitutionsCache() {
+    const now = Date.now();
+    // Use cache if it's still valid
+    if (institutionsCache && institutionsCacheTimestamp && (now - institutionsCacheTimestamp) < CACHE_DURATION) {
+        return institutionsCache;
+    }
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        
+        const response = await fetch('/api/v1/institutions', {
+            method: 'GET',
+            headers: headers
+        });
+        
+        if (response.ok) {
+            institutionsCache = await response.json();
+            institutionsCacheTimestamp = now;
+            return institutionsCache;
+        }
+    } catch (error) {
+        console.error('Error loading institutions cache:', error);
+    }
+    
+    return institutionsCache || [];
+}
+
 async function filterUsers() {
-    // Check if filters are active
-    const hasFilters = usersData.searchTerm || usersData.selectedRole !== 'all' || usersData.selectedStatus !== 'all';
+    // Ensure we're using window.usersData for consistency
+    if (!window.usersData) {
+        window.usersData = usersData;
+    }
+    const data = window.usersData;
+    
+    // Check if filters are active (including regional and institution for super admin)
+    const isSuperAdmin = (data.currentLoggedInUserRole && data.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
+                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const hasFilters = data.searchTerm || 
+                      data.selectedRole !== 'all' || 
+                      data.selectedStatus !== 'all' ||
+                      (isSuperAdmin && (data.selectedRegional || data.selectedInstitution));
+    
+    console.log('filterUsers - hasFilters:', hasFilters, {
+        searchTerm: data.searchTerm,
+        selectedRole: data.selectedRole,
+        selectedStatus: data.selectedStatus,
+        selectedRegional: data.selectedRegional,
+        selectedInstitution: data.selectedInstitution,
+        isSuperAdmin: isSuperAdmin
+    });
     
     if (hasFilters) {
         // Reload all users for filtering
@@ -8,14 +62,21 @@ async function filterUsers() {
         try {
             await loadUsers(0);
             
-            if (!usersData.users || !Array.isArray(usersData.users)) {
+            if (!data.users || !Array.isArray(data.users)) {
+                console.warn('No users data available for filtering');
                 return;
             }
 
-            let filtered = [...usersData.users];
+            let filtered = [...data.users];
+            console.log('Starting with', filtered.length, 'users to filter');
+            
+            // Load institutions cache if needed for regional/institution filtering
+            if (isSuperAdmin && (data.selectedRegional || data.selectedInstitution)) {
+                await loadInstitutionsCache();
+            }
 
-            if (usersData.searchTerm && usersData.searchTerm.trim() !== '') {
-                const searchLower = usersData.searchTerm.toLowerCase().trim();
+            if (data.searchTerm && data.searchTerm.trim() !== '') {
+                const searchLower = data.searchTerm.toLowerCase().trim();
 
                 filtered = filtered.filter(user => {
                     let matches = false;
@@ -37,24 +98,109 @@ async function filterUsers() {
 
                     return matches;
                 });
+                console.log('After search filter:', filtered.length);
             }
 
-            if (usersData.selectedRole !== 'all') {
-                filtered = filtered.filter(user => user.role === usersData.selectedRole);
+            if (data.selectedRole !== 'all') {
+                filtered = filtered.filter(user => user.role === data.selectedRole);
+                console.log('After role filter:', filtered.length);
             }
 
-            if (usersData.selectedStatus !== 'all') {
-                const isActive = usersData.selectedStatus === 'active';
+            if (data.selectedStatus !== 'all') {
+                const isActive = data.selectedStatus === 'active';
                 filtered = filtered.filter(user => {
                     const userStatus = user.status !== false;
                     return userStatus === isActive;
                 });
+                console.log('After status filter:', filtered.length);
             }
 
-            usersData.filteredUsers = filtered;
-            usersData.currentPage = 1;
-            usersData.totalPages = Math.ceil(filtered.length / usersData.itemsPerPage);
-            usersData.totalUsers = filtered.length;
+            // Filter by regional (super admin only)
+            // Since user.institution is just a string (name), we need to map it to institution data
+            if (isSuperAdmin && data.selectedRegional) {
+                console.log('Filtering users by regional:', data.selectedRegional);
+                try {
+                    // Load institutions for the selected regional to get their names
+                    const token = localStorage.getItem('jwt');
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                    
+                    const institutionsResponse = await fetch(`/api/v1/institutions/institutionsByRegionalId/${data.selectedRegional}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    
+                    if (institutionsResponse.ok) {
+                        const institutions = await institutionsResponse.json();
+                        const institutionNames = new Set(institutions.map(inst => inst.name));
+                        console.log('Institution names for regional:', Array.from(institutionNames));
+                        console.log('Users before regional filter:', filtered.length);
+                        
+                        filtered = filtered.filter(user => {
+                            if (!user.institution) {
+                                return false;
+                            }
+                            const matches = institutionNames.has(user.institution);
+                            return matches;
+                        });
+                        
+                        console.log('Users after regional filter:', filtered.length);
+                    } else {
+                        console.error('Failed to load institutions for regional filter');
+                    }
+                } catch (error) {
+                    console.error('Error loading institutions for regional filter:', error);
+                }
+            }
+
+            // Filter by institution (super admin only)
+            if (isSuperAdmin && data.selectedInstitution) {
+                console.log('Filtering users by institution:', data.selectedInstitution);
+                
+                // Use cached institutions or load them
+                const allInstitutions = institutionsCache || await loadInstitutionsCache();
+                
+                if (allInstitutions && allInstitutions.length > 0) {
+                    const selectedInstitution = allInstitutions.find(inst => 
+                        (inst.id && inst.id.toString() === data.selectedInstitution.toString()) ||
+                        (inst.institutionId && inst.institutionId.toString() === data.selectedInstitution.toString())
+                    );
+                    
+                    if (selectedInstitution) {
+                        const institutionName = selectedInstitution.name;
+                        console.log('Institution name for filter:', institutionName);
+                        console.log('Users before institution filter:', filtered.length);
+                        
+                        filtered = filtered.filter(user => {
+                            if (!user.institution) {
+                                return false;
+                            }
+                            return user.institution === institutionName;
+                        });
+                        
+                        console.log('Users after institution filter:', filtered.length);
+                    } else {
+                        console.error('Institution not found with ID:', data.selectedInstitution);
+                    }
+                } else {
+                    console.error('No institutions available for filtering');
+                }
+            }
+
+            data.filteredUsers = filtered;
+            data.currentPage = 1;
+            data.totalPages = Math.ceil(filtered.length / data.itemsPerPage);
+            data.totalUsers = filtered.length;
+            
+            // Also update the local usersData reference
+            if (usersData && usersData !== data) {
+                usersData.filteredUsers = filtered;
+                usersData.currentPage = 1;
+                usersData.totalPages = data.totalPages;
+                usersData.totalUsers = data.totalUsers;
+            }
+            
+            console.log('Final filtered users:', filtered.length);
             
         } finally {
             hideLoadingState();
@@ -69,9 +215,26 @@ async function filterUsers() {
         }
     }
 
+    // Update UI but preserve filters (don't call updateUsersUI which recreates filters)
     setTimeout(() => {
-        if (typeof updateUsersUI === 'function') {
-            updateUsersUI();
+        if (typeof updateUserStats === 'function') {
+            updateUserStats();
+        }
+        if (typeof updateViewModeButtons === 'function') {
+            updateViewModeButtons();
+        }
+        const viewMode = data.viewMode || "table";
+        if (viewMode === "table") {
+            if (typeof updateUsersTable === 'function') {
+                updateUsersTable();
+            }
+        } else {
+            if (typeof updateUsersCards === 'function') {
+                updateUsersCards();
+            }
+        }
+        if (typeof updatePagination === 'function') {
+            updatePagination();
         }
     }, 5);
 }
