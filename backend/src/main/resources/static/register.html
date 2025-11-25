@@ -127,6 +127,42 @@
         .scroll-personalizado::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 255, 0, 0.8);
         }
+
+        /* Limit dropdown height and add scroll for select options */
+        select {
+            max-height: 200px;
+        }
+
+        /* When select is open, limit the dropdown list height */
+        select:focus {
+            max-height: 200px;
+        }
+
+        select option {
+            padding: 6px 12px;
+            font-size: 0.875rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        /* Custom scrollbar for select dropdowns (when browser allows) */
+        select::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        select::-webkit-scrollbar-track {
+            background: rgba(232, 245, 232, 0.3);
+            border-radius: 3px;
+        }
+
+        select::-webkit-scrollbar-thumb {
+            background: rgba(0, 175, 0, 0.6);
+            border-radius: 3px;
+        }
+
+        select::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 175, 0, 0.8);
+        }
     </style>
 </head>
 
@@ -136,20 +172,20 @@
     </div>
 
     <div class="min-h-screen flex items-center justify-center p-4 relative z-10">
-        <div class="w-full max-w-md">
-            <div class="efecto-vidrio rounded-2xl shadow-2xl p-8 border border-white/20">
-                <div class="text-center mb-8">
-                    <div class="mb-4">
+        <div class="w-full max-w-2xl">
+            <div class="efecto-vidrio rounded-2xl shadow-2xl p-5 border border-white/20">
+                <div class="text-center mb-6">
+                    <div class="mb-3">
                         <img src="svg/box.png" alt="Logo Caja"
-                            class="h-20 w-20 mx-auto rounded-2xl shadow-lg object-cover">
+                            class="h-16 w-16 mx-auto rounded-2xl shadow-lg object-cover">
                     </div>
-                    <h1 class="text-2xl font-bold text-gray-800 mb-2">Registro</h1>
-                    <h2 class="text-lg font-semibold text-sena-verde mb-1">Sistema de Gestión de Inventario</h2>
-                    <p class="text-sm text-gray-600">Servicio Nacional de Aprendizaje - SENA</p>
-                    <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-3"></div>
+                    <h1 class="text-xl font-bold text-gray-800 mb-1">Registro</h1>
+                    <h2 class="text-base font-semibold text-sena-verde mb-1">Sistema de Gestión de Inventario</h2>
+                    <p class="text-xs text-gray-600">Servicio Nacional de Aprendizaje - SENA</p>
+                    <div class="w-16 h-1 bg-sena-verde rounded-full mx-auto mt-2"></div>
                 </div>
 
-                <form class="space-y-6" id="registerForm">
+                <form class="grid grid-cols-2 gap-3" id="registerForm">
                     <div>
                         <label for="fullName" class="block text-sm font-medium text-gray-700 mb-2">
                             Nombre Completo
@@ -163,7 +199,7 @@
                                 </svg>
                             </div>
                             <input type="text" id="fullName" name="fullName"
-                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                class="entrada-focus block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200 text-sm"
                                 placeholder="Juan Pérez García" required>
                         </div>
                     </div>
@@ -181,7 +217,7 @@
                                 </svg>
                             </div>
                             <input type="email" id="email" name="email"
-                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                class="entrada-focus block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200 text-sm"
                                 placeholder="usuario@sena.edu.co" required>
                         </div>
                     </div>
@@ -199,7 +235,7 @@
                                 </svg>
                             </div>
                             <input type="text" id="jobTitle" name="jobTitle"
-                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                class="entrada-focus block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200 text-sm"
                                 placeholder="Instructor, Aprendiz, etc." required>
                         </div>
                     </div>
@@ -217,8 +253,58 @@
                                 </svg>
                             </div>
                             <input type="text" id="laborDepartment" name="laborDepartment"
-                                class="entrada-focus block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                class="entrada-focus block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200 text-sm"
                                 placeholder="Centro de Manufactura, etc." required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="regional" class="block text-sm font-medium text-gray-700 mb-2">
+                            Regional
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <select id="regional" name="regional"
+                                class="entrada-focus block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white text-gray-700 focus:outline-none focus:ring-0 transition-all duration-200 appearance-none cursor-pointer text-sm"
+                                required>
+                                <option value="">Selecciona una regional</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="institution" class="block text-sm font-medium text-gray-700 mb-2">
+                            Institución
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                            </div>
+                            <select id="institution" name="institution"
+                                class="entrada-focus block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white text-gray-700 focus:outline-none focus:ring-0 transition-all duration-200 appearance-none cursor-pointer text-sm"
+                                required disabled>
+                                <option value="">Primero selecciona una regional</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
                         </div>
                     </div>
 
@@ -235,7 +321,7 @@
                                 </svg>
                             </div>
                             <input type="password" id="password" name="password"
-                                class="entrada-focus block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                class="entrada-focus block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200 text-sm"
                                 placeholder="Ingresa tu contraseña" required>
                             <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center"
                                 id="togglePassword">
@@ -263,7 +349,7 @@
                                 </svg>
                             </div>
                             <input type="password" id="confirmPassword" name="confirmPassword"
-                                class="entrada-focus block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200"
+                                class="entrada-focus block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200 text-sm"
                                 placeholder="Confirma tu contraseña" required>
                             <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center"
                                 id="toggleConfirmPassword">
@@ -279,7 +365,7 @@
                     </div>
 
                     <button type="submit"
-                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-sena-verde hover:bg-sena-verde-oscuro focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sena-verde transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                        class="col-span-2 w-full flex justify-center py-2.5 px-4 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-sena-verde hover:bg-sena-verde-oscuro focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sena-verde transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
@@ -288,8 +374,8 @@
                     </button>
                 </form>
 
-                <div class="mt-6 text-center">
-                    <p class="text-sm text-gray-600">
+                <div class="mt-4 text-center">
+                    <p class="text-xs text-gray-600">
                         ¿Ya tienes cuenta?
                         <a href="index.html"
                             class="text-sena-verde hover:text-sena-verde-oscuro font-medium transition-colors">
@@ -298,8 +384,8 @@
                     </p>
                 </div>
 
-                <div class="text-center mt-6">
-                    <p class="text-sm text-gray-600">
+                <div class="text-center mt-3">
+                    <p class="text-xs text-gray-600">
                         © 2025 SENA - Servicio Nacional de Aprendizaje
                     </p>
                 </div>
@@ -340,7 +426,7 @@
             });
 
             // --- Enter key functionality for all form fields ---
-            const formFields = ['fullName', 'email', 'jobTitle', 'laborDepartment', 'password', 'confirmPassword'];
+            const formFields = ['fullName', 'email', 'jobTitle', 'laborDepartment', 'regional', 'institution', 'password', 'confirmPassword'];
             formFields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) {
@@ -356,6 +442,108 @@
                 }
             });
 
+            // Add focus effects to select fields
+            const selectFields = document.querySelectorAll('select');
+            selectFields.forEach(select => {
+                select.addEventListener('focus', function () {
+                    this.parentElement.classList.add('scale-[1.02]');
+                });
+                select.addEventListener('blur', function () {
+                    this.parentElement.classList.remove('scale-[1.02]');
+                });
+            });
+
+            // Load regionals on page load
+            async function loadRegionals() {
+                try {
+                    const response = await fetch('/api/v1/regional', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const regionals = await response.json();
+                        const regionalSelect = document.getElementById('regional');
+                        
+                        // Clear existing options except the first one
+                        regionalSelect.innerHTML = '<option value="">Selecciona una regional</option>';
+                        
+                        // Add regional options
+                        regionals.forEach(regional => {
+                            const option = document.createElement('option');
+                            option.value = regional.id;
+                            option.textContent = regional.name;
+                            regionalSelect.appendChild(option);
+                        });
+                    } else {
+                        console.error('Error loading regionals');
+                    }
+                } catch (error) {
+                    console.error('Error loading regionals:', error);
+                }
+            }
+
+            // Load institutions by regional ID
+            async function loadInstitutionsByRegional(regionalId) {
+                const institutionSelect = document.getElementById('institution');
+                
+                if (!regionalId) {
+                    institutionSelect.innerHTML = '<option value="">Primero selecciona una regional</option>';
+                    institutionSelect.disabled = true;
+                    return;
+                }
+
+                try {
+                    institutionSelect.disabled = true;
+                    institutionSelect.innerHTML = '<option value="">Cargando instituciones...</option>';
+
+                    const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const institutions = await response.json();
+                        
+                        // Clear existing options
+                        institutionSelect.innerHTML = '<option value="">Selecciona una institución</option>';
+                        
+                        if (institutions.length === 0) {
+                            institutionSelect.innerHTML = '<option value="">No hay instituciones disponibles</option>';
+                        } else {
+                            // Add institution options
+                            institutions.forEach(institution => {
+                                const option = document.createElement('option');
+                                option.value = institution.id;
+                                option.textContent = institution.name;
+                                institutionSelect.appendChild(option);
+                            });
+                            institutionSelect.disabled = false;
+                        }
+                    } else {
+                        institutionSelect.innerHTML = '<option value="">Error al cargar instituciones</option>';
+                        console.error('Error loading institutions');
+                    }
+                } catch (error) {
+                    institutionSelect.innerHTML = '<option value="">Error al cargar instituciones</option>';
+                    console.error('Error loading institutions:', error);
+                }
+            }
+
+            // Handle regional selection change
+            const regionalSelect = document.getElementById('regional');
+            regionalSelect.addEventListener('change', function() {
+                const selectedRegionalId = this.value;
+                loadInstitutionsByRegional(selectedRegionalId);
+            });
+
+            // Load regionals when page loads
+            loadRegionals();
+
             // Manejar el envío del formulario de registro
             const registerForm = document.getElementById('registerForm');
             registerForm.addEventListener('submit', async function (e) {
@@ -367,9 +555,15 @@
                 const laborDepartment = document.getElementById('laborDepartment').value;
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
+                const institutionId = document.getElementById('institution').value;
 
                 if (password !== confirmPassword) {
                     alert('Las contraseñas no coinciden');
+                    return;
+                }
+
+                if (!institutionId) {
+                    alert('Por favor selecciona una institución');
                     return;
                 }
 
@@ -384,7 +578,8 @@
                             email: email,
                             fullName: fullName,
                             jobTitle: jobTitle,
-                            laborDepartment: laborDepartment
+                            laborDepartment: laborDepartment,
+                            institutionId: parseInt(institutionId, 10)
                         })
                     });
 
