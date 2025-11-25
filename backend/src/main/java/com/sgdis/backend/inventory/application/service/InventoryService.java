@@ -1,6 +1,7 @@
 package com.sgdis.backend.inventory.application.service;
 
 import com.sgdis.backend.auth.application.service.AuthService;
+import com.sgdis.backend.exception.DomainValidationException;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
@@ -64,6 +65,11 @@ public class InventoryService
                                 .findInventoryEntitiesByOwnerId(owner.getId());
                 if (existingInventories != null && !existingInventories.isEmpty()) {
                         throw new IllegalArgumentException("This owner already has an assigned inventory");
+                }
+
+                // Validar que institutionId no sea null
+                if (request.institutionId() == null) {
+                        throw new DomainValidationException("La institución es obligatoria para crear un inventario");
                 }
 
                 InstitutionEntity institution = institutionRepository.findById(request.institutionId())

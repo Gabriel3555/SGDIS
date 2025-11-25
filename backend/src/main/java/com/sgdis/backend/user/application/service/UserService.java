@@ -99,6 +99,11 @@ public class UserService implements
             throw new EmailAlreadyInUseException(createUserRequest.email());
         }
 
+        // Validar que institutionId no sea null
+        if (createUserRequest.institutionId() == null) {
+            throw new DomainValidationException("La institución es obligatoria para crear un usuario");
+        }
+
         InstitutionEntity institution = institutionRepository.getReferenceById(createUserRequest.institutionId());
 
         UserEntity user = UserMapper.fromCreateRequest(createUserRequest);
