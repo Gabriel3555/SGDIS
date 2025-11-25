@@ -15,8 +15,11 @@ import com.sgdis.backend.auth.utils.JwtUtils;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
+import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
 import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
+import com.sgdis.backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,6 +43,7 @@ import java.util.Set;
 public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase, SearchUsernameUseCase, RefreshTokenUseCase, RegisterUseCase, UserDetailsService {
 
     private final SpringDataUserRepository userRepository;
+    private final SpringDataInstitutionRepository institutionRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final FileUploadService fileUploadService;
@@ -130,12 +134,19 @@ public class UserDetailsServiceImp implements LoginUseCase, AuthenticateUseCase,
             throw new IllegalArgumentException("Email already exists");
         }
 
+        InstitutionEntity institution = null;
+        if (request.institutionId() != null) {
+            institution = institutionRepository.findById(request.institutionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Institution with id " + request.institutionId() + " not found"));
+        }
+
         UserEntity user = UserEntity.builder()
                 .password(passwordEncoder.encode(request.password()))
                 .email(request.email())
                 .fullName(request.fullName())
                 .jobTitle(request.jobTitle())
                 .laborDepartment(request.laborDepartment())
+                .institution(institution)
                 .imgUrl(null)
                 .role(Role.USER)
                 .status(true)
