@@ -1483,3 +1483,354 @@ html:not(.dark) #userDetailsModal #userDetailsStatus.bg-gray-100 {
     border: 1px solid #E5E7EB; /* gray-200 */
 }
 
+/* ============================================
+   CHANGE PASSWORD MODAL - DARK MODE
+   ============================================ */
+
+/* Modal Container - solo aplicar en modo oscuro */
+.dark #changePasswordModal {
+    background-color: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(6px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(6px) saturate(180%) !important;
+}
+
+.dark #changePasswordModal > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Títulos y textos */
+.dark #changePasswordModal h2 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #changePasswordModal label {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #changePasswordModal p,
+.dark #changePasswordModal span {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Botón de cerrar */
+.dark #changePasswordModal button.text-gray-400 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #changePasswordModal button.text-gray-400:hover {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Inputs */
+.dark #changePasswordModal input[type="password"] {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #changePasswordModal input[type="password"]::placeholder {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #changePasswordModal input[type="password"]:focus {
+    border-color: var(--dark-sena-verde) !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+/* Botón Cancelar - estilos específicos */
+.dark #changePasswordModal button[onclick="closeChangePasswordModal()"] {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+    background-color: transparent !important;
+}
+
+.dark #changePasswordModal button[onclick="closeChangePasswordModal()"]:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border-light) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+/* Botón Cambiar Contraseña */
+.dark #changePasswordModal button[type="submit"] {
+    background-color: var(--dark-sena-verde) !important;
+    color: #ffffff !important;
+}
+
+.dark #changePasswordModal button[type="submit"]:hover {
+    background-color: var(--dark-sena-verde-hover) !important;
+}
+
+/* Bordes generales */
+.dark #changePasswordModal .border-gray-300 {
+    border-color: var(--dark-border) !important;
+}
+
+/* ============================================
+   CHANGE PASSWORD MODAL - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que en modo claro los textos sean visibles */
+html:not(.dark) #changePasswordModal h2 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #changePasswordModal label {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #changePasswordModal button[onclick="closeChangePasswordModal()"] {
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #374151 !important; /* gray-700 */
+    background-color: transparent !important;
+}
+
+html:not(.dark) #changePasswordModal button[onclick="closeChangePasswordModal()"]:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #1F2937 !important; /* gray-800 */
+}
+
+/* ============================================
+   VIEW USER MODAL - DARK MODE
+   ============================================ */
+
+.dark #viewUserModal > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark #viewUserModal h2,
+.dark #viewUserModal h3 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #viewUserModal p,
+.dark #viewUserModal span {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #viewUserModal .flex.gap-3 button.flex-1 {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+    background-color: transparent !important;
+}
+
+.dark #viewUserModal .flex.gap-3 button.flex-1:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border-light) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #viewUserModal button.text-gray-400 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #viewUserModal button.text-gray-400:hover {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Light mode safeguards */
+html:not(.dark) #viewUserModal .flex.gap-3 button.flex-1 {
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #374151 !important; /* gray-700 */
+    background-color: transparent !important;
+}
+
+html:not(.dark) #viewUserModal .flex.gap-3 button.flex-1:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #1F2937 !important; /* gray-800 */
+}
+
+/* ============================================
+   EDIT USER MODAL - DARK MODE
+   ============================================ */
+
+.dark #editUserModal > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark #editUserModal h2 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #editUserModal label {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #editUserModal button.text-gray-400 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #editUserModal button.text-gray-400:hover {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #editUserModal input,
+.dark #editUserModal select {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #editUserModal input::placeholder,
+.dark #editUserModal select::placeholder {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #editUserModal input:focus,
+.dark #editUserModal select:focus {
+    border-color: var(--dark-sena-verde) !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+/* Botón Cancelar */
+.dark #editUserModal button[onclick="closeEditUserModal()"] {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+    background-color: transparent !important;
+}
+
+.dark #editUserModal button[onclick="closeEditUserModal()"]:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border-light) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+/* Botón Actualizar Usuario */
+.dark #editUserModal button[type="submit"] {
+    background-color: var(--dark-sena-verde) !important;
+    color: #ffffff !important;
+}
+
+.dark #editUserModal button[type="submit"]:hover {
+    background-color: var(--dark-sena-verde-hover) !important;
+}
+
+/* Light mode safeguards */
+html:not(.dark) #editUserModal button[onclick="closeEditUserModal()"] {
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #374151 !important; /* gray-700 */
+    background-color: transparent !important;
+}
+
+html:not(.dark) #editUserModal button[onclick="closeEditUserModal()"]:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #1F2937 !important; /* gray-800 */
+}
+
+/* ============================================
+   DELETE USER MODAL - DARK MODE
+   ============================================ */
+
+.dark #deleteUserModal > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark #deleteUserModal h2 {
+    color: #F87171 !important; /* red-400 */
+}
+
+.dark #deleteUserModal p,
+.dark #deleteUserModal span {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #deleteUserModal ul {
+    background-color: rgba(250, 204, 21, 0.15) !important; /* amarillo translúcido */
+    border: 1px solid rgba(250, 204, 21, 0.3) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #deleteUserModal ul li {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #deleteUserModal ul li strong {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #deleteUserModal button.flex-1 {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+    background-color: transparent !important;
+}
+
+.dark #deleteUserModal button.flex-1:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border-light) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #deleteUserModal button.bg-red-600 {
+    background-color: #DC2626 !important;
+}
+
+.dark #deleteUserModal button.bg-red-600:hover {
+    background-color: #B91C1C !important;
+}
+
+/* Light mode safeguards for the warning list */
+html:not(.dark) #deleteUserModal ul {
+    background-color: #FEF3C7 !important; /* yellow-100 */
+    border: 1px solid #FCD34D !important; /* yellow-300 */
+}
+
+/* ============================================
+   USERS ACTION BUTTONS - DARK MODE
+   ============================================ */
+
+.dark .user-action-btn {
+    background-color: transparent !important;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.dark .user-action-btn[data-action="view"] {
+    color: #60A5FA !important; /* blue-400 */
+}
+
+.dark .user-action-btn[data-action="view"]:hover {
+    background-color: rgba(96, 165, 250, 0.15) !important;
+    color: #BFDBFE !important; /* blue-200 */
+}
+
+.dark .user-action-btn[data-action="edit"] {
+    color: #FACC15 !important; /* yellow-400 */
+}
+
+.dark .user-action-btn[data-action="edit"]:hover {
+    background-color: rgba(250, 204, 21, 0.15) !important;
+    color: #FEF3C7 !important; /* yellow-100 */
+}
+
+.dark .user-action-btn[data-action="delete"]:not([disabled]) {
+    color: #F87171 !important; /* red-400 */
+}
+
+.dark .user-action-btn[data-action="delete"]:not([disabled]):hover {
+    background-color: rgba(248, 113, 113, 0.18) !important;
+    color: #FECACA !important; /* red-200 */
+}
+
+.dark .user-action-btn[data-action="view"],
+.dark .user-action-btn[data-action="edit"],
+.dark .user-action-btn[data-action="delete"] {
+    border-radius: 0.5rem;
+}
+
+/* Disabled delete buttons keep muted style */
+.dark .user-action-btn[data-action="delete"][disabled] {
+    color: var(--dark-text-muted) !important;
+    background-color: transparent !important;
+}
+
