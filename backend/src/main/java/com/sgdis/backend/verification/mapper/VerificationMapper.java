@@ -53,6 +53,11 @@ public final class VerificationMapper {
             }
         }
         
+        // Determine status based on whether there is a photo
+        String status = (entity.getPhotoUrl() != null && !entity.getPhotoUrl().isEmpty()) 
+            ? "VERIFIED" 
+            : "PENDING";
+        
         return new LatestVerificationResponse(
                 entity.getId(),
                 item != null ? item.getId() : null,
@@ -64,7 +69,8 @@ public final class VerificationMapper {
                 entity.getUser() != null ? entity.getUser().getFullName() : null,
                 entity.getUser() != null ? entity.getUser().getEmail() : null,
                 entity.getCreatedAt(),
-                entity.getPhotoUrl()
+                entity.getPhotoUrl(),
+                status
         );
     }
 

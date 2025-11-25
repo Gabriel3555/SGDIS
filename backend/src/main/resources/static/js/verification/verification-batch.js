@@ -39,59 +39,35 @@ function resetBatchVerificationState() {
 // Start Batch Scanner
 async function startBatchScanner() {
     try {
-        console.log('Iniciando escáner...');
-        
-        // Check if Html5Qrcode is available
-        if (typeof Html5Qrcode === 'undefined') {
-            console.error('Html5Qrcode no está definido');
-            showErrorToast('Error', 'Biblioteca de escaneo no disponible. Por favor recarga la página.');
-            return;
-        }
-        
-        console.log('Html5Qrcode disponible');
-
-        const cameraContainer = document.getElementById('cameraContainer');
+        const containerId = "cameraContainer";
+        const videoElement = document.getElementById('cameraVideo');
+        const canvasElement = document.getElementById('cameraCanvas');
         const placeholder = document.getElementById('cameraPlaceholder');
         const overlay = document.getElementById('scanOverlay');
         
-        if (!cameraContainer) {
-            console.error('Container de cámara no encontrado');
-            showErrorToast('Error', 'Contenedor de cámara no encontrado');
+        // Check if Html5Qrcode is available
+        if (typeof Html5Qrcode === 'undefined') {
+            showErrorToast('Error', 'Biblioteca de escaneo no disponible. Por favor recarga la página.');
             return;
         }
 
-        // Hide placeholder and show overlay
+        // Hide placeholder and show video
         if (placeholder) placeholder.style.display = 'none';
+        if (videoElement) videoElement.style.display = 'block';
         if (overlay) overlay.classList.remove('hidden');
 
-        // Create Html5Qrcode instance with the container ID
-        console.log('Creando instancia Html5Qrcode...');
-        batchVerificationState.html5QrCode = new Html5Qrcode("cameraContainer");
-
-        // Get available cameras
-        console.log('Solicitando cámaras disponibles...');
-        const cameras = await Html5Qrcode.getCameras();
-        console.log('Cámaras disponibles:', cameras);
-        
-        if (!cameras || cameras.length === 0) {
-            throw new Error('No se encontraron cámaras disponibles');
-        }
-
-        // Try to use the back camera (environment) first, otherwise use first available
-        const cameraId = cameras.length > 1 ? cameras[cameras.length - 1].id : cameras[0].id;
-        console.log('Usando cámara:', cameraId);
+        // Create Html5Qrcode instance
+        batchVerificationState.html5QrCode = new Html5Qrcode(containerId);
 
         // Start scanning
-        console.log('Iniciando escaneo...');
         await batchVerificationState.html5QrCode.start(
-            cameraId,
+            { facingMode: "environment" }, // Use back camera if available
             {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
                 aspectRatio: 1.0
             },
             (decodedText, decodedResult) => {
-                console.log('Código escaneado:', decodedText);
                 handleScannedCode(decodedText);
             },
             (errorMessage) => {
@@ -100,7 +76,6 @@ async function startBatchScanner() {
         );
 
         batchVerificationState.isScanning = true;
-        console.log('Escáner iniciado exitosamente');
 
         // Update UI
         document.getElementById('startCameraBtn').classList.add('hidden');
@@ -110,18 +85,8 @@ async function startBatchScanner() {
         showSuccessToast('Cámara iniciada', 'Escanea códigos de barras o QR de placas');
 
     } catch (error) {
-        console.error('Error detallado al iniciar scanner:', error);
-        let errorMessage = 'No se pudo iniciar la cámara.';
-        
-        if (error.name === 'NotAllowedError' || error.message.includes('Permission')) {
-            errorMessage = 'Permiso de cámara denegado. Por favor permite el acceso a la cámara.';
-        } else if (error.name === 'NotFoundError') {
-            errorMessage = 'No se encontró ninguna cámara en el dispositivo.';
-        } else if (error.message) {
-            errorMessage = error.message;
-        }
-        
-        showErrorToast('Error', errorMessage);
+        console.error('Error starting scanner:', error);
+        showErrorToast('Error', 'No se pudo iniciar la cámara. Verifica los permisos.');
         stopBatchScanner();
     }
 }
