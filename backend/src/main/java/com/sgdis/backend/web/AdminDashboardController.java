@@ -240,6 +240,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/transfers")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminTransfers() throws IOException {
+        Resource resource = new ClassPathResource("static/views/transfers/transfers.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/superadmin/reports")
     @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseBody
