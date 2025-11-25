@@ -13,11 +13,7 @@ function filterVerifications() {
         const matchesInventory = verificationData.selectedInventory === 'all' || 
             verification.inventoryId == verificationData.selectedInventory;
 
-        // Status filter
-        const matchesStatus = verificationData.selectedStatus === 'all' || 
-            verification.status === verificationData.selectedStatus;
-
-        return matchesSearch && matchesInventory && matchesStatus;
+        return matchesSearch && matchesInventory;
     });
 
     verificationData.currentPage = 1;
