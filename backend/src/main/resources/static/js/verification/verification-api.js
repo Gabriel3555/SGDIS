@@ -145,7 +145,7 @@ async function loadLatestVerifications() {
                 continue; // Skip invalid inventories
             }
             
-            const verifications = await getLatestVerifications(inventory.id);
+                const verifications = await getLatestVerifications(inventory.id);
             if (verifications && verifications.length > 0) {
                 allVerifications.push(...verifications);
             }
@@ -195,10 +195,10 @@ async function getLatestVerifications(inventoryId) {
                     itemName: v.itemName,
                     inventoryId: v.inventoryId,
                     inventoryName: v.inventoryName,
-                    status: v.status || 'PENDING',
-                    hasEvidence: v.photoUrls && v.photoUrls.length > 0,
+                    hasEvidence: v.photoUrl && v.photoUrl.length > 0,
                     verificationDate: v.verifiedAt,
-                    photoUrls: v.photoUrls || [],
+                    photoUrl: v.photoUrl || null,
+                    photoUrls: v.photoUrl ? [v.photoUrl] : [], // Keep for compatibility
                     userId: v.userId,
                     userFullName: v.userFullName,
                     userEmail: v.userEmail
@@ -251,18 +251,22 @@ async function getItemVerifications(itemId) {
     }
 }
 
-async function createVerificationBySerial(serialNumber) {
+async function createVerificationBySerial(serialNumber, photoFile = null) {
     try {
         const token = localStorage.getItem('jwt');
-        const headers = { 'Content-Type': 'application/json' };
+        const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Note: The API endpoint seems incomplete in the documentation
-        // Assuming it should be: POST /api/v1/verifications/by-serial
+        const formData = new FormData();
+        formData.append('serial', serialNumber);
+        if (photoFile) {
+            formData.append('photo', photoFile);
+        }
+
         const response = await fetch(`/api/v1/verifications/by-serial`, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify({ serialNumber: serialNumber })
+            body: formData
         });
 
         if (response.ok) {
@@ -284,16 +288,22 @@ async function createVerificationBySerial(serialNumber) {
     }
 }
 
-async function createVerificationByPlate(licensePlate) {
+async function createVerificationByPlate(licensePlate, photoFile = null) {
     try {
         const token = localStorage.getItem('jwt');
-        const headers = { 'Content-Type': 'application/json' };
+        const headers = {};
         if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const formData = new FormData();
+        formData.append('licencePlateNumber', licensePlate);
+        if (photoFile) {
+            formData.append('photo', photoFile);
+        }
 
         const response = await fetch(`/api/v1/verifications/by-licence-plate`, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify({ licencePlateNumber: licensePlate })
+            body: formData
         });
 
         if (response.ok) {

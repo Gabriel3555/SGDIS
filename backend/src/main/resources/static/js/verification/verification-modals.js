@@ -6,6 +6,11 @@ function showNewVerificationModal() {
         // Reset form
         document.getElementById('newVerificationForm').reset();
         selectVerificationType('serial');
+        // Reset file name display
+        const fileNameDisplay = document.getElementById('newVerificationFileName');
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = 'JPG, PNG. Máx. 5MB (Opcional)';
+        }
     }
 }
 
@@ -66,9 +71,6 @@ async function showViewVerificationModal(verificationId) {
             return;
         }
         
-        const statusColor = getStatusColor(verification.status);
-        const statusText = getStatusText(verification.status);
-        
         content.innerHTML = `
             <!-- Verification Information -->
             <div class="bg-gray-50 rounded-xl p-6">
@@ -80,12 +82,6 @@ async function showViewVerificationModal(verificationId) {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">ID de Verificación</label>
                         <p class="text-gray-900 font-semibold">${verification.id || '-'}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                        <span class="px-3 py-1 rounded-full text-xs font-medium ${statusColor}">
-                            ${statusText}
-                        </span>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -218,6 +214,26 @@ function handleEvidenceFileChange(event) {
     }
 }
 
+// Handle New Verification Evidence File Change
+function handleNewVerificationFileChange(event) {
+    const file = event.target.files[0];
+    const fileNameDisplay = document.getElementById('newVerificationFileName');
+    
+    if (file) {
+        const fileSize = file.size / 1024 / 1024; // Convert to MB
+        if (fileSize > 5) {
+            showErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
+            event.target.value = '';
+            fileNameDisplay.textContent = 'JPG, PNG. Máx. 5MB (Opcional)';
+            return;
+        }
+        
+        fileNameDisplay.textContent = file.name;
+    } else {
+        fileNameDisplay.textContent = 'JPG, PNG. Máx. 5MB (Opcional)';
+    }
+}
+
 window.showNewVerificationModal = showNewVerificationModal;
 window.closeNewVerificationModal = closeNewVerificationModal;
 window.selectVerificationType = selectVerificationType;
@@ -229,4 +245,5 @@ window.showDeleteVerificationModal = showDeleteVerificationModal;
 window.closeDeleteVerificationModal = closeDeleteVerificationModal;
 window.confirmDeleteEvidence = confirmDeleteEvidence;
 window.handleEvidenceFileChange = handleEvidenceFileChange;
+window.handleNewVerificationFileChange = handleNewVerificationFileChange;
 

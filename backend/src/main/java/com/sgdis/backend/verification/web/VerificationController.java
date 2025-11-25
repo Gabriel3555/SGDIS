@@ -61,14 +61,8 @@ public class VerificationController {
     @Operation(
             summary = "Create verification by serial number",
             description = "Creates a new verification record for an item using its serial number. " +
-                    "The user must be authorized to verify items from the item's inventory (owner, manager, or signatory).",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    required = true,
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = CreateVerificationBySerialRequest.class)
-                    )
-            )
+                    "Optionally accepts a photo file as evidence. " +
+                    "The user must be authorized to verify items from the item's inventory (owner, manager, or signatory)."
     )
     @ApiResponse(
             responseCode = "201",
@@ -79,25 +73,43 @@ public class VerificationController {
     @ApiResponse(responseCode = "404", description = "Item not found with the provided serial number")
     @ApiResponse(responseCode = "403", description = "User not authorized to verify this item")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
-    @PostMapping("/by-serial")
+    @PostMapping(value = "/by-serial", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CreateVerificationResponse> createVerificationBySerial(
-            @RequestBody @Valid CreateVerificationBySerialRequest request
+            @RequestParam("serial") String serial,
+            @RequestParam(value = "photo", required = false) MultipartFile photo
     ) {
-        CreateVerificationResponse response = createVerificationBySerialUseCase.createVerificationBySerial(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            CreateVerificationBySerialRequest request = new CreateVerificationBySerialRequest(serial);
+            CreateVerificationResponse response = createVerificationBySerialUseCase.createVerificationBySerial(request);
+            
+            // If photo is provided, upload it
+            if (photo != null && !photo.isEmpty()) {
+                VerificationEntity verification = verificationRepository.findById(response.verificationId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Verification not found"));
+                
+                if (verification.getItem() != null && verification.getItem().getLicencePlateNumber() != null) {
+                    String fileUrl = fileUploadService.saveVerificationFile(
+                            photo,
+                            verification.getItem().getLicencePlateNumber(),
+                            verification.getId(),
+                            0
+                    );
+                    verification.setPhotoUrl(fileUrl);
+                    verificationRepository.save(verification);
+                }
+            }
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IOException e) {
+            throw new RuntimeException("Error uploading photo: " + e.getMessage());
+        }
     }
 
     @Operation(
             summary = "Create verification by licence plate number",
             description = "Creates a new verification record for an item using its licence plate number. " +
-                    "The user must be authorized to verify items from the item's inventory (owner, manager, or signatory).",
-            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    required = true,
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = CreateVerificationByLicencePlateNumberRequest.class)
-                    )
-            )
+                    "Optionally accepts a photo file as evidence. " +
+                    "The user must be authorized to verify items from the item's inventory (owner, manager, or signatory)."
     )
     @ApiResponse(
             responseCode = "201",
@@ -108,12 +120,36 @@ public class VerificationController {
     @ApiResponse(responseCode = "404", description = "Item not found with the provided licence plate number")
     @ApiResponse(responseCode = "403", description = "User not authorized to verify this item")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
-    @PostMapping("/by-licence-plate")
+    @PostMapping(value = "/by-licence-plate", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<CreateVerificationResponse> createVerificationByLicencePlateNumber(
-            @RequestBody @Valid CreateVerificationByLicencePlateNumberRequest request
+            @RequestParam("licencePlateNumber") String licencePlateNumber,
+            @RequestParam(value = "photo", required = false) MultipartFile photo
     ) {
-        CreateVerificationResponse response = createVerificationByLicencePlateNumberUseCase.createVerificationByLicencePlateNumber(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            CreateVerificationByLicencePlateNumberRequest request = new CreateVerificationByLicencePlateNumberRequest(licencePlateNumber);
+            CreateVerificationResponse response = createVerificationByLicencePlateNumberUseCase.createVerificationByLicencePlateNumber(request);
+            
+            // If photo is provided, upload it
+            if (photo != null && !photo.isEmpty()) {
+                VerificationEntity verification = verificationRepository.findById(response.verificationId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Verification not found"));
+                
+                if (verification.getItem() != null && verification.getItem().getLicencePlateNumber() != null) {
+                    String fileUrl = fileUploadService.saveVerificationFile(
+                            photo,
+                            verification.getItem().getLicencePlateNumber(),
+                            verification.getId(),
+                            0
+                    );
+                    verification.setPhotoUrl(fileUrl);
+                    verificationRepository.save(verification);
+                }
+            }
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IOException e) {
+            throw new RuntimeException("Error uploading photo: " + e.getMessage());
+        }
     }
 
     @Operation(
@@ -268,22 +304,25 @@ public class VerificationController {
                         ));
             }
 
-            // Inicializar la lista de fotos si es null
-            if (verification.getUrlPhotos() == null) {
-                verification.setUrlPhotos(new ArrayList<>());
+            // Si ya hay una foto, eliminar la anterior antes de guardar la nueva
+            if (verification.getPhotoUrl() != null && !verification.getPhotoUrl().isEmpty()) {
+                try {
+                    fileUploadService.deleteFile(verification.getPhotoUrl());
+                } catch (IOException e) {
+                    // Log error but continue with new upload
+                }
             }
 
-            int fileIndex = verification.getUrlPhotos().size();
-            // Guardar el archivo y obtener la URL
+            // Guardar el archivo y obtener la URL (solo una foto por verificación)
             String fileUrl = fileUploadService.saveVerificationFile(
                     file,
                     licencePlateNumber,
                     verificationId,
-                    fileIndex
+                    0 // Solo una foto, siempre índice 0
             );
 
-            // Agregar la URL a la lista y guardar en la base de datos automáticamente
-            verification.getUrlPhotos().add(fileUrl);
+            // Guardar la URL de la foto en la base de datos
+            verification.setPhotoUrl(fileUrl);
             verificationRepository.save(verification);
 
             return ResponseEntity.ok(new UploadEvidenceResponse(
@@ -310,7 +349,7 @@ public class VerificationController {
 
     @Operation(
             summary = "Download evidence file for a verification",
-            description = "Downloads an evidence file associated with a specific verification"
+            description = "Downloads the evidence file associated with a specific verification"
     )
     @ApiResponse(
             responseCode = "200",
@@ -320,16 +359,17 @@ public class VerificationController {
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @GetMapping("/{verificationId}/evidence")
     public ResponseEntity<Resource> downloadVerificationEvidence(
-            @PathVariable Long verificationId,
-            @RequestParam("fileUrl") String fileUrl
+            @PathVariable Long verificationId
     ) {
         try {
             VerificationEntity verification = verificationRepository.findById(verificationId)
                     .orElseThrow(() -> new ResourceNotFoundException("Verification not found"));
 
-            if (verification.getUrlPhotos() == null || !verification.getUrlPhotos().contains(fileUrl)) {
+            if (verification.getPhotoUrl() == null || verification.getPhotoUrl().isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
+
+            String fileUrl = verification.getPhotoUrl();
 
             String relativePath = fileUrl.substring(8); // Remove "/uploads/"
             Path filePath = Paths.get("uploads").resolve(relativePath).normalize();
@@ -362,7 +402,7 @@ public class VerificationController {
 
     @Operation(
             summary = "Delete evidence file from a verification",
-            description = "Deletes a specific evidence file from a verification by its URL"
+            description = "Deletes the evidence file from a verification"
     )
     @ApiResponse(
             responseCode = "200",
@@ -372,25 +412,18 @@ public class VerificationController {
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @DeleteMapping("/{verificationId}/evidence")
     public ResponseEntity<String> deleteVerificationEvidence(
-            @PathVariable Long verificationId,
-            @RequestParam("fileUrl") String fileUrl
+            @PathVariable Long verificationId
     ) {
         try {
             VerificationEntity verification = verificationRepository.findById(verificationId)
                     .orElseThrow(() -> new ResourceNotFoundException("Verification not found"));
 
-            if (verification.getUrlPhotos() == null || verification.getUrlPhotos().isEmpty()) {
+            if (verification.getPhotoUrl() == null || verification.getPhotoUrl().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Verification has no evidence files");
+                        .body("Verification has no evidence file");
             }
 
-            if (!verification.getUrlPhotos().contains(fileUrl)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("File not found in verification");
-            }
-
-            // Remover de la lista
-            verification.getUrlPhotos().remove(fileUrl);
+            String fileUrl = verification.getPhotoUrl();
 
             // Eliminar archivo físico
             try {
@@ -399,6 +432,8 @@ public class VerificationController {
                 // Log error but continue with removing from database
             }
 
+            // Remover la URL de la foto
+            verification.setPhotoUrl(null);
             verificationRepository.save(verification);
 
             return ResponseEntity.ok("Evidence file deleted successfully");

@@ -1,7 +1,6 @@
 package com.sgdis.backend.verification.application.dto;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 public record VerificationResponse(
         Long id,
@@ -10,7 +9,7 @@ public record VerificationResponse(
         Long userId,
         String userFullName,
         String userEmail,
-        List<String> urlPhotos,
+        String photoUrl,
         LocalDateTime createdAt
 ) {}
 
