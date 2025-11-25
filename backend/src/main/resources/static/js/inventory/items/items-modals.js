@@ -282,13 +282,101 @@ async function confirmDeleteItem() {
   }
 }
 
+// Roles that can perform direct transfers (immediate, no approval needed)
+const DIRECT_TRANSFER_ROLES = ["SUPERADMIN", "ADMIN_INSTITUTION", "ADMIN_REGIONAL", "WAREHOUSE"];
+
+// Check if current user can transfer items from current inventory
+async function checkTransferPermissions() {
+  try {
+    const currentInventoryId = window.itemsData ? window.itemsData.currentInventoryId : null;
+    if (!currentInventoryId) return { canTransfer: false, isDirectTransfer: false, reason: "No se pudo identificar el inventario actual" };
+
+    const token = localStorage.getItem("jwt");
+    if (!token) return { canTransfer: false, isDirectTransfer: false, reason: "Sesión no válida" };
+
+    // Get current user info
+    const userResponse = await fetch("/api/v1/users/me", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!userResponse.ok) {
+      return { canTransfer: false, isDirectTransfer: false, reason: "No se pudo verificar tu usuario" };
+    }
+
+    const currentUser = await userResponse.json();
+
+    // Check if user has a role that allows direct transfers
+    if (DIRECT_TRANSFER_ROLES.includes(currentUser.role)) {
+      return { canTransfer: true, isDirectTransfer: true };
+    }
+
+    // For other roles, check if they belong to the inventory (owner, manager, signatory)
+    const inventoryUsersResponse = await fetch(`/api/v1/inventory/${currentInventoryId}/users`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!inventoryUsersResponse.ok) {
+      // If we can't get the inventory users, let the backend handle it
+      return { canTransfer: true, isDirectTransfer: false };
+    }
+
+    const inventoryUsers = await inventoryUsersResponse.json();
+
+    // Check if current user is owner
+    if (inventoryUsers.owner && inventoryUsers.owner.userId === currentUser.id) {
+      return { canTransfer: true, isDirectTransfer: false };
+    }
+
+    // Check if current user is a manager
+    if (inventoryUsers.managers && inventoryUsers.managers.some(m => m.userId === currentUser.id)) {
+      return { canTransfer: true, isDirectTransfer: false };
+    }
+
+    // Check if current user is a signatory
+    if (inventoryUsers.signatories && inventoryUsers.signatories.some(s => s.userId === currentUser.id)) {
+      return { canTransfer: true, isDirectTransfer: false };
+    }
+
+    return { 
+      canTransfer: false, 
+      isDirectTransfer: false,
+      reason: "Solo SUPERADMIN, Administrador Institucional, Administrador Regional, Warehouse, o usuarios asignados al inventario (propietario, manejadores, firmantes) pueden solicitar transferencias."
+    };
+  } catch (error) {
+    console.error("Error checking transfer permissions:", error);
+    // If there's an error, let the request proceed and let backend handle it
+    return { canTransfer: true, isDirectTransfer: false };
+  }
+}
+
 async function showTransferItemModal(itemId) {
   const modal = document.getElementById("transferItemModal");
   if (!modal) return;
 
-  // Store current item ID
+  // Check transfer permissions first
+  const permissionCheck = await checkTransferPermissions();
+  if (!permissionCheck.canTransfer) {
+    if (window.showErrorToast) {
+      window.showErrorToast(
+        "Sin permisos para transferir",
+        permissionCheck.reason
+      );
+    }
+    return;
+  }
+
+  // Store current item ID and if it's a direct transfer
   if (window.itemsData) {
     window.itemsData.currentItemId = itemId;
+    window.itemsData.isDirectTransfer = permissionCheck.isDirectTransfer || false;
   }
 
   // Find item to show name
@@ -304,6 +392,42 @@ async function showTransferItemModal(itemId) {
   const itemNameElement = document.getElementById("transferItemName");
   if (itemNameElement) {
     itemNameElement.textContent = itemName;
+  }
+
+  // Update the info message based on transfer type
+  const infoBox = modal.querySelector('.bg-blue-50, .dark\\:bg-blue-900\\/20');
+  if (infoBox) {
+    if (permissionCheck.isDirectTransfer) {
+      infoBox.className = 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl p-4';
+      infoBox.innerHTML = `
+        <div class="flex items-start gap-2">
+          <i class="fas fa-bolt text-green-500 dark:text-green-400 mt-1"></i>
+          <p class="text-sm text-green-800 dark:text-green-300">
+            <span class="font-semibold">Transferencia directa:</span> El item será movido <span class="font-semibold">inmediatamente</span> al inventario de destino.
+          </p>
+        </div>
+      `;
+    } else {
+      infoBox.className = 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4';
+      infoBox.innerHTML = `
+        <div class="flex items-start gap-2">
+          <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 mt-1"></i>
+          <p class="text-sm text-blue-800 dark:text-blue-300">
+            La transferencia quedará en estado <span class="font-semibold">PENDIENTE</span> hasta que sea aprobada por el responsable del inventario de destino.
+          </p>
+        </div>
+      `;
+    }
+  }
+
+  // Update button text based on transfer type
+  const submitButton = modal.querySelector('button[type="submit"]');
+  if (submitButton) {
+    if (permissionCheck.isDirectTransfer) {
+      submitButton.innerHTML = '<i class="fas fa-bolt mr-2"></i>Transferir Ahora';
+    } else {
+      submitButton.innerHTML = '<i class="fas fa-exchange-alt mr-2"></i>Solicitar Transferencia';
+    }
   }
 
   // Load available inventories for transfer
@@ -336,18 +460,46 @@ async function loadTransferInventories() {
       ? window.itemsData.currentInventoryId
       : null;
 
-    // Load all inventories
     const token = localStorage.getItem("jwt");
     const headers = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const response = await fetch("/api/v1/inventory", {
+    // First get current user to determine which endpoint to use
+    let useInstitutionEndpoint = true;
+    try {
+      const userResponse = await fetch("/api/v1/users/me", {
+        method: "GET",
+        headers: headers,
+      });
+      if (userResponse.ok) {
+        const currentUser = await userResponse.json();
+        // Only SUPERADMIN sees all inventories, others see only their institution's
+        useInstitutionEndpoint = currentUser.role !== "SUPERADMIN";
+      }
+    } catch (e) {
+      console.warn("Could not determine user role, using institution endpoint");
+    }
+
+    // Use institution inventories endpoint to show only inventories from the same center
+    const endpoint = useInstitutionEndpoint 
+      ? "/api/v1/inventory/institutionAdminInventories?page=0&size=1000"
+      : "/api/v1/inventory";
+
+    const response = await fetch(endpoint, {
       method: "GET",
       headers: headers,
     });
 
     if (response.ok) {
-      const inventories = await response.json();
+      const payload = await response.json();
+      
+      // Handle both array and paginated response formats
+      let inventories = [];
+      if (Array.isArray(payload)) {
+        inventories = payload;
+      } else if (payload && Array.isArray(payload.content)) {
+        inventories = payload.content;
+      }
 
       // Filter out current inventory
       const availableInventories = inventories.filter(
@@ -425,12 +577,19 @@ async function confirmTransferItem() {
     if (response.ok) {
       const result = await response.json();
       if (window.showSuccessToast) {
-        window.showSuccessToast(
-          "Transferencia solicitada",
-          `La transferencia ha sido creada con estado ${
-            result.status || "PENDING"
-          }. ID: ${result.transferId}`
-        );
+        // Check if it was a direct transfer (APPROVED) or pending
+        const isDirectTransfer = result.status === "APPROVED";
+        if (isDirectTransfer) {
+          window.showSuccessToast(
+            "¡Transferencia completada!",
+            `El item ha sido transferido exitosamente al inventario de destino.`
+          );
+        } else {
+          window.showSuccessToast(
+            "Transferencia solicitada",
+            `La transferencia ha sido creada con estado PENDIENTE. ID: ${result.transferId}`
+          );
+        }
       }
       closeTransferItemModal();
       // Reload items to reflect any changes
@@ -444,10 +603,16 @@ async function confirmTransferItem() {
   } catch (error) {
     console.error("Error creating transfer request:", error);
     if (window.showErrorToast) {
-      window.showErrorToast(
-        "Error",
-        error.message || "No se pudo crear la solicitud de transferencia"
-      );
+      // Provide a more user-friendly message for permission errors
+      let errorMessage = error.message || "No se pudo crear la solicitud de transferencia";
+      let errorTitle = "Error";
+      
+      if (errorMessage.includes("permisos") || errorMessage.includes("No cuentas")) {
+        errorTitle = "Sin permisos para transferir";
+        errorMessage = "Solo SUPERADMIN, Administrador Institucional, Administrador Regional, Warehouse, o usuarios asignados al inventario pueden solicitar transferencias.";
+      }
+      
+      window.showErrorToast(errorTitle, errorMessage);
     }
   }
 }
@@ -1029,6 +1194,7 @@ window.closeEditItemModal = closeEditItemModal;
 window.showDeleteItemModal = showDeleteItemModal;
 window.closeDeleteItemModal = closeDeleteItemModal;
 window.confirmDeleteItem = confirmDeleteItem;
+window.checkTransferPermissions = checkTransferPermissions;
 window.showTransferItemModal = showTransferItemModal;
 window.closeTransferItemModal = closeTransferItemModal;
 window.confirmTransferItem = confirmTransferItem;
