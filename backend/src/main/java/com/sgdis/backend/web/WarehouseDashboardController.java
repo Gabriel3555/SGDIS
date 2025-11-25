@@ -71,4 +71,18 @@ public class WarehouseDashboardController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/warehouse/import-export")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseImportExport() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/import-export.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

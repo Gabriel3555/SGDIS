@@ -218,14 +218,23 @@ async function createInventory(inventoryDataToCreate) {
             return newInventory;
         } else if (response.status === 400) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Datos de inventario inválidos');
+            throw new Error(errorData.detail || errorData.message || 'Datos de inventario inválidos');
         } else if (response.status === 401) {
             throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
         } else if (response.status === 403) {
             throw new Error('No tienes permisos para crear inventarios.');
-        } else {
+        } else if (response.status === 409) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al crear el inventario');
+            throw new Error(errorData.detail || errorData.message || 'Este propietario ya tiene un inventario asignado');
+        } else {
+            let errorMessage = 'Error al crear el inventario';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.detail || errorData.message || errorMessage;
+            } catch (parseError) {
+                // Response was not JSON
+            }
+            throw new Error(errorMessage);
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {
