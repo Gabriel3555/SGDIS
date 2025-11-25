@@ -6,6 +6,8 @@ let inventoryData = {
     searchTerm: '',
     selectedLocation: 'all',
     selectedStatus: 'all',
+    selectedRegional: '', // For super admin filter
+    selectedInstitution: '', // For super admin filter
     isLoading: false,
     currentInventoryId: null,
     viewMode: 'table', // 'table' or 'cards'
