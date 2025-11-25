@@ -196,9 +196,10 @@ async function getLatestVerifications(inventoryId) {
                     inventoryId: v.inventoryId,
                     inventoryName: v.inventoryName,
                     status: v.status || 'PENDING',
-                    hasEvidence: v.photoUrls && v.photoUrls.length > 0,
+                    hasEvidence: v.photoUrl && v.photoUrl.length > 0,
                     verificationDate: v.verifiedAt,
-                    photoUrls: v.photoUrls || [],
+                    photoUrl: v.photoUrl || null,
+                    photoUrls: v.photoUrl ? [v.photoUrl] : [], // Keep for compatibility
                     userId: v.userId,
                     userFullName: v.userFullName,
                     userEmail: v.userEmail
