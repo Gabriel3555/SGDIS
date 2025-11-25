@@ -13,7 +13,6 @@ public record LatestVerificationResponse(
         String userFullName,
         String userEmail,
         LocalDateTime verifiedAt,
-        String photoUrl,
-        String status
+        String photoUrl
 ) {}
 

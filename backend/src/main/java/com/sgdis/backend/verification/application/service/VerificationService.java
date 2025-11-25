@@ -43,7 +43,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class VerificationService implements 
         CreateVerificationBySerialUseCase, 
-        CreateVerificationByLicencePlateNumberUseCase,
+        CreateVerificationByLicencePlateNumberUseCase, 
         CreateBatchVerificationUseCase,
         GetVerificationsByItemUseCase,
         GetItemVerificationsUseCase,

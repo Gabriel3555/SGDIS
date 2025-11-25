@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 let verification;
                 
+                // Get the optional photo file
+                const fileInput = document.getElementById('newVerificationEvidenceFile');
+                const photoFile = fileInput && fileInput.files.length > 0 ? fileInput.files[0] : null;
+                
                 if (verificationData.verificationType === 'serial') {
                     const serialNumber = document.getElementById('newVerificationSerial').value.trim();
                     
@@ -17,7 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     
-                    verification = await createVerificationBySerial(serialNumber);
+                    verification = await createVerificationBySerial(serialNumber, photoFile);
                 } else {
                     const licensePlate = document.getElementById('newVerificationPlate').value.trim();
                     
@@ -26,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     
-                    verification = await createVerificationByPlate(licensePlate);
+                    verification = await createVerificationByPlate(licensePlate, photoFile);
                 }
                 
                 showSuccessToast('Verificación creada', 'La verificación se creó exitosamente');
