@@ -6,9 +6,6 @@ import com.sgdis.backend.verification.application.dto.LatestVerificationResponse
 import com.sgdis.backend.verification.application.dto.VerificationResponse;
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public final class VerificationMapper {
 
     private VerificationMapper() {}
@@ -17,7 +14,7 @@ public final class VerificationMapper {
         return VerificationEntity.builder()
                 .item(item)
                 .user(user)
-                .urlPhotos(new ArrayList<>())
+                .photoUrl(null)
                 .build();
     }
 
@@ -29,7 +26,7 @@ public final class VerificationMapper {
                 entity.getUser() != null ? entity.getUser().getId() : null,
                 entity.getUser() != null ? entity.getUser().getFullName() : null,
                 entity.getUser() != null ? entity.getUser().getEmail() : null,
-                entity.getUrlPhotos() != null ? entity.getUrlPhotos() : new ArrayList<>(),
+                entity.getPhotoUrl(),
                 entity.getCreatedAt()
         );
     }
@@ -54,8 +51,8 @@ public final class VerificationMapper {
             }
         }
         
-        // Determine status based on whether there are photos
-        String status = (entity.getUrlPhotos() != null && !entity.getUrlPhotos().isEmpty()) 
+        // Determine status based on whether there is a photo
+        String status = (entity.getPhotoUrl() != null && !entity.getPhotoUrl().isEmpty()) 
             ? "VERIFIED" 
             : "PENDING";
         
@@ -70,7 +67,7 @@ public final class VerificationMapper {
                 entity.getUser() != null ? entity.getUser().getFullName() : null,
                 entity.getUser() != null ? entity.getUser().getEmail() : null,
                 entity.getCreatedAt(),
-                entity.getUrlPhotos() != null ? entity.getUrlPhotos() : List.of(),
+                entity.getPhotoUrl(),
                 status
         );
     }

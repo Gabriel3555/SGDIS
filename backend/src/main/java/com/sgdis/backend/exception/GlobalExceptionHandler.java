@@ -3,6 +3,7 @@ package com.sgdis.backend.exception;
 import com.sgdis.backend.exception.userExceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -120,6 +121,34 @@ public class GlobalExceptionHandler {
         errorResponse.put("message", ex.getMessage());
         errorResponse.put("detail", ex.getMessage());
         errorResponse.put("errorCode", ex.getErrorCode());
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now().toString());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", "El cuerpo de la solicitud no es válido. Verifica que esté en formato JSON correcto.");
+        
+        // Extract a more user-friendly error message
+        String detail = ex.getMessage();
+        if (detail != null && detail.contains("JSON parse error")) {
+            // Try to extract the specific error
+            if (detail.contains("Unrecognized token")) {
+                errorResponse.put("detail", "Error de formato JSON: El valor debe estar entre comillas. Asegúrate de que todos los valores de texto estén correctamente entrecomillados en el JSON.");
+            } else {
+                errorResponse.put("detail", "Error de formato JSON: " + detail);
+            }
+        } else {
+            errorResponse.put("detail", "El formato del cuerpo de la solicitud no es válido. Asegúrate de enviar un JSON válido con Content-Type: application/json");
+        }
+        
+        // Log the exception for debugging
+        System.err.println("JSON parse error: " + ex.getMessage());
+        ex.printStackTrace();
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }

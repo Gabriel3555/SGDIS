@@ -268,22 +268,25 @@ public class VerificationController {
                         ));
             }
 
-            // Inicializar la lista de fotos si es null
-            if (verification.getUrlPhotos() == null) {
-                verification.setUrlPhotos(new ArrayList<>());
+            // Si ya hay una foto, eliminar la anterior antes de guardar la nueva
+            if (verification.getPhotoUrl() != null && !verification.getPhotoUrl().isEmpty()) {
+                try {
+                    fileUploadService.deleteFile(verification.getPhotoUrl());
+                } catch (IOException e) {
+                    // Log error but continue with new upload
+                }
             }
 
-            int fileIndex = verification.getUrlPhotos().size();
-            // Guardar el archivo y obtener la URL
+            // Guardar el archivo y obtener la URL (solo una foto por verificación)
             String fileUrl = fileUploadService.saveVerificationFile(
                     file,
                     licencePlateNumber,
                     verificationId,
-                    fileIndex
+                    0 // Solo una foto, siempre índice 0
             );
 
-            // Agregar la URL a la lista y guardar en la base de datos automáticamente
-            verification.getUrlPhotos().add(fileUrl);
+            // Guardar la URL de la foto en la base de datos
+            verification.setPhotoUrl(fileUrl);
             verificationRepository.save(verification);
 
             return ResponseEntity.ok(new UploadEvidenceResponse(
@@ -310,7 +313,7 @@ public class VerificationController {
 
     @Operation(
             summary = "Download evidence file for a verification",
-            description = "Downloads an evidence file associated with a specific verification"
+            description = "Downloads the evidence file associated with a specific verification"
     )
     @ApiResponse(
             responseCode = "200",
@@ -320,16 +323,17 @@ public class VerificationController {
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @GetMapping("/{verificationId}/evidence")
     public ResponseEntity<Resource> downloadVerificationEvidence(
-            @PathVariable Long verificationId,
-            @RequestParam("fileUrl") String fileUrl
+            @PathVariable Long verificationId
     ) {
         try {
             VerificationEntity verification = verificationRepository.findById(verificationId)
                     .orElseThrow(() -> new ResourceNotFoundException("Verification not found"));
 
-            if (verification.getUrlPhotos() == null || !verification.getUrlPhotos().contains(fileUrl)) {
+            if (verification.getPhotoUrl() == null || verification.getPhotoUrl().isEmpty()) {
                 return ResponseEntity.notFound().build();
             }
+
+            String fileUrl = verification.getPhotoUrl();
 
             String relativePath = fileUrl.substring(8); // Remove "/uploads/"
             Path filePath = Paths.get("uploads").resolve(relativePath).normalize();
@@ -362,7 +366,7 @@ public class VerificationController {
 
     @Operation(
             summary = "Delete evidence file from a verification",
-            description = "Deletes a specific evidence file from a verification by its URL"
+            description = "Deletes the evidence file from a verification"
     )
     @ApiResponse(
             responseCode = "200",
@@ -372,25 +376,18 @@ public class VerificationController {
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @DeleteMapping("/{verificationId}/evidence")
     public ResponseEntity<String> deleteVerificationEvidence(
-            @PathVariable Long verificationId,
-            @RequestParam("fileUrl") String fileUrl
+            @PathVariable Long verificationId
     ) {
         try {
             VerificationEntity verification = verificationRepository.findById(verificationId)
                     .orElseThrow(() -> new ResourceNotFoundException("Verification not found"));
 
-            if (verification.getUrlPhotos() == null || verification.getUrlPhotos().isEmpty()) {
+            if (verification.getPhotoUrl() == null || verification.getPhotoUrl().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("Verification has no evidence files");
+                        .body("Verification has no evidence file");
             }
 
-            if (!verification.getUrlPhotos().contains(fileUrl)) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("File not found in verification");
-            }
-
-            // Remover de la lista
-            verification.getUrlPhotos().remove(fileUrl);
+            String fileUrl = verification.getPhotoUrl();
 
             // Eliminar archivo físico
             try {
@@ -399,6 +396,8 @@ public class VerificationController {
                 // Log error but continue with removing from database
             }
 
+            // Remover la URL de la foto
+            verification.setPhotoUrl(null);
             verificationRepository.save(verification);
 
             return ResponseEntity.ok("Evidence file deleted successfully");

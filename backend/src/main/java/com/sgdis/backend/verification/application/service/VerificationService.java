@@ -218,25 +218,19 @@ public class VerificationService implements
                 // Crear la entidad de verificación
                 VerificationEntity verification = VerificationMapper.toEntity(item, user);
 
-                // Inicializar la lista de fotos si es null
-                if (verification.getUrlPhotos() == null) {
-                    verification.setUrlPhotos(new ArrayList<>());
-                }
-
                 // Guardar la verificación primero para obtener el ID
                 VerificationEntity savedVerification = verificationRepository.save(verification);
 
-                // Si hay una foto, guardarla
+                // Si hay una foto, guardarla (solo una foto por verificación)
                 if (itemRequest.photo() != null && !itemRequest.photo().isEmpty()) {
                     try {
-                        int fileIndex = savedVerification.getUrlPhotos().size();
                         String fileUrl = fileUploadService.saveVerificationFile(
                                 itemRequest.photo(),
                                 item.getLicencePlateNumber(),
                                 savedVerification.getId(),
-                                fileIndex
+                                0 // Solo una foto, siempre índice 0
                         );
-                        savedVerification.getUrlPhotos().add(fileUrl);
+                        savedVerification.setPhotoUrl(fileUrl);
                         verificationRepository.save(savedVerification);
                     } catch (IOException e) {
                         // Si falla al guardar la foto, continuar pero registrar el error
