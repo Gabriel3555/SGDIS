@@ -2,7 +2,6 @@ package com.sgdis.backend.item.infrastructure.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
-import com.sgdis.backend.category.infrastructure.entity.CategoryEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.item.domain.Attribute;
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
@@ -65,11 +64,6 @@ public class ItemEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inventory_id")
     private InventoryEntity inventory;
-
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private CategoryEntity category;
 
     @JsonIgnore
     @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)

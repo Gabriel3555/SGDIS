@@ -18,6 +18,5 @@ public record UpdateItemRequest(
     LocalDate acquisitionDate,
     Double acquisitionValue,
     String ivId,
-    String category,
     Boolean status
 ) {}

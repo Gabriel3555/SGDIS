@@ -141,7 +141,7 @@ public class ExcelItemService {
                 model = truncateString(model);
                 observations = truncateString(observations);
 
-                // Crear el item (categoryId será null, se agregará manualmente después)
+                // Crear el item
                 CreateItemRequest createRequest = new CreateItemRequest(
                     irId,
                     productName,
@@ -159,7 +159,6 @@ public class ExcelItemService {
                     ivId,
                     location,
                     inventoryId,
-                    null, // categoryId será null, se agregará manualmente después
                     true // status por defecto
                 );
 

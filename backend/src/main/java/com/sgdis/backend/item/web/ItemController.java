@@ -12,7 +12,6 @@ import com.sgdis.backend.item.application.service.ExcelExportService;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
 import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
 import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
-import com.sgdis.backend.item.application.port.GetItemsByInventoryAndCategoryUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
 import com.sgdis.backend.item.application.port.UpdateItemUseCase;
 import com.sgdis.backend.verification.application.dto.VerificationResponse;
@@ -50,7 +49,6 @@ public class ItemController {
     private final CreateItemUseCase createItemUseCase;
     private final UpdateItemUseCase updateItemUseCase;
     private final GetItemsByInventoryUseCase getItemsByInventoryUseCase;
-    private final GetItemsByInventoryAndCategoryUseCase getItemsByInventoryAndCategoryUseCase;
     private final GetItemByLicencePlateNumberUseCase getItemByLicencePlateNumberUseCase;
     private final GetItemBySerialUseCase getItemBySerialUseCase;
     private final GetItemVerificationsUseCase getItemVerificationsUseCase;
@@ -61,7 +59,7 @@ public class ItemController {
 
     @Operation(
             summary = "Create new item",
-            description = "Creates a new item. Category is optional and can be added manually later.",
+            description = "Creates a new item.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
                     content = @Content(
@@ -146,51 +144,6 @@ public class ItemController {
             @RequestParam(defaultValue = "6") int size
     ) {
         var items = getItemsByInventoryUseCase.getItemsByInventory(inventoryId, page, size);
-        return ResponseEntity.ok(items);
-    }
-
-    @Operation(
-            summary = "Get items by inventory and category",
-            description = "Retrieves paginated items from a specific inventory and category",
-            parameters = {
-                    @io.swagger.v3.oas.annotations.Parameter(
-                            name = "inventoryId",
-                            description = "ID of the inventory",
-                            required = true,
-                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
-                    ),
-                    @io.swagger.v3.oas.annotations.Parameter(
-                            name = "categoryId",
-                            description = "ID of the category",
-                            required = true,
-                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
-                    ),
-                    @io.swagger.v3.oas.annotations.Parameter(
-                            name = "page",
-                            description = "Page number (0-based)",
-                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
-                    ),
-                    @io.swagger.v3.oas.annotations.Parameter(
-                            name = "size",
-                            description = "Number of items per page",
-                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.QUERY
-                    )
-            }
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Items retrieved successfully",
-            content = @Content(schema = @Schema(implementation = Page.class))
-    )
-    @ApiResponse(responseCode = "404", description = "Inventory or category not found")
-    @GetMapping("/inventory/{inventoryId}/category/{categoryId}")
-    public ResponseEntity<Page<ItemDTO>> getItemsByInventoryAndCategory(
-            @PathVariable Long inventoryId,
-            @PathVariable Long categoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "6") int size
-    ) {
-        var items = getItemsByInventoryAndCategoryUseCase.getItemsByInventoryAndCategory(inventoryId, categoryId, page, size);
         return ResponseEntity.ok(items);
     }
 
@@ -412,8 +365,7 @@ public class ItemController {
                     "Column mapping: A=irId, D=wareHouseDescription, E=licencePlateNumber, " +
                     "F=consecutiveNumber, G=skuDescription/productName, H=descriptionElement, " +
                     "I=attributes (MARCA:...; SERIAL:...; MODELO:...; OBSERVACIONES:...), " +
-                    "K=acquisitionDate, L=acquisitionValue, O=ivId. " +
-                    "Category will be null and can be added manually later."
+                    "K=acquisitionDate, L=acquisitionValue, O=ivId."
     )
     @ApiResponse(
             responseCode = "200",
