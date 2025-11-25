@@ -4,13 +4,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record LatestVerificationResponse(
-        Long verificationId,
+        Long id,
         Long itemId,
         String itemLicencePlateNumber,
+        String itemName,
+        Long inventoryId,
+        String inventoryName,
         Long userId,
         String userFullName,
         String userEmail,
         LocalDateTime verifiedAt,
-        List<String> photoUrls
+        List<String> photoUrls,
+        String status
 ) {}
 

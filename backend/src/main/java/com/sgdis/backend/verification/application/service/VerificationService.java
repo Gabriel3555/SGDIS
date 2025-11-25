@@ -8,6 +8,7 @@ import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventory
 import com.sgdis.backend.item.domain.Attribute;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
+import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.verification.application.dto.BatchVerificationItemRequest;
@@ -155,11 +156,17 @@ public class VerificationService implements
     /**
      * Valida que el usuario esté autorizado a verificar el ítem.
      * Un usuario puede verificar un ítem si:
+     * - Es SUPERADMIN (puede verificar cualquier ítem)
      * - Es manager del inventario al que pertenece el ítem
      * - Es owner del inventario al que pertenece el ítem
      * - Es signatario del inventario al que pertenece el ítem
      */
     private void validateUserAuthorization(UserEntity user, ItemEntity item) {
+        // SUPERADMIN puede verificar cualquier ítem
+        if (user.getRole() == Role.SUPERADMIN) {
+            return;
+        }
+
         InventoryEntity inventory = item.getInventory();
         
         if (inventory == null) {

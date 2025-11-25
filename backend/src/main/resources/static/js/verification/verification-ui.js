@@ -170,8 +170,8 @@ function updateVerificationTable() {
                     <div class="font-semibold text-gray-800">${verification.id || '-'}</div>
                 </td>
                 <td class="px-6 py-4">
-                    <div class="text-gray-800">${verification.serialNumber || verification.licensePlate || '-'}</div>
-                    <div class="text-xs text-gray-500">${verification.serialNumber ? 'Serie' : 'Placa'}</div>
+                    <div class="text-gray-800">${verification.licensePlate || verification.serialNumber || '-'}</div>
+                    <div class="text-xs text-gray-500">${verification.licensePlate ? 'Placa' : (verification.serialNumber ? 'Serie' : '-')}</div>
                 </td>
                 <td class="px-6 py-4">
                     <div class="text-gray-800">${verification.itemName || '-'}</div>
