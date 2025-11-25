@@ -71,12 +71,12 @@ async function loadCurrentUserInfo() {
 
 function shouldUseInstitutionInventories() {
     const role = (window.currentUserRole || '').toUpperCase();
-    if (role === 'ADMIN_INSTITUTION') {
+    if (role === 'ADMIN_INSTITUTION' || role === 'WAREHOUSE') {
         return true;
     }
 
     const path = window.location.pathname || '';
-    return path.includes('/admin_institution') || path.includes('/admininstitution');
+    return path.includes('/admin_institution') || path.includes('/admininstitution') || path.includes('/warehouse');
 }
 
 function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) {

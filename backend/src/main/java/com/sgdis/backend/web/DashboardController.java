@@ -45,19 +45,6 @@ public class DashboardController {
         }
     }
 
-    @GetMapping("/dashboard/warehouse")
-    @PreAuthorize("hasRole('WAREHOUSE')")
-    @ResponseBody
-    public ResponseEntity<Resource> warehouseDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/dashboard.html");
-        if (resource.exists()) {
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(resource);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
 
     @GetMapping("/dashboard/admin_regional")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
