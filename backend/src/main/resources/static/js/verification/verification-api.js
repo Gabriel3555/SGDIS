@@ -9,6 +9,10 @@ async function loadVerificationData() {
         await loadCurrentUserInfo();
         await loadInventories();
         await loadLatestVerifications();
+        // Update filters first to show inventories, then update UI
+        if (typeof updateFilters === 'function') {
+            updateFilters();
+        }
         updateVerificationUI();
 
     } catch (error) {
@@ -76,11 +80,10 @@ async function loadInventories() {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        // Check if current user is ADMIN_INSTITUTION
+        // Get current user info to determine role
         let endpoint = '/api/v1/inventory';
         let isPaginated = false;
         
-        // Get current user info to determine role
         try {
             const userResponse = await fetch('/api/v1/users/me', {
                 method: 'GET',
@@ -91,10 +94,14 @@ async function loadInventories() {
                 const userData = await userResponse.json();
                 const currentRole = userData.role || '';
                 
-                // If ADMIN_INSTITUTION, use institution-specific endpoint
+                // Determine endpoint based on role
                 if (currentRole === 'ADMIN_INSTITUTION') {
                     // Use paginated endpoint for institution inventories
                     endpoint = '/api/v1/inventory/institutionAdminInventories?page=0&size=1000';
+                    isPaginated = true;
+                } else if (currentRole === 'SUPERADMIN') {
+                    // Use paginated endpoint for superadmin (all inventories)
+                    endpoint = '/api/v1/inventory?page=0&size=1000';
                     isPaginated = true;
                 }
             }
@@ -119,7 +126,9 @@ async function loadInventories() {
                 inventories = await response.json();
             }
             verificationData.inventories = Array.isArray(inventories) ? inventories : [];
+            console.log(`Loaded ${verificationData.inventories.length} inventories for verifications`);
         } else {
+            console.error('Error loading inventories:', response.status, response.statusText);
             verificationData.inventories = [];
         }
     } catch (error) {
@@ -145,14 +154,27 @@ async function loadLatestVerifications() {
                 continue; // Skip invalid inventories
             }
             
-                const verifications = await getLatestVerifications(inventory.id);
+            const verifications = await getLatestVerifications(inventory.id);
             if (verifications && verifications.length > 0) {
                 allVerifications.push(...verifications);
             }
         }
 
+        // Sort verifications by date (most recent first)
+        allVerifications.sort((a, b) => {
+            const dateA = new Date(a.verificationDate || 0);
+            const dateB = new Date(b.verificationDate || 0);
+            return dateB - dateA; // Most recent first
+        });
+
         verificationData.verifications = allVerifications;
-        verificationData.filteredVerifications = [...verificationData.verifications];
+        // Apply filters after loading
+        if (typeof filterVerifications === 'function') {
+            filterVerifications();
+        } else {
+            verificationData.filteredVerifications = [...verificationData.verifications];
+            verificationData.currentPage = 1; // Reset to first page
+        }
 
         // Only show info toast if we actually tried to load but got no results
         if (verificationData.verifications.length === 0 && verificationData.inventories.length > 0) {
