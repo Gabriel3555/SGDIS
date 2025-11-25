@@ -70,42 +70,14 @@ async function startBatchScanner() {
         // Create Html5Qrcode instance
         batchVerificationState.html5QrCode = new Html5Qrcode(containerId);
 
-        // Get supported formats
-        const formatsToSupport = [];
-        if (typeof Html5QrcodeSupportedFormats !== 'undefined') {
-            formatsToSupport.push(
-                Html5QrcodeSupportedFormats.QR_CODE,
-                Html5QrcodeSupportedFormats.CODE_128,
-                Html5QrcodeSupportedFormats.CODE_39,
-                Html5QrcodeSupportedFormats.CODE_93,
-                Html5QrcodeSupportedFormats.EAN_13,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.UPC_E,
-                Html5QrcodeSupportedFormats.CODABAR,
-                Html5QrcodeSupportedFormats.ITF
-            );
-        }
-
-        // Configuration for barcode support
-        const config = {
-            fps: 10,
-            qrbox: { width: 300, height: 150 }, // Wider box for barcodes
-            aspectRatio: 2.0, // Better for barcodes
-            experimentalFeatures: {
-                useBarCodeDetectorIfSupported: true
-            }
-        };
-
-        // Add formats if supported
-        if (formatsToSupport.length > 0) {
-            config.formatsToSupport = formatsToSupport;
-        }
-
-        // Start scanning with barcode support
+        // Start scanning - simple configuration that works
         await batchVerificationState.html5QrCode.start(
             { facingMode: "environment" }, // Use back camera if available
-            config,
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            },
             (decodedText, decodedResult) => {
                 if (!batchVerificationState.isPaused) {
                     handleScannedCode(decodedText);
