@@ -1,6 +1,7 @@
 package com.sgdis.backend.user.application.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
 public record CreateUserRequest(
@@ -16,5 +17,5 @@ public record CreateUserRequest(
         @NotBlank String role,
         @NotBlank String password,
         Boolean status,
-        Long institutionId
+        @NotNull(message = "La institución es obligatoria") Long institutionId
 ){}
