@@ -931,20 +931,46 @@
         }
 
         .custom-select-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+            position: fixed;
             background: white;
             border: 2px solid #10b981;
             border-top: none;
             border-bottom-left-radius: 0.75rem;
             border-bottom-right-radius: 0.75rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            z-index: 10002;
+            z-index: 10050;
             max-height: 200px;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             display: none;
+            min-width: 180px;
+        }
+
+        /* Dropdown opening upward */
+        .custom-select.dropdown-up .custom-select-dropdown {
+            border-top: 2px solid #10b981;
+            border-bottom: none;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .custom-select.dropdown-up .custom-select-trigger {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        /* Ensure filter container doesn't clip dropdowns */
+        #searchFilterContainer {
+            overflow: visible !important;
+        }
+
+        #searchFilterContainer > div {
+            overflow: visible !important;
         }
 
         .custom-select.open .custom-select-dropdown {
@@ -954,6 +980,15 @@
         /* Ensure open select container is above others */
         .custom-select.open {
             z-index: 10002;
+        }
+
+        /* Ensure filter container doesn't clip dropdowns */
+        #searchFilterContainer {
+            overflow: visible !important;
+        }
+
+        #searchFilterContainer > div {
+            overflow: visible !important;
         }
 
         .custom-select-search {

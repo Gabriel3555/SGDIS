@@ -110,15 +110,6 @@ async function loadUsers(page = 0) {
                           usersData.selectedStatus !== 'all' ||
                           (isSuperAdmin && (usersData.selectedRegional || usersData.selectedInstitution));
         
-        console.log('loadUsers - hasFilters:', hasFilters, {
-            searchTerm: usersData.searchTerm,
-            selectedRole: usersData.selectedRole,
-            selectedStatus: usersData.selectedStatus,
-            selectedRegional: usersData.selectedRegional,
-            selectedInstitution: usersData.selectedInstitution,
-            isSuperAdmin: isSuperAdmin
-        });
-        
         let url;
         if (isAdminInstitution) {
             // Use institution endpoint for ADMIN_INSTITUTION
@@ -436,24 +427,60 @@ async function loadRegionalsForUserFilter() {
 
         if (response.ok) {
             const regionals = await response.json();
-            const select = document.getElementById('userRegionalFilter');
-            if (select) {
-                // Clear existing options except the first one
-                while (select.options.length > 1) {
-                    select.remove(1);
+            
+            // Validate regionals is an array
+            if (!Array.isArray(regionals)) {
+                console.error('Invalid regionals response:', regionals);
+                return;
+            }
+            
+            const currentRegional = (window.usersData || usersData)?.selectedRegional || '';
+            
+            // Use CustomSelect if available and ready
+            if (window.filterRegionalSelect && typeof window.filterRegionalSelect.setOptions === 'function') {
+                const options = [
+                    { value: '', label: 'Todas las regionales' },
+                    ...regionals.map(regional => ({
+                        value: regional.id.toString(),
+                        label: regional.name
+                    }))
+                ];
+                window.filterRegionalSelect.setOptions(options);
+                if (currentRegional) {
+                    setTimeout(() => {
+                        if (window.filterRegionalSelect && typeof window.filterRegionalSelect.setValue === 'function') {
+                            window.filterRegionalSelect.setValue(currentRegional);
+                        }
+                    }, 50);
                 }
-                
-                // Add regional options
-                const currentRegional = (window.usersData || usersData)?.selectedRegional || '';
-                regionals.forEach(regional => {
-                    const option = document.createElement('option');
-                    option.value = regional.id.toString();
-                    option.textContent = regional.name;
-                    if (currentRegional === regional.id.toString()) {
-                        option.selected = true;
+            } else {
+                // CustomSelect not ready yet, wait and retry
+                const retryLoadRegionals = (retries = 0, maxRetries = 15) => {
+                    if (window.filterRegionalSelect && typeof window.filterRegionalSelect.setOptions === 'function') {
+                        const options = [
+                            { value: '', label: 'Todas las regionales' },
+                            ...regionals.map(regional => ({
+                                value: regional.id.toString(),
+                                label: regional.name
+                            }))
+                        ];
+                        window.filterRegionalSelect.setOptions(options);
+                        if (currentRegional) {
+                            setTimeout(() => {
+                                if (window.filterRegionalSelect && typeof window.filterRegionalSelect.setValue === 'function') {
+                                    window.filterRegionalSelect.setValue(currentRegional);
+                                }
+                            }, 50);
+                        }
+                    } else if (retries < maxRetries) {
+                        // Not ready yet, retry after a short delay
+                        setTimeout(() => retryLoadRegionals(retries + 1, maxRetries), 100);
+                    } else {
+                        // Max retries reached - silently fail
                     }
-                    select.appendChild(option);
-                });
+                };
+                
+                retryLoadRegionals();
             }
         } else {
             console.error('Error loading regionals:', response.statusText);
@@ -467,7 +494,6 @@ async function loadRegionalsForUserFilter() {
 async function loadInstitutionsForUserFilter(regionalId) {
     try {
         if (!regionalId) {
-            console.error('No regional ID provided');
             return;
         }
 
@@ -475,7 +501,6 @@ async function loadInstitutionsForUserFilter(regionalId) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        console.log('Loading institutions for regional:', regionalId);
         const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
             method: 'GET',
             headers: headers
@@ -483,7 +508,6 @@ async function loadInstitutionsForUserFilter(regionalId) {
 
         if (response.ok) {
             const institutions = await response.json();
-            console.log('Institutions loaded:', institutions);
             
             // Function to add institutions to select
             const addInstitutionsToSelect = (selectElement) => {
@@ -522,73 +546,87 @@ async function loadInstitutionsForUserFilter(regionalId) {
                     return true;
                 }
             };
-            
-            // Try to find the select element with multiple retries
-            let select = document.getElementById('userInstitutionFilter');
-            let attempts = 0;
-            const maxAttempts = 5;
-            
-            while (!select && attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                select = document.getElementById('userInstitutionFilter');
-                attempts++;
-                console.log(`Attempt ${attempts} to find userInstitutionFilter select`);
+
+            // Validate institutions is an array
+            if (!Array.isArray(institutions)) {
+                console.error('Invalid institutions response:', institutions);
+                if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+                    window.filterInstitutionSelect.setOptions([
+                        { value: '', label: 'Error al cargar instituciones', disabled: true }
+                    ]);
+                }
+                return;
             }
-            
-            console.log('Institution select element:', select);
-            
-            if (select) {
-                addInstitutionsToSelect(select);
-            } else {
-                console.error('Institution filter select not found in DOM after', maxAttempts, 'attempts');
-                // Try one more time after a longer delay
-                setTimeout(() => {
-                    const retrySelect = document.getElementById('userInstitutionFilter');
-                    if (retrySelect) {
-                        console.log('Found select on final retry, adding institutions');
-                        addInstitutionsToSelect(retrySelect);
+
+            // Use CustomSelect if available and ready
+            const currentInstitution = (window.usersData || usersData)?.selectedInstitution || '';
+            const loadInstitutionsToCustomSelect = () => {
+                if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+                    if (institutions && institutions.length > 0) {
+                        const options = [
+                            { value: '', label: 'Todas las instituciones' },
+                            ...institutions.map(institution => ({
+                                value: institution.id.toString(),
+                                label: institution.name || `Institución ${institution.id}`
+                            }))
+                        ];
+                        window.filterInstitutionSelect.setOptions(options);
+                        if (currentInstitution) {
+                            setTimeout(() => {
+                                if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setValue === 'function') {
+                                    window.filterInstitutionSelect.setValue(currentInstitution);
+                                }
+                            }, 50);
+                        } else {
+                            // Clear selection if no current institution
+                            window.filterInstitutionSelect.clear();
+                        }
                     } else {
-                        console.error('Could not find userInstitutionFilter select even after final retry');
+                        window.filterInstitutionSelect.setOptions([
+                            { value: '', label: 'No hay instituciones disponibles', disabled: true }
+                        ]);
+                        window.filterInstitutionSelect.clear();
                     }
-                }, 500);
+                    return true;
+                }
+                return false;
+            };
+
+            // Try to load immediately
+            if (!loadInstitutionsToCustomSelect()) {
+                // Wait and retry if CustomSelect is not ready yet
+                const retryLoadInstitutions = (retries = 0, maxRetries = 15) => {
+                    if (loadInstitutionsToCustomSelect()) {
+                        return; // Success
+                    } else if (retries < maxRetries) {
+                        setTimeout(() => retryLoadInstitutions(retries + 1, maxRetries), 100);
+                    }
+                };
+                retryLoadInstitutions();
             }
         } else {
             const errorText = await response.text();
             console.error('Error loading institutions:', response.status, errorText);
-            const select = document.getElementById('userInstitutionFilter');
-            if (select) {
-                select.disabled = true;
-                // Clear and add error message
-                while (select.options.length > 1) {
-                    select.remove(1);
-                }
-                const option = document.createElement('option');
-                option.value = '';
-                option.textContent = 'Error al cargar instituciones';
-                select.appendChild(option);
+            if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+                window.filterInstitutionSelect.setOptions([
+                    { value: '', label: 'Error al cargar instituciones', disabled: true }
+                ]);
+                window.filterInstitutionSelect.clear();
             }
         }
     } catch (error) {
         console.error('Error loading institutions:', error);
-        const select = document.getElementById('userInstitutionFilter');
-        if (select) {
-            select.disabled = true;
-            // Clear and add error message
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = 'Error al cargar instituciones';
-            select.appendChild(option);
+        if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+            window.filterInstitutionSelect.setOptions([
+                { value: '', label: 'Error al cargar instituciones', disabled: true }
+            ]);
+            window.filterInstitutionSelect.clear();
         }
     }
 }
 
 // Handle regional filter change for users
 async function handleUserRegionalFilterChange(regionalId) {
-    console.log('User regional filter changed to:', regionalId);
-    
     // Ensure usersData exists
     if (!window.usersData) {
         window.usersData = usersData || {};
@@ -604,50 +642,45 @@ async function handleUserRegionalFilterChange(regionalId) {
     // Clear institution selection when regional changes
     window.usersData.selectedInstitution = '';
     
-    console.log('Updated usersData.selectedRegional:', window.usersData.selectedRegional);
-    
-    // Reset institution dropdown
-    const institutionSelect = document.getElementById('userInstitutionFilter');
-    if (institutionSelect) {
-        institutionSelect.disabled = !regionalId;
-        // Clear options except the first one
-        while (institutionSelect.options.length > 1) {
-            institutionSelect.remove(1);
-        }
-        institutionSelect.value = '';
-        
+    // Reset institution dropdown using CustomSelect
+    if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
         if (!regionalId) {
-            // If no regional selected, show placeholder
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = 'Todas las instituciones';
-            institutionSelect.appendChild(option);
+            // If no regional selected, disable and clear
+            window.filterInstitutionSelect.setOptions([
+                { value: '', label: 'Todas las instituciones', disabled: true }
+            ]);
+            if (typeof window.filterInstitutionSelect.clear === 'function') {
+                window.filterInstitutionSelect.clear();
+            }
+        } else {
+            // Clear current selection while loading new institutions
+            if (typeof window.filterInstitutionSelect.clear === 'function') {
+                window.filterInstitutionSelect.clear();
+            }
         }
     }
     
     // Load institutions for the selected regional BEFORE reloading users
     if (regionalId) {
-        console.log('Loading institutions for regional:', regionalId);
         // Wait a bit to ensure DOM is ready
         await new Promise(resolve => setTimeout(resolve, 100));
         await loadInstitutionsForUserFilter(regionalId);
         // Wait a bit more to ensure institutions are added
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 150));
     } else {
         // Clear institutions if no regional selected
-        const institutionSelect = document.getElementById('userInstitutionFilter');
-        if (institutionSelect) {
-            institutionSelect.disabled = true;
-            while (institutionSelect.options.length > 1) {
-                institutionSelect.remove(1);
+        if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+            window.filterInstitutionSelect.setOptions([
+                { value: '', label: 'Todas las instituciones', disabled: true }
+            ]);
+            if (typeof window.filterInstitutionSelect.clear === 'function') {
+                window.filterInstitutionSelect.clear();
             }
-            institutionSelect.value = '';
         }
     }
     
     // Trigger filter - filterUsers will handle loading and filtering
-    window.usersData.currentPage = 1;
-    console.log('Applying regional filter:', regionalId);
+    window.usersData.currentPage = 0;
     if (typeof filterUsers === 'function') {
         await filterUsers();
     } else {
@@ -678,8 +711,6 @@ async function handleUserRegionalFilterChange(regionalId) {
 
 // Handle institution filter change for users
 async function handleUserInstitutionFilterChange(institutionId) {
-    console.log('User institution filter changed to:', institutionId);
-    
     // Ensure usersData exists
     if (!window.usersData) {
         window.usersData = usersData || {};
@@ -691,11 +722,8 @@ async function handleUserInstitutionFilterChange(institutionId) {
     
     window.usersData.selectedInstitution = institutionId || '';
     
-    console.log('Updated usersData.selectedInstitution:', window.usersData.selectedInstitution);
-    
     // Trigger filter - filterUsers will handle loading and filtering
-    window.usersData.currentPage = 1;
-    console.log('Applying institution filter:', institutionId);
+    window.usersData.currentPage = 0;
     if (typeof filterUsers === 'function') {
         await filterUsers();
     } else {

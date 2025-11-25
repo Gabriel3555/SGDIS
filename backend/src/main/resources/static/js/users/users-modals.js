@@ -1314,6 +1314,44 @@ class CustomSelect {
             container.classList.add('select-open');
         }
         
+        // Position dropdown using fixed positioning to avoid overflow issues
+        // Use setTimeout to ensure dropdown is rendered first
+        setTimeout(() => {
+            if (this.dropdown && this.trigger) {
+                const triggerRect = this.trigger.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const viewportWidth = window.innerWidth;
+                const spaceBelow = viewportHeight - triggerRect.bottom;
+                const spaceAbove = triggerRect.top;
+                const dropdownHeight = 250; // Approximate max height of dropdown
+                
+                // Always check if we're in the filter section (bottom half of viewport)
+                // If trigger is in bottom 40% of viewport, prefer opening upward
+                const isInBottomHalf = triggerRect.top > (viewportHeight * 0.6);
+                
+                // Calculate if should open upward
+                const shouldOpenUp = (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) || 
+                                    (isInBottomHalf && spaceAbove > dropdownHeight);
+                
+                if (shouldOpenUp) {
+                    this.container.classList.add('dropdown-up');
+                    // Position above trigger
+                    this.dropdown.style.top = 'auto';
+                    this.dropdown.style.bottom = `${viewportHeight - triggerRect.top}px`;
+                } else {
+                    this.container.classList.remove('dropdown-up');
+                    // Position below trigger
+                    this.dropdown.style.top = `${triggerRect.bottom}px`;
+                    this.dropdown.style.bottom = 'auto';
+                }
+                
+                // Set left position and width to match trigger
+                this.dropdown.style.left = `${triggerRect.left}px`;
+                this.dropdown.style.width = `${triggerRect.width}px`;
+                this.dropdown.style.right = 'auto';
+            }
+        }, 10);
+        
         if (this.searchable && this.searchInput) {
             setTimeout(() => {
                 if (this.searchInput) {
@@ -1330,6 +1368,15 @@ class CustomSelect {
         const container = this.container.closest('.custom-select-container');
         if (container) {
             container.classList.remove('select-open');
+        }
+        
+        // Reset dropdown positioning
+        if (this.dropdown) {
+            this.dropdown.style.top = '';
+            this.dropdown.style.bottom = '';
+            this.dropdown.style.left = '';
+            this.dropdown.style.width = '';
+            this.dropdown.style.right = '';
         }
         
         if (this.searchInput) {

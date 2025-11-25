@@ -47,15 +47,6 @@ async function filterUsers() {
                       data.selectedStatus !== 'all' ||
                       (isSuperAdmin && (data.selectedRegional || data.selectedInstitution));
     
-    console.log('filterUsers - hasFilters:', hasFilters, {
-        searchTerm: data.searchTerm,
-        selectedRole: data.selectedRole,
-        selectedStatus: data.selectedStatus,
-        selectedRegional: data.selectedRegional,
-        selectedInstitution: data.selectedInstitution,
-        isSuperAdmin: isSuperAdmin
-    });
-    
     if (hasFilters) {
         // Reload all users for filtering
         showLoadingState();
@@ -118,7 +109,6 @@ async function filterUsers() {
             // Filter by regional (super admin only)
             // Since user.institution is just a string (name), we need to map it to institution data
             if (isSuperAdmin && data.selectedRegional) {
-                console.log('Filtering users by regional:', data.selectedRegional);
                 try {
                     // Load institutions for the selected regional to get their names
                     const token = localStorage.getItem('jwt');
@@ -132,44 +122,35 @@ async function filterUsers() {
                     
                     if (institutionsResponse.ok) {
                         const institutions = await institutionsResponse.json();
-                        const institutionNames = new Set(institutions.map(inst => inst.name));
-                        console.log('Institution names for regional:', Array.from(institutionNames));
-                        console.log('Users before regional filter:', filtered.length);
-                        
-                        filtered = filtered.filter(user => {
-                            if (!user.institution) {
-                                return false;
-                            }
-                            const matches = institutionNames.has(user.institution);
-                            return matches;
-                        });
-                        
-                        console.log('Users after regional filter:', filtered.length);
-                    } else {
-                        console.error('Failed to load institutions for regional filter');
+                        if (Array.isArray(institutions)) {
+                            const institutionNames = new Set(institutions.map(inst => inst.name).filter(name => name));
+                            
+                            filtered = filtered.filter(user => {
+                                if (!user.institution) {
+                                    return false;
+                                }
+                                return institutionNames.has(user.institution);
+                            });
+                        }
                     }
                 } catch (error) {
-                    console.error('Error loading institutions for regional filter:', error);
+                    // Silently handle error
                 }
             }
 
             // Filter by institution (super admin only)
             if (isSuperAdmin && data.selectedInstitution) {
-                console.log('Filtering users by institution:', data.selectedInstitution);
-                
                 // Use cached institutions or load them
                 const allInstitutions = institutionsCache || await loadInstitutionsCache();
                 
-                if (allInstitutions && allInstitutions.length > 0) {
+                if (allInstitutions && Array.isArray(allInstitutions) && allInstitutions.length > 0) {
                     const selectedInstitution = allInstitutions.find(inst => 
                         (inst.id && inst.id.toString() === data.selectedInstitution.toString()) ||
                         (inst.institutionId && inst.institutionId.toString() === data.selectedInstitution.toString())
                     );
                     
-                    if (selectedInstitution) {
+                    if (selectedInstitution && selectedInstitution.name) {
                         const institutionName = selectedInstitution.name;
-                        console.log('Institution name for filter:', institutionName);
-                        console.log('Users before institution filter:', filtered.length);
                         
                         filtered = filtered.filter(user => {
                             if (!user.institution) {
@@ -177,13 +158,7 @@ async function filterUsers() {
                             }
                             return user.institution === institutionName;
                         });
-                        
-                        console.log('Users after institution filter:', filtered.length);
-                    } else {
-                        console.error('Institution not found with ID:', data.selectedInstitution);
                     }
-                } else {
-                    console.error('No institutions available for filtering');
                 }
             }
 
