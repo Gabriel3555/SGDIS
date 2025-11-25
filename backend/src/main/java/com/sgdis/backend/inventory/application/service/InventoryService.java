@@ -18,6 +18,7 @@ import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import com.sgdis.backend.user.mapper.UserMapper;
+import com.sgdis.backend.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -57,6 +58,7 @@ public class InventoryService
         private final SpringDataUserRepository userRepository;
         private final SpringDataInstitutionRepository institutionRepository;
         private final AuthService authService;
+        private final NotificationService notificationService;
 
         @Override
         @Transactional
@@ -84,6 +86,14 @@ public class InventoryService
                 inventory.setInstitution(institution);
 
                 InventoryEntity savedInventory = inventoryRepository.save(inventory);
+                
+                // Enviar notificación al dueño del inventario
+                notificationService.sendInventoryCreatedNotification(
+                        owner.getId(), 
+                        savedInventory.getName(), 
+                        savedInventory.getId()
+                );
+                
                 return InventoryMapper.toCreateResponse(savedInventory);
         }
 
