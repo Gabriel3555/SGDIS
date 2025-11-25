@@ -2,12 +2,15 @@ package com.sgdis.backend.verification.web;
 
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.file.service.FileUploadService;
+import com.sgdis.backend.verification.application.dto.BatchVerificationItemRequest;
+import com.sgdis.backend.verification.application.dto.CreateBatchVerificationResponse;
 import com.sgdis.backend.verification.application.dto.CreateVerificationByLicencePlateNumberRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationBySerialRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationResponse;
 import com.sgdis.backend.verification.application.dto.LatestVerificationResponse;
 import com.sgdis.backend.verification.application.dto.UploadEvidenceResponse;
 import com.sgdis.backend.verification.application.dto.VerificationResponse;
+import com.sgdis.backend.verification.application.port.in.CreateBatchVerificationUseCase;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationByLicencePlateNumberUseCase;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationBySerialUseCase;
 import com.sgdis.backend.verification.application.port.in.GetLatestInventoryVerificationsUseCase;
@@ -21,6 +24,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
@@ -47,6 +52,7 @@ public class VerificationController {
 
     private final CreateVerificationBySerialUseCase createVerificationBySerialUseCase;
     private final CreateVerificationByLicencePlateNumberUseCase createVerificationByLicencePlateNumberUseCase;
+    private final CreateBatchVerificationUseCase createBatchVerificationUseCase;
     private final GetVerificationsByItemUseCase getVerificationsByItemUseCase;
     private final GetLatestInventoryVerificationsUseCase getLatestInventoryVerificationsUseCase;
     private final SpringDataVerificationRepository verificationRepository;
@@ -149,6 +155,68 @@ public class VerificationController {
         List<LatestVerificationResponse> latest = getLatestInventoryVerificationsUseCase
                 .getLatestVerificationsByInventory(inventoryId, limit);
         return ResponseEntity.ok(latest);
+    }
+
+    @Operation(
+            summary = "Create batch verifications by licence plate numbers",
+            description = "Creates multiple verification records for items using their licence plate numbers. " +
+                    "Each verification can include a photo. Only licence plates are accepted (not serials). " +
+                    "The user must be authorized to verify items from the items' inventory (owner, manager, or signatory)."
+    )
+    @ApiResponse(
+            responseCode = "201",
+            description = "Batch verification completed (may have partial success)",
+            content = @Content(schema = @Schema(implementation = CreateBatchVerificationResponse.class))
+    )
+    @ApiResponse(responseCode = "400", description = "Invalid request or validation error")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @PostMapping(value = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<CreateBatchVerificationResponse> createBatchVerification(
+            @RequestPart("items") String itemsJson,
+            @RequestPart(value = "photos", required = false) List<MultipartFile> photos
+    ) {
+        try {
+            // Parse JSON array of licence plate numbers
+            ObjectMapper objectMapper = new ObjectMapper();
+            List<String> licencePlateNumbers = objectMapper.readValue(itemsJson, new TypeReference<List<String>>() {});
+            
+            if (licencePlateNumbers == null || licencePlateNumbers.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new CreateBatchVerificationResponse(
+                                0, 0, 0, new ArrayList<>(),
+                                "No items provided"
+                        ));
+            }
+
+            // Crear lista de BatchVerificationItemRequest
+            List<BatchVerificationItemRequest> items = new ArrayList<>();
+            for (int i = 0; i < licencePlateNumbers.size(); i++) {
+                String licencePlate = licencePlateNumbers.get(i);
+                MultipartFile photo = null;
+                
+                // Get photo if available and not empty
+                if (photos != null && i < photos.size()) {
+                    MultipartFile photoFile = photos.get(i);
+                    // Check if photo is not empty (empty blob check: size == 0 or original filename is "empty.jpg")
+                    if (photoFile != null && 
+                        photoFile.getSize() > 0 && 
+                        (photoFile.getOriginalFilename() == null || !photoFile.getOriginalFilename().equals("empty.jpg"))) {
+                        photo = photoFile;
+                    }
+                }
+                
+                items.add(new BatchVerificationItemRequest(licencePlate, photo));
+            }
+
+            CreateBatchVerificationResponse response = createBatchVerificationUseCase.createBatchVerification(items);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new CreateBatchVerificationResponse(
+                            0, 0, 0, new ArrayList<>(),
+                            "Error parsing request: " + e.getMessage()
+                    ));
+        }
     }
 
     @Operation(

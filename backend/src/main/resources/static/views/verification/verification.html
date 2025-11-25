@@ -138,6 +138,11 @@
                 </div>
 
                 <div class="flex items-center gap-4">
+                    <button onclick="showBatchVerificationModal()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
+                        <i class="fas fa-layer-group mr-2"></i>
+                        Verificación por Lotes
+                    </button>
                     <button onclick="showNewVerificationModal()"
                         class="bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
                         <i class="fas fa-plus mr-2"></i>
@@ -440,6 +445,105 @@
         </div>
     </div>
 
+    <!-- Batch Verification Modal -->
+    <div id="batchVerificationModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 10000;">
+        <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Verificación por Lotes</h2>
+                <button onclick="closeBatchVerificationModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Scanner Section -->
+            <div id="batchScannerSection" class="mb-6">
+                <div class="bg-gray-50 rounded-xl p-6 mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-camera mr-2 text-blue-600"></i>
+                        Escanear Placas
+                    </h3>
+                    
+                    <!-- Camera View -->
+                    <div class="relative mb-4">
+                        <div id="cameraContainer" class="relative bg-black rounded-lg overflow-hidden" style="min-height: 400px;">
+                            <video id="cameraVideo" autoplay playsinline style="width: 100%; height: auto; display: none;"></video>
+                            <canvas id="cameraCanvas" style="width: 100%; height: auto; display: none;"></canvas>
+                            <div id="cameraPlaceholder" class="flex items-center justify-center h-96 text-gray-400">
+                                <div class="text-center">
+                                    <i class="fas fa-camera text-6xl mb-4"></i>
+                                    <p class="text-lg">Cámara no iniciada</p>
+                                    <p class="text-sm mt-2">Haz clic en "Abrir Cámara" para comenzar</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="scanOverlay" class="absolute top-0 left-0 right-0 bottom-0 pointer-events-none hidden">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="border-4 border-blue-500 rounded-lg" style="width: 80%; height: 60%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scanner Controls -->
+                    <div class="flex gap-3 justify-center">
+                        <button id="startCameraBtn" onclick="startBatchScanner()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-xl transition-colors">
+                            <i class="fas fa-video mr-2"></i>
+                            Abrir Cámara
+                        </button>
+                        <button id="stopCameraBtn" onclick="stopBatchScanner()"
+                            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-xl transition-colors hidden">
+                            <i class="fas fa-stop mr-2"></i>
+                            Detener Cámara
+                        </button>
+                        <button id="capturePhotoBtn" onclick="captureBatchPhoto()"
+                            class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-xl transition-colors hidden">
+                            <i class="fas fa-camera-retro mr-2"></i>
+                            Capturar Foto Manualmente
+                        </button>
+                    </div>
+
+                    <p class="text-sm text-gray-600 text-center mt-4">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Escanea códigos de barras o QR de placas. La foto se captura automáticamente al escanear.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Scanned Items List -->
+            <div id="scannedItemsSection" class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-list mr-2 text-blue-600"></i>
+                    Placas Escaneadas (<span id="scannedCount">0</span>)
+                </h3>
+                <div id="scannedItemsList" class="space-y-3 max-h-64 overflow-y-auto">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>No hay placas escaneadas aún</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 pt-4 border-t border-gray-200">
+                <button onclick="closeBatchVerificationModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button id="finalizeBatchBtn" onclick="finalizeBatchVerification()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled>
+                    <i class="fas fa-check mr-2"></i>
+                    Finalizar Verificación (<span id="finalizeCount">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include html5-qrcode library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
     <script src="../../js/dashboard.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
     <!-- Verification Module Scripts -->
@@ -452,6 +556,7 @@
     <script src="../../js/verification/verification-toast.js"></script>
     <script src="../../js/verification/verification-ui.js"></script>
     <script src="../../js/verification/verification.js"></script>
+    <script src="../../js/verification/verification-batch.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */

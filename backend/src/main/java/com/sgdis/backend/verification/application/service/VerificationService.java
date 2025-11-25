@@ -9,11 +9,16 @@ import com.sgdis.backend.item.domain.Attribute;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.file.service.FileUploadService;
+import com.sgdis.backend.verification.application.dto.BatchVerificationItemRequest;
+import com.sgdis.backend.verification.application.dto.BatchVerificationItemResponse;
+import com.sgdis.backend.verification.application.dto.CreateBatchVerificationResponse;
 import com.sgdis.backend.verification.application.dto.CreateVerificationByLicencePlateNumberRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationBySerialRequest;
 import com.sgdis.backend.verification.application.dto.CreateVerificationResponse;
 import com.sgdis.backend.verification.application.dto.LatestVerificationResponse;
 import com.sgdis.backend.verification.application.dto.VerificationResponse;
+import com.sgdis.backend.verification.application.port.in.CreateBatchVerificationUseCase;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationByLicencePlateNumberUseCase;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationBySerialUseCase;
 import com.sgdis.backend.verification.application.port.in.GetItemVerificationsUseCase;
@@ -28,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +42,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class VerificationService implements 
         CreateVerificationBySerialUseCase, 
-        CreateVerificationByLicencePlateNumberUseCase, 
+        CreateVerificationByLicencePlateNumberUseCase,
+        CreateBatchVerificationUseCase,
         GetVerificationsByItemUseCase,
         GetItemVerificationsUseCase,
         GetLatestInventoryVerificationsUseCase {
@@ -45,6 +52,7 @@ public class VerificationService implements
     private final SpringDataVerificationRepository verificationRepository;
     private final SpringDataItemRepository itemRepository;
     private final SpringDataInventoryRepository inventoryRepository;
+    private final FileUploadService fileUploadService;
 
     @Override
     @Transactional
@@ -176,6 +184,112 @@ public class VerificationService implements
         // Si no cumple ninguna condición, lanzar excepción
         throw new DomainValidationException(
                 "User is not authorized to verify items from inventory: " + inventory.getName()
+        );
+    }
+
+    @Override
+    @Transactional
+    public CreateBatchVerificationResponse createBatchVerification(List<BatchVerificationItemRequest> items) {
+        UserEntity user = authService.getCurrentUser();
+        List<BatchVerificationItemResponse> results = new ArrayList<>();
+        int successfulItems = 0;
+        int failedItems = 0;
+
+        for (BatchVerificationItemRequest itemRequest : items) {
+            try {
+                // Buscar el ítem por licencePlateNumber
+                ItemEntity item = itemRepository.findByLicencePlateNumber(itemRequest.licencePlateNumber())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Item not found with licence plate number: " + itemRequest.licencePlateNumber()));
+
+                // Validar que el usuario está autorizado a verificar este ítem
+                validateUserAuthorization(user, item);
+
+                // Validar coherencia de la información
+                validateVerificationCoherence(item);
+
+                // Crear la entidad de verificación
+                VerificationEntity verification = VerificationMapper.toEntity(item, user);
+
+                // Inicializar la lista de fotos si es null
+                if (verification.getUrlPhotos() == null) {
+                    verification.setUrlPhotos(new ArrayList<>());
+                }
+
+                // Guardar la verificación primero para obtener el ID
+                VerificationEntity savedVerification = verificationRepository.save(verification);
+
+                // Si hay una foto, guardarla
+                if (itemRequest.photo() != null && !itemRequest.photo().isEmpty()) {
+                    try {
+                        int fileIndex = savedVerification.getUrlPhotos().size();
+                        String fileUrl = fileUploadService.saveVerificationFile(
+                                itemRequest.photo(),
+                                item.getLicencePlateNumber(),
+                                savedVerification.getId(),
+                                fileIndex
+                        );
+                        savedVerification.getUrlPhotos().add(fileUrl);
+                        verificationRepository.save(savedVerification);
+                    } catch (IOException e) {
+                        // Si falla al guardar la foto, continuar pero registrar el error
+                        results.add(new BatchVerificationItemResponse(
+                                itemRequest.licencePlateNumber(),
+                                savedVerification.getId(),
+                                false,
+                                "Verification created but photo upload failed: " + e.getMessage()
+                        ));
+                        failedItems++;
+                        continue;
+                    }
+                }
+
+                results.add(new BatchVerificationItemResponse(
+                        itemRequest.licencePlateNumber(),
+                        savedVerification.getId(),
+                        true,
+                        "Verification created successfully"
+                ));
+                successfulItems++;
+
+            } catch (ResourceNotFoundException e) {
+                results.add(new BatchVerificationItemResponse(
+                        itemRequest.licencePlateNumber(),
+                        null,
+                        false,
+                        "Item not found: " + e.getMessage()
+                ));
+                failedItems++;
+            } catch (DomainValidationException e) {
+                results.add(new BatchVerificationItemResponse(
+                        itemRequest.licencePlateNumber(),
+                        null,
+                        false,
+                        "Validation error: " + e.getMessage()
+                ));
+                failedItems++;
+            } catch (Exception e) {
+                results.add(new BatchVerificationItemResponse(
+                        itemRequest.licencePlateNumber(),
+                        null,
+                        false,
+                        "Error: " + e.getMessage()
+                ));
+                failedItems++;
+            }
+        }
+
+        String message = String.format(
+                "Batch verification completed: %d successful, %d failed out of %d total",
+                successfulItems, failedItems, items.size()
+        );
+
+        return new CreateBatchVerificationResponse(
+                items.size(),
+                successfulItems,
+                failedItems,
+                results,
+                message
         );
     }
 
