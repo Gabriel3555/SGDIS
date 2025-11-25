@@ -352,6 +352,23 @@ function hideReportResults() {
     document.getElementById('reportResultsSection').classList.add('hidden');
     document.getElementById('reportEmptyState').classList.remove('hidden');
     document.getElementById('reportLoadingState').classList.add('hidden');
+    const chartsContainer = document.getElementById('chartsContainer');
+    if (chartsContainer) {
+        chartsContainer.classList.add('hidden');
+    }
+    // Destroy charts when hiding results
+    if (chartInstances.mostMoved) {
+        chartInstances.mostMoved.destroy();
+        chartInstances.mostMoved = null;
+    }
+    if (chartInstances.mostExpensive) {
+        chartInstances.mostExpensive.destroy();
+        chartInstances.mostExpensive = null;
+    }
+    if (chartInstances.mostVerified) {
+        chartInstances.mostVerified.destroy();
+        chartInstances.mostVerified = null;
+    }
 }
 
 // Generate report
@@ -681,6 +698,71 @@ async function fetchInventoryReport(regionalId, institutionId, inventoryId, star
     }
 }
 
+// Fetch transfers report
+async function fetchTransfersReport(regionalId, institutionId, inventoryId, startDate, endDate) {
+    const token = localStorage.getItem('jwt');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    // If specific inventory, get transfers for that inventory
+    if (inventoryId) {
+        try {
+            const response = await fetch(`/api/v1/transfers/inventory/${inventoryId}`, {
+                method: 'GET',
+                headers: headers
+            });
+            if (response.ok) {
+                let transfers = await response.json();
+                // Filter by date if provided
+                if (startDate || endDate) {
+                    transfers = transfers.filter(transfer => {
+                        const transferDate = transfer.requestDate || transfer.createdAt;
+                        if (!transferDate) return false;
+                        const date = new Date(transferDate);
+                        if (startDate && date < new Date(startDate)) return false;
+                        if (endDate && date > new Date(endDate)) return false;
+                        return true;
+                    });
+                }
+                return transfers || [];
+            }
+        } catch (error) {
+            console.error('Error loading transfers:', error);
+        }
+    } else {
+        // Get transfers from all inventories in the institution/regional
+        const inventories = await fetchInventoryReport(regionalId, institutionId, null, startDate, endDate).catch(() => []);
+        const allTransfers = [];
+        for (const inv of inventories) {
+            try {
+                const response = await fetch(`/api/v1/transfers/inventory/${inv.id}`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                if (response.ok) {
+                    let transfers = await response.json();
+                    // Filter by date if provided
+                    if (startDate || endDate) {
+                        transfers = transfers.filter(transfer => {
+                            const transferDate = transfer.requestDate || transfer.createdAt;
+                            if (!transferDate) return false;
+                            const date = new Date(transferDate);
+                            if (startDate && date < new Date(startDate)) return false;
+                            if (endDate && date > new Date(endDate)) return false;
+                            return true;
+                        });
+                    }
+                    allTransfers.push(...(transfers || []));
+                }
+            } catch (error) {
+                console.error(`Error loading transfers for inventory ${inv.id}:`, error);
+            }
+        }
+        return allTransfers;
+    }
+    return [];
+}
+
 // Fetch general report
 async function fetchGeneralReport(regionalId, institutionId, startDate, endDate) {
     // General report combines multiple data types
@@ -689,15 +771,20 @@ async function fetchGeneralReport(regionalId, institutionId, startDate, endDate)
         fetchUsersReport(regionalId, institutionId, startDate, endDate).catch(() => []),
         fetchLoansReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
         fetchVerificationsReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
-        fetchInventoryReport(regionalId, institutionId, startDate, endDate).catch(() => [])
+        fetchInventoryReport(regionalId, institutionId, null, startDate, endDate).catch(() => [])
     ]);
+
+    // Get transfers
+    const inventoryId = document.getElementById('inventorySelect')?.value || null;
+    const transfers = await fetchTransfersReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []);
 
     return {
         items: items || [],
         users: users || [],
         loans: loans || [],
         verifications: verifications || [],
-        inventories: inventories || []
+        inventories: inventories || [],
+        transfers: transfers || []
     };
 }
 
@@ -730,6 +817,16 @@ function displayReport(data) {
     const regionalName = document.getElementById('regionalSelect').selectedOptions[0]?.text || 'Todas';
     const institutionName = document.getElementById('institutionSelect').selectedOptions[0]?.text || 'Todos';
     document.getElementById('reportSubtitle').textContent = `${regionalName} - ${institutionName}`;
+
+    // Show/hide charts container based on report type
+    const chartsContainer = document.getElementById('chartsContainer');
+    if (chartsContainer) {
+        if (currentReportType === 'general') {
+            chartsContainer.classList.remove('hidden');
+        } else {
+            chartsContainer.classList.add('hidden');
+        }
+    }
 
     if (currentReportType === 'general') {
         displayGeneralReport(data);
@@ -789,54 +886,308 @@ function displayTableReport(data) {
 }
 
 // Display general report
-function displayGeneralReport(data) {
+async function displayGeneralReport(data) {
+    const items = data.items || [];
+    const verifications = data.verifications || [];
+    const transfers = data.transfers || [];
+
+    // Calculate total value
+    const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+    
+    // Calculate items with most transfers (most moved)
+    const itemTransferCounts = {};
+    transfers.forEach(transfer => {
+        const itemId = transfer.itemId || transfer.item?.id;
+        if (itemId) {
+            itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
+        }
+    });
+
+    // Get top 5 most moved items
+    const mostMovedItems = Object.entries(itemTransferCounts)
+        .map(([itemId, count]) => {
+            const item = items.find(i => i.id === parseInt(itemId));
+            return {
+                id: itemId,
+                name: item?.name || item?.licencePlateNumber || `Item ${itemId}`,
+                count: count
+            };
+        })
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    // Get top 5 most expensive items
+    const mostExpensiveItems = items
+        .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
+        .map(item => ({
+            id: item.id,
+            name: item.name || item.licencePlateNumber || `Item ${item.id}`,
+            value: item.acquisitionValue
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+    // Calculate items with most verifications
+    const itemVerificationCounts = {};
+    verifications.forEach(verification => {
+        const itemId = verification.itemId || verification.item?.id;
+        if (itemId) {
+            itemVerificationCounts[itemId] = (itemVerificationCounts[itemId] || 0) + 1;
+        }
+    });
+
+    // Get top 5 most verified items
+    const mostVerifiedItems = Object.entries(itemVerificationCounts)
+        .map(([itemId, count]) => {
+            const item = items.find(i => i.id === parseInt(itemId));
+            return {
+                id: itemId,
+                name: item?.name || item?.licencePlateNumber || `Item ${itemId}`,
+                count: count
+            };
+        })
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
     // Show statistics cards
     const statsContainer = document.getElementById('reportStats');
     statsContainer.innerHTML = `
         <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Items</span>
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Items</span>
                 <i class="fas fa-box text-blue-500"></i>
             </div>
-            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${data.items?.length || 0}</div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${items.length}</div>
         </div>
         <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Usuarios</span>
-                <i class="fas fa-users text-green-500"></i>
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Valor Total</span>
+                <i class="fas fa-dollar-sign text-green-500"></i>
             </div>
-            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${data.users?.length || 0}</div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue)}</div>
         </div>
         <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Préstamos</span>
-                <i class="fas fa-hand-holding text-purple-500"></i>
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Transferencias</span>
+                <i class="fas fa-exchange-alt text-purple-500"></i>
             </div>
-            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${data.loans?.length || 0}</div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${transfers.length}</div>
         </div>
         <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
             <div class="flex items-center justify-between mb-2">
                 <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Verificaciones</span>
                 <i class="fas fa-clipboard-check text-orange-500"></i>
             </div>
-            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${data.verifications?.length || 0}</div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${verifications.length}</div>
         </div>
     `;
 
-    // Display a summary table
+    // Show/hide charts container
+    const chartsContainer = document.getElementById('chartsContainer');
+    if (chartsContainer) {
+        chartsContainer.classList.remove('hidden');
+    }
+
+    // Create charts
+    createGeneralReportCharts(mostMovedItems, mostExpensiveItems, mostVerifiedItems);
+
+    // Display summary table with top items
     const tableHeader = document.getElementById('reportTableHeader');
     const tableBody = document.getElementById('reportTableBody');
     
-    tableHeader.innerHTML = '<tr><th class="px-4 py-3 text-left">Categoría</th><th class="px-4 py-3 text-left">Cantidad</th></tr>';
-    tableBody.innerHTML = `
-        <tr class="bg-white dark:bg-gray-800"><td class="px-4 py-3">Items</td><td class="px-4 py-3">${data.items?.length || 0}</td></tr>
-        <tr class="bg-gray-50 dark:bg-gray-700/50"><td class="px-4 py-3">Usuarios</td><td class="px-4 py-3">${data.users?.length || 0}</td></tr>
-        <tr class="bg-white dark:bg-gray-800"><td class="px-4 py-3">Préstamos</td><td class="px-4 py-3">${data.loans?.length || 0}</td></tr>
-        <tr class="bg-gray-50 dark:bg-gray-700/50"><td class="px-4 py-3">Verificaciones</td><td class="px-4 py-3">${data.verifications?.length || 0}</td></tr>
-        <tr class="bg-white dark:bg-gray-800"><td class="px-4 py-3">Inventarios</td><td class="px-4 py-3">${data.inventories?.length || 0}</td></tr>
+    // Create header
+    tableHeader.innerHTML = '<tr><th class="px-4 py-3 text-left">#</th><th class="px-4 py-3 text-left">Nombre</th><th class="px-4 py-3 text-left">Información</th></tr>';
+    
+    // Create tables for top items
+    const summaryHTML = `
+        <tr>
+            <td colspan="3" class="px-4 py-3 font-bold text-gray-800 dark:text-gray-100 bg-purple-50 dark:bg-purple-900/20">
+                Items Más Movidos (por transferencias)
+            </td>
+        </tr>
+        ${mostMovedItems.length > 0 ? mostMovedItems.map((item, idx) => `
+            <tr class="${idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}">
+                <td class="px-4 py-3">${idx + 1}</td>
+                <td class="px-4 py-3">${item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name}</td>
+                <td class="px-4 py-3 font-semibold text-purple-600 dark:text-purple-400">${item.count} transferencia${item.count !== 1 ? 's' : ''}</td>
+            </tr>
+        `).join('') : '<tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">No hay datos disponibles</td></tr>'}
+        
+        <tr>
+            <td colspan="3" class="px-4 py-3 font-bold text-gray-800 dark:text-gray-100 bg-green-50 dark:bg-green-900/20 mt-4">
+                Items Más Caros
+            </td>
+        </tr>
+        ${mostExpensiveItems.length > 0 ? mostExpensiveItems.map((item, idx) => `
+            <tr class="${idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}">
+                <td class="px-4 py-3">${idx + 1}</td>
+                <td class="px-4 py-3">${item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name}</td>
+                <td class="px-4 py-3 font-semibold text-green-600 dark:text-green-400">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)}</td>
+            </tr>
+        `).join('') : '<tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">No hay datos disponibles</td></tr>'}
+        
+        <tr>
+            <td colspan="3" class="px-4 py-3 font-bold text-gray-800 dark:text-gray-100 bg-orange-50 dark:bg-orange-900/20 mt-4">
+                Items con Más Verificaciones
+            </td>
+        </tr>
+        ${mostVerifiedItems.length > 0 ? mostVerifiedItems.map((item, idx) => `
+            <tr class="${idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}">
+                <td class="px-4 py-3">${idx + 1}</td>
+                <td class="px-4 py-3">${item.name.length > 40 ? item.name.substring(0, 40) + '...' : item.name}</td>
+                <td class="px-4 py-3 font-semibold text-orange-600 dark:text-orange-400">${item.count} verificación${item.count !== 1 ? 'es' : ''}</td>
+            </tr>
+        `).join('') : '<tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">No hay datos disponibles</td></tr>'}
     `;
     
-    document.getElementById('reportRowCount').textContent = 'Resumen general';
+    tableBody.innerHTML = summaryHTML;
+    
+    document.getElementById('reportRowCount').textContent = `Total: ${items.length} items`;
+}
+
+// Store chart instances for PDF export
+let chartInstances = {
+    mostMoved: null,
+    mostExpensive: null,
+    mostVerified: null
+};
+
+// Create charts for general report
+function createGeneralReportCharts(mostMovedItems, mostExpensiveItems, mostVerifiedItems) {
+    // Destroy existing charts if they exist
+    if (chartInstances.mostMoved) chartInstances.mostMoved.destroy();
+    if (chartInstances.mostExpensive) chartInstances.mostExpensive.destroy();
+    if (chartInstances.mostVerified) chartInstances.mostVerified.destroy();
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#e2e8f0' : '#1e293b';
+    const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+    // Chart: Most Moved Items
+    const mostMovedCtx = document.getElementById('mostMovedChart');
+    if (mostMovedCtx) {
+        chartInstances.mostMoved = new Chart(mostMovedCtx, {
+            type: 'bar',
+            data: {
+                labels: mostMovedItems.length > 0 ? mostMovedItems.map(item => item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name) : ['No hay datos'],
+                datasets: [{
+                    label: 'Transferencias',
+                    data: mostMovedItems.length > 0 ? mostMovedItems.map(item => item.count) : [0],
+                    backgroundColor: 'rgba(147, 51, 234, 0.6)',
+                    borderColor: 'rgba(147, 51, 234, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    },
+                    x: {
+                        ticks: { color: textColor, maxRotation: 45, minRotation: 45 },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart: Most Expensive Items
+    const mostExpensiveCtx = document.getElementById('mostExpensiveChart');
+    if (mostExpensiveCtx) {
+        chartInstances.mostExpensive = new Chart(mostExpensiveCtx, {
+            type: 'bar',
+            data: {
+                labels: mostExpensiveItems.length > 0 ? mostExpensiveItems.map(item => item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name) : ['No hay datos'],
+                datasets: [{
+                    label: 'Valor (COP)',
+                    data: mostExpensiveItems.length > 0 ? mostExpensiveItems.map(item => item.value) : [0],
+                    backgroundColor: 'rgba(34, 197, 94, 0.6)',
+                    borderColor: 'rgba(34, 197, 94, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(context.parsed.y);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { 
+                            color: textColor,
+                            callback: function(value) {
+                                return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', notation: 'compact' }).format(value);
+                            }
+                        },
+                        grid: { color: gridColor }
+                    },
+                    x: {
+                        ticks: { color: textColor, maxRotation: 45, minRotation: 45 },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
+
+    // Chart: Most Verified Items
+    const mostVerifiedCtx = document.getElementById('mostVerifiedChart');
+    if (mostVerifiedCtx) {
+        chartInstances.mostVerified = new Chart(mostVerifiedCtx, {
+            type: 'bar',
+            data: {
+                labels: mostVerifiedItems.length > 0 ? mostVerifiedItems.map(item => item.name.length > 20 ? item.name.substring(0, 20) + '...' : item.name) : ['No hay datos'],
+                datasets: [{
+                    label: 'Verificaciones',
+                    data: mostVerifiedItems.length > 0 ? mostVerifiedItems.map(item => item.count) : [0],
+                    backgroundColor: 'rgba(249, 115, 22, 0.6)',
+                    borderColor: 'rgba(249, 115, 22, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: textColor },
+                        grid: { color: gridColor }
+                    },
+                    x: {
+                        ticks: { color: textColor, maxRotation: 45, minRotation: 45 },
+                        grid: { color: gridColor }
+                    }
+                }
+            }
+        });
+    }
 }
 
 // Get headers for report type
@@ -1115,41 +1466,282 @@ async function exportToPDF() {
     yPos += 10;
 
     if (currentReportType === 'general') {
-        // General report
+        // General report with statistics and charts
         const data = currentReportData;
+        
+        // Calculate statistics
+        const items = data.items || [];
+        const verifications = data.verifications || [];
+        const transfers = data.transfers || [];
+        const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+        
+        // Calculate items with most transfers
+        const itemTransferCounts = {};
+        transfers.forEach(transfer => {
+            const itemId = transfer.itemId || transfer.item?.id;
+            if (itemId) {
+                itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
+            }
+        });
+
+        const mostMovedItems = Object.entries(itemTransferCounts)
+            .map(([itemId, count]) => {
+                const item = items.find(i => i.id === parseInt(itemId));
+                return {
+                    id: itemId,
+                    name: item?.name || item?.licencePlateNumber || `Item ${itemId}`,
+                    count: count
+                };
+            })
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        // Get top 5 most expensive items
+        const mostExpensiveItems = items
+            .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
+            .map(item => ({
+                id: item.id,
+                name: item.name || item.licencePlateNumber || `Item ${item.id}`,
+                value: item.acquisitionValue
+            }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+
+        // Calculate items with most verifications
+        const itemVerificationCounts = {};
+        verifications.forEach(verification => {
+            const itemId = verification.itemId || verification.item?.id;
+            if (itemId) {
+                itemVerificationCounts[itemId] = (itemVerificationCounts[itemId] || 0) + 1;
+            }
+        });
+
+        const mostVerifiedItems = Object.entries(itemVerificationCounts)
+            .map(([itemId, count]) => {
+                const item = items.find(i => i.id === parseInt(itemId));
+                return {
+                    id: itemId,
+                    name: item?.name || item?.licencePlateNumber || `Item ${itemId}`,
+                    count: count
+                };
+            })
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        // Statistics section
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
-        doc.text('Resumen General', 14, yPos);
+        doc.text('Estadísticas Generales', 14, yPos);
+        yPos += 10;
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Total de Items: ${items.length}`, 14, yPos);
+        yPos += 6;
+        doc.text(`Valor Total: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue)}`, 14, yPos);
+        yPos += 6;
+        doc.text(`Total Transferencias: ${transfers.length}`, 14, yPos);
+        yPos += 6;
+        doc.text(`Total Verificaciones: ${verifications.length}`, 14, yPos);
+        yPos += 10;
+
+        // Export charts as images
+        const chartWidth = 85;
+        const chartHeight = 50;
+
+        // Chart 1: Most Moved Items
+        if (chartInstances.mostMoved && mostMovedItems.length > 0) {
+            try {
+                const chartImage = chartInstances.mostMoved.toBase64Image('image/png', 1);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Items Más Movidos', 14, yPos);
+                yPos += 7;
+                
+                doc.addImage(chartImage, 'PNG', 14, yPos, chartWidth, chartHeight);
+                yPos += chartHeight + 10;
+
+                // Check if we need a new page
+                if (yPos > doc.internal.pageSize.getHeight() - 30) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+            } catch (e) {
+                console.warn('Error exporting most moved chart:', e);
+            }
+        }
+
+        // Chart 2: Most Expensive Items
+        if (chartInstances.mostExpensive && mostExpensiveItems.length > 0) {
+            try {
+                const chartImage = chartInstances.mostExpensive.toBase64Image('image/png', 1);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Items Más Caros', 14, yPos);
+                yPos += 7;
+                
+                doc.addImage(chartImage, 'PNG', 14, yPos, chartWidth, chartHeight);
+                yPos += chartHeight + 10;
+
+                // Check if we need a new page
+                if (yPos > doc.internal.pageSize.getHeight() - 30) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+            } catch (e) {
+                console.warn('Error exporting most expensive chart:', e);
+            }
+        }
+
+        // Chart 3: Most Verified Items
+        if (chartInstances.mostVerified && mostVerifiedItems.length > 0) {
+            try {
+                const chartImage = chartInstances.mostVerified.toBase64Image('image/png', 1);
+                doc.setFontSize(12);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Items con Más Verificaciones', 14, yPos);
+                yPos += 7;
+                
+                doc.addImage(chartImage, 'PNG', 14, yPos, chartWidth, chartHeight * 1.2);
+                yPos += chartHeight * 1.2 + 10;
+            } catch (e) {
+                console.warn('Error exporting most verified chart:', e);
+            }
+        }
+
+        // Check if we need a new page for tables
+        if (yPos > doc.internal.pageSize.getHeight() - 40) {
+            doc.addPage();
+            yPos = 20;
+        }
+
+        // Top items tables
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Items Más Movidos', 14, yPos);
         yPos += 8;
 
-        const summaryData = [
-            ['Categoría', 'Cantidad'],
-            ['Items', (data.items?.length || 0).toString()],
-            ['Usuarios', (data.users?.length || 0).toString()],
-            ['Préstamos', (data.loans?.length || 0).toString()],
-            ['Verificaciones', (data.verifications?.length || 0).toString()],
-            ['Inventarios', (data.inventories?.length || 0).toString()]
-        ];
+        if (mostMovedItems.length > 0) {
+            const movedTableData = [
+                ['#', 'Nombre del Item', 'Transferencias'],
+                ...mostMovedItems.map((item, idx) => [
+                    (idx + 1).toString(),
+                    item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name,
+                    item.count.toString()
+                ])
+            ];
 
-        doc.autoTable({
-            startY: yPos,
-            head: [summaryData[0]],
-            body: summaryData.slice(1),
-            theme: 'striped',
-            headStyles: { 
-                fillColor: [0, 175, 0],
-                textColor: [255, 255, 255],
-                fontStyle: 'bold'
-            },
-            alternateRowStyles: {
-                fillColor: [245, 247, 250]
-            },
-            styles: {
-                fontSize: 10,
-                cellPadding: 3
-            },
-            margin: { left: 14, right: 14 }
-        });
+            doc.autoTable({
+                startY: yPos,
+                head: [movedTableData[0]],
+                body: movedTableData.slice(1),
+                theme: 'striped',
+                headStyles: { 
+                    fillColor: [147, 51, 234],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 2
+                },
+                margin: { left: 14, right: 14 }
+            });
+            yPos = doc.lastAutoTable.finalY + 10;
+        } else {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('No hay datos disponibles', 14, yPos);
+            yPos += 10;
+        }
+
+        // Check if we need a new page
+        if (yPos > doc.internal.pageSize.getHeight() - 40) {
+            doc.addPage();
+            yPos = 20;
+        }
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Items Más Caros', 14, yPos);
+        yPos += 8;
+
+        if (mostExpensiveItems.length > 0) {
+            const expensiveTableData = [
+                ['#', 'Nombre del Item', 'Valor'],
+                ...mostExpensiveItems.map((item, idx) => [
+                    (idx + 1).toString(),
+                    item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name,
+                    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
+                ])
+            ];
+
+            doc.autoTable({
+                startY: yPos,
+                head: [expensiveTableData[0]],
+                body: expensiveTableData.slice(1),
+                theme: 'striped',
+                headStyles: { 
+                    fillColor: [34, 197, 94],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 2
+                },
+                margin: { left: 14, right: 14 }
+            });
+            yPos = doc.lastAutoTable.finalY + 10;
+        } else {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('No hay datos disponibles', 14, yPos);
+            yPos += 10;
+        }
+
+        // Check if we need a new page
+        if (yPos > doc.internal.pageSize.getHeight() - 40) {
+            doc.addPage();
+            yPos = 20;
+        }
+
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Items con Más Verificaciones', 14, yPos);
+        yPos += 8;
+
+        if (mostVerifiedItems.length > 0) {
+            const verifiedTableData = [
+                ['#', 'Nombre del Item', 'Verificaciones'],
+                ...mostVerifiedItems.map((item, idx) => [
+                    (idx + 1).toString(),
+                    item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name,
+                    item.count.toString()
+                ])
+            ];
+
+            doc.autoTable({
+                startY: yPos,
+                head: [verifiedTableData[0]],
+                body: verifiedTableData.slice(1),
+                theme: 'striped',
+                headStyles: { 
+                    fillColor: [249, 115, 22],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 2
+                },
+                margin: { left: 14, right: 14 }
+            });
+        } else {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('No hay datos disponibles', 14, yPos);
+        }
     } else {
         // Table report
         const headers = getHeadersForReportType(currentReportType);
