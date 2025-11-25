@@ -2,6 +2,8 @@ package com.sgdis.backend.user.web;
 
 import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.ResourceNotFoundException;
+import com.sgdis.backend.loan.application.dto.LoanResponse;
+import com.sgdis.backend.loan.application.port.GetMyLoansUseCase;
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
 import com.sgdis.backend.user.domain.Role;
@@ -49,6 +51,7 @@ public class UserController {
     private final SpringDataUserRepository userRepository;
     private final FileUploadService fileUploadService;
     private final AuthService authService;
+    private final GetMyLoansUseCase getMyLoansUseCase;
 
     @Operation(
             summary = "Get user by ID",
@@ -340,5 +343,41 @@ public class UserController {
                 .warehouseCount(warehouseCount)
                 .userCount(userCount)
                 .build();
+    }
+
+    @Operation(
+            summary = "Get my loans",
+            description = "Retrieves all items that have been lent to the currently authenticated user"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Loans retrieved successfully",
+            content = @Content(schema = @Schema(implementation = LoanResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/me/loans")
+    public ResponseEntity<List<LoanResponse>> getMyLoans() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        List<LoanResponse> loans = getMyLoansUseCase.getMyLoans(userId);
+        return ResponseEntity.ok(loans);
+    }
+
+    @Operation(
+            summary = "Get user loans by ID",
+            description = "Retrieves all items that have been lent to a specific user (Admin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Loans retrieved successfully",
+            content = @Content(schema = @Schema(implementation = LoanResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @ApiResponse(responseCode = "403", description = "Access denied")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
+    @GetMapping("/{userId}/loans")
+    public ResponseEntity<List<LoanResponse>> getUserLoans(@PathVariable Long userId) {
+        List<LoanResponse> loans = getMyLoansUseCase.getMyLoans(userId);
+        return ResponseEntity.ok(loans);
     }
 }

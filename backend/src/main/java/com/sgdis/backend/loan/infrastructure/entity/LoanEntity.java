@@ -30,7 +30,10 @@ public class LoanEntity {
     @JoinColumn(name = "item_id")
     private ItemEntity item;
 
-    private String responsibleName;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "responsible_id")
+    private UserEntity responsible;
+
     private String detailsLend;
     private String documentUrl;
     private String detailsReturn;

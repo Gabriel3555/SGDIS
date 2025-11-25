@@ -602,6 +602,298 @@ function closeEditUserModal() {
     usersData.currentUserId = null;
 }
 
+// Store loans data globally for filtering
+let userLoansData = {
+    allLoans: [],
+    currentFilter: 'all'
+};
+
+async function showUserLoansModal(userId) {
+    const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    
+    // Get user from local data first
+    let user = usersData.users.find(u => u && u.id === numericUserId);
+    
+    // If user not found in local data, fetch from API
+    if (!user) {
+        try {
+            const token = localStorage.getItem('jwt');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`/api/v1/users/${numericUserId}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                user = await response.json();
+            } else {
+                showErrorToast('Error', 'No se pudo cargar la información del usuario');
+                return;
+            }
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            showErrorToast('Error', 'Error al cargar la información del usuario');
+            return;
+        }
+    }
+
+    if (!user) {
+        showErrorToast('Error', 'Usuario no encontrado');
+        return;
+    }
+
+    // Update modal title with user name
+    const userNameElement = document.getElementById('userLoansUserName');
+    if (userNameElement) {
+        userNameElement.textContent = user.fullName || user.email || 'Usuario';
+    }
+
+    // Show loading state
+    const loadingElement = document.getElementById('userLoansLoading');
+    const contentElement = document.getElementById('userLoansContent');
+    const statsElement = document.getElementById('userLoansStats');
+    const filtersElement = document.getElementById('userLoansFilters');
+    const loansListElement = document.getElementById('userLoansList');
+    const loansEmptyElement = document.getElementById('userLoansEmpty');
+
+    if (loadingElement) loadingElement.style.display = 'block';
+    if (contentElement) contentElement.style.display = 'none';
+    if (statsElement) statsElement.style.display = 'none';
+    if (filtersElement) filtersElement.style.display = 'none';
+
+    // Open modal
+    const modal = document.getElementById('userLoansModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+
+    // Load loans
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/users/${numericUserId}/loans`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        let loans = [];
+        if (response.ok) {
+            loans = await response.json();
+        } else if (response.status === 404) {
+            console.warn('Loans endpoint not found, trying alternative...');
+            loans = [];
+        } else {
+            throw new Error('Error al cargar los préstamos');
+        }
+
+        // Store loans globally
+        userLoansData.allLoans = loans;
+        userLoansData.currentFilter = 'all';
+
+        // Display loans with statistics
+        displayUserLoans(loans, loadingElement, contentElement, statsElement, filtersElement, loansListElement, loansEmptyElement);
+    } catch (error) {
+        console.error('Error loading user loans:', error);
+        showErrorToast('Error', 'Error al cargar los préstamos del usuario');
+        if (loadingElement) {
+            loadingElement.innerHTML = `
+                <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                <p class="text-red-600">Error al cargar los préstamos</p>
+                <button onclick="showUserLoansModal('${numericUserId}')" class="mt-4 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                    Reintentar
+                </button>
+            `;
+        }
+    }
+}
+
+function displayUserLoans(loans, loadingElement, contentElement, statsElement, filtersElement, loansListElement, loansEmptyElement) {
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (contentElement) contentElement.style.display = 'block';
+
+    // Calculate statistics
+    const totalLoans = loans.length;
+    const activeLoans = loans.filter(loan => !loan.returned).length;
+    const returnedLoans = loans.filter(loan => loan.returned === true).length;
+
+    // Update statistics
+    if (statsElement) {
+        document.getElementById('totalLoansCount').textContent = totalLoans;
+        document.getElementById('activeLoansCount').textContent = activeLoans;
+        document.getElementById('returnedLoansCount').textContent = returnedLoans;
+        statsElement.style.display = 'grid';
+    }
+
+    // Show filters if there are loans
+    if (filtersElement && totalLoans > 0) {
+        filtersElement.style.display = 'flex';
+        // Reset filter buttons
+        document.getElementById('filterAll').className = 'px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white';
+        document.getElementById('filterActive').className = 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+        document.getElementById('filterReturned').className = 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+    }
+
+    // Filter loans based on current filter
+    let filteredLoans = loans;
+    if (userLoansData.currentFilter === 'active') {
+        filteredLoans = loans.filter(loan => !loan.returned);
+    } else if (userLoansData.currentFilter === 'returned') {
+        filteredLoans = loans.filter(loan => loan.returned === true);
+    }
+
+    if (!filteredLoans || filteredLoans.length === 0) {
+        if (loansListElement) loansListElement.style.display = 'none';
+        if (loansEmptyElement) {
+            loansEmptyElement.style.display = 'block';
+            const emptyMessage = userLoansData.currentFilter === 'all' 
+                ? 'Este usuario no tiene préstamos registrados'
+                : userLoansData.currentFilter === 'active'
+                ? 'Este usuario no tiene préstamos activos'
+                : 'Este usuario no tiene préstamos devueltos';
+            loansEmptyElement.querySelector('p').textContent = emptyMessage;
+        }
+        return;
+    }
+
+    if (loansListElement) loansListElement.style.display = 'block';
+    if (loansEmptyElement) loansEmptyElement.style.display = 'none';
+
+    loansListElement.innerHTML = filteredLoans.map(loan => {
+        const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'Fecha no disponible';
+
+        const returnDate = loan.returnAt ? new Date(loan.returnAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : null;
+
+        const isReturned = loan.returned === true;
+        const statusBadge = isReturned 
+            ? '<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Devuelto</span>'
+            : '<span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold"><i class="fas fa-clock mr-1"></i>Prestado</span>';
+
+        // Calculate duration if returned
+        let durationInfo = '';
+        if (isReturned && loan.lendAt && loan.returnAt) {
+            const lendDateObj = new Date(loan.lendAt);
+            const returnDateObj = new Date(loan.returnAt);
+            const diffTime = Math.abs(returnDateObj - lendDateObj);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            durationInfo = `<div class="text-xs text-gray-500 mt-1">
+                <i class="fas fa-hourglass-half"></i> Duración: ${diffDays} día${diffDays !== 1 ? 's' : ''}
+            </div>`;
+        } else if (!isReturned && loan.lendAt) {
+            const lendDateObj = new Date(loan.lendAt);
+            const now = new Date();
+            const diffTime = Math.abs(now - lendDateObj);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            durationInfo = `<div class="text-xs text-yellow-600 mt-1">
+                <i class="fas fa-hourglass-half"></i> Prestado hace: ${diffDays} día${diffDays !== 1 ? 's' : ''}
+            </div>`;
+        }
+
+        return `
+            <div class="loan-card border ${isReturned ? 'border-green-200' : 'border-yellow-200'} rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <i class="fas fa-box text-purple-600 text-xl"></i>
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-800">Item #${loan.itemId || 'N/A'}</h4>
+                                <p class="text-sm text-gray-600">Prestado por: ${loan.lenderName || 'N/A'}</p>
+                                ${durationInfo}
+                            </div>
+                        </div>
+                        ${loan.detailsLend ? `
+                            <div class="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-600">
+                                <i class="fas fa-info-circle text-gray-400 mr-1"></i>
+                                <strong>Detalles del préstamo:</strong> ${loan.detailsLend}
+                            </div>
+                        ` : ''}
+                        ${isReturned && loan.detailsReturn ? `
+                            <div class="mt-2 p-2 bg-green-50 rounded text-sm text-gray-600">
+                                <i class="fas fa-check-circle text-green-600 mr-1"></i>
+                                <strong>Detalles de devolución:</strong> ${loan.detailsReturn}
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${statusBadge}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm pt-3 border-t border-gray-200">
+                    <div class="flex items-center gap-2 text-gray-600">
+                        <i class="fas fa-calendar-alt text-gray-400"></i>
+                        <span><strong>Fecha de préstamo:</strong> ${lendDate}</span>
+                    </div>
+                    ${returnDate ? `
+                        <div class="flex items-center gap-2 text-gray-600">
+                            <i class="fas fa-calendar-check text-gray-400"></i>
+                            <span><strong>Fecha de devolución:</strong> ${returnDate}</span>
+                        </div>
+                    ` : '<div class="text-gray-400 text-xs">Pendiente de devolución</div>'}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterUserLoans(filter) {
+    userLoansData.currentFilter = filter;
+    
+    // Update filter buttons
+    document.getElementById('filterAll').className = filter === 'all' 
+        ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white'
+        : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+    
+    document.getElementById('filterActive').className = filter === 'active'
+        ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white'
+        : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+    
+    document.getElementById('filterReturned').className = filter === 'returned'
+        ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white'
+        : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200';
+
+    // Re-display loans with new filter
+    const loadingElement = document.getElementById('userLoansLoading');
+    const contentElement = document.getElementById('userLoansContent');
+    const statsElement = document.getElementById('userLoansStats');
+    const filtersElement = document.getElementById('userLoansFilters');
+    const loansListElement = document.getElementById('userLoansList');
+    const loansEmptyElement = document.getElementById('userLoansEmpty');
+
+    displayUserLoans(
+        userLoansData.allLoans,
+        loadingElement,
+        contentElement,
+        statsElement,
+        filtersElement,
+        loansListElement,
+        loansEmptyElement
+    );
+}
+
+function closeUserLoansModal() {
+    const modal = document.getElementById('userLoansModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    // Reset filter state
+    userLoansData.currentFilter = 'all';
+    userLoansData.allLoans = [];
+}
+
 window.showNewUserModal = showNewUserModal;
 window.closeNewUserModal = closeNewUserModal;
 window.showViewUserModal = showViewUserModal;
@@ -610,6 +902,9 @@ window.showEditUserModal = showEditUserModal;
 window.closeEditUserModal = closeEditUserModal;
 window.showDeleteUserModal = showDeleteUserModal;
 window.closeDeleteUserModal = closeDeleteUserModal;
+window.showUserLoansModal = showUserLoansModal;
+window.closeUserLoansModal = closeUserLoansModal;
+window.filterUserLoans = filterUserLoans;
 
 // Custom Select Component
 class CustomSelect {

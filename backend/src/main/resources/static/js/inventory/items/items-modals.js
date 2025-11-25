@@ -1687,5 +1687,274 @@ window.showItemTransferHistoryModal = showItemTransferHistoryModal;
 window.closeItemTransferHistoryModal = closeItemTransferHistoryModal;
 window.loadItemTransferHistory = loadItemTransferHistory;
 window.navigateCarousel = navigateCarousel;
+
+// Store item loans data globally for filtering
+let itemLoansData = {
+    allLoans: [],
+    currentFilter: 'all'
+};
+
+async function showItemLoansHistoryModal(itemId) {
+    const modal = document.getElementById("itemLoansHistoryModal");
+    if (!modal) return;
+
+    // Store current item ID
+    if (window.itemsData) {
+        window.itemsData.currentItemId = itemId;
+    }
+
+    // Set item name
+    let itemName = "Item";
+    if (window.itemsData && window.itemsData.items) {
+        const item = window.itemsData.items.find((i) => i.id === itemId);
+        if (item) {
+            itemName = item.productName || "Sin nombre";
+        }
+    }
+
+    const itemNameElement = document.getElementById("loansHistoryItemName");
+    if (itemNameElement) {
+        itemNameElement.textContent = itemName;
+    }
+
+    modal.classList.remove("hidden");
+
+    // Show loading state
+    const contentElement = document.getElementById("itemLoansHistoryContent");
+    const statsElement = document.getElementById("itemLoansStats");
+    const filtersElement = document.getElementById("itemLoansFilters");
+    
+    if (contentElement) {
+        contentElement.innerHTML = `
+            <div class="flex items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
+            </div>
+        `;
+    }
+    if (statsElement) statsElement.style.display = 'none';
+    if (filtersElement) filtersElement.style.display = 'none';
+
+    // Load loans history for this item
+    await loadItemLoansHistory(itemId);
+}
+
+function closeItemLoansHistoryModal() {
+    const modal = document.getElementById("itemLoansHistoryModal");
+    if (modal) {
+        modal.classList.add("hidden");
+    }
+    
+    // Reset filter state
+    itemLoansData.currentFilter = 'all';
+    itemLoansData.allLoans = [];
+}
+
+async function loadItemLoansHistory(itemId) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/loan/item/${itemId}`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        let loans = [];
+        if (response.ok) {
+            loans = await response.json();
+        } else {
+            throw new Error('Error al cargar el historial de préstamos');
+        }
+
+        // Store loans globally
+        itemLoansData.allLoans = loans;
+        itemLoansData.currentFilter = 'all';
+
+        // Display loans with statistics
+        displayItemLoansHistory(loans);
+    } catch (error) {
+        console.error('Error loading item loans history:', error);
+        const contentElement = document.getElementById("itemLoansHistoryContent");
+        if (contentElement) {
+            contentElement.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                    <p class="text-red-600 dark:text-red-400 mb-4">Error al cargar el historial de préstamos</p>
+                    <button onclick="loadItemLoansHistory(${itemId})" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg transition-colors">
+                        Reintentar
+                    </button>
+                </div>
+            `;
+        }
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se pudo cargar el historial de préstamos');
+        }
+    }
+}
+
+function displayItemLoansHistory(loans) {
+    const contentElement = document.getElementById("itemLoansHistoryContent");
+    const statsElement = document.getElementById("itemLoansStats");
+    const filtersElement = document.getElementById("itemLoansFilters");
+
+    if (!contentElement) return;
+
+    // Calculate statistics
+    const totalLoans = loans.length;
+    const activeLoans = loans.filter(loan => !loan.returned).length;
+    const returnedLoans = loans.filter(loan => loan.returned === true).length;
+
+    // Update statistics
+    if (statsElement) {
+        document.getElementById('itemTotalLoansCount').textContent = totalLoans;
+        document.getElementById('itemActiveLoansCount').textContent = activeLoans;
+        document.getElementById('itemReturnedLoansCount').textContent = returnedLoans;
+        statsElement.style.display = 'grid';
+    }
+
+    // Show filters if there are loans
+    if (filtersElement && totalLoans > 0) {
+        filtersElement.style.display = 'flex';
+        // Reset filter buttons
+        document.getElementById('itemFilterAll').className = 'px-4 py-2 rounded-lg font-medium transition-colors bg-cyan-600 text-white';
+        document.getElementById('itemFilterActive').className = 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+        document.getElementById('itemFilterReturned').className = 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    }
+
+    // Filter loans based on current filter
+    let filteredLoans = loans;
+    if (itemLoansData.currentFilter === 'active') {
+        filteredLoans = loans.filter(loan => !loan.returned);
+    } else if (itemLoansData.currentFilter === 'returned') {
+        filteredLoans = loans.filter(loan => loan.returned === true);
+    }
+
+    if (!filteredLoans || filteredLoans.length === 0) {
+        const emptyMessage = itemLoansData.currentFilter === 'all' 
+            ? 'Este item no tiene préstamos registrados'
+            : itemLoansData.currentFilter === 'active'
+            ? 'Este item no tiene préstamos activos'
+            : 'Este item no tiene préstamos devueltos';
+        contentElement.innerHTML = `
+            <div class="text-center py-12">
+                <i class="fas fa-inbox text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">${emptyMessage}</p>
+            </div>
+        `;
+        return;
+    }
+
+    contentElement.innerHTML = filteredLoans.map(loan => {
+        const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'Fecha no disponible';
+
+        const returnDate = loan.returnAt ? new Date(loan.returnAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : null;
+
+        const isReturned = loan.returned === true;
+        const statusBadge = isReturned 
+            ? '<span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded-full text-xs font-semibold"><i class="fas fa-check-circle mr-1"></i>Devuelto</span>'
+            : '<span class="px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 rounded-full text-xs font-semibold"><i class="fas fa-clock mr-1"></i>Prestado</span>';
+
+        // Calculate duration if returned
+        let durationInfo = '';
+        if (isReturned && loan.lendAt && loan.returnAt) {
+            const lendDateObj = new Date(loan.lendAt);
+            const returnDateObj = new Date(loan.returnAt);
+            const diffTime = Math.abs(returnDateObj - lendDateObj);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            durationInfo = `<div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                <i class="fas fa-hourglass-half"></i> Duración: ${diffDays} día${diffDays !== 1 ? 's' : ''}
+            </div>`;
+        } else if (!isReturned && loan.lendAt) {
+            const lendDateObj = new Date(loan.lendAt);
+            const now = new Date();
+            const diffTime = Math.abs(now - lendDateObj);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            durationInfo = `<div class="text-xs text-yellow-600 dark:text-yellow-400 mt-1">
+                <i class="fas fa-hourglass-half"></i> Prestado hace: ${diffDays} día${diffDays !== 1 ? 's' : ''}
+            </div>`;
+        }
+
+        return `
+            <div class="loan-card bg-white dark:bg-gray-800 border ${isReturned ? 'border-green-200 dark:border-green-800' : 'border-yellow-200 dark:border-yellow-800'} rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 ${isReturned ? 'bg-green-100 dark:bg-green-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'} rounded-full flex items-center justify-center">
+                                <i class="fas fa-user ${isReturned ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-lg font-bold text-gray-900 dark:text-white">Responsable: ${loan.responsibleName || 'N/A'}</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">Prestado por: ${loan.lenderName || 'N/A'}</p>
+                                ${durationInfo}
+                            </div>
+                        </div>
+                        ${loan.detailsLend ? `
+                            <div class="mt-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-sm text-gray-600 dark:text-gray-300">
+                                <i class="fas fa-info-circle text-gray-400 dark:text-gray-500 mr-1"></i>
+                                <strong>Detalles del préstamo:</strong> ${loan.detailsLend}
+                            </div>
+                        ` : ''}
+                        ${isReturned && loan.detailsReturn ? `
+                            <div class="mt-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-sm text-gray-600 dark:text-gray-300">
+                                <i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-1"></i>
+                                <strong>Detalles de devolución:</strong> ${loan.detailsReturn}
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${statusBadge}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-calendar-alt text-gray-400 dark:text-gray-500"></i>
+                        <span><strong>Fecha de préstamo:</strong> ${lendDate}</span>
+                    </div>
+                    ${returnDate ? `
+                        <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-calendar-check text-gray-400 dark:text-gray-500"></i>
+                            <span><strong>Fecha de devolución:</strong> ${returnDate}</span>
+                        </div>
+                    ` : '<div class="text-gray-400 dark:text-gray-500 text-xs">Pendiente de devolución</div>'}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function filterItemLoans(filter) {
+    itemLoansData.currentFilter = filter;
+    
+    // Update filter buttons
+    document.getElementById('itemFilterAll').className = filter === 'all' 
+        ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-cyan-600 text-white'
+        : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    
+    document.getElementById('itemFilterActive').className = filter === 'active'
+        ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-cyan-600 text-white'
+        : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+    
+    document.getElementById('itemFilterReturned').className = filter === 'returned'
+        ? 'px-4 py-2 rounded-lg font-medium transition-colors bg-cyan-600 text-white'
+        : 'px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600';
+
+    // Re-display loans with new filter
+    displayItemLoansHistory(itemLoansData.allLoans);
+}
+
+window.showItemLoansHistoryModal = showItemLoansHistoryModal;
+window.closeItemLoansHistoryModal = closeItemLoansHistoryModal;
+window.filterItemLoans = filterItemLoans;
 window.goToCarouselImage = goToCarouselImage;
 window.populateViewItemModal = populateViewItemModal;
