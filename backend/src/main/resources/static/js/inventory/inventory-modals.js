@@ -717,13 +717,26 @@ function navigateToItems() {
     sessionStorage.setItem("currentInventoryId", currentInventoryId.toString());
     // Store return URL
     sessionStorage.setItem("returnToInventory", "true");
-    // Navigate to items page
-    const targetPath = `/items?inventoryId=${currentInventoryId}`;
-    if (typeof window.buildAdminUrl === "function") {
-      window.location.href = window.buildAdminUrl(targetPath);
+
+    // Check user role to determine the correct items page
+    const userRole = (window.currentUserRole || '').toUpperCase();
+    let targetPath;
+
+    if (userRole === 'WAREHOUSE') {
+      targetPath = `/warehouse/items?inventoryId=${currentInventoryId}`;
     } else {
-      window.location.href = `/superadmin${targetPath}`;
+      // For other roles, use the existing logic
+      targetPath = `/items?inventoryId=${currentInventoryId}`;
+      if (typeof window.buildAdminUrl === "function") {
+        window.location.href = window.buildAdminUrl(targetPath);
+      } else {
+        window.location.href = `/superadmin${targetPath}`;
+      }
+      return;
     }
+
+    // Navigate to the appropriate items page
+    window.location.href = targetPath;
   }
 }
 
