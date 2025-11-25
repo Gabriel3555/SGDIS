@@ -1,6 +1,6 @@
 // src/Screens/Inventary.js
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal } from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, ScrollView, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import api from "../../../src/Navigation/Services/Connection";
 import { ensureAuthToken } from "../../../src/Navigation/Services/AuthSession";
@@ -85,7 +85,9 @@ export default function Inventary({ navigation }) {
 
       Alert.alert("Éxito", "Has renunciado como gestor del inventario");
       // Refetch inventories to update the list
-      fetchInventories();
+      fetchManagerInventories();
+      fetchAssignedInventories();
+      fetchOwnerInventories();
     } catch (error) {
       console.error("Error quitting manager:", error);
       const status = error.response?.status;
@@ -120,7 +122,7 @@ export default function Inventary({ navigation }) {
     try {
       const token = await ensureAuthToken();
       if (!token) return;
-      const response = await api.get("api/v1/inventory/mySignatoryInventories", {
+      const response = await api.get("api/v1/inventory/myManagedInventories", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -147,11 +149,12 @@ export default function Inventary({ navigation }) {
     try {
       const token = await ensureAuthToken();
       if (!token) return;
-      const response = await api.get("api/v1/users/me/inventories", {
+      const response = await api.get("api/v1/inventory/mySignatoryInventories", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+      console.log("Manager inventories response:", response.data);
       let data = response.data || [];
       if (!Array.isArray(data)) {
         data = [];
@@ -279,9 +282,6 @@ export default function Inventary({ navigation }) {
             >
               <Ionicons name="eye-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
-              <Ionicons name="create-outline" size={18} color={colors.icon} />
-            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: colors.card }]}
               onPress={() => {
@@ -357,9 +357,6 @@ export default function Inventary({ navigation }) {
             >
               <Ionicons name="eye-outline" size={18} color={colors.icon} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionButton, { backgroundColor: colors.card }]}>
-              <Ionicons name="create-outline" size={18} color={colors.icon} />
-            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionButton, { backgroundColor: colors.card }]}
               onPress={() => {
@@ -384,8 +381,21 @@ export default function Inventary({ navigation }) {
    );
  }
 
+  const onRefresh = () => {
+    fetchInventories();
+    fetchOwnerInventories();
+    fetchAssignedInventories();
+    fetchManagerInventories();
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl refreshing={loading} onRefresh={onRefresh} colors={[colors.institution]} />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -410,7 +420,7 @@ export default function Inventary({ navigation }) {
       <View style={styles.dropdownsSection}>
         <View style={styles.dropdownContainer}>
           <TouchableOpacity
-            style={styles.dropdownButton}
+            style={[styles.dropdownButton, { backgroundColor: expandedOwner ? colors.card : colors.background }]}
             onPress={() => {
               if (expandedOwner) {
                 setExpandedOwner(false);
@@ -421,7 +431,7 @@ export default function Inventary({ navigation }) {
               }
             }}
           >
-            <Text style={styles.dropdownLabel}>Inventarios como Dueño</Text>
+            <Text style={styles.dropdownLabel}>Inventarios como Dueño ({ownerInventories.length})</Text>
             <Ionicons name={expandedOwner ? "chevron-up" : "chevron-down"} size={20} color={colors.icon} />
           </TouchableOpacity>
           {expandedOwner && (
@@ -437,7 +447,7 @@ export default function Inventary({ navigation }) {
 
         <View style={styles.dropdownContainer}>
           <TouchableOpacity
-            style={styles.dropdownButton}
+            style={[styles.dropdownButton, { backgroundColor: expandedAssigned ? colors.card : colors.background }]}
             onPress={() => {
               if (expandedAssigned) {
                 setExpandedAssigned(false);
@@ -448,7 +458,7 @@ export default function Inventary({ navigation }) {
               }
             }}
           >
-            <Text style={styles.dropdownLabel}>Inventarios Asignados</Text>
+            <Text style={styles.dropdownLabel}>Inventarios Asignados ({assignedInventories.length})</Text>
             <Ionicons name={expandedAssigned ? "chevron-up" : "chevron-down"} size={20} color={colors.icon} />
           </TouchableOpacity>
           {expandedAssigned && (
@@ -464,7 +474,7 @@ export default function Inventary({ navigation }) {
 
         <View style={styles.dropdownContainer}>
           <TouchableOpacity
-            style={styles.dropdownButton}
+            style={[styles.dropdownButton, { backgroundColor: expandedManager ? colors.card : colors.background }]}
             onPress={() => {
               if (expandedManager) {
                 setExpandedManager(false);
@@ -475,7 +485,7 @@ export default function Inventary({ navigation }) {
               }
             }}
           >
-            <Text style={styles.dropdownLabel}>Inventarios como Manager</Text>
+            <Text style={styles.dropdownLabel}>Inventarios como Firmador ({managerInventories.length})</Text>
             <Ionicons name={expandedManager ? "chevron-up" : "chevron-down"} size={20} color={colors.icon} />
           </TouchableOpacity>
           {expandedManager && (
@@ -483,7 +493,7 @@ export default function Inventary({ navigation }) {
               {managerInventories.length > 0 ? (
                 managerInventories.map((item) => renderInventoryCard(item))
               ) : (
-                <Text style={styles.emptyText}>No hay inventarios como manager</Text>
+                <Text style={styles.emptyText}>No hay inventarios como firmador</Text>
               )}
             </View>
           )}
@@ -521,7 +531,7 @@ export default function Inventary({ navigation }) {
       </Modal>
 
 
-    </View>
+    </ScrollView>
   );
 }
 
@@ -630,6 +640,9 @@ const getStyles = (colors) => StyleSheet.create({
   },
   dropdownContainer: {
     marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.background,
+    paddingBottom: 16,
   },
   dropdownLabel: {
     fontSize: 16,
@@ -672,6 +685,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   expandedContent: {
     marginTop: 10,
+    paddingHorizontal: 10,
   },
   modalItem: {
     paddingVertical: 12,
@@ -881,3 +895,4 @@ const getStyles = (colors) => StyleSheet.create({
     fontWeight: '600',
   },
 });
+
