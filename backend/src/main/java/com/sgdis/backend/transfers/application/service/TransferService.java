@@ -93,6 +93,9 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
             }
             itemRepository.save(item);
             
+            // Actualizar totalPrice de ambos inventarios
+            updateInventoryTotalPrices(sourceInventory.getId(), destinationInventory.getId(), item.getAcquisitionValue());
+            
             transfer.setApprovedAt(LocalDateTime.now());
             transfer.setApprovedBy(requester);
             transfer.setApprovalNotes("Transferencia directa por " + requester.getRole().name());
@@ -167,6 +170,9 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
         itemRepository.save(item);
 
+        // Actualizar totalPrice de ambos inventarios
+        updateInventoryTotalPrices(sourceInventory.getId(), destinationInventory.getId(), item.getAcquisitionValue());
+
         transfer.setSourceInventory(sourceInventory);
         transfer.setApprovalStatus(TransferStatus.APPROVED);
         transfer.setApprovedAt(LocalDateTime.now());
@@ -240,5 +246,26 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                user.getRole() == Role.ADMIN_INSTITUTION ||
                user.getRole() == Role.ADMIN_REGIONAL ||
                user.getRole() == Role.WAREHOUSE;
+    }
+
+    /**
+     * Actualiza el totalPrice de los inventarios origen y destino durante una transferencia.
+     * Resta el valor del inventario origen y lo suma al inventario destino.
+     * Usa queries directas a la base de datos para evitar problemas con el caché de Hibernate.
+     * 
+     * @param sourceInventoryId ID del inventario de origen (se resta el valor)
+     * @param destinationInventoryId ID del inventario de destino (se suma el valor)
+     * @param itemValue Valor del item a transferir (acquisitionValue)
+     */
+    private void updateInventoryTotalPrices(Long sourceInventoryId, 
+                                            Long destinationInventoryId, 
+                                            Double itemValue) {
+        if (itemValue != null && itemValue > 0) {
+            // Restar del inventario origen usando query directa
+            inventoryRepository.subtractFromTotalPrice(sourceInventoryId, itemValue);
+            
+            // Sumar al inventario destino usando query directa
+            inventoryRepository.addToTotalPrice(destinationInventoryId, itemValue);
+        }
     }
 }

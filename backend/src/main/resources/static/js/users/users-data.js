@@ -6,6 +6,8 @@ let usersData = {
   searchTerm: "",
   selectedRole: "all",
   selectedStatus: "all",
+  selectedRegional: "", // For super admin filter
+  selectedInstitution: "", // For super admin filter
   isLoading: false,
   currentUserId: null,
   viewMode: "table", // 'table' or 'cards'

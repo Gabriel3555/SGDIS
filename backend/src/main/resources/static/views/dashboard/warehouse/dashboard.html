@@ -72,6 +72,11 @@
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
             </a>
+            <a href="/warehouse/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/import-export')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
             <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
@@ -309,7 +314,7 @@
                 <p class="text-gray-600 text-sm mb-6">Accesos directos a funciones de almacén</p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="action-card">
+                    <div class="action-card cursor-pointer hover:shadow-lg transition-all duration-200" onclick="window.location.href='/warehouse/inventory'">
                         <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-boxes text-blue-600 text-2xl"></i>
                         </div>
@@ -317,20 +322,20 @@
                         <p class="text-gray-600 text-sm">Administrar items del almacén</p>
                     </div>
 
-                    <div class="action-card">
-                        <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                            <i class="fas fa-chart-bar text-green-600 text-2xl"></i>
-                        </div>
-                        <h3 class="font-bold text-gray-800 text-lg mb-2">Generar Reporte</h3>
-                        <p class="text-gray-600 text-sm">Crear reporte de inventario</p>
-                    </div>
-
-                    <div class="action-card">
+                    <div class="action-card cursor-pointer hover:shadow-lg transition-all duration-200" onclick="window.location.href='/warehouse/import-export'">
                         <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-4">
                             <i class="fas fa-exchange-alt text-purple-600 text-2xl"></i>
                         </div>
                         <h3 class="font-bold text-gray-800 text-lg mb-2">Importar/Exportar</h3>
-                        <p class="text-gray-600 text-sm">Gestionar datos externos</p>
+                        <p class="text-gray-600 text-sm">Importar y exportar items desde Excel</p>
+                    </div>
+
+                    <div class="action-card cursor-pointer hover:shadow-lg transition-all duration-200" onclick="window.location.href='/info-me'">
+                        <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-user-circle text-green-600 text-2xl"></i>
+                        </div>
+                        <h3 class="font-bold text-gray-800 text-lg mb-2">Mi Perfil</h3>
+                        <p class="text-gray-600 text-sm">Ver y editar mi información</p>
                     </div>
                 </div>
             </div>

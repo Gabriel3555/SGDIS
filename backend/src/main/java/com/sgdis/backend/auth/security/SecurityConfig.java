@@ -89,6 +89,7 @@ public class SecurityConfig  {
                     http.requestMatchers("/warehouse/dashboard").hasRole("WAREHOUSE");
                     http.requestMatchers("/warehouse/inventory").hasRole("WAREHOUSE");
                     http.requestMatchers("/warehouse/items").hasRole("WAREHOUSE");
+                    http.requestMatchers("/warehouse/import-export").hasRole("WAREHOUSE");
                     // API endpoints require authentication
                     http.anyRequest().permitAll();
                 });

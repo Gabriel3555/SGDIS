@@ -74,26 +74,26 @@ async function updateItemsStats() {
         
         container.innerHTML = `
             <div class="stat-card">
-                <div class="flex items-start justify-between mb-3">
-                    <div>
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div class="min-w-0 flex-1">
                         <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
-                        <h3 class="text-3xl font-bold text-gray-800">${totalItems}</h3>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-gray-800 truncate">${totalItems}</h3>
                     </div>
-                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-cubes text-blue-600 text-xl"></i>
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-cubes text-blue-600 text-lg sm:text-xl"></i>
                     </div>
                 </div>
                 <p class="text-blue-600 text-sm font-medium">Items en el inventario</p>
             </div>
 
             <div class="stat-card">
-                <div class="flex items-start justify-between mb-3">
-                    <div>
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div class="min-w-0 flex-1">
                         <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
-                        <h3 class="text-3xl font-bold text-gray-800">$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</h3>
+                        <h3 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 break-all" title="$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}">$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</h3>
                     </div>
-                    <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-dollar-sign text-emerald-600 text-xl"></i>
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-dollar-sign text-emerald-600 text-lg sm:text-xl"></i>
                     </div>
                 </div>
                 <p class="text-emerald-600 text-sm font-medium">Valor de adquisición</p>
@@ -410,17 +410,22 @@ function updateItemsPagination() {
     const endItem = Math.min((currentPage + 1) * window.itemsData.pageSize, totalElements);
     
     let paginationHtml = `
-        <div class="text-sm text-gray-600">
+        <div class="text-sm text-gray-600 dark:text-gray-400">
             Mostrando ${startItem}-${endItem} de ${totalElements} items
         </div>
         <div class="flex gap-2">
     `;
     
     // Previous button
+    const prevDisabled = currentPage === 0;
     paginationHtml += `
         <button onclick="changeItemsPage(${currentPage - 1})" 
-                ${currentPage === 0 ? 'disabled' : ''}
-                class="px-4 py-2 rounded-xl ${currentPage === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#00AF00] hover:bg-[#008800] text-white'} transition-colors">
+                ${prevDisabled ? 'disabled' : ''}
+                class="px-4 py-2 rounded-xl transition-colors ${
+                    prevDisabled 
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'bg-[#00AF00] hover:bg-[#008800] text-white'
+                }">
             <i class="fas fa-chevron-left"></i>
         </button>
     `;
@@ -435,19 +440,29 @@ function updateItemsPagination() {
     }
     
     for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentPage;
         paginationHtml += `
             <button onclick="changeItemsPage(${i})" 
-                    class="px-4 py-2 rounded-xl ${i === currentPage ? 'bg-[#00AF00] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-300 dark:text-black dark:hover:bg-gray-400'} transition-colors">
+                    class="px-4 py-2 rounded-xl transition-colors ${
+                        isActive 
+                            ? 'bg-[#00AF00] text-white' 
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }">
                 ${i + 1}
             </button>
         `;
     }
     
     // Next button
+    const nextDisabled = currentPage >= totalPages - 1;
     paginationHtml += `
         <button onclick="changeItemsPage(${currentPage + 1})" 
-                ${currentPage >= totalPages - 1 ? 'disabled' : ''}
-                class="px-4 py-2 rounded-xl ${currentPage >= totalPages - 1 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-[#00AF00] hover:bg-[#008800] text-white'} transition-colors">
+                ${nextDisabled ? 'disabled' : ''}
+                class="px-4 py-2 rounded-xl transition-colors ${
+                    nextDisabled 
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'bg-[#00AF00] hover:bg-[#008800] text-white'
+                }">
             <i class="fas fa-chevron-right"></i>
         </button>
     `;

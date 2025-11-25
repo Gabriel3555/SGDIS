@@ -56,11 +56,26 @@ async function loadCurrentUserInfo() {
             window.currentUserData = userData;
             window.currentUserRole = userData.role;
             updateUserInfoDisplay(userData);
+            
+            // If super admin, trigger filter update to show regional/institution filters
+            if (userData.role && userData.role.toUpperCase() === 'SUPERADMIN') {
+                // Small delay to ensure UI is ready
+                setTimeout(() => {
+                    if (typeof updateSearchAndFilters === 'function') {
+                        updateSearchAndFilters();
+                    }
+                }, 200);
+            }
         } else {
             throw new Error('Failed to load user info');
         }
     } catch (error) {
         console.error('Error loading current user info:', error);
+        // Check if we're on superadmin path
+        const path = window.location.pathname || '';
+        if (path.includes('/superadmin')) {
+            window.currentUserRole = 'SUPERADMIN';
+        }
         updateUserInfoDisplay({
             fullName: 'Super Admin',
             role: 'ADMIN',
@@ -87,7 +102,48 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
         });
         return `/api/v1/inventory/institutionAdminInventories?${params.toString()}`;
     }
-    return '/api/v1/inventory';
+    
+    // Check if we have regional/institution filters for super admin
+    const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    
+    if (isSuperAdmin) {
+        // Use window.inventoryData to ensure we get the latest values
+        const data = window.inventoryData || inventoryData || {};
+        const selectedRegional = data.selectedRegional;
+        const selectedInstitution = data.selectedInstitution;
+        
+        console.log('Building endpoint with filters - Regional:', selectedRegional, 'Institution:', selectedInstitution);
+        
+        if (selectedRegional && selectedInstitution) {
+            // Filter by both regional and institution
+            const params = new URLSearchParams({
+                page: page.toString(),
+                size: size.toString()
+            });
+            const endpoint = `/api/v1/inventory/regional/${selectedRegional}/institution/${selectedInstitution}?${params.toString()}`;
+            console.log('Using endpoint:', endpoint);
+            return endpoint;
+        } else if (selectedRegional) {
+            // Filter by regional only
+            const params = new URLSearchParams({
+                page: page.toString(),
+                size: size.toString()
+            });
+            const endpoint = `/api/v1/inventory/regionalAdminInventories/${selectedRegional}?${params.toString()}`;
+            console.log('Using endpoint:', endpoint);
+            return endpoint;
+        }
+    }
+    
+    // Default endpoint with pagination
+    const params = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString()
+    });
+    const endpoint = `/api/v1/inventory?${params.toString()}`;
+    console.log('Using default endpoint:', endpoint);
+    return endpoint;
 }
 
 function updateInventoryScopeMessage(scope = 'global') {
@@ -157,8 +213,31 @@ async function loadInventories(options = {}) {
 
             updateInventoryScopeMessage(inventoryData?.inventoryScope);
 
-            inventoryData.inventories = Array.isArray(inventories) ? inventories : [];
-            inventoryData.filteredInventories = [...inventoryData.inventories];
+            // Ensure we're using window.inventoryData for consistency
+            if (!window.inventoryData) {
+                window.inventoryData = inventoryData;
+            }
+            const data = window.inventoryData;
+            data.inventories = Array.isArray(inventories) ? inventories : [];
+            data.filteredInventories = [...data.inventories];
+            
+            // Also update the local inventoryData reference
+            if (inventoryData && inventoryData !== data) {
+                inventoryData.inventories = data.inventories;
+                inventoryData.filteredInventories = data.filteredInventories;
+            }
+            
+            console.log('Inventories loaded:', data.inventories.length);
+            console.log('Filtered inventories:', data.filteredInventories.length);
+            
+            // If super admin, ensure filters are updated after loading inventories
+            const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                                 (window.location.pathname && window.location.pathname.includes('/superadmin'));
+            if (isSuperAdmin && typeof updateSearchAndFilters === 'function') {
+                setTimeout(() => {
+                    updateSearchAndFilters();
+                }, 100);
+            }
 
             if (inventoryData.inventories.length === 0) {
                 const scopeMessage = useInstitutionScope
@@ -218,14 +297,23 @@ async function createInventory(inventoryDataToCreate) {
             return newInventory;
         } else if (response.status === 400) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Datos de inventario inválidos');
+            throw new Error(errorData.detail || errorData.message || 'Datos de inventario inválidos');
         } else if (response.status === 401) {
             throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
         } else if (response.status === 403) {
             throw new Error('No tienes permisos para crear inventarios.');
-        } else {
+        } else if (response.status === 409) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al crear el inventario');
+            throw new Error(errorData.detail || errorData.message || 'Este propietario ya tiene un inventario asignado');
+        } else {
+            let errorMessage = 'Error al crear el inventario';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.detail || errorData.message || errorMessage;
+            } catch (parseError) {
+                // Response was not JSON
+            }
+            throw new Error(errorMessage);
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {
@@ -679,3 +767,282 @@ window.getInventorySignatories = getInventorySignatories;
 window.getInventoryManagers = getInventoryManagers;
 window.deleteSignatory = deleteSignatory;
 window.deleteManager = deleteManager;
+
+// Load regionals for filter dropdown (super admin only)
+async function loadRegionalsForFilter() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch('/api/v1/regional', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const regionals = await response.json();
+            const select = document.getElementById('regionalFilter');
+            if (select) {
+                // Clear existing options except the first one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                // Add regional options
+                const currentRegional = (window.inventoryData || inventoryData)?.selectedRegional || '';
+                regionals.forEach(regional => {
+                    const option = document.createElement('option');
+                    option.value = regional.id.toString();
+                    option.textContent = regional.name;
+                    if (currentRegional === regional.id.toString()) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+        } else {
+            console.error('Error loading regionals:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Error loading regionals:', error);
+    }
+}
+
+// Load institutions for filter dropdown based on selected regional (super admin only)
+async function loadInstitutionsForFilter(regionalId) {
+    try {
+        if (!regionalId) {
+            console.error('No regional ID provided');
+            return;
+        }
+
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        console.log('Loading institutions for regional:', regionalId);
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const institutions = await response.json();
+            console.log('Institutions loaded:', institutions);
+            
+            // Function to add institutions to select
+            const addInstitutionsToSelect = (selectElement) => {
+                if (!selectElement) return false;
+                
+                // Clear existing options except the first one
+                while (selectElement.options.length > 1) {
+                    selectElement.remove(1);
+                }
+                
+                // Enable the select
+                selectElement.disabled = false;
+                
+                // Add institution options
+                if (institutions && Array.isArray(institutions) && institutions.length > 0) {
+                    const currentInstitution = (window.inventoryData || inventoryData)?.selectedInstitution || '';
+                    institutions.forEach(institution => {
+                        const option = document.createElement('option');
+                        option.value = institution.id.toString();
+                        option.textContent = institution.name || `Institución ${institution.id}`;
+                        if (currentInstitution === institution.id.toString()) {
+                            option.selected = true;
+                        }
+                        selectElement.appendChild(option);
+                    });
+                    console.log(`Added ${institutions.length} institutions to dropdown`);
+                    return true;
+                } else {
+                    // No institutions found
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No hay instituciones disponibles';
+                    option.disabled = true;
+                    selectElement.appendChild(option);
+                    console.log('No institutions found for this regional');
+                    return true;
+                }
+            };
+            
+            // Try to find the select element with multiple retries
+            let select = document.getElementById('institutionFilter');
+            let attempts = 0;
+            const maxAttempts = 5;
+            
+            while (!select && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                select = document.getElementById('institutionFilter');
+                attempts++;
+                console.log(`Attempt ${attempts} to find institutionFilter select`);
+            }
+            
+            console.log('Institution select element:', select);
+            
+            if (select) {
+                addInstitutionsToSelect(select);
+            } else {
+                console.error('Institution filter select not found in DOM after', maxAttempts, 'attempts');
+                // Try one more time after a longer delay
+                setTimeout(() => {
+                    const retrySelect = document.getElementById('institutionFilter');
+                    if (retrySelect) {
+                        console.log('Found select on final retry, adding institutions');
+                        addInstitutionsToSelect(retrySelect);
+                    } else {
+                        console.error('Could not find institutionFilter select even after final retry');
+                    }
+                }, 500);
+            }
+        } else {
+            const errorText = await response.text();
+            console.error('Error loading institutions:', response.status, errorText);
+            const select = document.getElementById('institutionFilter');
+            if (select) {
+                select.disabled = true;
+                // Clear and add error message
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Error al cargar instituciones';
+                select.appendChild(option);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading institutions:', error);
+        const select = document.getElementById('institutionFilter');
+        if (select) {
+            select.disabled = true;
+            // Clear and add error message
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Error al cargar instituciones';
+            select.appendChild(option);
+        }
+    }
+}
+
+// Handle regional filter change
+async function handleRegionalFilterChange(regionalId) {
+    console.log('Regional filter changed to:', regionalId);
+    
+    // Ensure inventoryData exists
+    if (!window.inventoryData) {
+        window.inventoryData = inventoryData || {};
+    }
+    
+    window.inventoryData.selectedRegional = regionalId || '';
+    
+    // Clear institution selection when regional changes
+    window.inventoryData.selectedInstitution = '';
+    
+    // Reset institution dropdown
+    const institutionSelect = document.getElementById('institutionFilter');
+    if (institutionSelect) {
+        institutionSelect.disabled = !regionalId;
+        // Clear options except the first one
+        while (institutionSelect.options.length > 1) {
+            institutionSelect.remove(1);
+        }
+        institutionSelect.value = '';
+        
+        if (!regionalId) {
+            // If no regional selected, show placeholder
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Todas las instituciones';
+            institutionSelect.appendChild(option);
+        }
+    }
+    
+    // Load institutions for the selected regional BEFORE reloading inventories
+    if (regionalId) {
+        console.log('Loading institutions for regional:', regionalId);
+        // Wait a bit to ensure DOM is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        await loadInstitutionsForFilter(regionalId);
+        // Wait a bit more to ensure institutions are added
+        await new Promise(resolve => setTimeout(resolve, 100));
+    } else {
+        // Clear institutions if no regional selected
+        const institutionSelect = document.getElementById('institutionFilter');
+        if (institutionSelect) {
+            institutionSelect.disabled = true;
+            while (institutionSelect.options.length > 1) {
+                institutionSelect.remove(1);
+            }
+            institutionSelect.value = '';
+        }
+    }
+    
+    // Reload inventories with new filter
+    if (!window.inventoryData) {
+        window.inventoryData = inventoryData || {};
+    }
+    window.inventoryData.currentPage = 1; // Use 1-based for UI
+    console.log('Reloading inventories with regional filter:', regionalId);
+    await loadInventories({ page: 0 });
+    
+    // Update UI but preserve the institution dropdown
+    if (typeof updateInventoryStats === 'function') {
+        updateInventoryStats();
+    }
+    if (typeof updateViewModeButtons === 'function') {
+        updateViewModeButtons();
+    }
+    const viewMode = window.inventoryData?.viewMode || "table";
+    if (viewMode === "table") {
+        if (typeof updateInventoryTable === 'function') {
+            updateInventoryTable();
+        }
+    } else {
+        if (typeof updateInventoryCards === 'function') {
+            updateInventoryCards();
+        }
+    }
+    if (typeof updatePagination === 'function') {
+        updatePagination();
+    }
+    
+    // DON'T call updateSearchAndFilters here as it will recreate the HTML and lose the institutions
+    // Instead, just update the regional select value if needed
+    const regionalSelect = document.getElementById('regionalFilter');
+    if (regionalSelect && regionalId) {
+        regionalSelect.value = regionalId;
+    }
+}
+
+// Handle institution filter change
+async function handleInstitutionFilterChange(institutionId) {
+    console.log('Institution filter changed to:', institutionId);
+    
+    // Ensure inventoryData exists
+    if (!window.inventoryData) {
+        window.inventoryData = inventoryData || {};
+    }
+    
+    window.inventoryData.selectedInstitution = institutionId || '';
+    
+    // Reload inventories with new filter
+    window.inventoryData.currentPage = 1; // Use 1-based for UI
+    console.log('Reloading inventories with institution filter:', institutionId);
+    await loadInventories({ page: 0 });
+    if (typeof updateInventoryUI === 'function') {
+        updateInventoryUI();
+    }
+}
+
+// Export functions
+window.loadRegionalsForFilter = loadRegionalsForFilter;
+window.loadInstitutionsForFilter = loadInstitutionsForFilter;
+window.handleRegionalFilterChange = handleRegionalFilterChange;
+window.handleInstitutionFilterChange = handleInstitutionFilterChange;

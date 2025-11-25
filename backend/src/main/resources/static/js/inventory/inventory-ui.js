@@ -25,10 +25,21 @@ function createImageWithSpinner(
 }
 
 function updateInventoryUI() {
+  // Ensure window.inventoryData is available
+  if (!window.inventoryData && inventoryData) {
+    window.inventoryData = inventoryData;
+  }
+  
+  // Ensure filteredInventories exists
+  if (window.inventoryData && (!window.inventoryData.filteredInventories || !Array.isArray(window.inventoryData.filteredInventories))) {
+    window.inventoryData.filteredInventories = window.inventoryData.inventories ? [...window.inventoryData.inventories] : [];
+  }
+  
   updateInventoryStats();
   updateSearchAndFilters();
   updateViewModeButtons();
-  if (inventoryData.viewMode === "table") {
+  const viewMode = (window.inventoryData || inventoryData)?.viewMode || "table";
+  if (viewMode === "table") {
     updateInventoryTable();
   } else {
     updateInventoryCards();
@@ -157,13 +168,86 @@ function updateSearchAndFilters() {
   const container = document.getElementById("searchFilterContainer");
   if (!container) return;
 
+  // Check if user is super admin - check multiple ways to be sure
+  const path = window.location.pathname || '';
+  const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                       path.includes('/superadmin');
+
   const existingInput = document.getElementById("inventorySearch");
   const currentSearchTerm = window.inventoryData
     ? window.inventoryData.searchTerm
     : "";
 
-  if (existingInput && existingInput.value === currentSearchTerm) {
+  // For super admin, check if filters already exist and institutions are loaded
+  if (isSuperAdmin) {
+    const existingRegionalSelect = document.getElementById('regionalFilter');
+    const existingInstitutionSelect = document.getElementById('institutionFilter');
+    // If filters exist and institutions are loaded, don't recreate them
+    if (existingRegionalSelect && existingInstitutionSelect && existingInstitutionSelect.options.length > 1) {
+      // Just update the search input if needed
+      if (existingInput && existingInput.value !== currentSearchTerm) {
+        existingInput.value = currentSearchTerm;
+      }
+      return;
+    }
+  }
+
+  // Only skip update if search term hasn't changed AND we're not super admin (to avoid re-rendering filters)
+  if (!isSuperAdmin && existingInput && existingInput.value === currentSearchTerm) {
     return;
+  }
+
+  // Build filter dropdowns HTML
+  let filterDropdowns = '';
+  
+  if (isSuperAdmin) {
+    // Super admin gets regional and institution filters
+    const selectedRegional = window.inventoryData?.selectedRegional || '';
+    const selectedInstitution = window.inventoryData?.selectedInstitution || '';
+    
+    filterDropdowns = `
+      <div class="relative">
+        <label class="block text-xs font-medium text-gray-600 mb-1">Regional</label>
+        <select id="regionalFilter" onchange="handleRegionalFilterChange(this.value)" class="appearance-none w-full px-4 py-2.5 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md text-sm">
+          <option value="">Todas las regionales</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style="top: 1.5rem;">
+          <i class="fas fa-chevron-down text-[#00AF00] text-xs"></i>
+        </div>
+      </div>
+      <div class="relative">
+        <label class="block text-xs font-medium text-gray-600 mb-1">Institución</label>
+        <select id="institutionFilter" onchange="handleInstitutionFilterChange(this.value)" class="appearance-none w-full px-4 py-2.5 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md text-sm" ${!selectedRegional ? 'disabled' : ''}>
+          <option value="">Todas las instituciones</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style="top: 1.5rem;">
+          <i class="fas fa-chevron-down text-[#00AF00] text-xs"></i>
+        </div>
+      </div>
+    `;
+  } else {
+    // Other roles get location and status filters
+    filterDropdowns = `
+      <div class="relative">
+        <select onchange="setLocationFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
+          <option value="all">Todas las ubicaciones</option>
+          ${getLocationFilterOptions()}
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+          <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
+        </div>
+      </div>
+      <div class="relative">
+        <select onchange="setStatusFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
+          <option value="all">Todos los estados</option>
+          <option value="active">Activos</option>
+          <option value="inactive">Inactivos</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+          <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
+        </div>
+      </div>
+    `;
   }
 
   container.innerHTML = `
@@ -172,27 +256,20 @@ function updateSearchAndFilters() {
             <input type="text" id="inventorySearch" value="${currentSearchTerm}" placeholder="Buscar inventarios por nombre, ubicación o UUID..." class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] transition-all" oninput="handleInventorySearchInput(event)">
         </div>
         <div class="flex gap-2 flex-wrap">
-            <div class="relative">
-                <select onchange="setLocationFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
-                    <option value="all">Todas las ubicaciones</option>
-                    ${getLocationFilterOptions()}
-                </select>
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
-                </div>
-            </div>
-            <div class="relative">
-                <select onchange="setStatusFilter(this.value)" class="appearance-none w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md">
-                    <option value="all">Todos los estados</option>
-                    <option value="active">Activos</option>
-                    <option value="inactive">Inactivos</option>
-                </select>
-                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
-                </div>
-            </div>
+            ${filterDropdowns}
         </div>
     `;
+
+  // Load regionals and institutions if super admin
+  if (isSuperAdmin) {
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(() => {
+      loadRegionalsForFilter();
+      if (selectedRegional) {
+        loadInstitutionsForFilter(selectedRegional);
+      }
+    }, 100);
+  }
 
   const searchInput = document.getElementById("inventorySearch");
   if (searchInput && !searchInput._searchListeners) {
@@ -330,7 +407,13 @@ function updateInventoryTable() {
   if (!container) return;
 
   if (!window.inventoryData) {
+    console.warn('inventoryData not available');
     return;
+  }
+
+  // Ensure filteredInventories exists and is an array
+  if (!window.inventoryData.filteredInventories || !Array.isArray(window.inventoryData.filteredInventories)) {
+    window.inventoryData.filteredInventories = window.inventoryData.inventories ? [...window.inventoryData.inventories] : [];
   }
 
   const startIndex =
@@ -340,6 +423,8 @@ function updateInventoryTable() {
     startIndex,
     endIndex
   );
+  
+  console.log('Updating table with', paginatedInventories.length, 'inventories (from', window.inventoryData.filteredInventories.length, 'total)');
 
   let inventoryTableHtml = ``;
 
@@ -546,7 +631,13 @@ function updateInventoryCards() {
   if (!container) return;
 
   if (!window.inventoryData) {
+    console.warn('inventoryData not available');
     return;
+  }
+
+  // Ensure filteredInventories exists and is an array
+  if (!window.inventoryData.filteredInventories || !Array.isArray(window.inventoryData.filteredInventories)) {
+    window.inventoryData.filteredInventories = window.inventoryData.inventories ? [...window.inventoryData.inventories] : [];
   }
 
   const startIndex =
@@ -556,6 +647,8 @@ function updateInventoryCards() {
     startIndex,
     endIndex
   );
+  
+  console.log('Updating cards with', paginatedInventories.length, 'inventories (from', window.inventoryData.filteredInventories.length, 'total)');
 
   let cardsHtml = ``;
 

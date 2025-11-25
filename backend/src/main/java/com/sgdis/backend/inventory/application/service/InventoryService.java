@@ -18,6 +18,8 @@ import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import com.sgdis.backend.user.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +66,7 @@ public class InventoryService
                 List<InventoryEntity> existingInventories = inventoryRepository
                                 .findInventoryEntitiesByOwnerId(owner.getId());
                 if (existingInventories != null && !existingInventories.isEmpty()) {
-                        throw new IllegalArgumentException("This owner already has an assigned inventory");
+                        throw new DomainConflictException("Este propietario ya tiene un inventario asignado");
                 }
 
                 // Validar que institutionId no sea null
@@ -85,11 +87,9 @@ public class InventoryService
         }
 
         @Override
-        public List<InventoryResponse> listInventoryes() {
-                return inventoryRepository.findAll()
-                                .stream()
-                                .map(InventoryMapper::toResponse)
-                                .collect(Collectors.toList());
+        public Page<InventoryResponse> listInventoryes(Pageable pageable) {
+                return inventoryRepository.findAll(pageable)
+                                .map(InventoryMapper::toResponse);
         }
 
         @Override
@@ -122,7 +122,7 @@ public class InventoryService
         @Transactional
         public InventoryResponse updateInventoryOwner(Long inventoryId, UpdateInventoryOwnerRequest request) {
                 if (request.ownerId() == null) {
-                        throw new IllegalArgumentException("Owner id is required");
+                        throw new DomainValidationException("El ID del propietario es requerido");
                 }
 
                 InventoryEntity inventory = inventoryRepository.findById(inventoryId)
@@ -143,7 +143,7 @@ public class InventoryService
                                         .anyMatch(inv -> !inv.getId().equals(currentInventoryId));
 
                         if (ownsOtherInventory) {
-                                throw new IllegalArgumentException("Este usuario ya es dueño en un inventario");
+                                throw new DomainConflictException("Este usuario ya es dueño de un inventario");
                         }
 
                         inventory.setOwner(newOwner);
@@ -157,7 +157,7 @@ public class InventoryService
         @Transactional
         public InventoryResponse updateInventoryInstitution(Long inventoryId, UpdateInventoryInstitutionRequest request) {
                 if (request.institutionId() == null) {
-                        throw new IllegalArgumentException("Institution id is required");
+                        throw new DomainValidationException("El ID de la institución es requerido");
                 }
 
                 InventoryEntity inventory = inventoryRepository.findById(inventoryId)
@@ -184,15 +184,15 @@ public class InventoryService
                                                 "Inventory not found with id: " + request.inventoryId()));
 
                 if (inventory.getSignatories() != null && inventory.getSignatories().contains(user)) {
-                    throw new RuntimeException("Este usuario ya esta asignado como firmador a este inventario");
+                    throw new DomainConflictException("Este usuario ya está asignado como firmante a este inventario");
                 }
 
                 if (inventory.getManagers() != null && inventory.getManagers().contains(user)) {
-                    throw new RuntimeException("Este usuario ya esta asignado como manejador a este inventario");
+                    throw new DomainConflictException("Este usuario ya está asignado como manejador a este inventario");
                 }
 
                 if (user.getMyOwnedInventory() == inventory) {
-                    throw new RuntimeException("Este usuario ya esta esta asignado como dueño a este inventario");
+                    throw new DomainConflictException("Este usuario ya está asignado como dueño a este inventario");
                 }
 
                 List<UserEntity> managers = inventory.getManagers();
@@ -329,15 +329,15 @@ public class InventoryService
                 .orElseThrow(() -> new ResourceNotFoundException("Inventario no encontrado "));
 
         if (inventory.getManagers() != null && inventory.getManagers().contains(user)) {
-            throw new RuntimeException("Este usuario ya esta asignado como manejador a este inventario");
+            throw new DomainConflictException("Este usuario ya está asignado como manejador a este inventario");
         }
 
         if (inventory.getSignatories() != null && inventory.getSignatories().contains(user)) {
-            throw new RuntimeException("Este usuario ya esta asignado como firmador a este inventario");
+            throw new DomainConflictException("Este usuario ya está asignado como firmante a este inventario");
         }
 
         if (user.getMyOwnedInventory() == inventory) {
-            throw new RuntimeException("Este usuario ya esta esta asignado como dueño a este inventario");
+            throw new DomainConflictException("Este usuario ya está asignado como dueño a este inventario");
         }
 
         List<UserEntity> signatories = inventory.getSignatories();
