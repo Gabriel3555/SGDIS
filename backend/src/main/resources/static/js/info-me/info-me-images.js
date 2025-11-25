@@ -24,13 +24,21 @@ async function changeProfilePhoto(event) {
         
         // Validate file type
         if (!file.type.startsWith('image/')) {
-            alert('Por favor selecciona un archivo de imagen válido');
+            if (typeof showErrorToast === 'function') {
+                showErrorToast('Archivo inválido', 'Por favor selecciona un archivo de imagen válido');
+            } else {
+                alert('Por favor selecciona un archivo de imagen válido');
+            }
             return;
         }
 
         // Validate file size (max 2MB)
         if (file.size > 2 * 1024 * 1024) {
-            alert('La imagen no debe superar los 2MB');
+            if (typeof showErrorToast === 'function') {
+                showErrorToast('Imagen muy grande', 'La imagen no debe superar los 2MB');
+            } else {
+                alert('La imagen no debe superar los 2MB');
+            }
             return;
         }
 
@@ -39,7 +47,11 @@ async function changeProfilePhoto(event) {
             const profileAvatar = document.getElementById('profileAvatar');
             if (!profileAvatar) {
                 console.error('Profile avatar element not found');
-                alert('Error: No se encontró el elemento de la foto de perfil');
+                if (typeof showErrorToast === 'function') {
+                    showErrorToast('Error', 'No se encontró el elemento de la foto de perfil');
+                } else {
+                    alert('Error: No se encontró el elemento de la foto de perfil');
+                }
                 return;
             }
             
@@ -84,12 +96,21 @@ async function changeProfilePhoto(event) {
                     await loadUserProfile();
                 }
                 
-                alert('Foto de perfil actualizada exitosamente');
+                // Mostrar notificación de éxito con el sistema de toasts
+                if (typeof showSuccessToast === 'function') {
+                    showSuccessToast('Foto actualizada', 'Foto de perfil actualizada exitosamente');
+                } else {
+                    alert('Foto de perfil actualizada exitosamente');
+                }
             } else {
                 profileAvatar.src = originalSrc;
                 profileAvatar.style.opacity = '1';
                 profileAvatar.style.filter = 'none';
-                alert('Error al actualizar la foto de perfil: No se recibió la URL de la imagen');
+                if (typeof showErrorToast === 'function') {
+                    showErrorToast('Error', 'No se recibió la URL de la imagen');
+                } else {
+                    alert('Error al actualizar la foto de perfil: No se recibió la URL de la imagen');
+                }
             }
         } catch (error) {
             console.error('Error updating profile photo:', error);
@@ -98,7 +119,11 @@ async function changeProfilePhoto(event) {
                 profileAvatar.style.opacity = '1';
                 profileAvatar.style.filter = 'none';
             }
-            alert('Error al actualizar la foto: ' + (error.message || 'Error desconocido'));
+            if (typeof showErrorToast === 'function') {
+                showErrorToast('Error', error.message || 'Error desconocido al actualizar la foto');
+            } else {
+                alert('Error al actualizar la foto: ' + (error.message || 'Error desconocido'));
+            }
         } finally {
             // Clean up input element
             document.body.removeChild(input);
