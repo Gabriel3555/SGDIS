@@ -26,9 +26,15 @@ function createImageWithSpinner(
 
 function updateUsersUI() {
   updateUserStats();
-  updateSearchAndFilters();
+  // Only update filters if they don't exist yet (to prevent constant recreation)
+  const container = document.getElementById("searchFilterContainer");
+  const hasFilters = container && container.querySelector('#userRegionalFilter');
+  if (!hasFilters) {
+    updateSearchAndFilters();
+  }
   updateViewModeButtons();
-  if (usersData.viewMode === "table") {
+  const viewMode = (window.usersData || usersData)?.viewMode || "table";
+  if (viewMode === "table") {
     updateUsersTable();
   } else {
     updateUsersCards();
@@ -155,25 +161,82 @@ function updateSearchAndFilters() {
   const container = document.getElementById("searchFilterContainer");
   if (!container) return;
 
+  // Check if user is super admin
+  const path = window.location.pathname || '';
+  const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                       path.includes('/superadmin');
+
   const existingInput = document.getElementById("filterUserSearch");
   const currentSearchTerm = window.usersData ? window.usersData.searchTerm : "";
 
-  if (existingInput && existingInput.value === currentSearchTerm) {
+  // For super admin, check if filters already exist and institutions are loaded
+  if (isSuperAdmin) {
+    const existingRegionalSelect = document.getElementById('userRegionalFilter');
+    const existingInstitutionSelect = document.getElementById('userInstitutionFilter');
+    // If filters exist, don't recreate them to prevent interruption
+    if (existingRegionalSelect && existingInstitutionSelect) {
+      // Just update the search input if needed
+      if (existingInput && existingInput.value !== currentSearchTerm) {
+        existingInput.value = currentSearchTerm;
+      }
+      // Update selected values if they changed
+      const currentRegional = window.usersData?.selectedRegional || '';
+      const currentInstitution = window.usersData?.selectedInstitution || '';
+      if (existingRegionalSelect.value !== currentRegional) {
+        existingRegionalSelect.value = currentRegional;
+      }
+      if (existingInstitutionSelect.value !== currentInstitution) {
+        existingInstitutionSelect.value = currentInstitution;
+      }
+      return;
+    }
+  }
+
+  if (existingInput && existingInput.value === currentSearchTerm && !isSuperAdmin) {
     return;
   }
 
-  container.innerHTML = `
-        <div class="relative flex-1">
-            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="filterUserSearch" value="${currentSearchTerm}" placeholder="Buscar por nombre, email o rol..." class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] transition-all">
+  // Build regional and institution filters HTML for super admin
+  let regionalInstitutionFilters = '';
+  if (isSuperAdmin) {
+    const selectedRegional = window.usersData?.selectedRegional || '';
+    const selectedInstitution = window.usersData?.selectedInstitution || '';
+    
+    regionalInstitutionFilters = `
+      <div class="relative" style="min-width: 180px; flex-shrink: 0;">
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Regional</label>
+        <select id="userRegionalFilter" onchange="handleUserRegionalFilterChange(this.value)" class="appearance-none w-full px-4 pr-10 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white dark:bg-gray-800 transition-all duration-200 shadow-sm hover:shadow-md text-sm" style="height: 56px; padding-top: 0.75rem; padding-bottom: 0.75rem;">
+          <option value="">Todas las regionales</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style="top: 1.75rem;">
+          <i class="fas fa-chevron-down text-[#00AF00] text-xs"></i>
         </div>
-        <div class="flex gap-2 flex-wrap">
-            <button onclick="handleSearchButton()" class="px-4 py-3 border border-[#00AF00] text-white rounded-xl hover:bg-[#008800] transition-colors bg-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]" title="Buscar">
-                <i class="fas fa-search"></i> Buscar
+      </div>
+      <div class="relative" style="min-width: 180px; flex-shrink: 0;">
+        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Institución</label>
+        <select id="userInstitutionFilter" onchange="handleUserInstitutionFilterChange(this.value)" class="appearance-none w-full px-4 pr-10 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white dark:bg-gray-800 transition-all duration-200 shadow-sm hover:shadow-md text-sm" style="height: 56px; padding-top: 0.75rem; padding-bottom: 0.75rem;" ${!selectedRegional ? 'disabled' : ''}>
+          <option value="">Todas las instituciones</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style="top: 1.75rem;">
+          <i class="fas fa-chevron-down text-[#00AF00] text-xs"></i>
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `
+        <div class="flex gap-2 items-end w-full flex-nowrap overflow-x-auto" style="scrollbar-width: thin;">
+            <div class="relative flex-1" style="min-width: 250px;">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
+                <input type="text" id="filterUserSearch" value="${currentSearchTerm}" placeholder="Buscar por nombre, email o rol..." class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" style="height: 56px; font-size: 0.9375rem;">
+            </div>
+            <button onclick="handleSearchButton()" class="px-4 border-2 border-[#00AF00] text-white rounded-xl hover:bg-[#008800] transition-colors bg-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00] flex items-center justify-center font-medium shadow-sm hover:shadow-md" style="height: 56px; min-width: 56px; flex-shrink: 0;" title="Buscar">
+                <i class="fas fa-search"></i>
             </button>
-            <div class="custom-select-container" style="min-width: 180px;">
+            ${regionalInstitutionFilters}
+            <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
                 <div class="custom-select" id="filterRoleSelect">
-                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; min-height: 3rem;">
+                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
                         <span class="custom-select-text">Todos los roles</span>
                         <i class="fas fa-chevron-down custom-select-arrow"></i>
                     </div>
@@ -186,9 +249,9 @@ function updateSearchAndFilters() {
                 </div>
                 <input type="hidden" id="filterRole" name="role">
             </div>
-            <div class="custom-select-container" style="min-width: 180px;">
+            <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
                 <div class="custom-select" id="filterStatusSelect">
-                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; min-height: 3rem;">
+                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
                         <span class="custom-select-text">Todos los estados</span>
                         <i class="fas fa-chevron-down custom-select-arrow"></i>
                     </div>
@@ -203,6 +266,18 @@ function updateSearchAndFilters() {
             </div>
         </div>
     `;
+
+  // Load regionals and institutions if super admin
+  if (isSuperAdmin) {
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(() => {
+      loadRegionalsForUserFilter();
+      const selectedRegional = window.usersData?.selectedRegional || '';
+      if (selectedRegional) {
+        loadInstitutionsForUserFilter(selectedRegional);
+      }
+    }, 100);
+  }
 
   // Initialize CustomSelects for filters (with delay to ensure DOM and scripts are ready)
   setTimeout(() => {

@@ -44,12 +44,32 @@ async function loadCurrentUserInfo() {
                 window.usersData.currentLoggedInUserId = userData.id;
                 window.usersData.currentLoggedInUserRole = userData.role;
             }
+            // Also store in window for easy access
+            window.currentUserRole = userData.role;
             updateUserInfoDisplay(userData);
+            
+            // If super admin, trigger filter update to show regional/institution filters
+            if (userData.role && userData.role.toUpperCase() === 'SUPERADMIN') {
+                // Small delay to ensure UI is ready
+                setTimeout(() => {
+                    if (typeof updateSearchAndFilters === 'function') {
+                        updateSearchAndFilters();
+                    }
+                }, 200);
+            }
         } else {
             throw new Error('Failed to load user info');
         }
     } catch (error) {
         console.error('Error loading current user info:', error);
+        // Check if we're on superadmin path
+        const path = window.location.pathname || '';
+        if (path.includes('/superadmin')) {
+            window.currentUserRole = 'SUPERADMIN';
+            if (window.usersData) {
+                window.usersData.currentLoggedInUserRole = 'SUPERADMIN';
+            }
+        }
         updateUserInfoDisplay({
             fullName: 'Super Admin',
             role: 'SUPERADMIN',
@@ -68,8 +88,22 @@ async function loadUsers(page = 0) {
         const currentRole = usersData.currentLoggedInUserRole || '';
         const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
         
-        // Check if filters are active
-        const hasFilters = usersData.searchTerm || usersData.selectedRole !== 'all' || usersData.selectedStatus !== 'all';
+        // Check if filters are active (including regional and institution for super admin)
+        const isSuperAdmin = (usersData.currentLoggedInUserRole && usersData.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
+                             (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        const hasFilters = usersData.searchTerm || 
+                          usersData.selectedRole !== 'all' || 
+                          usersData.selectedStatus !== 'all' ||
+                          (isSuperAdmin && (usersData.selectedRegional || usersData.selectedInstitution));
+        
+        console.log('loadUsers - hasFilters:', hasFilters, {
+            searchTerm: usersData.searchTerm,
+            selectedRole: usersData.selectedRole,
+            selectedStatus: usersData.selectedStatus,
+            selectedRegional: usersData.selectedRegional,
+            selectedInstitution: usersData.selectedInstitution,
+            isSuperAdmin: isSuperAdmin
+        });
         
         let url;
         if (isAdminInstitution) {
@@ -373,6 +407,314 @@ async function loadInstitutionsByRegional(regionalId) {
 
 window.loadRegionalsForNewUser = loadRegionalsForNewUser;
 window.loadInstitutionsByRegional = loadInstitutionsByRegional;
+
+// Load regionals for filter dropdown (super admin only)
+async function loadRegionalsForUserFilter() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch('/api/v1/regional', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const regionals = await response.json();
+            const select = document.getElementById('userRegionalFilter');
+            if (select) {
+                // Clear existing options except the first one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                
+                // Add regional options
+                const currentRegional = (window.usersData || usersData)?.selectedRegional || '';
+                regionals.forEach(regional => {
+                    const option = document.createElement('option');
+                    option.value = regional.id.toString();
+                    option.textContent = regional.name;
+                    if (currentRegional === regional.id.toString()) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
+        } else {
+            console.error('Error loading regionals:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Error loading regionals:', error);
+    }
+}
+
+// Load institutions for filter dropdown based on selected regional (super admin only)
+async function loadInstitutionsForUserFilter(regionalId) {
+    try {
+        if (!regionalId) {
+            console.error('No regional ID provided');
+            return;
+        }
+
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        console.log('Loading institutions for regional:', regionalId);
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const institutions = await response.json();
+            console.log('Institutions loaded:', institutions);
+            
+            // Function to add institutions to select
+            const addInstitutionsToSelect = (selectElement) => {
+                if (!selectElement) return false;
+                
+                // Clear existing options except the first one
+                while (selectElement.options.length > 1) {
+                    selectElement.remove(1);
+                }
+                
+                // Enable the select
+                selectElement.disabled = false;
+                
+                // Add institution options
+                if (institutions && Array.isArray(institutions) && institutions.length > 0) {
+                    const currentInstitution = (window.usersData || usersData)?.selectedInstitution || '';
+                    institutions.forEach(institution => {
+                        const option = document.createElement('option');
+                        option.value = institution.id.toString();
+                        option.textContent = institution.name || `Institución ${institution.id}`;
+                        if (currentInstitution === institution.id.toString()) {
+                            option.selected = true;
+                        }
+                        selectElement.appendChild(option);
+                    });
+                    console.log(`Added ${institutions.length} institutions to dropdown`);
+                    return true;
+                } else {
+                    // No institutions found
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No hay instituciones disponibles';
+                    option.disabled = true;
+                    selectElement.appendChild(option);
+                    console.log('No institutions found for this regional');
+                    return true;
+                }
+            };
+            
+            // Try to find the select element with multiple retries
+            let select = document.getElementById('userInstitutionFilter');
+            let attempts = 0;
+            const maxAttempts = 5;
+            
+            while (!select && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                select = document.getElementById('userInstitutionFilter');
+                attempts++;
+                console.log(`Attempt ${attempts} to find userInstitutionFilter select`);
+            }
+            
+            console.log('Institution select element:', select);
+            
+            if (select) {
+                addInstitutionsToSelect(select);
+            } else {
+                console.error('Institution filter select not found in DOM after', maxAttempts, 'attempts');
+                // Try one more time after a longer delay
+                setTimeout(() => {
+                    const retrySelect = document.getElementById('userInstitutionFilter');
+                    if (retrySelect) {
+                        console.log('Found select on final retry, adding institutions');
+                        addInstitutionsToSelect(retrySelect);
+                    } else {
+                        console.error('Could not find userInstitutionFilter select even after final retry');
+                    }
+                }, 500);
+            }
+        } else {
+            const errorText = await response.text();
+            console.error('Error loading institutions:', response.status, errorText);
+            const select = document.getElementById('userInstitutionFilter');
+            if (select) {
+                select.disabled = true;
+                // Clear and add error message
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Error al cargar instituciones';
+                select.appendChild(option);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading institutions:', error);
+        const select = document.getElementById('userInstitutionFilter');
+        if (select) {
+            select.disabled = true;
+            // Clear and add error message
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Error al cargar instituciones';
+            select.appendChild(option);
+        }
+    }
+}
+
+// Handle regional filter change for users
+async function handleUserRegionalFilterChange(regionalId) {
+    console.log('User regional filter changed to:', regionalId);
+    
+    // Ensure usersData exists
+    if (!window.usersData) {
+        window.usersData = usersData || {};
+    }
+    // Also ensure local usersData is synced
+    if (usersData && usersData !== window.usersData) {
+        usersData.selectedRegional = regionalId || '';
+        usersData.selectedInstitution = '';
+    }
+    
+    window.usersData.selectedRegional = regionalId || '';
+    
+    // Clear institution selection when regional changes
+    window.usersData.selectedInstitution = '';
+    
+    console.log('Updated usersData.selectedRegional:', window.usersData.selectedRegional);
+    
+    // Reset institution dropdown
+    const institutionSelect = document.getElementById('userInstitutionFilter');
+    if (institutionSelect) {
+        institutionSelect.disabled = !regionalId;
+        // Clear options except the first one
+        while (institutionSelect.options.length > 1) {
+            institutionSelect.remove(1);
+        }
+        institutionSelect.value = '';
+        
+        if (!regionalId) {
+            // If no regional selected, show placeholder
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Todas las instituciones';
+            institutionSelect.appendChild(option);
+        }
+    }
+    
+    // Load institutions for the selected regional BEFORE reloading users
+    if (regionalId) {
+        console.log('Loading institutions for regional:', regionalId);
+        // Wait a bit to ensure DOM is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        await loadInstitutionsForUserFilter(regionalId);
+        // Wait a bit more to ensure institutions are added
+        await new Promise(resolve => setTimeout(resolve, 100));
+    } else {
+        // Clear institutions if no regional selected
+        const institutionSelect = document.getElementById('userInstitutionFilter');
+        if (institutionSelect) {
+            institutionSelect.disabled = true;
+            while (institutionSelect.options.length > 1) {
+                institutionSelect.remove(1);
+            }
+            institutionSelect.value = '';
+        }
+    }
+    
+    // Trigger filter - filterUsers will handle loading and filtering
+    window.usersData.currentPage = 1;
+    console.log('Applying regional filter:', regionalId);
+    if (typeof filterUsers === 'function') {
+        await filterUsers();
+    } else {
+        // Fallback: reload users
+        await loadUsers(0);
+        // Update UI but preserve filters
+        if (typeof updateUserStats === 'function') {
+            updateUserStats();
+        }
+        if (typeof updateViewModeButtons === 'function') {
+            updateViewModeButtons();
+        }
+        const viewMode = window.usersData?.viewMode || "table";
+        if (viewMode === "table") {
+            if (typeof updateUsersTable === 'function') {
+                updateUsersTable();
+            }
+        } else {
+            if (typeof updateUsersCards === 'function') {
+                updateUsersCards();
+            }
+        }
+        if (typeof updatePagination === 'function') {
+            updatePagination();
+        }
+    }
+}
+
+// Handle institution filter change for users
+async function handleUserInstitutionFilterChange(institutionId) {
+    console.log('User institution filter changed to:', institutionId);
+    
+    // Ensure usersData exists
+    if (!window.usersData) {
+        window.usersData = usersData || {};
+    }
+    // Also ensure local usersData is synced
+    if (usersData && usersData !== window.usersData) {
+        usersData.selectedInstitution = institutionId || '';
+    }
+    
+    window.usersData.selectedInstitution = institutionId || '';
+    
+    console.log('Updated usersData.selectedInstitution:', window.usersData.selectedInstitution);
+    
+    // Trigger filter - filterUsers will handle loading and filtering
+    window.usersData.currentPage = 1;
+    console.log('Applying institution filter:', institutionId);
+    if (typeof filterUsers === 'function') {
+        await filterUsers();
+    } else {
+        // Fallback: reload users
+        await loadUsers(0);
+        // Update UI but preserve filters
+        if (typeof updateUserStats === 'function') {
+            updateUserStats();
+        }
+        if (typeof updateViewModeButtons === 'function') {
+            updateViewModeButtons();
+        }
+        const viewMode = window.usersData?.viewMode || "table";
+        if (viewMode === "table") {
+            if (typeof updateUsersTable === 'function') {
+                updateUsersTable();
+            }
+        } else {
+            if (typeof updateUsersCards === 'function') {
+                updateUsersCards();
+            }
+        }
+        if (typeof updatePagination === 'function') {
+            updatePagination();
+        }
+    }
+}
+
+// Export functions
+window.loadRegionalsForUserFilter = loadRegionalsForUserFilter;
+window.loadInstitutionsForUserFilter = loadInstitutionsForUserFilter;
+window.handleUserRegionalFilterChange = handleUserRegionalFilterChange;
+window.handleUserInstitutionFilterChange = handleUserInstitutionFilterChange;
 
 // Function to load user statistics (only for SUPERADMIN)
 async function loadUserStatistics() {
