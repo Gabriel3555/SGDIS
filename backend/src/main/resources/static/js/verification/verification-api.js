@@ -384,51 +384,72 @@ async function downloadEvidence(verificationId) {
 
         if (response.ok) {
             const blob = await response.blob();
+            
+            // Verificar que el blob tenga contenido
+            if (blob.size === 0) {
+                showErrorToast('Error', 'El archivo de evidencia está vacío');
+                return false;
+            }
+
+            // Obtener el nombre del archivo del header Content-Disposition o determinar por tipo
+            let filename = `evidencia_${verificationId}`;
+            const contentDisposition = response.headers.get('Content-Disposition');
+            if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                if (filenameMatch && filenameMatch[1]) {
+                    filename = filenameMatch[1].replace(/['"]/g, '');
+                }
+            } else {
+                // Determinar extensión por Content-Type
+                const contentType = response.headers.get('Content-Type') || '';
+                let extension = 'pdf';
+                if (contentType.includes('image/jpeg') || contentType.includes('image/jpg')) {
+                    extension = 'jpg';
+                } else if (contentType.includes('image/png')) {
+                    extension = 'png';
+                } else if (contentType.includes('image/')) {
+                    extension = contentType.split('/')[1].split(';')[0];
+                } else if (contentType.includes('application/pdf')) {
+                    extension = 'pdf';
+                } else if (contentType.includes('application/msword') || contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml')) {
+                    extension = 'docx';
+                }
+                filename = `evidencia_${verificationId}.${extension}`;
+            }
+
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `evidencia_${verificationId}.pdf`;
+            a.download = filename;
+            a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            
+            // Limpiar después de un breve delay
+            setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }, 100);
+            
+            showSuccessToast('Descarga iniciada', 'La evidencia se está descargando');
             return true;
         } else if (response.status === 404) {
-            throw new Error('Evidencia no encontrada');
+            showErrorToast('Evidencia no encontrada', 'Esta verificación no tiene evidencia asociada');
+            return false;
         } else {
-            throw new Error('Error al descargar la evidencia');
+            const errorText = await response.text().catch(() => '');
+            console.error('Error downloading evidence:', response.status, errorText);
+            showErrorToast('Error', `Error al descargar la evidencia (${response.status})`);
+            return false;
         }
     } catch (error) {
+        console.error('Error downloading evidence:', error);
         if (error.message && error.message.includes('Failed to fetch')) {
-            throw new Error('Error de conexión. Verifica tu conexión a internet.');
-        }
-        throw error;
-    }
-}
-
-async function deleteEvidence(verificationId) {
-    try {
-        const token = localStorage.getItem('jwt');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const response = await fetch(`/api/v1/verifications/${verificationId}/evidence`, {
-            method: 'DELETE',
-            headers: headers
-        });
-
-        if (response.ok) {
-            return true;
-        } else if (response.status === 404) {
-            throw new Error('Evidencia no encontrada');
+            showErrorToast('Error de conexión', 'Verifica tu conexión a internet');
         } else {
-            throw new Error('Error al eliminar la evidencia');
+            showErrorToast('Error', error.message || 'Error al descargar la evidencia');
         }
-    } catch (error) {
-        if (error.message && error.message.includes('Failed to fetch')) {
-            throw new Error('Error de conexión. Verifica tu conexión a internet.');
-        }
-        throw error;
+        return false;
     }
 }
 
@@ -443,5 +464,4 @@ window.createVerificationBySerial = createVerificationBySerial;
 window.createVerificationByPlate = createVerificationByPlate;
 window.uploadEvidence = uploadEvidence;
 window.downloadEvidence = downloadEvidence;
-window.deleteEvidence = deleteEvidence;
 
