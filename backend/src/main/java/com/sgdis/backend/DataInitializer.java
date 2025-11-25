@@ -1,5 +1,5 @@
 package com.sgdis.backend;
-/*
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
@@ -8,21 +8,17 @@ import com.sgdis.backend.data.departaments_cities.repositories.SpringDataCitiesR
 import com.sgdis.backend.data.departaments_cities.repositories.SpringDataDepartamentsRepository;
 import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
-import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
-import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 
 @Component
@@ -32,7 +28,6 @@ public class DataInitializer implements CommandLineRunner {
     private final SpringDataUserRepository userRepository;
     private final SpringDataDepartamentsRepository departamentRepository;
     private final SpringDataCitiesRepository citiesRepository;
-    private final SpringDataInventoryRepository inventoryRepository;
     private final PasswordEncoder passwordEncoder;
     private final SpringDataRegionalRepository regionalRepository;
 
@@ -77,40 +72,13 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) throws Exception {
+        // Crear regionales
         createRegionalsIfNotExist();
 
-        // Usuarios demo (opcional)
+        // Usuarios demo
         createUserIfNotExists("gabriel@soy.sena.edu.co", "ayuda123", "Gabriel", "Desarrollador", "Tecnología", Role.USER);
         createUserIfNotExists("admin@soy.sena.edu.co", "admin123", "Admin", "Administrador", "Sistemas", Role.ADMIN_INSTITUTION);
         createUserIfNotExists("warehouse@soy.sena.edu.co", "wh123", "Warehouse", "Almacenista", "Logística", Role.WAREHOUSE);
-
-        // Create inventories with owners and managers
-        UserEntity gabriel = userRepository.findByEmail("gabriel@soy.sena.edu.co")
-                .orElseThrow(() -> new IllegalStateException("Usuario demo 'gabriel' no creado"));
-        UserEntity warehouse = userRepository.findByEmail("warehouse@soy.sena.edu.co")
-                .orElseThrow(() -> new IllegalStateException("Usuario demo 'warehouse' no creado"));
-
-        if (inventoryRepository.findByNameAndOwner("Inventory 1", gabriel).isEmpty()) {
-            InventoryEntity inv1 = InventoryEntity.builder()
-                    .uuid(UUID.randomUUID())
-                    .name("Inventory 1")
-                    .location("Location 1")
-                    .owner(gabriel)
-                    .managers(List.of(warehouse))
-                    .build();
-            inventoryRepository.save(inv1);
-        }
-
-        if (inventoryRepository.findByNameAndOwner("Inventory 2", gabriel).isEmpty()) {
-            InventoryEntity inv2 = InventoryEntity.builder()
-                    .uuid(UUID.randomUUID())
-                    .name("Inventory 2")
-                    .location("Location 2")
-                    .owner(gabriel)
-                    .managers(List.of(warehouse))
-                    .build();
-            inventoryRepository.save(inv2);
-        }
 
         // Parsear el objeto (en el MISMO archivo)
         ObjectMapper om = new ObjectMapper();
@@ -259,7 +227,4 @@ public class DataInitializer implements CommandLineRunner {
         private List<String> ciudades;
     }
 }
-
- */
-
 

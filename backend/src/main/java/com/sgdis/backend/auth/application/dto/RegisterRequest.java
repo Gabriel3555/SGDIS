@@ -5,5 +5,6 @@ public record RegisterRequest(
     String email,
     String fullName,
     String jobTitle,
-    String laborDepartment
+    String laborDepartment,
+    Long institutionId
 ) {}
