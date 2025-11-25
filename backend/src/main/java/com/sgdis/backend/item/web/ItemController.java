@@ -4,12 +4,14 @@ import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.item.application.dto.BulkUploadResponse;
 import com.sgdis.backend.item.application.dto.CreateItemRequest;
 import com.sgdis.backend.item.application.dto.CreateItemResponse;
+import com.sgdis.backend.item.application.dto.DeleteItemResponse;
 import com.sgdis.backend.item.application.dto.ItemDTO;
 import com.sgdis.backend.item.application.dto.UpdateItemRequest;
 import com.sgdis.backend.item.application.dto.UpdateItemResponse;
 import com.sgdis.backend.item.application.service.ExcelItemService;
 import com.sgdis.backend.item.application.service.ExcelExportService;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
+import com.sgdis.backend.item.application.port.DeleteItemUseCase;
 import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
 import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
@@ -48,6 +50,7 @@ public class ItemController {
 
     private final CreateItemUseCase createItemUseCase;
     private final UpdateItemUseCase updateItemUseCase;
+    private final DeleteItemUseCase deleteItemUseCase;
     private final GetItemsByInventoryUseCase getItemsByInventoryUseCase;
     private final GetItemByLicencePlateNumberUseCase getItemByLicencePlateNumberUseCase;
     private final GetItemBySerialUseCase getItemBySerialUseCase;
@@ -107,6 +110,28 @@ public class ItemController {
     ) {
         var updated = updateItemUseCase.updateItem(request);
         return ResponseEntity.ok(updated);
+    }
+
+    @Operation(
+            summary = "Delete item",
+            description = "Deletes an item by its ID. The item cannot be deleted if it has active loans. " +
+                    "Associated images will also be deleted. The inventory's total price will be updated."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Item deleted successfully",
+            content = @Content(schema = @Schema(implementation = DeleteItemResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Item not found")
+    @ApiResponse(responseCode = "400", description = "Item cannot be deleted (has active loans)")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<DeleteItemResponse> deleteItem(
+            @Parameter(description = "ID of the item to delete", required = true)
+            @PathVariable Long id
+    ) {
+        DeleteItemResponse response = deleteItemUseCase.deleteItem(id);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(

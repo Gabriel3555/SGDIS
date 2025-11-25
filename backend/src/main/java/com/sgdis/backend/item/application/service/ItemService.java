@@ -5,7 +5,13 @@ import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.item.application.dto.*;
+import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository;
+import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
+import com.sgdis.backend.file.service.FileUploadService;
+import java.io.IOException;
+import java.util.List;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
+import com.sgdis.backend.item.application.port.DeleteItemUseCase;
 import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
 import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
@@ -28,12 +34,15 @@ import java.util.List;
 public class ItemService implements
         CreateItemUseCase,
         UpdateItemUseCase,
+        DeleteItemUseCase,
         GetItemsByInventoryUseCase,
         GetItemByLicencePlateNumberUseCase,
         GetItemBySerialUseCase {
 
     private final SpringDataItemRepository itemRepository;
     private final SpringDataInventoryRepository inventoryRepository;
+    private final SpringDataLoanRepository loanRepository;
+    private final FileUploadService fileUploadService;
 
     @Override
     @Transactional
@@ -124,6 +133,54 @@ public class ItemService implements
                 .orElseThrow(() -> new DomainNotFoundException(
                         "Item not found with serial: " + serial));
         return ItemMapper.toDTO(item);
+    }
+
+    @Override
+    @Transactional
+    public DeleteItemResponse deleteItem(Long itemId) {
+        ItemEntity item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new DomainNotFoundException("Item not found with id: " + itemId));
+
+        // Check if item has active loans
+        List<LoanEntity> activeLoans = loanRepository.findAllByItemId(itemId).stream()
+                .filter(loan -> !Boolean.TRUE.equals(loan.getReturned()))
+                .toList();
+
+        if (!activeLoans.isEmpty()) {
+            throw new IllegalStateException("Cannot delete item: Item has " + activeLoans.size() + " active loan(s)");
+        }
+
+        // Get inventory before deletion to update totalPrice
+        InventoryEntity inventory = item.getInventory();
+        Double acquisitionValue = item.getAcquisitionValue() != null ? item.getAcquisitionValue() : 0.0;
+
+        // Delete associated images
+        if (item.getUrlsImages() != null && !item.getUrlsImages().isEmpty()) {
+            for (String imageUrl : item.getUrlsImages()) {
+                try {
+                    fileUploadService.deleteFile(imageUrl);
+                } catch (IOException e) {
+                    // Log error but continue with deletion
+                    // The file might already be deleted or not exist
+                }
+            }
+        }
+
+        // Save item name before deletion
+        String itemName = item.getProductName() != null ? item.getProductName() : "Item " + itemId;
+
+        // Delete the item
+        itemRepository.deleteById(itemId);
+
+        // Update inventory totalPrice by subtracting the item's acquisitionValue
+        if (inventory != null && acquisitionValue > 0) {
+            Double currentTotal = inventory.getTotalPrice() != null ? inventory.getTotalPrice() : 0.0;
+            Double updatedTotal = Math.max(0.0, currentTotal - acquisitionValue);
+            inventory.setTotalPrice(updatedTotal);
+            inventoryRepository.save(inventory);
+        }
+
+        return new DeleteItemResponse(itemId, itemName, "Item deleted successfully");
     }
 
     /**

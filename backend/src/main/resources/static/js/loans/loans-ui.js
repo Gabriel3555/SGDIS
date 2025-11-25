@@ -70,7 +70,12 @@ function updateLoansStats() {
 
 function updateLoansTable() {
     const container = document.getElementById('loansTableContainer');
-    if (!container) return;
+    if (!container) {
+        console.warn('loansTableContainer not found');
+        return;
+    }
+
+    console.log('updateLoansTable called, isLoading:', loansData.isLoading, 'filteredLoans:', loansData.filteredLoans?.length);
 
     if (loansData.isLoading) {
         container.innerHTML = `
@@ -82,6 +87,7 @@ function updateLoansTable() {
     }
 
     if (!loansData.filteredLoans || loansData.filteredLoans.length === 0) {
+        console.log('No filtered loans to display');
         container.innerHTML = `
             <div class="text-center py-12">
                 <i class="fas fa-inbox text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
@@ -91,6 +97,8 @@ function updateLoansTable() {
         `;
         return;
     }
+    
+    console.log('Rendering', loansData.filteredLoans.length, 'loans in table');
 
     const startIndex = (loansData.currentPage - 1) * loansData.itemsPerPage;
     const endIndex = startIndex + loansData.itemsPerPage;
@@ -222,11 +230,19 @@ function updatePagination() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOMContentLoaded - Initializing loans page');
     // Initialize custom selects
     initializeCustomSelects();
     
-    // Load data
-    loadLoansData();
+    // Load data after a small delay to ensure all scripts are loaded
+    setTimeout(() => {
+        if (typeof window.loadLoansData === 'function') {
+            console.log('Calling loadLoansData()');
+            window.loadLoansData();
+        } else {
+            console.error('loadLoansData function not available');
+        }
+    }, 100);
 });
 
 function initializeCustomSelects() {
