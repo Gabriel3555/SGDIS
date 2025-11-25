@@ -80,7 +80,7 @@ public class VerificationController {
     ) {
         try {
             CreateVerificationBySerialRequest request = new CreateVerificationBySerialRequest(serial);
-            CreateVerificationResponse response = createVerificationBySerialUseCase.createVerificationBySerial(request);
+        CreateVerificationResponse response = createVerificationBySerialUseCase.createVerificationBySerial(request);
             
             // If photo is provided, upload it
             if (photo != null && !photo.isEmpty()) {
@@ -99,7 +99,7 @@ public class VerificationController {
                 }
             }
             
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IOException e) {
             throw new RuntimeException("Error uploading photo: " + e.getMessage());
         }
@@ -127,7 +127,7 @@ public class VerificationController {
     ) {
         try {
             CreateVerificationByLicencePlateNumberRequest request = new CreateVerificationByLicencePlateNumberRequest(licencePlateNumber);
-            CreateVerificationResponse response = createVerificationByLicencePlateNumberUseCase.createVerificationByLicencePlateNumber(request);
+        CreateVerificationResponse response = createVerificationByLicencePlateNumberUseCase.createVerificationByLicencePlateNumber(request);
             
             // If photo is provided, upload it
             if (photo != null && !photo.isEmpty()) {
@@ -146,7 +146,7 @@ public class VerificationController {
                 }
             }
             
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IOException e) {
             throw new RuntimeException("Error uploading photo: " + e.getMessage());
         }
