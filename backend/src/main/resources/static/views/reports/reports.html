@@ -1,10 +1,631 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <script>
+        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
+        (function () {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'sena-verde': '#00AF00',
+                        'sena-verde-oscuro': '#008800'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/dashboard.css">
+    <link rel="stylesheet" href="../../../css/dark-mode.css">
 </head>
-<body>
 
+<body>
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar"
+        style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <!-- Sidebar header -->
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                    <img src="../../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                </div>
+                <div class="text-gray-800">
+                    <div class="font-bold text-lg">SGDIS</div>
+                    <div class="text-xs opacity-70">Reportes</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar navigation -->
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/inventory')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>
+            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/superadmin/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/import-export')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/info-me')">
+                <i class="fas fa-user-circle text-lg"></i>
+                <span class="font-medium">Mi Perfil</span>
+            </a>
+        </nav>
+
+        <!-- Logout button -->
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()"
+                class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 flex-1">
+                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div class="relative flex-1 max-w-xl">
+                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" placeholder="Buscar en el sistema..." class="search-input">
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="relative cursor-pointer">
+                        <i class="fas fa-bell text-gray-600 text-xl hover:text-[#00AF00] transition-colors"></i>
+                        <span class="notification-badge">5</span>
+                    </div>
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        onclick="window.location.href='/info-me'">
+                        <div class="user-avatar" id="headerUserAvatar"></div>
+                        <div class="hidden sm:block">
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500" id="headerUserRole"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="p-6">
+            <!-- Welcome Section -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">Reportes</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Genere y exporte reportes detallados del sistema</p>
+                </div>
+            </div>
+
+            <!-- Filters Section -->
+            <div class="stat-card shadow-lg border border-gray-100 dark:border-gray-700 mb-6">
+                <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-600">
+                    <div class="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/20 rounded-2xl flex items-center justify-center shadow-sm">
+                        <i class="fas fa-filter text-purple-600 dark:text-purple-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">Filtros de Reporte</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Seleccione los criterios para generar su reporte</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- Report Type -->
+                    <div class="form-group">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-file-alt text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Tipo de Reporte
+                        </label>
+                        <div class="relative">
+                            <select id="reportTypeSelect" 
+                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-pointer">
+                                <option value="items">Items</option>
+                                <option value="users">Usuarios</option>
+                                <option value="loans">Préstamos</option>
+                                <option value="verifications">Verificaciones</option>
+                                <option value="inventory">Inventarios</option>
+                                <option value="general">Reporte General</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Regional -->
+                    <div class="form-group">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-map-marker-alt text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Regional
+                        </label>
+                        <div class="relative">
+                            <select id="regionalSelect" 
+                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-pointer">
+                                <option value="">Todas las regionales</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Institution -->
+                    <div class="form-group">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-building text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Centro
+                        </label>
+                        <div class="relative">
+                            <select id="institutionSelect" 
+                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-not-allowed"
+                                disabled>
+                                <option value="">Primero seleccione una regional...</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory -->
+                    <div class="form-group">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-boxes text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Inventario
+                        </label>
+                        <div class="relative">
+                            <select id="inventorySelect" 
+                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-not-allowed"
+                                disabled>
+                                <option value="">Primero seleccione un centro...</option>
+                            </select>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                <i class="fas fa-info-circle mr-1"></i>Seleccione un inventario específico o deje "Todos" para incluir todos los inventarios del centro
+                            </p>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-1">
+                            <i class="fas fa-info-circle mr-1"></i>Deje "Todos" para incluir todos los inventarios del centro
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Date Range -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="form-group">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-calendar-alt text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Fecha Inicio
+                        </label>
+                        <input type="date" id="startDate" 
+                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-calendar-check text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Fecha Fin
+                        </label>
+                        <input type="date" id="endDate" 
+                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-4">
+                    <button id="generateReportBtn" 
+                        class="flex-1 max-w-xs bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 dark:from-purple-500 dark:to-purple-600 dark:hover:from-purple-600 dark:hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Generar Reporte</span>
+                    </button>
+                    <button id="clearFiltersBtn" 
+                        class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <i class="fas fa-redo"></i>
+                        <span>Limpiar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Results Section -->
+            <div id="reportResultsSection" class="hidden">
+                <div class="stat-card shadow-lg border border-gray-100 dark:border-gray-700 mb-6">
+                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-600">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-2xl flex items-center justify-center shadow-sm">
+                                <i class="fas fa-chart-bar text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1" id="reportTitle">Reporte</h2>
+                                <p class="text-sm text-gray-500 dark:text-gray-400" id="reportSubtitle">Resultados del reporte generado</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="exportPdfBtn" 
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+                                <i class="fas fa-file-pdf"></i>
+                                <span>PDF</span>
+                            </button>
+                            <button id="exportExcelBtn" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+                                <i class="fas fa-file-excel"></i>
+                                <span>Excel</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Report Statistics -->
+                    <div id="reportStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+
+                    <!-- Report Table -->
+                    <div class="border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden max-h-[600px] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-800">
+                        <table id="reportTable" class="w-full text-sm">
+                            <thead class="bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-purple-900/30 dark:to-purple-800/20 sticky top-0 z-10">
+                                <tr id="reportTableHeader"></tr>
+                            </thead>
+                            <tbody id="reportTableBody" class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400 text-center" id="reportRowCount">0 registros</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="reportLoadingState" class="hidden stat-card shadow-lg border border-gray-100 dark:border-gray-700">
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-gray-600 dark:text-gray-400 font-medium">Generando reporte...</p>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="reportEmptyState" class="hidden stat-card shadow-lg border border-gray-100 dark:border-gray-700">
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div class="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-bar text-purple-600 dark:text-purple-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">No hay datos para mostrar</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-center max-w-md">Seleccione los filtros y genere un reporte para ver los resultados</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../../../js/inventory/inventory-toast.js"></script>
+    <script src="../../../js/reports/reports.js"></script>
+    <script src="../../../js/inactivity-monitor.js"></script>
+    
+    <script>
+        // Force initialization after all scripts are loaded
+        window.addEventListener('load', function() {
+            console.log('Window loaded - checking reports initialization...');
+            setTimeout(function() {
+                if (typeof window.loadRegionals === 'function') {
+                    console.log('loadRegionals function exists, calling it...');
+                    window.loadRegionals();
+                } else {
+                    console.error('loadRegionals function not found!');
+                }
+            }, 1000);
+        });
+    </script>
+
+    <style>
+        /* Adjust main content margin to account for fixed sidebar */
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Form Group Styles */
+        .form-group select:not(:disabled) {
+            background: white;
+        }
+
+        .dark .form-group select:not(:disabled) {
+            background: #1e293b;
+        }
+
+        .form-group select:disabled {
+            background: #f9fafb;
+            cursor: not-allowed;
+        }
+
+        .dark .form-group select:disabled {
+            background: #334155;
+        }
+
+        .form-group select:not(:disabled):hover {
+            border-color: #d1d5db;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-track {
+            background: #334155;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Table Styles */
+        #reportTable thead th {
+            padding: 12px 16px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            color: #374151;
+        }
+
+        .dark #reportTable thead th {
+            color: #f1f5f9;
+        }
+
+        #reportTable tbody td {
+            padding: 10px 16px;
+        }
+
+        .dark #reportTable tbody td {
+            color: #cbd5e1;
+        }
+
+        #reportTable tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .dark #reportTable tbody tr:hover {
+            background: #334155;
+        }
+
+        /* Dark mode for stat-card */
+        .dark .stat-card {
+            background-color: #1e293b;
+            border-color: #334155;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .overlay {
+                display: none;
+            }
+
+            .overlay.active {
+                display: block;
+            }
+        }
+    </style>
+
+    <script>
+        // Handle sidebar click
+        function handleSidebarClick(event, link) {
+            if (link === '#') {
+                event.preventDefault();
+                return;
+            }
+            event.preventDefault();
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+            if (link.startsWith('/')) {
+                if (typeof debouncedNavigate === 'function') {
+                    debouncedNavigate(link);
+                } else {
+                    window.location.href = link;
+                }
+            }
+        }
+
+        // Logout function
+        function logout() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        // Setup mobile menu toggle
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+                    if (isHidden) {
+                        sidebar.style.transform = 'translateX(0)';
+                        overlay.style.display = 'block';
+                    } else {
+                        sidebar.style.transform = 'translateX(-100%)';
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Load current user information for header
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                updateHeaderUserInfo({
+                    fullName: 'Super Admin',
+                    role: 'SUPERADMIN',
+                    email: 'admin@sena.edu.co'
+                });
+            }
+        }
+
+        // Update user info display in header
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Super Admin';
+            if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN';
+            
+            if (headerUserAvatar) {
+                if (userData.imgUrl) {
+                    const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
+                    headerUserAvatar.innerHTML = `
+                        <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
+                            <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
+                                <div class="image-loading-spinner"></div>
+                            </div>
+                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Super Admin'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                                 id="img-${uniqueId}"
+                                 onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
+                                 onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
+                        </div>
+                    `;
+                } else {
+                    headerUserAvatar.textContent = (userData.fullName || 'Super Admin').charAt(0).toUpperCase();
+                }
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            setupMobileMenuToggle();
+            loadCurrentUserInfo();
+            
+            // Ensure reports are initialized
+            setTimeout(function() {
+                if (typeof window.loadRegionals === 'function') {
+                    console.log('Calling loadRegionals from HTML...');
+                    window.loadRegionals();
+                } else {
+                    console.error('loadRegionals function not available yet');
+                }
+            }, 1500);
+        });
+    </script>
 </body>
+
 </html>
