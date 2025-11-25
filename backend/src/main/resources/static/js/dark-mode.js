@@ -80,6 +80,14 @@ class DarkModeManager {
     const toggleButton = document.getElementById("darkModeToggle");
     if (!toggleButton) return;
 
+    // Si es un checkbox, actualizar su estado checked
+    if (toggleButton.type === "checkbox") {
+      toggleButton.checked = this.isDarkMode;
+      toggleButton.setAttribute("aria-label", this.isDarkMode ? "Cambiar a modo claro" : "Cambiar a modo oscuro");
+      return;
+    }
+
+    // Si es un botón con iconos (comportamiento anterior)
     const sunIcon = toggleButton.querySelector(".sun-icon");
     const moonIcon = toggleButton.querySelector(".moon-icon");
 
@@ -117,7 +125,13 @@ class DarkModeManager {
     // Agregar event listener al botón toggle si existe
     const toggleButton = document.getElementById("darkModeToggle");
     if (toggleButton) {
-      toggleButton.addEventListener("click", () => this.toggle());
+      // Si es un checkbox, usar evento 'change'
+      if (toggleButton.type === "checkbox") {
+        toggleButton.addEventListener("change", () => this.toggle());
+      } else {
+        // Si es un botón, usar evento 'click'
+        toggleButton.addEventListener("click", () => this.toggle());
+      }
     }
   }
 }

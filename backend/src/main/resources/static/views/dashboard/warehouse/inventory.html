@@ -28,13 +28,13 @@
         }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
+    <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="../../css/dashboard.css">
-    <link rel="stylesheet" href="../../css/inventory-toast.css">
-    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../../css/dashboard.css">
+    <link rel="stylesheet" href="../../../css/inventory-toast.css">
+    <link rel="stylesheet" href="../../../css/dark-mode.css">
 </head>
 
 <body>
@@ -51,56 +51,26 @@
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
-                    <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                    <img src="../../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
                 <div class="text-gray-800">
                     <div class="font-bold text-lg">SGDIS</div>
-                    <div class="text-xs opacity-70">Inventario</div>
+                    <div class="text-xs opacity-70">Almacén</div>
                 </div>
             </div>
         </div>
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
-                onclick="handleSidebarClick(event, '/superadmin/inventory')">
+            <a href="/warehouse/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/warehouse/inventory')">
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
-            </a>
-            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/users')">
-                <i class="fas fa-users text-lg"></i>
-                <span class="font-medium">Usuarios</span>
-            </a>
-            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/verification')">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </a>
-            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/reports')">
-                <i class="fas fa-chart-bar text-lg"></i>
-                <span class="font-medium">Reportes</span>
-            </a>
-            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/notifications')">
-                <i class="fas fa-bell text-lg"></i>
-                <span class="font-medium">Notificaciones</span>
-            </a>
-            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-exchange-alt text-lg"></i>
-                <span class="font-medium">Importar/Exportar</span>
-            </a>
-            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/settings')">
-                <i class="fas fa-sliders-h text-lg"></i>
-                <span class="font-medium">Configuración</span>
             </a>
             <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/info-me')">
@@ -165,8 +135,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-800 mb-1">Gestión de Inventarios</h1>
-                    <p class="text-gray-600" id="inventoryWelcomeMessage">Administración y control de inventarios del
-                        sistema</p>
+                    <p class="text-gray-600" id="inventoryWelcomeMessage">Administración y control de inventarios del almacén</p>
                 </div>
                 <button onclick="loadInventoryData()"
                     class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
@@ -418,28 +387,28 @@
         </div>
     </div>
 
-    <script src="../../js/dashboard.js"></script>
-    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../../js/dashboard.js"></script>
+    <script src="../../../js/inactivity-monitor.js"></script>
     <!-- Inventory Module Scripts -->
-    <script src="../../js/inventory/inventory-data.js"></script>
-    <script src="../../js/inventory/inventory-role-utils.js"></script>
-    <script src="../../js/inventory/inventory-api.js"></script>
-    <script src="../../js/inventory/inventory-filters.js"></script>
-    <script src="../../js/inventory/inventory-forms.js"></script>
-    <script src="../../js/inventory/inventory-modals.js"></script>
-    <script src="../../js/inventory/inventory-pagination.js"></script>
-    <script src="../../js/inventory/inventory-toast.js"></script>
-    <script src="../../js/inventory/inventory-images.js"></script>
-    <script src="../../js/inventory/inventory-ui.js"></script>
-    <script src="../../js/inventory/inventory.js"></script>
+    <script src="../../../js/inventory/inventory-data.js"></script>
+    <script src="../../../js/inventory/inventory-role-utils.js"></script>
+    <script src="../../../js/inventory/inventory-api.js"></script>
+    <script src="../../../js/inventory/inventory-filters.js"></script>
+    <script src="../../../js/inventory/inventory-forms.js"></script>
+    <script src="../../../js/inventory/inventory-modals.js"></script>
+    <script src="../../../js/inventory/inventory-pagination.js"></script>
+    <script src="../../../js/inventory/inventory-toast.js"></script>
+    <script src="../../../js/inventory/inventory-images.js"></script>
+    <script src="../../../js/inventory/inventory-ui.js"></script>
+    <script src="../../../js/inventory/inventory.js"></script>
     <!-- Items Module Scripts -->
-    <script src="../../js/inventory/items/items-data.js"></script>
-    <script src="../../js/inventory/items/items-api.js"></script>
-    <script src="../../js/inventory/items/items-ui.js"></script>
-    <script src="../../js/inventory/items/items-modals.js"></script>
-    <script src="../../js/inventory/items/items-forms.js"></script>
+    <script src="../../../js/inventory/items/items-data.js"></script>
+    <script src="../../../js/inventory/items/items-api.js"></script>
+    <script src="../../../js/inventory/items/items-ui.js"></script>
+    <script src="../../../js/inventory/items/items-modals.js"></script>
+    <script src="../../../js/inventory/items/items-forms.js"></script>
     <!-- Inventory Tree Script -->
-    <script src="../../js/inventory/inventory-tree.js"></script>
+    <script src="../../../js/inventory/inventory-tree.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
@@ -831,8 +800,13 @@
             window.location.href = '/';
         }
 
-        // Inventory-specific functions are now handled by inventory.js and inventory-modals.js
-        // showNewInventoryModal and closeNewInventoryModal are now in inventory-modals.js
+        // Warehouse-specific initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            // Force warehouse role for institution inventories
+            if (typeof window !== 'undefined') {
+                window.currentUserRole = 'WAREHOUSE';
+            }
+        });
     </script>
 
     <!-- Logout Confirmation Modal -->
@@ -891,7 +865,7 @@
                     <i class="fas fa-user-times text-red-500 mr-2"></i>
                     Eliminar Asignación de Rol
                 </h3>
-                
+
                 <!-- Role Selection Buttons -->
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Tipo de Rol</label>
@@ -928,7 +902,7 @@
                         <input type="hidden" id="deleteRoleUserId" name="userId">
                     </div>
                     <p class="text-xs text-gray-500 mt-1" id="deleteRoleDescription">Selecciona el usuario al que se le eliminará el rol</p>
-                    
+
                     <!-- Delete Role Button -->
                     <button type="button" onclick="confirmDeleteRole()"
                         class="w-full mt-3 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2">
@@ -1032,85 +1006,86 @@
                                     Ver Items
                                 </button>
                             </div>
-                    
-                    <!-- Right Side: Image -->
-                    <div class="flex-shrink-0 flex items-start justify-end">
-                        <button onclick="showInventoryImageModal(); return false;"
-                            class="cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0 flex items-center justify-center"
-                            id="viewInventoryImageButton" style="display: none;">
-                            <div class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-                                id="viewInventoryImage">
-                                <i class="fas fa-box"></i>
+
+                            <!-- Right Side: Image -->
+                            <div class="flex-shrink-0 flex items-start justify-end">
+                                <button onclick="showInventoryImageModal(); return false;"
+                                    class="cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0 flex items-center justify-center"
+                                    id="viewInventoryImageButton" style="display: none;">
+                                    <div class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                                        id="viewInventoryImage">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                </button>
+                                <div id="viewInventoryImagePlaceholder"
+                                    class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl">
+                                    <i class="fas fa-box"></i>
+                                </div>
                             </div>
-                        </button>
-                        <div id="viewInventoryImagePlaceholder"
-                            class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl">
-                            <i class="fas fa-box"></i>
                         </div>
                     </div>
                 </div>
-            </div>
 
-                    <!-- Flecha Indicadora -->
-                    <div class="flex items-center justify-center">
-                        <div class="hidden lg:flex flex-col items-center gap-2">
-                            <i class="fas fa-arrow-right text-[#00AF00] text-4xl"></i>
-                            <p class="text-xs font-medium text-gray-600 dark:text-gray-400 text-center whitespace-nowrap">Pertenece a</p>
-                        </div>
-                        <div class="flex lg:hidden flex-row items-center gap-2">
-                            <i class="fas fa-arrow-down text-[#00AF00] text-3xl"></i>
-                            <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Pertenece a</p>
-                        </div>
+                <!-- Flecha Indicadora -->
+                <div class="flex items-center justify-center">
+flex items-center justify-center">
+                    <div class="hidden lg:flex flex-col items-center gap-2">
+                        <i class="fas fa-arrow-right text-[#00AF00] text-4xl"></i>
+                        <p class="text-xs font-medium text-gray-600 dark:text-gray-400 text-center whitespace-nowrap">Pertenece a</p>
                     </div>
+                    <div class="flex lg:hidden flex-row items-center gap-2">
+                        <i class="fas fa-arrow-down text-[#00AF00] text-3xl"></i>
+                        <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Pertenece a</p>
+                    </div>
+                </div>
 
-                    <!-- Owner Information -->
-                    <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 flex flex-col">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
-                            <i class="fas fa-user-shield text-[#00AF00] mr-2"></i>
-                            Información del Propietario
-                        </h3>
-                        <div class="grid grid-cols-1 gap-4 flex-1">
-                            <div class="flex items-center space-x-4 pb-4 border-b border-green-200 dark:border-green-700">
-                                <div class="w-20 h-20 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-full flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0"
-                                    id="viewInventoryOwnerAvatar">
-                                    <span class="text-white font-bold text-2xl">U</span>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nombre Completo</label>
-                                    <p class="text-gray-900 dark:text-gray-100 font-bold text-lg truncate" id="viewInventoryOwnerName">-</p>
-                                </div>
+                <!-- Owner Information -->
+                <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 flex flex-col">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
+                        <i class="fas fa-user-shield text-[#00AF00] mr-2"></i>
+                        Información del Propietario
+                    </h3>
+                    <div class="grid grid-cols-1 gap-4 flex-1">
+                        <div class="flex items-center space-x-4 pb-4 border-b border-green-200 dark:border-green-700">
+                            <div class="w-20 h-20 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-full flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0"
+                                id="viewInventoryOwnerAvatar">
+                                <span class="text-white font-bold text-2xl">U</span>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                                <p class="text-gray-900 dark:text-gray-100 text-sm break-all flex items-center gap-2" id="viewInventoryOwnerEmail">
-                                    <i class="fas fa-envelope text-[#00AF00]"></i>
-                                    <span>-</span>
-                                </p>
+                            <div class="flex-1 min-w-0">
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nombre Completo</label>
+                                <p class="text-gray-900 dark:text-gray-100 font-bold text-lg truncate" id="viewInventoryOwnerName">-</p>
                             </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
-                                <span class="inline-flex items-center px-3 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-semibold text-sm" id="viewInventoryOwnerRole">-</span>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
-                                <span class="px-3 py-1 rounded-full text-xs font-medium inline-block"
-                                    id="viewInventoryOwnerStatus">-</span>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
-                                <p class="text-gray-900 dark:text-gray-100 font-medium" id="viewInventoryOwnerJobTitle">-</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento Laboral</label>
-                                <p class="text-gray-900 dark:text-gray-100" id="viewInventoryOwnerDepartment">-</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
-                                <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryOwnerInstitution">
-                                    <i class="fas fa-building text-[#00AF00]"></i>
-                                    <span>-</span>
-                                </p>
-                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                            <p class="text-gray-900 dark:text-gray-100 text-sm break-all flex items-center gap-2" id="viewInventoryOwnerEmail">
+                                <i class="fas fa-envelope text-[#00AF00]"></i>
+                                <span>-</span>
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
+                            <span class="inline-flex items-center px-3 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-semibold text-sm" id="viewInventoryOwnerRole">-</span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+                            <span class="px-3 py-1 rounded-full text-xs font-medium inline-block"
+                                id="viewInventoryOwnerStatus">-</span>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
+                            <p class="text-gray-900 dark:text-gray-100 font-medium" id="viewInventoryOwnerJobTitle">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento Laboral</label>
+                            <p class="text-gray-900 dark:text-gray-100" id="viewInventoryOwnerDepartment">-</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
+                            <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryOwnerInstitution">
+                                <i class="fas fa-building text-[#00AF00]"></i>
+                                <span>-</span>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1448,8 +1423,7 @@
             <!-- Loading Spinner -->
             <div id="inventoryTreeLoading" class="flex flex-col items-center justify-center p-12">
                 <div class="relative w-16 h-16 mb-4">
-                    <div
-                        class="absolute inset-0 border-4 border-[#00AF00] border-t-transparent rounded-full animate-spin">
+                    <div class="absolute inset-0 border-4 border-[#00AF00] border-t-transparent rounded-full animate-spin">
                     </div>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">Cargando jerarquía...</p>
@@ -1547,3 +1521,4 @@
 </body>
 
 </html>
+                    <div class="hidden lg

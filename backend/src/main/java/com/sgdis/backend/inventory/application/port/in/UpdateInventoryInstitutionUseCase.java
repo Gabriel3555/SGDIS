@@ -8,3 +8,4 @@ public interface UpdateInventoryInstitutionUseCase {
     InventoryResponse updateInventoryInstitution(Long inventoryId, UpdateInventoryInstitutionRequest request);
 }
 
+
