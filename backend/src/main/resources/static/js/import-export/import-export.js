@@ -8,6 +8,7 @@ let inventories = {};
 document.addEventListener('DOMContentLoaded', function() {
     loadRegionals();
     setupEventListeners();
+    setupModeToggle();
 });
 
 // Setup event listeners
@@ -48,28 +49,135 @@ function setupEventListeners() {
 
     document.getElementById('exportInventorySelect').addEventListener('change', function() {
         updateExportButtonState();
+        const inventoryId = this.value;
+        if (inventoryId) {
+            loadExportPreview(inventoryId);
+        } else {
+            hideExportPreview();
+        }
     });
 
     // File input
     document.getElementById('importFileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
+        handleFileSelection(e.target.files[0]);
+    });
+
+    // Drag and drop support
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    if (fileUploadArea) {
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        // Highlight drop area when item is dragged over it
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileUploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        // Handle dropped files
+        fileUploadArea.addEventListener('drop', handleDrop, false);
+    }
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlight(e) {
+        fileUploadArea.classList.add('drag-over');
+    }
+
+    function unhighlight(e) {
+        fileUploadArea.classList.remove('drag-over');
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length > 0) {
+            const file = files[0];
+            // Check if it's an Excel file
+            if (file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
+                // Set the file input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.getElementById('importFileInput').files = dataTransfer.files;
+                handleFileSelection(file);
+            } else {
+                showErrorToastLocal('Error', 'Por favor seleccione un archivo Excel (.xls o .xlsx)');
+            }
+        }
+    }
+
+    function handleFileSelection(file) {
         const fileName = file?.name || 'Ningún archivo seleccionado';
-        document.getElementById('importFileName').textContent = fileName;
+        const fileNameElement = document.getElementById('importFileName');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+        
+        // Truncate long file names
+        const displayName = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
+        fileNameElement.textContent = displayName;
+        fileNameElement.title = fileName;
         
         if (file) {
+            fileNameElement.className = 'text-[11px] font-semibold text-green-700 dark:text-green-400 px-2 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-md inline-block max-w-full truncate';
+            fileUploadArea.classList.add('has-file');
+            fileUploadArea.classList.add('border-green-400', 'bg-green-50/70', 'dark:bg-green-900/20');
             previewExcelFile(file);
         } else {
+            fileNameElement.className = 'text-[11px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md inline-block max-w-full truncate';
+            fileUploadArea.classList.remove('has-file');
+            fileUploadArea.classList.remove('border-green-400', 'bg-green-50/70', 'dark:bg-green-900/20');
             closePreview();
         }
         
         updateImportButtonState();
-    });
+    }
 
     // Import button
     document.getElementById('importButton').addEventListener('click', handleImport);
 
     // Export button
     document.getElementById('exportButton').addEventListener('click', handleExport);
+}
+
+// Setup mode toggle (Import/Export switch)
+function setupModeToggle() {
+    const importModeBtn = document.getElementById('importModeBtn');
+    const exportModeBtn = document.getElementById('exportModeBtn');
+    const importSection = document.getElementById('importSection');
+    const exportSection = document.getElementById('exportSection');
+
+    importModeBtn.addEventListener('click', function() {
+        importModeBtn.classList.add('active');
+        exportModeBtn.classList.remove('active');
+        importSection.classList.remove('hidden');
+        exportSection.classList.add('hidden');
+        // Close preview when switching modes
+        closePreview();
+    });
+
+    exportModeBtn.addEventListener('click', function() {
+        exportModeBtn.classList.add('active');
+        importModeBtn.classList.remove('active');
+        exportSection.classList.remove('hidden');
+        importSection.classList.add('hidden');
+        // Close import preview when switching modes
+        closePreview();
+        // Check if there's a selected inventory and show preview
+        const inventoryId = document.getElementById('exportInventorySelect').value;
+        if (inventoryId) {
+            loadExportPreview(inventoryId);
+        } else {
+            hideExportPreview();
+        }
+    });
 }
 
 // Load all regionals
@@ -196,6 +304,8 @@ function populateInstitutionDropdown(type, institutionsList) {
     });
     
     select.disabled = false;
+    select.classList.remove('bg-gray-50', 'cursor-not-allowed');
+    select.classList.add('bg-white', 'cursor-pointer');
 }
 
 // Load inventories for import
@@ -279,28 +389,43 @@ function populateInventoryDropdown(type, inventoriesList) {
     });
     
     select.disabled = false;
+    select.classList.remove('bg-gray-50', 'cursor-not-allowed');
+    select.classList.add('bg-white', 'cursor-pointer');
 }
 
 // Reset dropdowns
 function resetImportDropdowns(types) {
     if (types.includes('institution')) {
-        document.getElementById('importInstitutionSelect').innerHTML = '<option value="">Primero seleccione una regional...</option>';
-        document.getElementById('importInstitutionSelect').disabled = true;
+        const select = document.getElementById('importInstitutionSelect');
+        select.innerHTML = '<option value="">Primero seleccione una regional...</option>';
+        select.disabled = true;
+        select.classList.remove('bg-white', 'cursor-pointer');
+        select.classList.add('bg-gray-50', 'cursor-not-allowed');
     }
     if (types.includes('inventory')) {
-        document.getElementById('importInventorySelect').innerHTML = '<option value="">Primero seleccione un centro...</option>';
-        document.getElementById('importInventorySelect').disabled = true;
+        const select = document.getElementById('importInventorySelect');
+        select.innerHTML = '<option value="">Primero seleccione un centro...</option>';
+        select.disabled = true;
+        select.classList.remove('bg-white', 'cursor-pointer');
+        select.classList.add('bg-gray-50', 'cursor-not-allowed');
     }
 }
 
 function resetExportDropdowns(types) {
     if (types.includes('institution')) {
-        document.getElementById('exportInstitutionSelect').innerHTML = '<option value="">Primero seleccione una regional...</option>';
-        document.getElementById('exportInstitutionSelect').disabled = true;
+        const select = document.getElementById('exportInstitutionSelect');
+        select.innerHTML = '<option value="">Primero seleccione una regional...</option>';
+        select.disabled = true;
+        select.classList.remove('bg-white', 'cursor-pointer');
+        select.classList.add('bg-gray-50', 'cursor-not-allowed');
     }
     if (types.includes('inventory')) {
-        document.getElementById('exportInventorySelect').innerHTML = '<option value="">Primero seleccione un centro...</option>';
-        document.getElementById('exportInventorySelect').disabled = true;
+        const select = document.getElementById('exportInventorySelect');
+        select.innerHTML = '<option value="">Primero seleccione un centro...</option>';
+        select.disabled = true;
+        select.classList.remove('bg-white', 'cursor-pointer');
+        select.classList.add('bg-gray-50', 'cursor-not-allowed');
+        hideExportPreview();
     }
 }
 
@@ -552,8 +677,14 @@ function showImportSuccessModal(result) {
     
     // Reset form
     const fileInput = document.getElementById('importFileInput');
+    const fileNameElement = document.getElementById('importFileName');
+    const fileUploadArea = document.getElementById('fileUploadArea');
     fileInput.value = '';
-    document.getElementById('importFileName').textContent = 'Ningún archivo seleccionado';
+    fileNameElement.textContent = 'Ningún archivo seleccionado';
+    fileNameElement.className = 'text-[11px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md inline-block max-w-full truncate';
+    fileNameElement.title = 'Ningún archivo seleccionado';
+    fileUploadArea.classList.remove('has-file');
+    fileUploadArea.classList.remove('border-green-400', 'bg-green-50/70', 'dark:bg-green-900/20');
     closePreview();
 }
 
@@ -608,6 +739,7 @@ function displayPreview(data) {
     const tableHeader = document.getElementById('previewTableHeader');
     const tableBody = document.getElementById('previewTableBody');
     const rowCount = document.getElementById('previewRowCount');
+    const mainContainer = document.getElementById('mainContentContainer');
     
     // Clear previous content
     tableHeader.innerHTML = '';
@@ -624,7 +756,7 @@ function displayPreview(data) {
     // Create header row
     headers.forEach((header, index) => {
         const th = document.createElement('th');
-        th.className = 'px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
+        th.className = 'px-3 py-2 text-left text-[10px] font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider';
         th.textContent = header || `Columna ${String.fromCharCode(65 + index)}`;
         tableHeader.appendChild(th);
     });
@@ -636,13 +768,13 @@ function displayPreview(data) {
     for (let i = 1; i <= rowsToShow; i++) {
         const row = data[i] || [];
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-gray-50';
+        tr.className = 'hover:bg-green-50/50 dark:hover:bg-green-900/10 transition-colors duration-150';
         
         headers.forEach((_, colIndex) => {
             const td = document.createElement('td');
-            td.className = 'px-4 py-2 text-sm text-gray-700 whitespace-nowrap';
+            td.className = 'px-3 py-2 text-xs text-gray-700 dark:text-gray-300';
             const cellValue = row[colIndex] !== undefined ? String(row[colIndex]) : '';
-            td.textContent = cellValue.length > 50 ? cellValue.substring(0, 50) + '...' : cellValue;
+            td.textContent = cellValue.length > 40 ? cellValue.substring(0, 40) + '...' : cellValue;
             tr.appendChild(td);
         });
         
@@ -656,16 +788,137 @@ function displayPreview(data) {
         rowCount.textContent = `Total: ${totalRows} filas (excluyendo encabezado)`;
     }
     
+    // Show preview and adjust layout
     previewSection.classList.remove('hidden');
+    if (mainContainer) {
+        mainContainer.classList.add('content-with-preview');
+    }
 }
 
 // Close preview
 function closePreview() {
     const previewSection = document.getElementById('previewSection');
+    const mainContainer = document.getElementById('mainContentContainer');
     previewSection.classList.add('hidden');
+    if (mainContainer) {
+        mainContainer.classList.remove('content-with-preview');
+    }
     document.getElementById('previewTableHeader').innerHTML = '';
     document.getElementById('previewTableBody').innerHTML = '';
     document.getElementById('previewRowCount').textContent = '';
+}
+
+// Load export preview
+async function loadExportPreview(inventoryId) {
+    const previewContent = document.getElementById('exportPreviewContent');
+    const previewCount = document.getElementById('exportPreviewCount');
+    
+    previewContent.innerHTML = `
+        <div class="text-center py-6">
+            <i class="fas fa-spinner fa-spin text-xl text-blue-400 dark:text-blue-500 mb-2"></i>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Cargando items...</p>
+        </div>
+    `;
+    previewCount.textContent = 'Cargando...';
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/items/inventory/${inventoryId}?page=0&size=50`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const items = Array.isArray(data) ? data : (data.content || []);
+            const totalElements = data.totalElements || items.length;
+            
+            displayExportPreview(items, totalElements);
+        } else {
+            previewContent.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-circle text-2xl text-red-400 mb-2"></i>
+                    <p class="text-xs text-red-600">Error al cargar items</p>
+                </div>
+            `;
+            previewCount.textContent = '';
+        }
+    } catch (error) {
+        console.error('Error loading export preview:', error);
+        previewContent.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-circle text-2xl text-red-400 mb-2"></i>
+                <p class="text-xs text-red-600">Error al cargar items</p>
+            </div>
+        `;
+        previewCount.textContent = '';
+    }
+}
+
+// Display export preview
+function displayExportPreview(items, totalElements) {
+    const previewContent = document.getElementById('exportPreviewContent');
+    const previewCount = document.getElementById('exportPreviewCount');
+    
+    if (items.length === 0) {
+        previewContent.innerHTML = `
+            <div class="text-center py-8">
+                <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i class="fas fa-inbox text-xl text-gray-400 dark:text-gray-500"></i>
+                </div>
+                <p class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">No hay items</p>
+                <p class="text-xs text-gray-500 dark:text-gray-500">Este inventario está vacío</p>
+            </div>
+        `;
+        previewCount.textContent = '0 items';
+        return;
+    }
+    
+    // Show all items but limit visible height to 2 items
+    let html = '<div class="space-y-2">';
+    
+    items.forEach((item, index) => {
+        const productName = item.productName || 'Sin nombre';
+        const truncatedName = productName.length > 25 ? productName.substring(0, 25) + '...' : productName;
+        html += `
+            <div class="bg-white dark:bg-gray-700 rounded-lg p-2.5 border border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm transition-all duration-200 group">
+                <div class="flex items-start gap-2.5">
+                    <div class="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900 dark:to-blue-800 rounded-md flex items-center justify-center text-[10px] font-bold text-blue-600 dark:text-blue-300 group-hover:from-blue-200 group-hover:to-blue-100 dark:group-hover:from-blue-800 dark:group-hover:to-blue-700 transition-colors">
+                        ${index + 1}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate" title="${productName}">${truncatedName}</p>
+                        ${item.licencePlateNumber ? `<p class="text-[10px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5"><i class="fas fa-tag text-[9px]"></i>${item.licencePlateNumber}</p>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    
+    previewContent.innerHTML = html;
+    previewCount.innerHTML = `<i class="fas fa-boxes mr-1.5 text-blue-500 dark:text-blue-400"></i><span class="font-semibold">${totalElements}</span> ${totalElements === 1 ? 'item' : 'items'} en total`;
+}
+
+// Hide export preview (show empty state instead)
+function hideExportPreview() {
+    const previewContent = document.getElementById('exportPreviewContent');
+    const previewCount = document.getElementById('exportPreviewCount');
+    
+    previewContent.innerHTML = `
+        <div class="text-center py-6">
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-boxes text-blue-500 dark:text-blue-400 text-lg"></i>
+            </div>
+            <p class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Seleccione un inventario</p>
+            <p class="text-[10px] text-gray-500 dark:text-gray-500">para ver los items</p>
+        </div>
+    `;
+    previewCount.textContent = '0 items';
 }
 
 // Toast functions - use global functions, avoid recursion
