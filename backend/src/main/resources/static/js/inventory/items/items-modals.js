@@ -76,30 +76,206 @@ async function showViewItemModal(itemId) {
   if (window.itemsData && window.itemsData.items) {
     const item = window.itemsData.items.find((i) => i.id === itemId);
     if (item) {
-      populateViewItemModal(item);
+      await populateViewItemModal(item);
     }
   }
 }
 
-function populateViewItemModal(item) {
-    const content = document.getElementById('viewItemContent');
-    if (!content) return;
-    
-    const imageUrl = item.urlImg || (item.attributes && item.attributes.IMAGE) || null;
-    const productName = item.productName || 'Sin nombre';
-    const acquisitionDate = item.acquisitionDate ? new Date(item.acquisitionDate).toLocaleDateString('es-ES') : 'N/A';
-    const acquisitionValue = item.acquisitionValue ? `$${item.acquisitionValue.toLocaleString('es-ES')}` : 'N/A';
-    const licencePlateNumber = item.licencePlateNumber || 'N/A';
-    const location = item.location || 'N/A';
-    const responsible = item.responsible || 'N/A';
-    
-    // Get attributes
-    let attributesHtml = '';
-    if (item.attributes && typeof item.attributes === 'object') {
-        attributesHtml = '<div class="space-y-2">';
-        for (const [key, value] of Object.entries(item.attributes)) {
-            if (value) {
-                attributesHtml += `
+// Carousel navigation functions
+function navigateCarousel(carouselId, direction) {
+  // Prevent double execution
+  if (
+    navigateCarousel._processing &&
+    navigateCarousel._processing === carouselId
+  ) {
+    return;
+  }
+  navigateCarousel._processing = carouselId;
+
+  setTimeout(() => {
+    navigateCarousel._processing = null;
+  }, 100);
+
+  const carousel = document.getElementById(carouselId);
+  if (!carousel) {
+    console.error("Carousel not found:", carouselId);
+    navigateCarousel._processing = null;
+    return;
+  }
+
+  // Find images container - it's inside the carousel
+  const imagesContainer = carousel.querySelector(".relative.w-full.h-64");
+  if (!imagesContainer) {
+    console.error("Images container not found in carousel:", carouselId);
+    navigateCarousel._processing = null;
+    return;
+  }
+
+  const images = imagesContainer.querySelectorAll("img[data-index]");
+  if (images.length === 0) {
+    console.error("No images found in carousel:", carouselId);
+    navigateCarousel._processing = null;
+    return;
+  }
+
+  // Get current index from data attribute on carousel (more reliable)
+  let currentIndex = parseInt(carousel.getAttribute("data-current-index"), 10);
+
+  // If not set, try to find visible image
+  if (isNaN(currentIndex)) {
+    images.forEach((img) => {
+      const computedStyle = window.getComputedStyle(img);
+      if (
+        computedStyle.opacity === "1" ||
+        img.classList.contains("opacity-100")
+      ) {
+        const imgIndex = parseInt(img.getAttribute("data-index"), 10);
+        if (!isNaN(imgIndex)) {
+          currentIndex = imgIndex;
+        }
+      }
+    });
+  }
+
+  // If still not found, default to first image
+  if (isNaN(currentIndex) || currentIndex < 0) {
+    currentIndex = 0;
+  }
+
+  // Calculate new index (sequential: +1 or -1)
+  let newIndex = currentIndex + direction;
+  if (newIndex < 0) {
+    newIndex = images.length - 1; // Wrap to last image
+  } else if (newIndex >= images.length) {
+    newIndex = 0; // Wrap to first image
+  }
+
+  goToCarouselImage(carouselId, newIndex);
+}
+
+function goToCarouselImage(carouselId, index) {
+  // Prevent double execution
+  const processingKey = `goToCarousel_${carouselId}_${index}`;
+  if (
+    goToCarouselImage._processing &&
+    goToCarouselImage._processing === processingKey
+  ) {
+    return;
+  }
+  goToCarouselImage._processing = processingKey;
+
+  setTimeout(() => {
+    goToCarouselImage._processing = null;
+  }, 100);
+
+  const carousel = document.getElementById(carouselId);
+  if (!carousel) {
+    console.error("Carousel not found:", carouselId);
+    goToCarouselImage._processing = null;
+    return;
+  }
+
+  // Find images container - it's inside the carousel
+  const imagesContainer = carousel.querySelector(".relative.w-full.h-64");
+  if (!imagesContainer) {
+    console.error("Images container not found in carousel:", carouselId);
+    goToCarouselImage._processing = null;
+    return;
+  }
+
+  const images = imagesContainer.querySelectorAll("img[data-index]");
+  const indicators = carousel.querySelectorAll(
+    `[id^="${carouselId}-indicator-"]`
+  );
+  const counter = document.getElementById(`${carouselId}-counter`);
+
+  if (index < 0 || index >= images.length) {
+    console.error(
+      "Invalid index:",
+      index,
+      "for carousel with",
+      images.length,
+      "images"
+    );
+    goToCarouselImage._processing = null;
+    return;
+  }
+
+  // Hide all images first - ensure all are hidden
+  images.forEach((img) => {
+    img.classList.remove("opacity-100");
+    img.classList.add("opacity-0");
+    img.style.opacity = "0";
+    img.style.display = "block"; // Keep display but make invisible
+  });
+
+  // Show selected image - find by data-index attribute
+  const targetImage = Array.from(images).find((img) => {
+    const imgIndex = parseInt(img.getAttribute("data-index"), 10);
+    return !isNaN(imgIndex) && imgIndex === index;
+  });
+
+  if (targetImage) {
+    targetImage.classList.remove("opacity-0");
+    targetImage.classList.add("opacity-100");
+    targetImage.style.opacity = "1";
+  } else {
+    console.error("Target image not found for index:", index);
+    goToCarouselImage._processing = null;
+    return;
+  }
+
+  // Store current index in carousel data attribute for reliable tracking
+  carousel.setAttribute("data-current-index", index.toString());
+
+  // Update indicators
+  indicators.forEach((indicator) => {
+    const indicatorId = indicator.getAttribute("id");
+    if (!indicatorId) return;
+
+    const indicatorIndex = parseInt(
+      indicatorId.replace(`${carouselId}-indicator-`, ""),
+      10
+    );
+    if (!isNaN(indicatorIndex)) {
+      if (indicatorIndex === index) {
+        indicator.classList.remove("bg-white/50");
+        indicator.classList.add("bg-white");
+      } else {
+        indicator.classList.remove("bg-white");
+        indicator.classList.add("bg-white/50");
+      }
+    }
+  });
+
+  // Update counter
+  if (counter) {
+    counter.textContent = index + 1;
+  }
+}
+
+async function populateViewItemModal(item) {
+  const content = document.getElementById("viewItemContent");
+  if (!content) return;
+
+  const productName = item.productName || "Sin nombre";
+  const acquisitionDate = item.acquisitionDate
+    ? new Date(item.acquisitionDate).toLocaleDateString("es-ES")
+    : "N/A";
+  const acquisitionValue = item.acquisitionValue
+    ? `$${item.acquisitionValue.toLocaleString("es-ES")}`
+    : "N/A";
+  const licencePlateNumber = item.licencePlateNumber || "N/A";
+  const location = item.location || "N/A";
+  const responsible = item.responsible || "N/A";
+
+  // Get attributes
+  let attributesHtml = "";
+  if (item.attributes && typeof item.attributes === "object") {
+    attributesHtml = '<div class="space-y-2">';
+    for (const [key, value] of Object.entries(item.attributes)) {
+      if (value) {
+        attributesHtml += `
                     <div class="flex justify-between">
                         <span class="text-gray-600">${key}:</span>
                         <span class="font-medium">${value}</span>
@@ -110,24 +286,105 @@ function populateViewItemModal(item) {
     attributesHtml += "</div>";
   }
 
-  const imageContainerId = "view-item-image-" + item.id;
+  // Load images from API
+  let images = [];
+  try {
+    if (window.getItemImages) {
+      const imagesResponse = await window.getItemImages(item.id);
+      // Ensure we have an array and it's not limited
+      if (Array.isArray(imagesResponse)) {
+        images = imagesResponse;
+      } else if (imagesResponse && typeof imagesResponse === "object") {
+        // In case the API returns an object with an array property
+        images = imagesResponse.images || imagesResponse.data || [];
+      }
+    }
+  } catch (error) {
+    // Silently handle error, will show empty carousel
+  }
+
+  const carouselId = `item-carousel-${item.id}`;
+
+  // Ensure images is an array and filter out any null/undefined values
+  if (!Array.isArray(images)) {
+    images = [];
+  }
+  images = images.filter((img) => img && img.trim() !== "");
+
+  // Build carousel HTML
+  let carouselHtml = "";
+  if (images && images.length > 0) {
+    // Generate all image elements
+    const imageElements = images
+      .map((imgUrl, index) => {
+        const escapedUrl = imgUrl.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        return `
+            <img src="${escapedUrl}" alt="${productName} - Imagen ${index + 1}" 
+                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                   index === 0 ? "opacity-100" : "opacity-0"
+                 }" 
+                 id="${carouselId}-img-${index}"
+                 data-index="${index}">
+          `;
+      })
+      .join("");
+
+    // Generate indicator buttons
+    const indicatorElements = images
+      .map((_, index) => {
+        return `
+                <button type="button" onclick="goToCarouselImage('${carouselId}', ${index})" data-carousel-id="${carouselId}" data-image-index="${index}" 
+                        class="carousel-indicator-btn w-2 h-2 rounded-full transition-all ${
+                          index === 0 ? "bg-white" : "bg-white/50"
+                        }" 
+                        id="${carouselId}-indicator-${index}"></button>
+              `;
+      })
+      .join("");
+
+    carouselHtml = `
+      <div class="relative w-full max-w-md mx-auto" id="${carouselId}" data-current-index="0">
+        <div class="relative w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-xl overflow-hidden">
+          ${imageElements}
+          ${
+            images.length > 1
+              ? `
+            <button type="button" onclick="navigateCarousel('${carouselId}', -1)" data-carousel-id="${carouselId}" data-direction="-1" 
+                    class="carousel-nav-btn absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors z-10">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button type="button" onclick="navigateCarousel('${carouselId}', 1)" data-carousel-id="${carouselId}" data-direction="1" 
+                    class="carousel-nav-btn absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full transition-colors z-10">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+            <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1 z-10 flex-wrap justify-center max-w-full px-2">
+              ${indicatorElements}
+            </div>
+          `
+              : ""
+          }
+        </div>
+        <div class="text-center mt-2 text-sm text-gray-600 dark:text-gray-400">
+          Imagen <span id="${carouselId}-counter">1</span> de ${images.length}
+        </div>
+      </div>
+    `;
+  } else {
+    carouselHtml = `
+      <div class="w-full max-w-md mx-auto">
+        <div class="w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-400 dark:text-gray-500">
+          <div class="text-center">
+            <i class="fas fa-images text-6xl mb-2"></i>
+            <p class="text-sm">No hay imágenes disponibles</p>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   content.innerHTML = `
-        <div class="flex justify-center mb-6">
-            ${
-              imageUrl
-                ? `
-                <div class="w-48 h-48 bg-gray-200 rounded-xl overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative" id="${imageContainerId}" onclick="handleItemImageUploadClick(${item.id}, '${imageContainerId}')" title="Haz clic para cambiar la imagen">
-                    <img src="${imageUrl}" alt="${productName}" class="w-full h-full object-cover">
-                    <input type="file" accept="image/*" id="file-input-${imageContainerId}" style="display: none;" onchange="handleItemImageFileSelect(event, ${item.id}, '${imageContainerId}')">
-                </div>
-            `
-                : `
-                <div class="w-48 h-48 bg-gray-200 rounded-xl flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-300 transition-colors" id="${imageContainerId}" onclick="handleItemImageUploadClick(${item.id}, '${imageContainerId}')" title="Haz clic para subir una imagen">
-                    <i class="fas fa-box text-6xl"></i>
-                    <input type="file" accept="image/*" id="file-input-${imageContainerId}" style="display: none;" onchange="handleItemImageFileSelect(event, ${item.id}, '${imageContainerId}')">
-                </div>
-            `
-            }
+        <div class="mb-6">
+            ${carouselHtml}
         </div>
         
         <div class="bg-gray-50 rounded-xl p-6 space-y-4">
@@ -175,6 +432,66 @@ function populateViewItemModal(item) {
   if (window.itemsData) {
     window.itemsData.currentItemId = item.id;
   }
+
+  // Setup carousel event listeners and initialize after HTML is inserted
+  setTimeout(() => {
+    initializeCarousel(carouselId);
+    setupCarouselEventListeners(carouselId);
+  }, 0);
+}
+
+function initializeCarousel(carouselId) {
+  const carousel = document.getElementById(carouselId);
+  if (!carousel) return;
+
+  // Find images container
+  const imagesContainer = carousel.querySelector(".relative.w-full.h-64");
+  if (!imagesContainer) return;
+
+  const images = imagesContainer.querySelectorAll("img[data-index]");
+  if (images.length === 0) return;
+
+  // Ensure only the first image is visible
+  images.forEach((img, index) => {
+    if (index === 0) {
+      img.classList.remove("opacity-0");
+      img.classList.add("opacity-100");
+      img.style.opacity = "1";
+    } else {
+      img.classList.remove("opacity-100");
+      img.classList.add("opacity-0");
+      img.style.opacity = "0";
+    }
+  });
+
+  // Set initial index
+  carousel.setAttribute("data-current-index", "0");
+
+  // Update counter
+  const counter = document.getElementById(`${carouselId}-counter`);
+  if (counter) {
+    counter.textContent = "1";
+  }
+
+  // Update indicators
+  const indicators = carousel.querySelectorAll(
+    `[id^="${carouselId}-indicator-"]`
+  );
+  indicators.forEach((indicator, index) => {
+    if (index === 0) {
+      indicator.classList.remove("bg-white/50");
+      indicator.classList.add("bg-white");
+    } else {
+      indicator.classList.remove("bg-white");
+      indicator.classList.add("bg-white/50");
+    }
+  });
+}
+
+function setupCarouselEventListeners(carouselId) {
+  // We're using onclick inline handlers only to avoid double execution
+  // This function is kept for potential future use but doesn't add listeners
+  // to avoid conflicts with onclick inline handlers that would cause double clicks
 }
 
 function closeViewItemModal() {
@@ -463,6 +780,107 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
+// Lend Item Modal Functions
+async function showLendItemModal(itemId) {
+  const modal = document.getElementById("lendItemModal");
+  if (!modal) return;
+
+  // Store current item ID
+  if (window.itemsData) {
+    window.itemsData.currentItemId = itemId;
+  }
+
+  // Find item to show name
+  let itemName = "Item";
+  if (window.itemsData && window.itemsData.items) {
+    const item = window.itemsData.items.find((i) => i.id === itemId);
+    if (item) {
+      itemName = item.productName || "Sin nombre";
+    }
+  }
+
+  // Set item name
+  const itemNameElement = document.getElementById("lendItemName");
+  if (itemNameElement) {
+    itemNameElement.textContent = itemName;
+  }
+
+  modal.classList.remove("hidden");
+}
+
+function closeLendItemModal() {
+  const modal = document.getElementById("lendItemModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+  const form = document.getElementById("lendItemForm");
+  if (form) {
+    form.reset();
+  }
+}
+
+async function confirmLendItem() {
+  if (!window.itemsData || !window.itemsData.currentItemId) return;
+
+  const itemId = window.itemsData.currentItemId;
+  const responsibleName = document
+    .getElementById("lendResponsibleName")
+    .value.trim();
+  const details = document.getElementById("lendDetails").value.trim();
+
+  if (!responsibleName) {
+    if (window.showErrorToast) {
+      window.showErrorToast(
+        "Campo requerido",
+        "Por favor ingresa el nombre del responsable"
+      );
+    }
+    return;
+  }
+
+  try {
+    if (window.lendItem) {
+      const result = await window.lendItem(itemId, responsibleName, details);
+
+      if (window.showSuccessToast) {
+        window.showSuccessToast(
+          "Item prestado",
+          result.message || "El item ha sido prestado exitosamente"
+        );
+      }
+
+      // Close modal
+      closeLendItemModal();
+
+      // Reload items to reflect changes
+      if (window.loadItemsData) {
+        await window.loadItemsData();
+      }
+    } else {
+      throw new Error("Función lendItem no está disponible");
+    }
+  } catch (error) {
+    console.error("Error lending item:", error);
+    if (window.showErrorToast) {
+      window.showErrorToast(
+        "Error",
+        error.message || "No se pudo prestar el item"
+      );
+    }
+  }
+}
+
+// Setup lend form handler
+document.addEventListener("DOMContentLoaded", function () {
+  const lendForm = document.getElementById("lendItemForm");
+  if (lendForm) {
+    lendForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      await confirmLendItem();
+    });
+  }
+});
+
 // Approve Transfer Modal Functions
 async function showApproveTransferModal(itemId) {
   const modal = document.getElementById("approveTransferModal");
@@ -487,17 +905,23 @@ function closeApproveTransferModal() {
 }
 
 function renderApprovalTransferCard(transfer, requestedAt) {
-  const escapedItemName = (transfer.itemName || "Item").replace(/'/g, "\\'").replace(/"/g, "&quot;");
-  
+  const escapedItemName = (transfer.itemName || "Item")
+    .replace(/'/g, "\\'")
+    .replace(/"/g, "&quot;");
+
   return `
     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
       <div class="flex items-start justify-between mb-4">
         <div class="flex-1">
-          <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">${transfer.itemName || "Item"}</h4>
+          <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-2">${
+            transfer.itemName || "Item"
+          }</h4>
           <div class="space-y-1">
             <p class="text-sm text-gray-600 dark:text-gray-400">
               <i class="fas fa-user mr-2 text-blue-500"></i>
-              Solicitado por: <span class="font-semibold text-gray-800 dark:text-gray-200">${transfer.requestedByName || "Usuario"}</span>
+              Solicitado por: <span class="font-semibold text-gray-800 dark:text-gray-200">${
+                transfer.requestedByName || "Usuario"
+              }</span>
             </p>
             <p class="text-sm text-gray-600 dark:text-gray-400">
               <i class="fas fa-clock mr-2 text-blue-500"></i>
@@ -518,7 +942,9 @@ function renderApprovalTransferCard(transfer, requestedAt) {
           </div>
           <div class="flex-1">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold">Desde (Tu inventario)</p>
-            <p class="font-semibold text-gray-900 dark:text-white">${transfer.sourceInventoryName || "Inventario origen"}</p>
+            <p class="font-semibold text-gray-900 dark:text-white">${
+              transfer.sourceInventoryName || "Inventario origen"
+            }</p>
           </div>
         </div>
         
@@ -534,12 +960,16 @@ function renderApprovalTransferCard(transfer, requestedAt) {
           </div>
           <div class="flex-1">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Hacia (Destino)</p>
-            <p class="font-semibold text-gray-900 dark:text-white">${transfer.destinationInventoryName || "Inventario destino"}</p>
+            <p class="font-semibold text-gray-900 dark:text-white">${
+              transfer.destinationInventoryName || "Inventario destino"
+            }</p>
           </div>
         </div>
       </div>
       
-      ${transfer.details ? `
+      ${
+        transfer.details
+          ? `
         <div class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg">
           <p class="text-sm text-blue-900 dark:text-blue-300">
             <i class="fas fa-info-circle mr-2"></i>
@@ -547,7 +977,9 @@ function renderApprovalTransferCard(transfer, requestedAt) {
             <span class="ml-6">${transfer.details}</span>
           </p>
         </div>
-      ` : ''}
+      `
+          : ""
+      }
       
       <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl p-3 mb-4">
         <p class="text-sm text-yellow-800 dark:text-yellow-300 flex items-start gap-2">
@@ -557,7 +989,9 @@ function renderApprovalTransferCard(transfer, requestedAt) {
       </div>
       
       <div class="flex gap-3 mt-4">
-        <button onclick="approveTransferDirectly(${transfer.id}, '${escapedItemName}')"
+        <button onclick="approveTransferDirectly(${
+          transfer.id
+        }, '${escapedItemName}')"
           class="flex-1 px-6 py-3 bg-gradient-to-r from-[#00AF00] to-[#008800] hover:from-[#008800] hover:to-[#006600] text-white font-semibold rounded-xl transition-all duration-200 transform hover:scale-105 shadow-md hover:shadow-lg">
           <i class="fas fa-check-circle mr-2"></i>
           Confirmar y Aprobar
@@ -607,8 +1041,7 @@ async function loadPendingTransfers(itemId) {
       // Filter only outgoing transfers (requested by current inventory - to self-approve)
       const outgoingTransfers = transfers.filter((t) => {
         return (
-          t.status === "PENDING" &&
-          t.sourceInventoryId == currentInventoryId
+          t.status === "PENDING" && t.sourceInventoryId == currentInventoryId
         );
       });
 
@@ -653,7 +1086,11 @@ async function loadPendingTransfers(itemId) {
 }
 
 async function approveTransferDirectly(transferId, itemName) {
-  if (!confirm(`¿Confirmar la transferencia del item "${itemName}" al inventario de destino?\n\nEsta acción moverá el item inmediatamente.`)) {
+  if (
+    !confirm(
+      `¿Confirmar la transferencia del item "${itemName}" al inventario de destino?\n\nEsta acción moverá el item inmediatamente.`
+    )
+  ) {
     return;
   }
 
@@ -692,14 +1129,19 @@ async function approveTransferDirectly(transferId, itemName) {
     if (window.showErrorToast) {
       window.showErrorToast(
         "Error al Aprobar",
-        error.message || "No se pudo completar la transferencia. Inténtalo de nuevo."
+        error.message ||
+          "No se pudo completar la transferencia. Inténtalo de nuevo."
       );
     }
   }
 }
 
 async function cancelTransferDirectly(transferId) {
-  if (!confirm("¿Estás seguro de que deseas cancelar esta solicitud de transferencia?")) {
+  if (
+    !confirm(
+      "¿Estás seguro de que deseas cancelar esta solicitud de transferencia?"
+    )
+  ) {
     return;
   }
 
@@ -731,7 +1173,7 @@ async function cancelTransferDirectly(transferId) {
         method: "DELETE",
         headers: headers,
       });
-      
+
       if (deleteResponse.ok) {
         if (window.showSuccessToast) {
           window.showSuccessToast(
@@ -753,10 +1195,7 @@ async function cancelTransferDirectly(transferId) {
   } catch (error) {
     console.error("Error cancelling transfer:", error);
     if (window.showErrorToast) {
-      window.showErrorToast(
-        "Error",
-        "No se pudo cancelar la transferencia."
-      );
+      window.showErrorToast("Error", "No se pudo cancelar la transferencia.");
     }
   }
 }
@@ -800,13 +1239,19 @@ function closeItemTransferHistoryModal() {
 
 function getStatusBadgeClass(status) {
   const statusClasses = {
-    PENDING: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400",
-    APPROVED: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400",
-    COMPLETED: "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400",
+    PENDING:
+      "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400",
+    APPROVED:
+      "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400",
+    COMPLETED:
+      "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400",
     REJECTED: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400",
-    CANCELLED: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400"
+    CANCELLED: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400",
   };
-  return statusClasses[status] || "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400";
+  return (
+    statusClasses[status] ||
+    "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-400"
+  );
 }
 
 function getStatusIcon(status) {
@@ -815,7 +1260,7 @@ function getStatusIcon(status) {
     APPROVED: "fa-check-circle",
     COMPLETED: "fa-check-double",
     REJECTED: "fa-times-circle",
-    CANCELLED: "fa-ban"
+    CANCELLED: "fa-ban",
   };
   return statusIcons[status] || "fa-question-circle";
 }
@@ -832,22 +1277,32 @@ function renderTransferHistoryCard(transfer) {
   const statusIcon = getStatusIcon(transfer.status);
 
   // Determine if this transfer is outgoing (source) or incoming (destination)
-  const currentInventoryId = window.itemsData ? window.itemsData.currentInventoryId : null;
+  const currentInventoryId = window.itemsData
+    ? window.itemsData.currentInventoryId
+    : null;
   const isOutgoing = transfer.sourceInventoryId == currentInventoryId;
   const direction = isOutgoing ? "Salida" : "Entrada";
-  const directionColor = isOutgoing ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-green-400";
+  const directionColor = isOutgoing
+    ? "text-red-600 dark:text-red-400"
+    : "text-green-600 dark:text-green-400";
   const directionIcon = isOutgoing ? "fa-arrow-up" : "fa-arrow-down";
 
   return `
     <div class="bg-white dark:bg-gray-800 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
       <div class="flex items-start justify-between mb-4">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 ${isOutgoing ? 'bg-red-100 dark:bg-red-900/30' : 'bg-green-100 dark:bg-green-900/30'} rounded-full flex items-center justify-center">
+          <div class="w-10 h-10 ${
+            isOutgoing
+              ? "bg-red-100 dark:bg-red-900/30"
+              : "bg-green-100 dark:bg-green-900/30"
+          } rounded-full flex items-center justify-center">
             <i class="fas ${directionIcon} ${directionColor}"></i>
           </div>
           <div>
             <h4 class="text-lg font-bold text-gray-900 dark:text-white">${direction}</h4>
-            <p class="text-sm text-gray-600 dark:text-gray-400">ID: ${transfer.transferId || transfer.id}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400">ID: ${
+              transfer.transferId || transfer.id
+            }</p>
           </div>
         </div>
         <span class="px-4 py-2 ${statusClass} rounded-full text-sm font-bold flex items-center gap-2 shadow-sm">
@@ -863,7 +1318,9 @@ function renderTransferHistoryCard(transfer) {
           </div>
           <div class="flex-1">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold">Origen</p>
-            <p class="font-semibold text-gray-900 dark:text-white">${transfer.sourceInventoryName || "Inventario origen"}</p>
+            <p class="font-semibold text-gray-900 dark:text-white">${
+              transfer.sourceInventoryName || "Inventario origen"
+            }</p>
           </div>
         </div>
         
@@ -879,7 +1336,9 @@ function renderTransferHistoryCard(transfer) {
           </div>
           <div class="flex-1">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Destino</p>
-            <p class="font-semibold text-gray-900 dark:text-white">${transfer.destinationInventoryName || "Inventario destino"}</p>
+            <p class="font-semibold text-gray-900 dark:text-white">${
+              transfer.destinationInventoryName || "Inventario destino"
+            }</p>
           </div>
         </div>
       </div>
@@ -889,7 +1348,9 @@ function renderTransferHistoryCard(transfer) {
           <i class="fas fa-user text-blue-500 mt-1"></i>
           <div>
             <p class="text-gray-600 dark:text-gray-400">Solicitado por:</p>
-            <p class="font-semibold text-gray-800 dark:text-gray-200">${transfer.requestedByName || "Usuario"}</p>
+            <p class="font-semibold text-gray-800 dark:text-gray-200">${
+              transfer.requestedByName || "Usuario"
+            }</p>
           </div>
         </div>
         
@@ -901,7 +1362,9 @@ function renderTransferHistoryCard(transfer) {
           </div>
         </div>
         
-        ${completedAt ? `
+        ${
+          completedAt
+            ? `
           <div class="flex items-start gap-2">
             <i class="fas fa-check text-green-500 mt-1"></i>
             <div>
@@ -909,9 +1372,13 @@ function renderTransferHistoryCard(transfer) {
               <p class="font-semibold text-gray-800 dark:text-gray-200">${completedAt}</p>
             </div>
           </div>
-        ` : ''}
+        `
+            : ""
+        }
         
-        ${transfer.details ? `
+        ${
+          transfer.details
+            ? `
           <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 rounded-r-lg">
             <p class="text-sm text-blue-900 dark:text-blue-300">
               <i class="fas fa-info-circle mr-2"></i>
@@ -919,9 +1386,13 @@ function renderTransferHistoryCard(transfer) {
               <span class="ml-6">${transfer.details}</span>
             </p>
           </div>
-        ` : ''}
+        `
+            : ""
+        }
         
-        ${transfer.approvalNotes ? `
+        ${
+          transfer.approvalNotes
+            ? `
           <div class="mt-2 p-4 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded-r-lg">
             <p class="text-sm text-green-900 dark:text-green-300">
               <i class="fas fa-comment mr-2"></i>
@@ -929,7 +1400,9 @@ function renderTransferHistoryCard(transfer) {
               <span class="ml-6">${transfer.approvalNotes}</span>
             </p>
           </div>
-        ` : ''}
+        `
+            : ""
+        }
       </div>
     </div>
   `;
@@ -961,10 +1434,13 @@ async function loadItemTransferHistory(itemId) {
     const headers = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    const response = await fetch(`/api/v1/transfers/inventory/${currentInventoryId}`, {
-      method: "GET",
-      headers: headers,
-    });
+    const response = await fetch(
+      `/api/v1/transfers/inventory/${currentInventoryId}`,
+      {
+        method: "GET",
+        headers: headers,
+      }
+    );
 
     if (response.ok) {
       const allTransfers = await response.json();
@@ -1032,6 +1508,9 @@ window.confirmDeleteItem = confirmDeleteItem;
 window.showTransferItemModal = showTransferItemModal;
 window.closeTransferItemModal = closeTransferItemModal;
 window.confirmTransferItem = confirmTransferItem;
+window.showLendItemModal = showLendItemModal;
+window.closeLendItemModal = closeLendItemModal;
+window.confirmLendItem = confirmLendItem;
 window.showApproveTransferModal = showApproveTransferModal;
 window.closeApproveTransferModal = closeApproveTransferModal;
 window.renderApprovalTransferCard = renderApprovalTransferCard;
@@ -1041,3 +1520,6 @@ window.cancelTransferDirectly = cancelTransferDirectly;
 window.showItemTransferHistoryModal = showItemTransferHistoryModal;
 window.closeItemTransferHistoryModal = closeItemTransferHistoryModal;
 window.loadItemTransferHistory = loadItemTransferHistory;
+window.navigateCarousel = navigateCarousel;
+window.goToCarouselImage = goToCarouselImage;
+window.populateViewItemModal = populateViewItemModal;

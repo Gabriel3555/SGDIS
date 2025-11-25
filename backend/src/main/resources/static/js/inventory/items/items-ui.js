@@ -6,9 +6,9 @@ function createItemImageWithSpinner(imgUrl, alt, className, size = "w-24 h-24", 
         const uniqueId = "img-placeholder-" + Math.random().toString(36).substr(2, 9);
         const clickable = itemId ? `cursor-pointer hover:bg-gray-300 transition-colors` : '';
         const onClick = itemId ? `onclick="handleItemImageUploadClick(${itemId}, '${uniqueId}')"` : '';
-        return `<div class="${size} ${shape} bg-gray-200 flex items-center justify-center text-gray-400 ${clickable}" id="${uniqueId}" ${onClick} title="${itemId ? 'Haz clic para subir una imagen' : ''}">
+        return `<div class="${size} ${shape} bg-gray-200 flex items-center justify-center text-gray-400 ${clickable}" id="${uniqueId}" ${onClick} title="${itemId ? 'Haz clic para subir imágenes' : ''}">
             <i class="fas fa-box text-2xl"></i>
-            ${itemId ? '<input type="file" accept="image/*" id="file-input-' + uniqueId + '" style="display: none;" onchange="handleItemImageFileSelect(event, ' + itemId + ', \'' + uniqueId + '\')">' : ''}
+            ${itemId ? '<input type="file" accept="image/*" multiple id="file-input-' + uniqueId + '" style="display: none;" onchange="handleItemImageFileSelect(event, ' + itemId + ', \'' + uniqueId + '\')">' : ''}
         </div>`;
     }
 
@@ -19,7 +19,7 @@ function createItemImageWithSpinner(imgUrl, alt, className, size = "w-24 h-24", 
         ? `onerror="handleItemImageError('${uniqueId}', ${itemId})"`
         : `onerror="handleItemImageError('${uniqueId}', null)"`;
     return `
-        <div class="relative ${size} ${shape} overflow-hidden ${clickable}" id="img-container-${uniqueId}" ${onClick} title="${itemId ? 'Haz clic para cambiar la imagen' : ''}">
+        <div class="relative ${size} ${shape} overflow-hidden ${clickable}" id="img-container-${uniqueId}" ${onClick} title="${itemId ? 'Haz clic para subir imágenes' : ''}">
             <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
                 <div class="image-loading-spinner"></div>
             </div>
@@ -27,7 +27,7 @@ function createItemImageWithSpinner(imgUrl, alt, className, size = "w-24 h-24", 
                  id="img-${uniqueId}"
                  onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
                  ${errorHandler}>
-            ${itemId ? '<input type="file" accept="image/*" id="file-input-' + uniqueId + '" style="display: none;" onchange="handleItemImageFileSelect(event, ' + itemId + ', \'' + uniqueId + '\')">' : ''}
+            ${itemId ? '<input type="file" accept="image/*" multiple id="file-input-' + uniqueId + '" style="display: none;" onchange="handleItemImageFileSelect(event, ' + itemId + ', \'' + uniqueId + '\')">' : ''}
         </div>
     `;
 }
@@ -278,6 +278,9 @@ function updateItemsCards() {
                     <button onclick="event.stopPropagation(); showEditItemModal(${item.id})" class="px-2.5 py-1.5 bg-[#00AF00] hover:bg-[#008800] text-white rounded-lg text-xs transition-colors" title="Editar Item">
                         <i class="fas fa-edit"></i>
                     </button>
+                    <button onclick="event.stopPropagation(); showLendItemModal(${item.id})" class="px-2.5 py-1.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-xs transition-colors" title="Prestar Item">
+                        <i class="fas fa-hand-holding"></i>
+                    </button>
                     <button onclick="event.stopPropagation(); showTransferItemModal(${item.id})" class="px-2.5 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs transition-colors" title="Transferir Item">
                         <i class="fas fa-exchange-alt"></i>
                     </button>
@@ -361,6 +364,9 @@ function updateItemsList() {
                         </button>
                         <button onclick="showEditItemModal(${item.id})" class="px-3 py-1 bg-[#00AF00] hover:bg-[#008800] text-white rounded-lg text-sm transition-colors" title="Editar Item">
                             <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="showLendItemModal(${item.id})" class="px-3 py-1 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-sm transition-colors" title="Prestar Item">
+                            <i class="fas fa-hand-holding"></i>
                         </button>
                         <button onclick="showTransferItemModal(${item.id})" class="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm transition-colors" title="Transferir Item">
                             <i class="fas fa-exchange-alt"></i>
@@ -452,7 +458,7 @@ function handleItemImageError(uniqueId, itemId) {
     if (container) {
         const clickable = itemId ? 'cursor-pointer hover:bg-gray-300' : '';
         const onClick = itemId ? `onclick="handleItemImageUploadClick(${itemId}, '${uniqueId}')"` : '';
-        const fileInput = itemId ? `<input type="file" accept="image/*" id="file-input-${uniqueId}" style="display: none;" onchange="handleItemImageFileSelect(event, ${itemId}, '${uniqueId}')">` : '';
+        const fileInput = itemId ? `<input type="file" accept="image/*" multiple id="file-input-${uniqueId}" style="display: none;" onchange="handleItemImageFileSelect(event, ${itemId}, '${uniqueId}')">` : '';
         container.innerHTML = `<div class="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 ${clickable}" id="${uniqueId}" ${onClick}>
             <i class="fas fa-box"></i>
             ${fileInput}
@@ -470,26 +476,34 @@ function handleItemImageUploadClick(itemId, containerId) {
     }
 }
 
-// Handle file selection for item image upload
+// Handle file selection for item image upload (supports multiple files)
 async function handleItemImageFileSelect(event, itemId, containerId) {
-    const file = event.target.files[0];
-    if (!file) return;
+    const files = Array.from(event.target.files);
+    if (!files || files.length === 0) return;
     
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-        if (window.showErrorToast) {
-            window.showErrorToast('Error', 'Por favor selecciona un archivo de imagen válido');
+    // Validate all files
+    const validFiles = [];
+    for (const file of files) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            if (window.showErrorToast) {
+                window.showErrorToast('Error', `El archivo "${file.name}" no es una imagen válida`);
+            }
+            continue;
         }
-        return;
+        
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            if (window.showErrorToast) {
+                window.showErrorToast('Error', `La imagen "${file.name}" excede el tamaño máximo de 5MB`);
+            }
+            continue;
+        }
+        
+        validFiles.push(file);
     }
     
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-        if (window.showErrorToast) {
-            window.showErrorToast('Error', 'La imagen no debe exceder 5MB');
-        }
-        return;
-    }
+    if (validFiles.length === 0) return;
     
     // Show loading state
     const container = document.getElementById(containerId) || document.getElementById(`img-container-${containerId}`);
@@ -499,38 +513,58 @@ async function handleItemImageFileSelect(event, itemId, containerId) {
         const originalContent = container.innerHTML;
         container.innerHTML = `
             <div class="w-full h-full flex items-center justify-center bg-gray-100">
-                <div class="image-loading-spinner"></div>
+                <div class="text-center">
+                    <div class="image-loading-spinner mx-auto mb-2"></div>
+                    <p class="text-sm text-gray-600">Subiendo ${validFiles.length} imagen(es)...</p>
+                </div>
             </div>
         `;
         
         try {
-            // Upload image
+            // Upload all valid images
             if (window.uploadItemImage) {
-                await window.uploadItemImage(itemId, file);
+                let successCount = 0;
+                let errorCount = 0;
                 
-                // Show success message
-                if (window.showSuccessToast) {
-                    window.showSuccessToast('Éxito', 'Imagen subida correctamente');
+                for (const file of validFiles) {
+                    try {
+                        await window.uploadItemImage(itemId, file);
+                        successCount++;
+                    } catch (error) {
+                        console.error(`Error uploading image ${file.name}:`, error);
+                        errorCount++;
+                    }
+                }
+                
+                // Show success/error messages
+                if (successCount > 0) {
+                    if (window.showSuccessToast) {
+                        window.showSuccessToast(
+                            'Éxito', 
+                            `${successCount} imagen(es) subida(s) correctamente${errorCount > 0 ? `. ${errorCount} fallaron.` : ''}`
+                        );
+                    }
+                }
+                
+                if (errorCount > 0 && successCount === 0) {
+                    if (window.showErrorToast) {
+                        window.showErrorToast('Error', 'No se pudieron subir las imágenes');
+                    }
                 }
                 
                 // If in view modal, reload the modal content
                 if (isViewModal && window.itemsData && window.itemsData.items) {
                     const item = window.itemsData.items.find(i => i.id === itemId);
                     if (item && window.populateViewItemModal) {
-                        // Update item with new image URL (we'll need to reload from API)
-                        // For now, just reload items and refresh modal
-                        if (window.loadItemsData) {
-                            await window.loadItemsData();
-                        }
-                        // Reopen modal with updated item
+                        // Reload modal with updated images
                         if (window.showViewItemModal) {
-                            setTimeout(() => {
-                                window.showViewItemModal(itemId);
+                            setTimeout(async () => {
+                                await window.showViewItemModal(itemId);
                             }, 500);
                         }
                     }
                 } else {
-                    // Reload items to show updated image
+                    // Reload items to show updated images
                     if (window.loadItemsData) {
                         await window.loadItemsData();
                     }
@@ -539,17 +573,20 @@ async function handleItemImageFileSelect(event, itemId, containerId) {
                 throw new Error('uploadItemImage function not available');
             }
         } catch (error) {
-            console.error('Error uploading item image:', error);
+            console.error('Error uploading item images:', error);
             
             // Restore original content
             container.innerHTML = originalContent;
             
             // Show error message
             if (window.showErrorToast) {
-                window.showErrorToast('Error', error.message || 'No se pudo subir la imagen');
+                window.showErrorToast('Error', error.message || 'No se pudieron subir las imágenes');
             }
         }
     }
+    
+    // Reset file input to allow selecting the same files again
+    event.target.value = '';
 }
 
 // Export functions globally
