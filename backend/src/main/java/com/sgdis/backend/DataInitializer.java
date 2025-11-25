@@ -1,5 +1,5 @@
 package com.sgdis.backend;
-
+/*
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
@@ -227,3 +227,4 @@ public class DataInitializer implements CommandLineRunner {
         private List<String> ciudades;
     }
 }
+*/

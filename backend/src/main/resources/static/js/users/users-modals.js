@@ -949,9 +949,10 @@ async function showUserInventoriesModal(userId, type) {
     let title = '';
     let iconClass = '';
     let iconColor = '';
+    const userName = user.fullName || user.email || 'Usuario';
     
     if (type === 'owner') {
-        title = 'Inventarios como Owner';
+        title = `Inventario de ${userName}`;
         iconClass = 'fa-crown';
         iconColor = 'text-blue-600';
     } else if (type === 'signatory') {
@@ -965,7 +966,7 @@ async function showUserInventoriesModal(userId, type) {
     }
     
     if (titleElement) titleElement.textContent = title;
-    if (userNameElement) userNameElement.textContent = user.fullName || user.email || 'Usuario';
+    if (userNameElement) userNameElement.textContent = userName;
     if (iconElement) {
         iconElement.className = `fas ${iconClass} ${iconColor} text-3xl`;
     }
@@ -1016,7 +1017,7 @@ async function showUserInventoriesModal(userId, type) {
         }
 
         // Display inventories
-        displayUserInventories(inventories, loadingElement, contentElement, inventoriesListElement, inventoriesEmptyElement);
+        displayUserInventories(inventories, loadingElement, contentElement, inventoriesListElement, inventoriesEmptyElement, type);
     } catch (error) {
         console.error('Error loading user inventories:', error);
         showErrorToast('Error', 'Error al cargar los inventarios del usuario');
@@ -1032,7 +1033,7 @@ async function showUserInventoriesModal(userId, type) {
     }
 }
 
-function displayUserInventories(inventories, loadingElement, contentElement, inventoriesListElement, inventoriesEmptyElement) {
+function displayUserInventories(inventories, loadingElement, contentElement, inventoriesListElement, inventoriesEmptyElement, type) {
     if (loadingElement) loadingElement.style.display = 'none';
     if (contentElement) contentElement.style.display = 'block';
 
@@ -1044,6 +1045,30 @@ function displayUserInventories(inventories, loadingElement, contentElement, inv
 
     if (inventoriesEmptyElement) inventoriesEmptyElement.style.display = 'none';
 
+    // Si es Owner, hacer el inventario más grande ya que solo se puede poseer uno
+    const isOwner = type === 'owner';
+    const cardClasses = isOwner 
+        ? 'bg-white border-2 border-blue-200 rounded-xl p-8 hover:shadow-xl transition-shadow' 
+        : 'bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow';
+    const titleClasses = isOwner 
+        ? 'text-2xl font-bold text-gray-800 mb-3' 
+        : 'text-lg font-bold text-gray-800 mb-2';
+    const textClasses = isOwner 
+        ? 'text-base text-gray-600 mb-2' 
+        : 'text-sm text-gray-600 mb-1';
+    const priceClasses = isOwner 
+        ? 'text-base text-gray-600' 
+        : 'text-sm text-gray-600';
+    const statusClasses = isOwner 
+        ? 'px-4 py-2 rounded-full text-sm font-medium' 
+        : 'px-3 py-1 rounded-full text-xs font-medium';
+    const idClasses = isOwner 
+        ? 'text-sm text-gray-500' 
+        : 'text-xs text-gray-500';
+    const buttonClasses = isOwner 
+        ? 'text-blue-600 hover:text-blue-800 text-base font-medium' 
+        : 'text-blue-600 hover:text-blue-800 text-sm font-medium';
+
     let inventoriesHtml = '';
     inventories.forEach(inventory => {
         const statusColor = inventory.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
@@ -1053,22 +1078,22 @@ function displayUserInventories(inventories, loadingElement, contentElement, inv
         const name = inventory.name || 'Sin nombre';
 
         inventoriesHtml += `
-            <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+            <div class="${cardClasses}">
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">${name}</h3>
-                        <p class="text-sm text-gray-600 mb-1">
+                        <h3 class="${titleClasses}">${name}</h3>
+                        <p class="${textClasses}">
                             <i class="fas fa-map-marker-alt mr-2"></i>${location}
                         </p>
-                        <p class="text-sm text-gray-600">
+                        <p class="${priceClasses}">
                             <i class="fas fa-dollar-sign mr-2"></i>${totalPrice}
                         </p>
                     </div>
-                    <span class="px-3 py-1 ${statusColor} rounded-full text-xs font-medium">${statusText}</span>
+                    <span class="${statusClasses} ${statusColor}">${statusText}</span>
                 </div>
                 <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <span class="text-xs text-gray-500">ID: ${inventory.id}</span>
-                    <button onclick="window.location.href='/superadmin/inventory'" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    <span class="${idClasses}">ID: ${inventory.id}</span>
+                    <button onclick="window.location.href='/superadmin/inventory'" class="${buttonClasses}">
                         Ver detalles <i class="fas fa-arrow-right ml-1"></i>
                     </button>
                 </div>
