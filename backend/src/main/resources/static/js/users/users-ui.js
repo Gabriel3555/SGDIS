@@ -650,6 +650,21 @@ function updateUsersTable() {
                             }')" class="user-action-btn p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
                                 <i class="fas fa-hand-holding"></i>
                             </button>
+                            <button onclick="showUserInventoriesModal('${
+                              user.id
+                            }', 'owner')" class="user-action-btn p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Inventarios como Owner">
+                                <i class="fas fa-crown"></i>
+                            </button>
+                            <button onclick="showUserInventoriesModal('${
+                              user.id
+                            }', 'signatory')" class="user-action-btn p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Inventarios como Signatory">
+                                <i class="fas fa-signature"></i>
+                            </button>
+                            <button onclick="showUserInventoriesModal('${
+                              user.id
+                            }', 'manager')" class="user-action-btn p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Inventarios como Manager">
+                                <i class="fas fa-user-cog"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -1209,6 +1224,21 @@ function updateUsersCards() {
                           user.id
                         }')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
                             <i class="fas fa-hand-holding"></i>
+                        </button>
+                        <button onclick="showUserInventoriesModal('${
+                          user.id
+                        }', 'owner')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Inventarios como Owner">
+                            <i class="fas fa-crown"></i>
+                        </button>
+                        <button onclick="showUserInventoriesModal('${
+                          user.id
+                        }', 'signatory')" class="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Inventarios como Signatory">
+                            <i class="fas fa-signature"></i>
+                        </button>
+                        <button onclick="showUserInventoriesModal('${
+                          user.id
+                        }', 'manager')" class="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Inventarios como Manager">
+                            <i class="fas fa-user-cog"></i>
                         </button>
                     </div>
                 </div>

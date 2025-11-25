@@ -13,6 +13,9 @@ import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
+import com.sgdis.backend.inventory.application.dto.InventoryResponse;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,6 +33,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -379,5 +383,67 @@ public class UserController {
     public ResponseEntity<List<LoanResponse>> getUserLoans(@PathVariable Long userId) {
         List<LoanResponse> loans = getMyLoansUseCase.getMyLoans(userId);
         return ResponseEntity.ok(loans);
+    }
+
+    @Operation(
+            summary = "Get user owned inventories",
+            description = "Retrieves all inventories owned by a specific user (Admin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Owned inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = com.sgdis.backend.inventory.application.dto.InventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @ApiResponse(responseCode = "403", description = "Access denied")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
+    @Transactional(readOnly = true)
+    @GetMapping("/{userId}/inventories/owner")
+    public ResponseEntity<List<InventoryResponse>> getUserOwnedInventories(@PathVariable Long userId) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        
+        List<InventoryEntity> inventories = 
+                userRepository.findInventoriesByOwnerId(userId);
+        
+        List<InventoryResponse> responses = inventories.stream()
+                .map(InventoryMapper::toResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(
+            summary = "Get user signatory inventories",
+            description = "Retrieves all inventories where a specific user is a signatory (Admin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Signatory inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User not found")
+    @ApiResponse(responseCode = "403", description = "Access denied")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
+    @Transactional(readOnly = true)
+    @GetMapping("/{userId}/inventories/signatory")
+    public ResponseEntity<List<InventoryResponse>> getUserSignatoryInventories(@PathVariable Long userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        
+        // Force initialization of lazy collection within transaction
+        List<InventoryEntity> inventories = user.getMySignatories();
+        if (inventories == null) {
+            inventories = List.of();
+        } else {
+            // Initialize the collection to avoid LazyInitializationException
+            inventories.size();
+        }
+        
+        List<InventoryResponse> responses = inventories.stream()
+                .map(InventoryMapper::toResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
     }
 }
