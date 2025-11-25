@@ -19,6 +19,5 @@ public record CreateItemRequest(
     String ivId,
     String location,
     Long inventoryId,
-    Long categoryId,
     Boolean status
 ) {}
