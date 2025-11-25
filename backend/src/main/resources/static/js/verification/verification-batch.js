@@ -34,6 +34,77 @@ function resetBatchVerificationState() {
     batchVerificationState.lastScannedCode = null;
     batchVerificationState.isScanning = false;
     updateScannedItemsList();
+    
+    // Clear manual input field
+    const manualInput = document.getElementById('manualPlateInput');
+    if (manualInput) {
+        manualInput.value = '';
+    }
+}
+
+// Add Manual Plate
+async function addManualPlate() {
+    const input = document.getElementById('manualPlateInput');
+    if (!input) return;
+    
+    const plateNumber = input.value.trim().toUpperCase();
+    
+    if (!plateNumber) {
+        showErrorToast('Campo vacío', 'Por favor ingresa una placa');
+        return;
+    }
+    
+    // Validate plate format (basic validation - alphanumeric)
+    if (!/^[A-Z0-9]+$/.test(plateNumber)) {
+        showErrorToast('Placa inválida', 'La placa solo debe contener letras y números');
+        return;
+    }
+    
+    // Check if plate already scanned
+    if (batchVerificationState.scannedItems.some(item => item.licencePlate === plateNumber)) {
+        showWarningToast('Duplicado', `La placa ${plateNumber} ya fue agregada`);
+        input.value = '';
+        input.focus();
+        return;
+    }
+    
+    // Search for item by licence plate to get item name (same logic as scanned items)
+    try {
+        const item = await getItemByLicencePlate(plateNumber);
+        
+        // If item not found, show error and don't add to list
+        if (!item) {
+            showErrorToast('Placa no encontrada', `La placa ${plateNumber} no coincide con ningún item en el inventario`);
+            input.value = '';
+            input.focus();
+            return;
+        }
+        
+        const itemName = item.productName;
+        
+        // Add item to list with name (using same structure as addScannedItem)
+        const scannedItem = {
+            licencePlate: plateNumber,
+            itemName: itemName,
+            photo: null, // No photo when added manually
+            evidence: null, // User can attach evidence later
+            timestamp: new Date()
+        };
+        
+        batchVerificationState.scannedItems.push(scannedItem);
+        updateScannedItemsList();
+        
+        // Clear input and refocus
+        input.value = '';
+        input.focus();
+        
+        showSuccessToast('Placa agregada', `${itemName} agregado correctamente`);
+    } catch (error) {
+        console.error('Error fetching item:', error);
+        showErrorToast('Error', `Error al buscar la placa ${plateNumber}. Intenta de nuevo.`);
+        input.value = '';
+        input.focus();
+    }
 }
 
 // Start Batch Scanner
@@ -597,6 +668,7 @@ async function finalizeBatchVerification() {
 // Export functions
 window.showBatchVerificationModal = showBatchVerificationModal;
 window.closeBatchVerificationModal = closeBatchVerificationModal;
+window.addManualPlate = addManualPlate;
 window.startBatchScanner = startBatchScanner;
 window.stopBatchScanner = stopBatchScanner;
 window.captureBatchPhoto = captureBatchPhoto;

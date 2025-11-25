@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -335,13 +336,27 @@ public class VerificationController {
 
             String fileUrl = verification.getPhotoUrl();
 
-            String relativePath = fileUrl.substring(8); // Remove "/uploads/"
-            Path filePath = Paths.get("uploads").resolve(relativePath).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
+            // Construir la ruta del archivo usando el mismo patrón que CancellationService
+            Path filePath;
+            if (fileUrl != null && fileUrl.startsWith("/uploads/")) {
+                String relativePath = fileUrl.substring(9); // Remove "/uploads/" (9 characters)
+                filePath = Paths.get("uploads").resolve(relativePath);
+            } else if (fileUrl != null && fileUrl.startsWith("uploads/")) {
+                filePath = Paths.get(fileUrl);
+            } else {
+                // Si no empieza con uploads, asumir que es relativo
+                filePath = Paths.get("uploads").resolve(fileUrl != null ? fileUrl : "");
+            }
 
-            if (!resource.exists() || !resource.isReadable()) {
+            // Verificar que el archivo existe antes de crear el Resource
+            if (!Files.exists(filePath) || !Files.isReadable(filePath)) {
+                // Log para debugging
+                System.err.println("File not found or not readable: " + filePath.toAbsolutePath());
+                System.err.println("File URL from DB: " + fileUrl);
                 return ResponseEntity.notFound().build();
             }
+
+            Resource resource = new FileSystemResource(filePath);
 
             String contentType = "application/octet-stream";
             String filename = filePath.getFileName().toString();
@@ -351,8 +366,10 @@ public class VerificationController {
                 contentType = "image/jpeg";
             } else if (filename.endsWith(".png")) {
                 contentType = "image/png";
-            } else if (filename.endsWith(".doc") || filename.endsWith(".docx")) {
+            } else if (filename.endsWith(".doc")) {
                 contentType = "application/msword";
+            } else if (filename.endsWith(".docx")) {
+                contentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
             }
 
             return ResponseEntity.ok()
@@ -360,6 +377,7 @@ public class VerificationController {
                     .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                     .body(resource);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

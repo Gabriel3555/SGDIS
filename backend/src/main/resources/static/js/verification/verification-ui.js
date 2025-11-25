@@ -192,10 +192,6 @@ function updateVerificationTable() {
                                 class="text-purple-600 hover:text-purple-800 transition-colors" title="Descargar Evidencia">
                                 <i class="fas fa-download"></i>
                             </button>
-                            <button onclick="showDeleteVerificationModal(${verification.id})" 
-                                class="text-red-600 hover:text-red-800 transition-colors" title="Eliminar Evidencia">
-                                <i class="fas fa-trash"></i>
-                            </button>
                         ` : ''}
                     </div>
                 </td>

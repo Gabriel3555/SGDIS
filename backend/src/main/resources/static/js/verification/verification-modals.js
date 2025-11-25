@@ -6,6 +6,10 @@ function showNewVerificationModal() {
         // Reset form
         document.getElementById('newVerificationForm').reset();
         selectVerificationType('serial');
+        // Clear evidence
+        if (typeof clearNewVerificationEvidence === 'function') {
+            clearNewVerificationEvidence();
+        }
     }
 }
 
@@ -14,6 +18,10 @@ function closeNewVerificationModal() {
     const modal = document.getElementById('newVerificationModal');
     if (modal) {
         modal.classList.add('hidden');
+        // Clear evidence
+        if (typeof clearNewVerificationEvidence === 'function') {
+            clearNewVerificationEvidence();
+        }
     }
 }
 
@@ -66,9 +74,6 @@ async function showViewVerificationModal(verificationId) {
             return;
         }
         
-        const statusColor = getStatusColor(verification.status);
-        const statusText = getStatusText(verification.status);
-        
         content.innerHTML = `
             <!-- Verification Information -->
             <div class="bg-gray-50 rounded-xl p-6">
@@ -82,20 +87,14 @@ async function showViewVerificationModal(verificationId) {
                         <p class="text-gray-900 font-semibold">${verification.id || '-'}</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                        <span class="px-3 py-1 rounded-full text-xs font-medium ${statusColor}">
-                            ${statusText}
-                        </span>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Verificación</label>
+                        <p class="text-gray-900">${verification.verificationDate ? new Date(verification.verificationDate).toLocaleDateString('es-ES') : '-'}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             ${verification.serialNumber ? 'Número de Serie' : 'Placa'}
                         </label>
                         <p class="text-gray-900 font-semibold">${verification.serialNumber || verification.licensePlate || '-'}</p>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Verificación</label>
-                        <p class="text-gray-900">${verification.verificationDate ? new Date(verification.verificationDate).toLocaleDateString('es-ES') : '-'}</p>
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Item</label>
@@ -107,12 +106,36 @@ async function showViewVerificationModal(verificationId) {
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Evidencia</label>
-                        <div class="flex items-center gap-2">
-                            ${verification.hasEvidence ? 
-                                '<i class="fas fa-check-circle text-green-500"></i><span class="text-gray-900">Disponible</span>' : 
-                                '<i class="fas fa-times-circle text-gray-300"></i><span class="text-gray-900">No disponible</span>'
-                            }
-                        </div>
+                        ${verification.hasEvidence ? `
+                            <div class="mt-3 space-y-3">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <i class="fas fa-check-circle text-green-500"></i>
+                                    <span class="text-gray-900 font-medium">Disponible</span>
+                                </div>
+                                <div id="evidence-preview-container-${verification.id}" class="relative group">
+                                    <div class="flex items-center justify-center py-8">
+                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00AF00]"></div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 mt-2">
+                                    <button onclick="downloadEvidence(${verification.id})" 
+                                        class="px-4 py-2 bg-[#00AF00] text-white rounded-lg hover:bg-[#008800] transition-colors flex items-center gap-2">
+                                        <i class="fas fa-download"></i>
+                                        Descargar
+                                    </button>
+                                    <button onclick="openImagePreviewForVerification(${verification.id})"
+                                        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2">
+                                        <i class="fas fa-expand"></i>
+                                        Ver completa
+                                    </button>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-times-circle text-gray-300"></i>
+                                <span class="text-gray-900">No disponible</span>
+                            </div>
+                        `}
                     </div>
                     ${verification.notes ? `
                         <div class="md:col-span-2">
@@ -123,6 +146,11 @@ async function showViewVerificationModal(verificationId) {
                 </div>
             </div>
         `;
+        
+        // Load evidence image if available
+        if (verification.hasEvidence) {
+            loadEvidencePreview(verification.id);
+        }
     } catch (error) {
         console.error('Error loading verification details:', error);
         content.innerHTML = `
@@ -131,6 +159,74 @@ async function showViewVerificationModal(verificationId) {
                 <p class="text-gray-600">Error al cargar los detalles de la verificación.</p>
             </div>
         `;
+    }
+}
+
+// Load evidence preview with authentication
+async function loadEvidencePreview(verificationId) {
+    const container = document.getElementById(`evidence-preview-container-${verificationId}`);
+    if (!container) return;
+
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/verifications/${verificationId}/evidence`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const imageUrl = URL.createObjectURL(blob);
+            
+            container.innerHTML = `
+                <img src="${imageUrl}" 
+                     alt="Evidencia de verificación"
+                     class="w-full max-w-md rounded-lg shadow-md cursor-pointer hover:shadow-xl transition-shadow duration-200"
+                     onclick="openImagePreviewForVerification(${verificationId})"
+                />
+                <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center pointer-events-none">
+                    <i class="fas fa-search-plus text-white text-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></i>
+                </div>
+            `;
+        } else {
+            throw new Error('No se pudo cargar la imagen');
+        }
+    } catch (error) {
+        console.error('Error loading evidence preview:', error);
+        container.innerHTML = `
+            <div class="bg-gray-100 rounded-lg p-8 text-center">
+                <i class="fas fa-image text-gray-400 text-4xl mb-2"></i>
+                <p class="text-gray-600 text-sm">No se pudo cargar la vista previa</p>
+            </div>
+        `;
+    }
+}
+
+// Open image preview for a specific verification
+async function openImagePreviewForVerification(verificationId) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {};
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/verifications/${verificationId}/evidence`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const imageUrl = URL.createObjectURL(blob);
+            openImagePreview(imageUrl);
+        } else {
+            showErrorToast('Error', 'No se pudo cargar la imagen');
+        }
+    } catch (error) {
+        console.error('Error loading image:', error);
+        showErrorToast('Error', 'No se pudo cargar la imagen');
     }
 }
 
@@ -162,42 +258,6 @@ function closeUploadEvidenceModal() {
     verificationData.currentVerificationId = null;
 }
 
-// Show Delete Verification Modal
-function showDeleteVerificationModal(verificationId) {
-    verificationData.currentVerificationId = verificationId;
-    const modal = document.getElementById('deleteVerificationModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-    }
-}
-
-// Close Delete Verification Modal
-function closeDeleteVerificationModal() {
-    const modal = document.getElementById('deleteVerificationModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-    verificationData.currentVerificationId = null;
-}
-
-// Confirm Delete Evidence
-async function confirmDeleteEvidence() {
-    if (!verificationData.currentVerificationId) {
-        showErrorToast('Error', 'No se ha seleccionado una verificación');
-        return;
-    }
-
-    try {
-        await deleteEvidence(verificationData.currentVerificationId);
-        showSuccessToast('Evidencia eliminada', 'La evidencia se eliminó correctamente');
-        closeDeleteVerificationModal();
-        await loadVerificationData();
-    } catch (error) {
-        console.error('Error deleting evidence:', error);
-        showErrorToast('Error', error.message || 'Error al eliminar la evidencia');
-    }
-}
-
 // Handle Evidence File Change
 function handleEvidenceFileChange(event) {
     const file = event.target.files[0];
@@ -218,6 +278,68 @@ function handleEvidenceFileChange(event) {
     }
 }
 
+// Open Image Preview in full screen
+function openImagePreview(imageUrl) {
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center';
+    overlay.style.zIndex = '10005';
+    overlay.onclick = function(e) {
+        if (e.target === overlay) {
+            document.body.removeChild(overlay);
+        }
+    };
+
+    // Create image container
+    const container = document.createElement('div');
+    container.className = 'relative max-w-7xl max-h-screen p-4';
+
+    // Create close button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '<i class="fas fa-times text-2xl"></i>';
+    closeBtn.className = 'absolute top-4 right-4 text-white hover:text-gray-300 bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center z-10';
+    closeBtn.onclick = function() {
+        document.body.removeChild(overlay);
+    };
+
+    // Create image
+    const img = document.createElement('img');
+    img.src = imageUrl;
+    img.className = 'max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl';
+    img.alt = 'Vista previa de evidencia';
+    
+    // Add loading spinner
+    const spinner = document.createElement('div');
+    spinner.className = 'animate-spin rounded-full h-12 w-12 border-b-2 border-white';
+    container.appendChild(spinner);
+    
+    img.onload = function() {
+        spinner.remove();
+    };
+    
+    img.onerror = function() {
+        spinner.remove();
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'text-white text-center p-4';
+        errorMsg.innerHTML = '<i class="fas fa-exclamation-triangle text-4xl mb-4"></i><p>No se pudo cargar la imagen</p>';
+        container.appendChild(errorMsg);
+    };
+
+    container.appendChild(closeBtn);
+    container.appendChild(img);
+    overlay.appendChild(container);
+    document.body.appendChild(overlay);
+
+    // Close on ESC key
+    const handleEsc = function(e) {
+        if (e.key === 'Escape') {
+            document.body.removeChild(overlay);
+            document.removeEventListener('keydown', handleEsc);
+        }
+    };
+    document.addEventListener('keydown', handleEsc);
+}
+
 window.showNewVerificationModal = showNewVerificationModal;
 window.closeNewVerificationModal = closeNewVerificationModal;
 window.selectVerificationType = selectVerificationType;
@@ -225,8 +347,8 @@ window.showViewVerificationModal = showViewVerificationModal;
 window.closeViewVerificationModal = closeViewVerificationModal;
 window.showUploadEvidenceModal = showUploadEvidenceModal;
 window.closeUploadEvidenceModal = closeUploadEvidenceModal;
-window.showDeleteVerificationModal = showDeleteVerificationModal;
-window.closeDeleteVerificationModal = closeDeleteVerificationModal;
-window.confirmDeleteEvidence = confirmDeleteEvidence;
 window.handleEvidenceFileChange = handleEvidenceFileChange;
+window.openImagePreview = openImagePreview;
+window.loadEvidencePreview = loadEvidencePreview;
+window.openImagePreviewForVerification = openImagePreviewForVerification;
 
