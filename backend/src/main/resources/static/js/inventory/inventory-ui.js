@@ -45,8 +45,6 @@ function updateInventoryStats() {
   }
 
   const totalInventories = window.inventoryData.inventories.length;
-  const uniqueLocations = getUniqueLocationsCount();
-  const inventoriesWithUUID = getInventoriesWithUUIDCount();
   const activeInventories = window.inventoryData.inventories.filter(
     (i) => i && i.status !== false
   ).length;
@@ -68,32 +66,6 @@ function updateInventoryStats() {
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Ubicaciones</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${uniqueLocations}</h3>
-                </div>
-                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-map-marker-alt text-[#00AF00] text-xl"></i>
-                </div>
-            </div>
-            <p class="text-[#00AF00] text-sm font-medium">Ubicaciones diferentes</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Con UUID</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${inventoriesWithUUID}</h3>
-                </div>
-                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-hashtag text-purple-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-purple-600 text-sm font-medium">Inventarios con identificador</p>
-        </div>
-
-        <div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Activos</p>
                     <h3 class="text-3xl font-bold text-gray-800">${activeInventories}</h3>
                 </div>
@@ -107,28 +79,6 @@ function updateInventoryStats() {
 }
 
 // Helper functions for stats
-function getUniqueLocationsCount() {
-  if (!inventoryData.inventories || !Array.isArray(inventoryData.inventories)) {
-    return 0;
-  }
-
-  const locations = new Set();
-  inventoryData.inventories.forEach((inventory) => {
-    if (inventory.location) {
-      locations.add(inventory.location);
-    }
-  });
-  return locations.size;
-}
-
-function getInventoriesWithUUIDCount() {
-  if (!inventoryData.inventories || !Array.isArray(inventoryData.inventories)) {
-    return 0;
-  }
-
-  return inventoryData.inventories.filter((inventory) => inventory.uuid).length;
-}
-
 function updateSearchAndFilters() {
   const container = document.getElementById("searchFilterContainer");
   if (!container) return;
