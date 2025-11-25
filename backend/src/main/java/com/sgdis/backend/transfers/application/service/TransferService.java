@@ -94,7 +94,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
             itemRepository.save(item);
             
             // Actualizar totalPrice de ambos inventarios
-            updateInventoryTotalPrices(sourceInventory, destinationInventory, item.getAcquisitionValue());
+            updateInventoryTotalPrices(sourceInventory.getId(), destinationInventory.getId(), item.getAcquisitionValue());
             
             transfer.setApprovedAt(LocalDateTime.now());
             transfer.setApprovedBy(requester);
@@ -171,7 +171,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         itemRepository.save(item);
 
         // Actualizar totalPrice de ambos inventarios
-        updateInventoryTotalPrices(sourceInventory, destinationInventory, item.getAcquisitionValue());
+        updateInventoryTotalPrices(sourceInventory.getId(), destinationInventory.getId(), item.getAcquisitionValue());
 
         transfer.setSourceInventory(sourceInventory);
         transfer.setApprovalStatus(TransferStatus.APPROVED);
@@ -251,24 +251,21 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
     /**
      * Actualiza el totalPrice de los inventarios origen y destino durante una transferencia.
      * Resta el valor del inventario origen y lo suma al inventario destino.
+     * Usa queries directas a la base de datos para evitar problemas con el caché de Hibernate.
      * 
-     * @param sourceInventory Inventario de origen (se resta el valor)
-     * @param destinationInventory Inventario de destino (se suma el valor)
+     * @param sourceInventoryId ID del inventario de origen (se resta el valor)
+     * @param destinationInventoryId ID del inventario de destino (se suma el valor)
      * @param itemValue Valor del item a transferir (acquisitionValue)
      */
-    private void updateInventoryTotalPrices(InventoryEntity sourceInventory, 
-                                            InventoryEntity destinationInventory, 
+    private void updateInventoryTotalPrices(Long sourceInventoryId, 
+                                            Long destinationInventoryId, 
                                             Double itemValue) {
         if (itemValue != null && itemValue > 0) {
-            // Restar del inventario origen
-            Double sourceTotal = sourceInventory.getTotalPrice() != null ? sourceInventory.getTotalPrice() : 0.0;
-            sourceInventory.setTotalPrice(Math.max(0.0, sourceTotal - itemValue));
-            inventoryRepository.save(sourceInventory);
-
-            // Sumar al inventario destino
-            Double destTotal = destinationInventory.getTotalPrice() != null ? destinationInventory.getTotalPrice() : 0.0;
-            destinationInventory.setTotalPrice(destTotal + itemValue);
-            inventoryRepository.save(destinationInventory);
+            // Restar del inventario origen usando query directa
+            inventoryRepository.subtractFromTotalPrice(sourceInventoryId, itemValue);
+            
+            // Sumar al inventario destino usando query directa
+            inventoryRepository.addToTotalPrice(destinationInventoryId, itemValue);
         }
     }
 }

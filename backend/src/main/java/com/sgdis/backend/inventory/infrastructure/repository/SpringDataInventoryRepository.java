@@ -6,6 +6,7 @@ import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -44,4 +45,20 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
             @Param("institutionId") Long institutionId,
             Pageable pageable
     );
+    
+    /**
+     * Suma un valor al totalPrice del inventario.
+     * Si totalPrice es null, se trata como 0.
+     */
+    @Modifying
+    @Query("UPDATE InventoryEntity i SET i.totalPrice = COALESCE(i.totalPrice, 0) + :value WHERE i.id = :inventoryId")
+    void addToTotalPrice(@Param("inventoryId") Long inventoryId, @Param("value") Double value);
+    
+    /**
+     * Resta un valor del totalPrice del inventario.
+     * Usa GREATEST para evitar valores negativos.
+     */
+    @Modifying
+    @Query("UPDATE InventoryEntity i SET i.totalPrice = GREATEST(COALESCE(i.totalPrice, 0) - :value, 0) WHERE i.id = :inventoryId")
+    void subtractFromTotalPrice(@Param("inventoryId") Long inventoryId, @Param("value") Double value);
 }
