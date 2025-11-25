@@ -195,6 +195,7 @@ async function getLatestVerifications(inventoryId) {
                     itemName: v.itemName,
                     inventoryId: v.inventoryId,
                     inventoryName: v.inventoryName,
+                    status: v.status || 'PENDING',
                     hasEvidence: v.photoUrl && v.photoUrl.length > 0,
                     verificationDate: v.verifiedAt,
                     photoUrl: v.photoUrl || null,
@@ -251,22 +252,18 @@ async function getItemVerifications(itemId) {
     }
 }
 
-async function createVerificationBySerial(serialNumber, photoFile = null) {
+async function createVerificationBySerial(serialNumber) {
     try {
         const token = localStorage.getItem('jwt');
-        const headers = {};
+        const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const formData = new FormData();
-        formData.append('serial', serialNumber);
-        if (photoFile) {
-            formData.append('photo', photoFile);
-        }
-
+        // Note: The API endpoint seems incomplete in the documentation
+        // Assuming it should be: POST /api/v1/verifications/by-serial
         const response = await fetch(`/api/v1/verifications/by-serial`, {
             method: 'POST',
             headers: headers,
-            body: formData
+            body: JSON.stringify({ serialNumber: serialNumber })
         });
 
         if (response.ok) {
@@ -288,22 +285,16 @@ async function createVerificationBySerial(serialNumber, photoFile = null) {
     }
 }
 
-async function createVerificationByPlate(licensePlate, photoFile = null) {
+async function createVerificationByPlate(licensePlate) {
     try {
         const token = localStorage.getItem('jwt');
-        const headers = {};
+        const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
-
-        const formData = new FormData();
-        formData.append('licencePlateNumber', licensePlate);
-        if (photoFile) {
-            formData.append('photo', photoFile);
-        }
 
         const response = await fetch(`/api/v1/verifications/by-licence-plate`, {
             method: 'POST',
             headers: headers,
-            body: formData
+            body: JSON.stringify({ licencePlateNumber: licensePlate })
         });
 
         if (response.ok) {

@@ -303,23 +303,6 @@
                     </div>
                 </div>
 
-                <!-- Evidence File Upload -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Evidencia (Opcional)</label>
-                    <div class="flex items-center gap-4">
-                        <div class="flex-1">
-                            <input type="file" id="newVerificationEvidenceFile" accept="image/*" class="hidden"
-                                onchange="handleNewVerificationFileChange(event)">
-                            <button type="button" onclick="document.getElementById('newVerificationEvidenceFile').click()"
-                                class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors border border-gray-300">
-                                <i class="fas fa-image mr-2"></i>
-                                Seleccionar Imagen
-                            </button>
-                            <p class="text-xs text-gray-500 mt-1" id="newVerificationFileName">JPG, PNG. Máx. 5MB (Opcional)</p>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closeNewVerificationModal()"
                         class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">

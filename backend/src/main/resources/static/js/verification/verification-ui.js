@@ -44,8 +44,8 @@ function updateStatsCards() {
     if (!container) return;
 
     const total = verificationData.verifications.length;
-    const pending = verificationData.verifications.filter(v => !v.hasEvidence).length;
-    const completed = verificationData.verifications.filter(v => v.hasEvidence).length;
+    const pending = verificationData.verifications.filter(v => v.status === 'PENDING').length;
+    const completed = verificationData.verifications.filter(v => v.status === 'COMPLETED' || v.status === 'VERIFIED').length;
     const withEvidence = verificationData.verifications.filter(v => v.hasEvidence).length;
 
     container.innerHTML = `
@@ -120,6 +120,19 @@ function updateFilters() {
                 ${inventoryOptions}
             </select>
         </div>
+
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Estado</label>
+            <select id="statusFilter" onchange="setStatusFilter(this.value)"
+                class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                <option value="all">Todos los Estados</option>
+                <option value="PENDING">Pendiente</option>
+                <option value="IN_PROGRESS">En Progreso</option>
+                <option value="COMPLETED">Completada</option>
+                <option value="VERIFIED">Verificada</option>
+                <option value="REJECTED">Rechazada</option>
+            </select>
+        </div>
     `;
 }
 
@@ -148,6 +161,9 @@ function updateVerificationTable() {
     const currentVerifications = verificationData.filteredVerifications.slice(startIndex, endIndex);
 
     const tableRows = currentVerifications.map(verification => {
+        const statusColor = getStatusColor(verification.status);
+        const statusText = getStatusText(verification.status);
+        
         return `
             <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4">
@@ -162,6 +178,11 @@ function updateVerificationTable() {
                 </td>
                 <td class="px-6 py-4">
                     <div class="text-gray-800">${verification.inventoryName || '-'}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <span class="px-3 py-1 rounded-full text-xs font-medium ${statusColor}">
+                        ${statusText}
+                    </span>
                 </td>
                 <td class="px-6 py-4">
                     <div class="flex items-center gap-2">
@@ -210,6 +231,7 @@ function updateVerificationTable() {
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Identificador</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventario</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Evidencia</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
