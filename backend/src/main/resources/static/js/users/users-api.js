@@ -46,7 +46,12 @@ async function loadCurrentUserInfo() {
             }
             // Also store in window for easy access
             window.currentUserRole = userData.role;
-            updateUserInfoDisplay(userData);
+            // Call updateUserInfoDisplay if available (may not be available on items page)
+            if (typeof updateUserInfoDisplay === 'function') {
+                updateUserInfoDisplay(userData);
+            } else if (window.updateUserInfoDisplay) {
+                window.updateUserInfoDisplay(userData);
+            }
             
             // If super admin, trigger filter update to show regional/institution filters
             if (userData.role && userData.role.toUpperCase() === 'SUPERADMIN') {
@@ -70,11 +75,20 @@ async function loadCurrentUserInfo() {
                 window.usersData.currentLoggedInUserRole = 'SUPERADMIN';
             }
         }
-        updateUserInfoDisplay({
-            fullName: 'Super Admin',
-            role: 'SUPERADMIN',
-            email: 'admin@sena.edu.co'
-        });
+        // Call updateUserInfoDisplay if available (may not be available on items page)
+        if (typeof updateUserInfoDisplay === 'function') {
+            updateUserInfoDisplay({
+                fullName: 'Super Admin',
+                role: 'SUPERADMIN',
+                email: 'admin@sena.edu.co'
+            });
+        } else if (window.updateUserInfoDisplay) {
+            window.updateUserInfoDisplay({
+                fullName: 'Super Admin',
+                role: 'SUPERADMIN',
+                email: 'admin@sena.edu.co'
+            });
+        }
     }
 }
 
@@ -724,7 +738,9 @@ async function loadUserStatistics() {
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         // Check if current user is SUPERADMIN
-        const currentRole = usersData.currentLoggedInUserRole || '';
+        // Safely get usersData - check if we're in items page context
+        const usersDataRef = window.usersData || (typeof usersData !== 'undefined' ? usersData : {});
+        const currentRole = usersDataRef.currentLoggedInUserRole || '';
         if (currentRole !== 'SUPERADMIN') {
             // For non-SUPERADMIN users, return null to use local calculation
             return null;
@@ -753,3 +769,6 @@ async function loadUserStatistics() {
 }
 
 window.loadUserStatistics = loadUserStatistics;
+window.loadUsersData = loadUsersData;
+window.loadUsers = loadUsers;
+window.loadCurrentUserInfo = loadCurrentUserInfo;

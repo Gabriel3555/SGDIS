@@ -314,17 +314,28 @@ async function populateViewItemModal(item) {
   // Build carousel HTML
   let carouselHtml = "";
   if (images && images.length > 0) {
-    // Generate all image elements
+    // Generate all image elements with delete buttons
     const imageElements = images
       .map((imgUrl, index) => {
         const escapedUrl = imgUrl.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        const doubleEscapedUrl = imgUrl.replace(/'/g, "\\'").replace(/"/g, "&quot;").replace(/\\/g, "\\\\");
         return `
-            <img src="${escapedUrl}" alt="${productName} - Imagen ${index + 1}" 
-                 class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-                   index === 0 ? "opacity-100" : "opacity-0"
-                 }" 
-                 id="${carouselId}-img-${index}"
+            <div class="absolute inset-0 transition-opacity duration-300 ${
+              index === 0 ? "opacity-100" : "opacity-0"
+            }" 
+                 id="${carouselId}-img-container-${index}"
                  data-index="${index}">
+              <img src="${escapedUrl}" alt="${productName} - Imagen ${index + 1}" 
+                   class="w-full h-full object-cover"
+                   id="${carouselId}-img-${index}"
+                   data-index="${index}">
+              <button type="button" 
+                      onclick="deleteItemImageFromModal(${item.id}, '${doubleEscapedUrl}', '${carouselId}', ${index})"
+                      class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-colors z-20 shadow-lg"
+                      title="Eliminar imagen">
+                <i class="fas fa-trash text-sm"></i>
+              </button>
+            </div>
           `;
       })
       .join("");
@@ -438,6 +449,71 @@ async function populateViewItemModal(item) {
     initializeCarousel(carouselId);
     setupCarouselEventListeners(carouselId);
   }, 0);
+}
+
+// Function to delete an image from the view modal
+async function deleteItemImageFromModal(itemId, imageUrl, carouselId, imageIndex) {
+  if (!itemId || !imageUrl) {
+    if (window.showErrorToast) {
+      window.showErrorToast("Error", "No se pudo identificar la imagen a eliminar");
+    }
+    return;
+  }
+
+  // Confirm deletion
+  if (!confirm("¿Está seguro que desea eliminar esta imagen? Esta acción no se puede deshacer.")) {
+    return;
+  }
+
+  try {
+    // Show loading state
+    const deleteButton = document.querySelector(`#${carouselId}-img-container-${imageIndex} button`);
+    if (deleteButton) {
+      deleteButton.disabled = true;
+      deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
+
+    // Call delete API
+    if (window.deleteItemImage) {
+      await window.deleteItemImage(itemId, imageUrl);
+      
+      // Show success message
+      if (window.showSuccessToast) {
+        window.showSuccessToast("Éxito", "Imagen eliminada correctamente");
+      } else if (window.showErrorToast) {
+        window.showErrorToast("Éxito", "Imagen eliminada correctamente");
+      }
+
+      // Reload the modal to show updated images
+      if (window.itemsData && window.itemsData.items) {
+        const item = window.itemsData.items.find(i => i.id === itemId);
+        if (item && window.populateViewItemModal) {
+          await window.populateViewItemModal(item);
+        }
+      } else if (window.showViewItemModal) {
+        // Fallback: reload modal
+        await window.showViewItemModal(itemId);
+      }
+    } else {
+      throw new Error("La función de eliminar imagen no está disponible");
+    }
+  } catch (error) {
+    console.error("Error deleting item image:", error);
+    
+    // Restore button state
+    const deleteButton = document.querySelector(`#${carouselId}-img-container-${imageIndex} button`);
+    if (deleteButton) {
+      deleteButton.disabled = false;
+      deleteButton.innerHTML = '<i class="fas fa-trash text-sm"></i>';
+    }
+
+    if (window.showErrorToast) {
+      window.showErrorToast(
+        "Error",
+        error.message || "No se pudo eliminar la imagen"
+      );
+    }
+  }
 }
 
 function initializeCarousel(carouselId) {
@@ -577,24 +653,67 @@ function closeDeleteItemModal() {
 }
 
 async function confirmDeleteItem() {
-  if (!window.itemsData || !window.itemsData.currentItemId) return;
+  if (!window.itemsData || !window.itemsData.currentItemId) {
+    if (window.showErrorToast) {
+      window.showErrorToast("Error", "No se ha seleccionado un item para eliminar");
+    }
+    return;
+  }
 
   const itemId = window.itemsData.currentItemId;
 
   try {
-    // Note: There's no delete endpoint in ItemController, so we'll need to add it
-    // For now, we'll show an error
+    // Show loading state
+    const deleteButton = document.querySelector('#deleteItemModal button[onclick="confirmDeleteItem()"]');
+    if (deleteButton) {
+      deleteButton.disabled = true;
+      deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Eliminando...';
+    }
+
+    // Call delete API
+    if (window.deleteItem) {
+      const response = await window.deleteItem(itemId);
+      
+      // Show success message
+      if (window.showSuccessToast) {
+        window.showSuccessToast(
+          "Éxito",
+          response.message || `Item "${response.itemName || 'eliminado'}" eliminado correctamente`
+        );
+      } else if (window.showErrorToast) {
+        window.showErrorToast(
+          "Éxito",
+          response.message || "Item eliminado correctamente"
+        );
+      }
+
+      // Close modal
+      closeDeleteItemModal();
+
+      // Reload items list
+      if (window.loadItemsData) {
+        await window.loadItemsData();
+      } else if (window.updateItemsUI) {
+        window.updateItemsUI();
+      }
+    } else {
+      throw new Error("La función de eliminar item no está disponible");
+    }
+  } catch (error) {
+    console.error("Error deleting item:", error);
+    
+    // Restore button state
+    const deleteButton = document.querySelector('#deleteItemModal button[onclick="confirmDeleteItem()"]');
+    if (deleteButton) {
+      deleteButton.disabled = false;
+      deleteButton.innerHTML = 'Eliminar Item';
+    }
+
     if (window.showErrorToast) {
       window.showErrorToast(
         "Error",
-        "La funcionalidad de eliminar items aún no está implementada"
+        error.message || "No se pudo eliminar el item"
       );
-    }
-    closeDeleteItemModal();
-  } catch (error) {
-    console.error("Error deleting item:", error);
-    if (window.showErrorToast) {
-      window.showErrorToast("Error", "No se pudo eliminar el item");
     }
   }
 }
@@ -1670,6 +1789,7 @@ window.closeEditItemModal = closeEditItemModal;
 window.showDeleteItemModal = showDeleteItemModal;
 window.closeDeleteItemModal = closeDeleteItemModal;
 window.confirmDeleteItem = confirmDeleteItem;
+window.deleteItemImageFromModal = deleteItemImageFromModal;
 window.checkTransferPermissions = checkTransferPermissions;
 window.showTransferItemModal = showTransferItemModal;
 window.closeTransferItemModal = closeTransferItemModal;

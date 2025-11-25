@@ -165,11 +165,16 @@ async function updateInventoryStats() {
 
 // Helper functions for stats
 function updateSearchAndFilters() {
+  // Only run on inventory page, not on items page
+  const path = window.location.pathname || '';
+  if (path.includes('/items')) {
+    return; // Don't run on items page
+  }
+  
   const container = document.getElementById("searchFilterContainer");
   if (!container) return;
 
   // Check if user is super admin - check multiple ways to be sure
-  const path = window.location.pathname || '';
   const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                        path.includes('/superadmin');
 
@@ -265,6 +270,8 @@ function updateSearchAndFilters() {
     // Use setTimeout to ensure DOM is ready
     setTimeout(() => {
       loadRegionalsForFilter();
+      // Get selectedRegional from window.inventoryData safely
+      const selectedRegional = window.inventoryData?.selectedRegional || '';
       if (selectedRegional) {
         loadInstitutionsForFilter(selectedRegional);
       }
@@ -790,4 +797,4 @@ window.handleInventorySearchInput = handleInventorySearchInput;
 window.handleInventorySearchKeyup = handleInventorySearchKeyup;
 window.handleInventorySearchKeypress = handleInventorySearchKeypress;
 window.updateViewModeButtons = updateViewModeButtons;
-window.setViewMode = setViewMode;
+// setViewMode is defined in inventory-data.js and exported there, no need to export again

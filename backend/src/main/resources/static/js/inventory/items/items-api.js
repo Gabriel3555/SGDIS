@@ -145,6 +145,38 @@ async function uploadItemImage(itemId, file) {
   }
 }
 
+async function getItemById(itemId, silent = false) {
+  try {
+    const token = localStorage.getItem("jwt");
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`/api/v1/items/${itemId}`, {
+      method: "GET",
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const item = await response.json();
+    return item;
+  } catch (error) {
+    // Only log as error if not silent (when we have a fallback)
+    if (!silent) {
+      console.error("Error fetching item by ID:", error);
+    } else {
+      console.debug("Error fetching item by ID (silent, using fallback):", error);
+    }
+    throw error;
+  }
+}
+
 async function getItemImages(itemId) {
   try {
     const token = localStorage.getItem("jwt");
@@ -174,6 +206,49 @@ async function getItemImages(itemId) {
     }
   } catch (error) {
     console.error("Error fetching item images:", error);
+    throw error;
+  }
+}
+
+async function deleteItem(itemId) {
+  try {
+    const token = localStorage.getItem("jwt");
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`/api/v1/items/${itemId}`, {
+      method: "DELETE",
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Error al eliminar el item";
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          errorMessage =
+            errorData.message ||
+            errorData.detail ||
+            errorData.error ||
+            errorMessage;
+        } else {
+          const errorText = await response.text();
+          errorMessage = errorText || errorMessage;
+        }
+      } catch (parseError) {
+        // Error al parsear respuesta
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting item:", error);
     throw error;
   }
 }
@@ -288,6 +363,8 @@ async function lendItem(itemId, responsibleName, details) {
 window.fetchItemsByInventory = fetchItemsByInventory;
 window.createItem = createItem;
 window.updateItem = updateItem;
+window.getItemById = getItemById;
+window.deleteItem = deleteItem;
 window.uploadItemImage = uploadItemImage;
 window.getItemImages = getItemImages;
 window.deleteItemImage = deleteItemImage;

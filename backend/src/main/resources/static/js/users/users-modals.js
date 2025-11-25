@@ -80,7 +80,7 @@ async function showNewUserModal() {
      }
 
      // Initialize custom selects if not already done
-     if (!window.roleSelect || !window.regionalSelect || !window.institutionSelect) {
+     if (!window.roleSelect || !window.regionalSelect || !window.institutionSelect || !window.jobTitleSelect) {
          initializeCustomSelects();
      } else {
          // Update role options based on current user role
@@ -106,11 +106,12 @@ function closeNewUserModal() {
          if (imagePreview) {
              imagePreview.innerHTML = '<i class="fas fa-user"></i>';
          }
-         // Clear job title and labor department fields
-         const jobTitleInput = document.getElementById('newUserJobTitle');
-         const laborDepartmentInput = document.getElementById('newUserLaborDepartment');
-         if (jobTitleInput) jobTitleInput.value = '';
-         if (laborDepartmentInput) laborDepartmentInput.value = '';
+    // Clear job title and labor department fields
+    const laborDepartmentInput = document.getElementById('newUserLaborDepartment');
+    if (window.jobTitleSelect) {
+        window.jobTitleSelect.clear();
+    }
+    if (laborDepartmentInput) laborDepartmentInput.value = '';
         // Clear custom selects
         if (window.roleSelect) {
             window.roleSelect.clear();
@@ -341,13 +342,17 @@ async function showEditUserModal(userId) {
 
         const fullNameInput = document.getElementById('editUserFullName');
         const emailInput = document.getElementById('editUserEmail');
-        const jobTitleInput = document.getElementById('editUserJobTitle');
         const laborDepartmentInput = document.getElementById('editUserLaborDepartment');
         const statusSelect = document.getElementById('editUserStatus');
 
         if (fullNameInput) fullNameInput.value = user.fullName || '';
         if (emailInput) emailInput.value = user.email || '';
-        if (jobTitleInput) jobTitleInput.value = user.jobTitle || '';
+        // Set job title using CustomSelect
+        if (window.editJobTitleSelect && user.jobTitle) {
+            window.editJobTitleSelect.setValue(user.jobTitle);
+        } else if (window.editJobTitleSelect) {
+            window.editJobTitleSelect.clear();
+        }
         if (laborDepartmentInput) laborDepartmentInput.value = user.laborDepartment || '';
         if (statusSelect) statusSelect.value = user.status !== false ? 'true' : 'false';
         
@@ -381,6 +386,9 @@ async function showEditUserModal(userId) {
         
         // Initialize regional and institution selects
         await loadRegionalsForEditUser();
+        
+        // Initialize job title select
+        initializeJobTitleSelectForEdit();
         
         // Load institution if user has one
         if (user.institution) {
@@ -594,9 +602,10 @@ function closeEditUserModal() {
     }
 
     // Clear job title and labor department fields
-    const jobTitleInput = document.getElementById('editUserJobTitle');
     const laborDepartmentInput = document.getElementById('editUserLaborDepartment');
-    if (jobTitleInput) jobTitleInput.value = '';
+    if (window.editJobTitleSelect) {
+        window.editJobTitleSelect.clear();
+    }
     if (laborDepartmentInput) laborDepartmentInput.value = '';
 
     usersData.currentUserId = null;
@@ -1483,6 +1492,29 @@ function initializeCustomSelects() {
             }
         }
     });
+
+    // Job Title select
+    const jobTitleOptions = [
+        { value: 'directivo', label: 'Directivo' },
+        { value: 'coordinador', label: 'Coordinador' },
+        { value: 'instructor', label: 'Instructor' },
+        { value: 'profesional', label: 'Profesional / Administrativo' },
+        { value: 'asistencial', label: 'Asistencial / Apoyo' },
+        { value: 'aprendiz', label: 'Aprendiz' },
+        { value: 'externo', label: 'Externo / Empresario' }
+    ];
+    
+    window.jobTitleSelect = new CustomSelect('newUserJobTitleSelect', {
+        placeholder: 'Seleccionar cargo',
+        onChange: function(option) {
+            // Clear error highlighting
+            const trigger = document.getElementById('newUserJobTitleSelect')?.querySelector('.custom-select-trigger');
+            if (trigger) {
+                trigger.classList.remove('border-red-500');
+            }
+        }
+    });
+    window.jobTitleSelect.setOptions(jobTitleOptions);
 }
 
 window.initializeCustomSelects = initializeCustomSelects;
@@ -1714,4 +1746,31 @@ async function loadInstitutionsByRegionalForEdit(regionalId) {
         console.error('Error loading institutions:', error);
         showErrorToast('Error', 'Error al cargar las instituciones');
     }
+}
+
+// Initialize job title select for edit user modal
+function initializeJobTitleSelectForEdit() {
+    const jobTitleOptions = [
+        { value: 'directivo', label: 'Directivo' },
+        { value: 'coordinador', label: 'Coordinador' },
+        { value: 'instructor', label: 'Instructor' },
+        { value: 'profesional', label: 'Profesional / Administrativo' },
+        { value: 'asistencial', label: 'Asistencial / Apoyo' },
+        { value: 'aprendiz', label: 'Aprendiz' },
+        { value: 'externo', label: 'Externo / Empresario' }
+    ];
+    
+    if (!window.editJobTitleSelect) {
+        window.editJobTitleSelect = new CustomSelect('editUserJobTitleSelect', {
+            placeholder: 'Seleccionar cargo',
+            onChange: function(option) {
+                // Clear error highlighting
+                const trigger = document.getElementById('editUserJobTitleSelect')?.querySelector('.custom-select-trigger');
+                if (trigger) {
+                    trigger.classList.remove('border-red-500');
+                }
+            }
+        });
+    }
+    window.editJobTitleSelect.setOptions(jobTitleOptions);
 }
