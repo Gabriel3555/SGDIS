@@ -309,6 +309,7 @@ function addScannedItem(licencePlate, photoFile, itemName = null) {
         licencePlate: licencePlate,
         itemName: itemName,
         photo: photoFile,
+        evidence: null, // Evidencia adicional adjuntada por el usuario
         timestamp: new Date()
     };
 
@@ -325,6 +326,28 @@ function addScannedItem(licencePlate, photoFile, itemName = null) {
 function removeScannedItem(index) {
     batchVerificationState.scannedItems.splice(index, 1);
     updateScannedItemsList();
+}
+
+// Handle Evidence Change
+function handleEvidenceChange(index, file) {
+    if (file && batchVerificationState.scannedItems[index]) {
+        batchVerificationState.scannedItems[index].evidence = file;
+        updateScannedItemsList();
+        showSuccessToast('Evidencia adjuntada', `Evidencia adjuntada para ${batchVerificationState.scannedItems[index].licencePlate}`);
+    }
+}
+
+// Remove Evidence
+function removeEvidence(index) {
+    if (batchVerificationState.scannedItems[index]) {
+        batchVerificationState.scannedItems[index].evidence = null;
+        // Reset the file input
+        const input = document.getElementById(`evidenceInput_${index}`);
+        if (input) {
+            input.value = '';
+        }
+        updateScannedItemsList();
+    }
 }
 
 // Update Scanned Items List
@@ -358,20 +381,47 @@ function updateScannedItemsList() {
                 <i class="fas fa-image text-gray-400"></i>
             </div>`;
 
-        return `
-            <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                ${photoPreview}
-                <div class="flex-1">
-                    <div class="font-semibold text-gray-800">${item.licencePlate}</div>
-                    ${item.itemName ? `<div class="text-sm text-gray-600 mt-1">${item.itemName}</div>` : ''}
-                    <div class="text-sm text-gray-500 mt-1">
-                        ${new Date(item.timestamp).toLocaleString('es-ES')}
-                    </div>
-                </div>
-                <button onclick="removeScannedItem(${index})" 
-                    class="text-red-600 hover:text-red-800 transition-colors">
-                    <i class="fas fa-trash"></i>
+        const evidencePreview = item.evidence ? 
+            `<div class="mt-2 flex items-center gap-2">
+                <i class="fas fa-paperclip text-green-600"></i>
+                <span class="text-xs text-green-600 font-medium">${item.evidence.name}</span>
+                <button onclick="removeEvidence(${index})" class="text-red-600 hover:text-red-800 ml-2">
+                    <i class="fas fa-times text-xs"></i>
                 </button>
+            </div>` : '';
+
+        return `
+            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="flex items-center gap-4 mb-3">
+                    ${photoPreview}
+                    <div class="flex-1">
+                        <div class="font-semibold text-gray-800">${item.licencePlate}</div>
+                        ${item.itemName ? `<div class="text-sm text-gray-600 mt-1">${item.itemName}</div>` : ''}
+                        <div class="text-sm text-gray-500 mt-1">
+                            ${new Date(item.timestamp).toLocaleString('es-ES')}
+                        </div>
+                    </div>
+                    <button onclick="removeScannedItem(${index})" 
+                        class="text-red-600 hover:text-red-800 transition-colors">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="border-t border-gray-200 pt-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-paperclip mr-1"></i>
+                        Adjuntar Evidencia
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <input 
+                            type="file" 
+                            id="evidenceInput_${index}" 
+                            accept="image/*,.pdf,.doc,.docx"
+                            onchange="handleEvidenceChange(${index}, this.files[0])"
+                            class="flex-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        />
+                    </div>
+                    ${evidencePreview}
+                </div>
             </div>
         `;
     }).join('');
@@ -431,6 +481,54 @@ async function finalizeBatchVerification() {
 
         const result = await response.json();
 
+        // Upload additional evidence files for successful verifications
+        if (result.results && result.results.length > 0) {
+            let evidenceUploadCount = 0;
+            const evidenceUploadPromises = [];
+
+            result.results.forEach((verificationResult) => {
+                if (verificationResult.success && verificationResult.verificationId) {
+                    // Find the corresponding scanned item by licence plate
+                    const scannedItem = items.find(item => item.licencePlate === verificationResult.licencePlateNumber);
+                    
+                    if (scannedItem && scannedItem.evidence) {
+                        // Upload evidence for this verification
+                        const evidenceFormData = new FormData();
+                        evidenceFormData.append('file', scannedItem.evidence);
+                        
+                        const evidencePromise = fetch(`/api/v1/verifications/${verificationResult.verificationId}/evidence`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: evidenceFormData
+                        }).then(response => {
+                            if (response.ok) {
+                                evidenceUploadCount++;
+                                return { success: true, licencePlate: verificationResult.licencePlateNumber };
+                            } else {
+                                console.error(`Error uploading evidence for ${verificationResult.licencePlateNumber}`);
+                                return { success: false, licencePlate: verificationResult.licencePlateNumber };
+                            }
+                        }).catch(error => {
+                            console.error(`Error uploading evidence for ${verificationResult.licencePlateNumber}:`, error);
+                            return { success: false, licencePlate: verificationResult.licencePlateNumber };
+                        });
+                        
+                        evidenceUploadPromises.push(evidencePromise);
+                    }
+                }
+            });
+
+            // Wait for all evidence uploads to complete
+            if (evidenceUploadPromises.length > 0) {
+                await Promise.all(evidenceUploadPromises);
+                if (evidenceUploadCount > 0) {
+                    showSuccessToast('Evidencias subidas', `Se subieron ${evidenceUploadCount} evidencias adicionales`);
+                }
+            }
+        }
+
         // Show results
         if (result.successfulItems === result.totalItems) {
             showSuccessToast('Éxito', `Se crearon ${result.successfulItems} verificaciones exitosamente`);
@@ -460,5 +558,7 @@ window.startBatchScanner = startBatchScanner;
 window.stopBatchScanner = stopBatchScanner;
 window.captureBatchPhoto = captureBatchPhoto;
 window.removeScannedItem = removeScannedItem;
+window.handleEvidenceChange = handleEvidenceChange;
+window.removeEvidence = removeEvidence;
 window.finalizeBatchVerification = finalizeBatchVerification;
 
