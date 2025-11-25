@@ -36,36 +36,21 @@ class WebSocketService {
         return;
       }
 
-      // URL del WebSocket - usando SockJS a través de HTTP
-      const wsUrl = "wss://sgdis.cloud/ws/websocket";
+      // NOTA: WebSocket en React Native requiere SockJS client nativo
+      // Por ahora, las notificaciones en mobile se manejarán solo con Push Notifications
+      console.log("⚠️ WebSocket en React Native requiere configuración adicional");
+      console.log("📱 Usando Push Notifications para notificaciones en mobile");
+      
+      // Marcar como "conectado" para evitar reintentos
+      this.isConnected = true;
+      return;
 
-      console.log("Conectando al WebSocket:", wsUrl);
-
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
-        console.log("✅ WebSocket conectado exitosamente");
-        this.isConnected = true;
-        this.reconnectAttempts = 0;
-        this.connectStomp();
-      };
-
-      this.ws.onmessage = (event) => {
-        this.handleMessage(event.data);
-      };
-
-      this.ws.onerror = (error) => {
-        console.error("❌ Error en WebSocket:", error.message);
-      };
-
-      this.ws.onclose = (event) => {
-        console.log("WebSocket cerrado:", event.code, event.reason);
-        this.isConnected = false;
-        this.handleReconnect();
-      };
+      // WebSocket nativo de React Native no soporta SockJS directamente
+      // Las notificaciones se manejarán completamente con Push Notifications
     } catch (error) {
       console.error("Error al conectar WebSocket:", error);
-      this.handleReconnect();
+      // No reintentar, usar solo Push Notifications
+      this.isConnected = false;
     }
   }
 
@@ -233,21 +218,10 @@ class WebSocketService {
    * Maneja la reconexión automática
    */
   handleReconnect() {
-    if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log("⚠️ Máximo de intentos de reconexión alcanzado");
-      return;
-    }
-
-    this.reconnectAttempts++;
-    console.log(
-      `🔄 Reintentando conexión en ${this.reconnectDelay / 1000}s (intento ${
-        this.reconnectAttempts
-      }/${this.maxReconnectAttempts})`
-    );
-
-    setTimeout(() => {
-      this.connect();
-    }, this.reconnectDelay);
+    // Deshabilitado en React Native - usar Push Notifications
+    console.log("ℹ️ WebSocket no disponible en mobile, usando Push Notifications");
+    this.isConnected = false;
+    return;
   }
 
   /**
@@ -260,17 +234,17 @@ class WebSocketService {
         this.heartbeatInterval = null;
       }
 
-      if (this.ws && this.isConnected) {
-        // Enviar comando DISCONNECT de STOMP
-        const disconnectFrame = `DISCONNECT\n\n\x00`;
-        this.ws.send(disconnectFrame);
-
-        this.ws.close();
-        console.log("WebSocket desconectado");
+      if (this.ws) {
+        try {
+          this.ws.close();
+        } catch (e) {
+          // Ignorar errores al cerrar
+        }
       }
 
       this.isConnected = false;
       this.ws = null;
+      console.log("WebSocket service limpiado");
     } catch (error) {
       console.error("Error al desconectar:", error);
     }

@@ -1,8 +1,8 @@
 import * as Notifications from "expo-notifications";
 import { Platform, Alert } from "react-native";
-import api from "./Connection";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import axios from "axios";
 
 // Configurar cómo se manejan las notificaciones cuando la app está en primer plano
 Notifications.setNotificationHandler({
@@ -105,11 +105,26 @@ class PushNotificationService {
   async registerTokenInBackend(token) {
     try {
       const deviceType = Platform.OS === "ios" ? "IOS" : "ANDROID";
+      const userToken = await AsyncStorage.getItem("userToken");
 
-      const response = await api.post("/api/v1/notifications/register-token", {
-        token: token,
-        deviceType: deviceType,
-      });
+      if (!userToken) {
+        console.error("No hay token de usuario disponible");
+        return;
+      }
+
+      const response = await axios.post(
+        "https://sgdis.cloud/api/v1/notifications/register-token",
+        {
+          token: token,
+          deviceType: deviceType,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (response.data.status === "success") {
         console.log("✅ Token registrado en el backend exitosamente");
@@ -172,8 +187,17 @@ class PushNotificationService {
   async deactivateToken() {
     try {
       const token = await AsyncStorage.getItem("pushToken");
-      if (token) {
-        await api.delete(`/api/v1/notifications/deactivate-token?token=${token}`);
+      const userToken = await AsyncStorage.getItem("userToken");
+      
+      if (token && userToken) {
+        await axios.delete(
+          `https://sgdis.cloud/api/v1/notifications/deactivate-token?token=${token}`,
+          {
+            headers: {
+              Authorization: `Bearer ${userToken}`,
+            },
+          }
+        );
         await AsyncStorage.removeItem("pushToken");
         console.log("Token desactivado en el backend");
       }
