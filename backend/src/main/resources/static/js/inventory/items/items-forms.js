@@ -13,25 +13,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-async function loadCategories() {
-    try {
-        const token = localStorage.getItem('jwt');
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        // Note: We need to add a GET endpoint for categories
-        // For now, return empty array
-        return [];
-    } catch (error) {
-        console.error('Error loading categories:', error);
-        return [];
-    }
-}
-
 function populateNewItemForm() {
     const form = document.getElementById('newItemForm');
     if (!form || !window.itemsData || !window.itemsData.currentInventoryId) return;
@@ -66,11 +47,6 @@ function populateNewItemForm() {
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Descripción SKU</label>
                 <input type="text" id="newItemSkuDescription" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="Descripción del SKU">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">ID Categoría</label>
-                <input type="number" id="newItemCategoryId" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" placeholder="ID de la categoría">
             </div>
             
             <div>
@@ -166,7 +142,6 @@ async function handleNewItemSubmit(e) {
         const observations = document.getElementById('newItemObservations')?.value?.trim() || '';
         const acquisitionDate = document.getElementById('newItemAcquisitionDate')?.value || null;
         const acquisitionValueInput = document.getElementById('newItemAcquisitionValue')?.value;
-        const categoryIdInput = document.getElementById('newItemCategoryId')?.value;
         const status = document.getElementById('newItemStatus')?.checked ?? true;
         
         // Validar y parsear acquisitionValue (debe ser al menos 0.1)
@@ -174,9 +149,6 @@ async function handleNewItemSubmit(e) {
         if (acquisitionValue < 0.1) {
             acquisitionValue = 0.1;
         }
-        
-        // Validar y parsear categoryId
-        const categoryId = categoryIdInput ? parseInt(categoryIdInput, 10) : 0;
         
         // Construir objeto de datos según la API
         const itemData = {
@@ -195,7 +167,7 @@ async function handleNewItemSubmit(e) {
             acquisitionValue: acquisitionValue,
             ivId: ivId,
             inventoryId: window.itemsData.currentInventoryId,
-            categoryId: categoryId,
+            categoryId: null,
             status: status
         };
         
@@ -232,7 +204,6 @@ function populateEditItemForm() {
     const consecutiveNumber = item.consecutiveNumber || '';
     const skuDescription = item.skuDescription || '';
     const descriptionElement = item.descriptionElement || '';
-    const categoryName = item.categoryName || item.category || '';
     const brand = item.brand || item.attributes?.BRAND || '';
     const serial = item.serial || item.attributes?.SERIAL || '';
     const model = item.model || item.attributes?.MODEL || '';
@@ -271,11 +242,6 @@ function populateEditItemForm() {
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Descripción SKU</label>
                 <input type="text" id="editItemSkuDescription" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${skuDescription}">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Categoría *</label>
-                <input type="text" id="editItemCategory" class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" value="${categoryName}" required>
             </div>
             
             <div>
@@ -348,7 +314,6 @@ async function handleEditItemSubmit(e) {
     }
     
     const productName = document.getElementById('editItemProductName')?.value?.trim();
-    const category = document.getElementById('editItemCategory')?.value?.trim();
     
     if (!productName) {
         if (window.showErrorToast) {
@@ -397,7 +362,7 @@ async function handleEditItemSubmit(e) {
             acquisitionDate: acquisitionDate,
             acquisitionValue: acquisitionValue,
             ivId: ivId,
-            category: category || '',
+            category: '',
             status: status
         };
         

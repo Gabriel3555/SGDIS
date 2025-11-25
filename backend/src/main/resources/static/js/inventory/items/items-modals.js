@@ -82,30 +82,24 @@ async function showViewItemModal(itemId) {
 }
 
 function populateViewItemModal(item) {
-  const content = document.getElementById("viewItemContent");
-  if (!content) return;
-
-  const imageUrl =
-    item.urlImg || (item.attributes && item.attributes.IMAGE) || null;
-  const productName = item.productName || "Sin nombre";
-  const categoryName = item.categoryName || "Sin categoría";
-  const acquisitionDate = item.acquisitionDate
-    ? new Date(item.acquisitionDate).toLocaleDateString("es-ES")
-    : "N/A";
-  const acquisitionValue = item.acquisitionValue
-    ? `$${item.acquisitionValue.toLocaleString("es-ES")}`
-    : "N/A";
-  const licencePlateNumber = item.licencePlateNumber || "N/A";
-  const location = item.location || "N/A";
-  const responsible = item.responsible || "N/A";
-
-  // Get attributes
-  let attributesHtml = "";
-  if (item.attributes && typeof item.attributes === "object") {
-    attributesHtml = '<div class="space-y-2">';
-    for (const [key, value] of Object.entries(item.attributes)) {
-      if (value) {
-        attributesHtml += `
+    const content = document.getElementById('viewItemContent');
+    if (!content) return;
+    
+    const imageUrl = item.urlImg || (item.attributes && item.attributes.IMAGE) || null;
+    const productName = item.productName || 'Sin nombre';
+    const acquisitionDate = item.acquisitionDate ? new Date(item.acquisitionDate).toLocaleDateString('es-ES') : 'N/A';
+    const acquisitionValue = item.acquisitionValue ? `$${item.acquisitionValue.toLocaleString('es-ES')}` : 'N/A';
+    const licencePlateNumber = item.licencePlateNumber || 'N/A';
+    const location = item.location || 'N/A';
+    const responsible = item.responsible || 'N/A';
+    
+    // Get attributes
+    let attributesHtml = '';
+    if (item.attributes && typeof item.attributes === 'object') {
+        attributesHtml = '<div class="space-y-2">';
+        for (const [key, value] of Object.entries(item.attributes)) {
+            if (value) {
+                attributesHtml += `
                     <div class="flex justify-between">
                         <span class="text-gray-600">${key}:</span>
                         <span class="font-medium">${value}</span>
@@ -142,10 +136,6 @@ function populateViewItemModal(item) {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Producto</label>
                     <p class="text-gray-900 font-semibold">${productName}</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                    <p class="text-gray-900">${categoryName}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Placa</label>

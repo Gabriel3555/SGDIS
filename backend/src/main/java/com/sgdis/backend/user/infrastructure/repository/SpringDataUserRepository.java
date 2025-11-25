@@ -34,4 +34,8 @@ public interface SpringDataUserRepository extends JpaRepository<UserEntity, Long
             @Param("role2") Role role2,
             org.springframework.data.domain.Pageable pageable
     );
+    
+    long countByRole(Role role);
+    
+    long count();
 }
