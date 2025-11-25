@@ -74,26 +74,26 @@ async function updateItemsStats() {
         
         container.innerHTML = `
             <div class="stat-card">
-                <div class="flex items-start justify-between mb-3">
-                    <div>
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div class="min-w-0 flex-1">
                         <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
-                        <h3 class="text-3xl font-bold text-gray-800">${totalItems}</h3>
+                        <h3 class="text-2xl sm:text-3xl font-bold text-gray-800 truncate">${totalItems}</h3>
                     </div>
-                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-cubes text-blue-600 text-xl"></i>
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-cubes text-blue-600 text-lg sm:text-xl"></i>
                     </div>
                 </div>
                 <p class="text-blue-600 text-sm font-medium">Items en el inventario</p>
             </div>
 
             <div class="stat-card">
-                <div class="flex items-start justify-between mb-3">
-                    <div>
+                <div class="flex items-start justify-between gap-3 mb-3">
+                    <div class="min-w-0 flex-1">
                         <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
-                        <h3 class="text-3xl font-bold text-gray-800">$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</h3>
+                        <h3 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 break-all" title="$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}">$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</h3>
                     </div>
-                    <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-dollar-sign text-emerald-600 text-xl"></i>
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-dollar-sign text-emerald-600 text-lg sm:text-xl"></i>
                     </div>
                 </div>
                 <p class="text-emerald-600 text-sm font-medium">Valor de adquisición</p>
