@@ -64,7 +64,7 @@ async function startBatchScanner() {
             { facingMode: "environment" }, // Use back camera if available
             {
                 fps: 10,
-                qrbox: { width: 250, height: 250 },
+                qrbox: { width: 400, height: 150 },
                 aspectRatio: 1.0
             },
             (decodedText, decodedResult) => {
@@ -82,7 +82,7 @@ async function startBatchScanner() {
         document.getElementById('stopCameraBtn').classList.remove('hidden');
         document.getElementById('capturePhotoBtn').classList.remove('hidden');
 
-        showSuccessToast('Cámara iniciada', 'Escanea códigos de barras o QR de placas');
+        showSuccessToast('Cámara iniciada', 'Escanea las placas de los items');
 
     } catch (error) {
         console.error('Error starting scanner:', error);
@@ -147,14 +147,21 @@ async function handleScannedCode(code) {
     // Search for item by licence plate to get item name
     try {
         const item = await getItemByLicencePlate(cleanedCode);
-        const itemName = item ? item.productName : null;
         
-        // Capture photo automatically
+        // If item not found, don't add to list
+        if (!item) {
+            showErrorToast('Placa no encontrada', `La placa ${cleanedCode} no coincide con ningún item en el inventario`);
+            return;
+        }
+        
+        const itemName = item.productName;
+        
+        // Capture photo automatically only if item exists
         capturePhotoForScannedCode(cleanedCode, itemName);
     } catch (error) {
         console.error('Error fetching item:', error);
-        // Continue with scan even if item lookup fails
-        capturePhotoForScannedCode(cleanedCode, null);
+        // Don't add item if there's an error fetching it
+        showErrorToast('Error', `Error al buscar la placa ${cleanedCode}. Intenta de nuevo.`);
     }
 }
 
@@ -341,12 +348,33 @@ function handleEvidenceChange(index, file) {
 function removeEvidence(index) {
     if (batchVerificationState.scannedItems[index]) {
         batchVerificationState.scannedItems[index].evidence = null;
-        // Reset the file input
+        // Reset the file inputs
         const input = document.getElementById(`evidenceInput_${index}`);
+        const cameraInput = document.getElementById(`evidenceCameraInput_${index}`);
         if (input) {
             input.value = '';
         }
+        if (cameraInput) {
+            cameraInput.value = '';
+        }
         updateScannedItemsList();
+    }
+}
+
+// Take Evidence Photo
+function takeEvidencePhoto(index) {
+    const cameraInput = document.getElementById(`evidenceCameraInput_${index}`);
+    if (cameraInput) {
+        cameraInput.click();
+    }
+}
+
+// Handle Evidence Camera Change
+function handleEvidenceCameraChange(index, file) {
+    if (file && batchVerificationState.scannedItems[index]) {
+        batchVerificationState.scannedItems[index].evidence = file;
+        updateScannedItemsList();
+        showSuccessToast('Evidencia capturada', `Evidencia capturada con la cámara para ${batchVerificationState.scannedItems[index].licencePlate}`);
     }
 }
 
@@ -411,7 +439,7 @@ function updateScannedItemsList() {
                         <i class="fas fa-paperclip mr-1"></i>
                         Adjuntar Evidencia
                     </label>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 mb-2">
                         <input 
                             type="file" 
                             id="evidenceInput_${index}" 
@@ -419,7 +447,22 @@ function updateScannedItemsList() {
                             onchange="handleEvidenceChange(${index}, this.files[0])"
                             class="flex-1 text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                         />
+                        <button 
+                            onclick="takeEvidencePhoto(${index})"
+                            class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center gap-2 text-sm font-semibold"
+                            title="Tomar evidencia con la cámara">
+                            <i class="fas fa-camera"></i>
+                            <span>Tomar Foto</span>
+                        </button>
                     </div>
+                    <input 
+                        type="file" 
+                        id="evidenceCameraInput_${index}" 
+                        accept="image/*"
+                        capture="camera"
+                        style="display: none;"
+                        onchange="handleEvidenceCameraChange(${index}, this.files[0])"
+                    />
                     ${evidencePreview}
                 </div>
             </div>
@@ -560,5 +603,7 @@ window.captureBatchPhoto = captureBatchPhoto;
 window.removeScannedItem = removeScannedItem;
 window.handleEvidenceChange = handleEvidenceChange;
 window.removeEvidence = removeEvidence;
+window.takeEvidencePhoto = takeEvidencePhoto;
+window.handleEvidenceCameraChange = handleEvidenceCameraChange;
 window.finalizeBatchVerification = finalizeBatchVerification;
 
