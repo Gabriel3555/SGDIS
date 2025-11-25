@@ -976,75 +976,80 @@
             </div>
 
             <div class="space-y-6">
-                <!-- Inventory Image -->
-                <div class="flex justify-center items-center mb-4">
-                    <button onclick="showInventoryImageModal(); return false;"
-                        class="cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0 flex items-center justify-center"
-                        id="viewInventoryImageButton" style="display: none;">
-                        <div class="w-40 h-40 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-5xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-                            id="viewInventoryImage">
+                <!-- Horizontal Layout con Flecha -->
+                <div class="flex flex-col lg:flex-row items-stretch gap-6">
+                    <!-- Inventory Basic Information -->
+                    <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 relative border-2 border-green-200 dark:border-green-700 flex flex-col">
+                        <div class="flex flex-col lg:flex-row gap-6 flex-1">
+                            <!-- Left Side: Information -->
+                            <div class="flex-1 flex flex-col">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
+                                    <i class="fas fa-box text-[#00AF00] mr-2"></i>
+                                    Información del Inventario
+                                </h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+                                        <span class="px-3 py-1 rounded-full text-xs font-medium" id="viewInventoryStatus">-</span>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Inventario</label>
+                                        <p class="text-gray-900 dark:text-gray-100 font-bold text-xl" id="viewInventoryName">-</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</label>
+                                        <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryLocation">
+                                            <i class="fas fa-map-marker-alt text-[#00AF00]"></i>
+                                            <span>-</span>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
+                                        <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryInstitution">
+                                            <i class="fas fa-building text-[#00AF00]"></i>
+                                            <span>-</span>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad de Items</label>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-cubes text-[#00AF00] text-xl"></i>
+                                            <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl" id="viewInventoryQuantityItems">0</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Total</label>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-dollar-sign text-[#00AF00] text-xl"></i>
+                                            <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl" id="viewInventoryTotalPrice">$0</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Ver Items Button -->
+                                <button onclick="navigateToItems()"
+                                    class="mt-4 w-full bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fas fa-eye"></i>
+                                    Ver Items
+                                </button>
+                            </div>
+                    
+                    <!-- Right Side: Image -->
+                    <div class="flex-shrink-0 flex items-start justify-end">
+                        <button onclick="showInventoryImageModal(); return false;"
+                            class="cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0 flex items-center justify-center"
+                            id="viewInventoryImageButton" style="display: none;">
+                            <div class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                                id="viewInventoryImage">
+                                <i class="fas fa-box"></i>
+                            </div>
+                        </button>
+                        <div id="viewInventoryImagePlaceholder"
+                            class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl">
                             <i class="fas fa-box"></i>
                         </div>
-                    </button>
-                    <div id="viewInventoryImagePlaceholder"
-                        class="w-40 h-40 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-5xl">
-                        <i class="fas fa-box"></i>
                     </div>
                 </div>
-
-                <!-- Horizontal Layout con Flecha -->
-                <div class="flex flex-col lg:flex-row items-center gap-6">
-                    <!-- Inventory Basic Information -->
-                    <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 relative border-2 border-green-200 dark:border-green-700">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
-                            <i class="fas fa-box text-[#00AF00] mr-2"></i>
-                            Información del Inventario
-                        </h3>
-                        <div class="grid grid-cols-1 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
-                                <span class="px-3 py-1 rounded-full text-xs font-medium" id="viewInventoryStatus">-</span>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Inventario</label>
-                                <p class="text-gray-900 dark:text-gray-100 font-bold text-xl" id="viewInventoryName">-</p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</label>
-                                <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryLocation">
-                                    <i class="fas fa-map-marker-alt text-[#00AF00]"></i>
-                                    <span>-</span>
-                                </p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
-                                <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryInstitution">
-                                    <i class="fas fa-building text-[#00AF00]"></i>
-                                    <span>-</span>
-                                </p>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad de Items</label>
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-cubes text-[#00AF00] text-xl"></i>
-                                    <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl" id="viewInventoryQuantityItems">0</p>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Total</label>
-                                <div class="flex items-center gap-2">
-                                    <i class="fas fa-dollar-sign text-[#00AF00] text-xl"></i>
-                                    <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl" id="viewInventoryTotalPrice">$0</p>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Ver Items Button -->
-                        <button onclick="navigateToItems()"
-                            class="mt-4 w-full bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center justify-center gap-2">
-                            <i class="fas fa-eye"></i>
-                            Ver Items
-                        </button>
-                    </div>
+            </div>
 
                     <!-- Flecha Indicadora -->
                     <div class="flex items-center justify-center">
@@ -1059,12 +1064,12 @@
                     </div>
 
                     <!-- Owner Information -->
-                    <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700">
+                    <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 flex flex-col">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
                             <i class="fas fa-user-shield text-[#00AF00] mr-2"></i>
                             Información del Propietario
                         </h3>
-                        <div class="grid grid-cols-1 gap-4">
+                        <div class="grid grid-cols-1 gap-4 flex-1">
                             <div class="flex items-center space-x-4 pb-4 border-b border-green-200 dark:border-green-700">
                                 <div class="w-20 h-20 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-full flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0"
                                     id="viewInventoryOwnerAvatar">
