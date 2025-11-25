@@ -87,16 +87,20 @@ async function updateItemsStats() {
             </div>
 
             <div class="stat-card">
-                <div class="flex items-start justify-between gap-3 mb-3">
-                    <div class="min-w-0 flex-1">
-                        <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
-                        <h3 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 break-all" title="$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}">$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}</h3>
+                <div class="flex items-start justify-between gap-2 sm:gap-3 mb-3">
+                    <div class="min-w-0 flex-1 overflow-hidden">
+                        <p class="text-gray-600 text-xs sm:text-sm font-medium mb-1">Valor Total</p>
+                        <h3 class="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-800 dark:text-gray-100 break-words overflow-hidden" 
+                            style="word-break: break-word; line-height: 1.2;"
+                            title="$${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}">
+                            $${totalValue.toLocaleString('es-ES', {minimumFractionDigits: 0, maximumFractionDigits: 0})}
+                        </h3>
                     </div>
-                    <div class="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-dollar-sign text-emerald-600 text-lg sm:text-xl"></i>
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-dollar-sign text-emerald-600 dark:text-emerald-400 text-sm sm:text-base md:text-lg lg:text-xl"></i>
                     </div>
                 </div>
-                <p class="text-emerald-600 text-sm font-medium">Valor de adquisición</p>
+                <p class="text-emerald-600 dark:text-emerald-400 text-xs sm:text-sm font-medium">Valor de adquisición</p>
             </div>
         `;
     } catch (error) {

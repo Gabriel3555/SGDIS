@@ -171,8 +171,8 @@ function updateSearchAndFilters() {
 
   // For super admin, check if filters already exist and institutions are loaded
   if (isSuperAdmin) {
-    const existingRegionalSelect = document.getElementById('userRegionalFilter');
-    const existingInstitutionSelect = document.getElementById('userInstitutionFilter');
+    const existingRegionalSelect = document.getElementById('filterRegionalSelect');
+    const existingInstitutionSelect = document.getElementById('filterInstitutionSelect');
     // If filters exist, don't recreate them to prevent interruption
     if (existingRegionalSelect && existingInstitutionSelect) {
       // Just update the search input if needed
@@ -182,11 +182,11 @@ function updateSearchAndFilters() {
       // Update selected values if they changed
       const currentRegional = window.usersData?.selectedRegional || '';
       const currentInstitution = window.usersData?.selectedInstitution || '';
-      if (existingRegionalSelect.value !== currentRegional) {
-        existingRegionalSelect.value = currentRegional;
+      if (window.filterRegionalSelect && currentRegional) {
+        window.filterRegionalSelect.setValue(currentRegional);
       }
-      if (existingInstitutionSelect.value !== currentInstitution) {
-        existingInstitutionSelect.value = currentInstitution;
+      if (window.filterInstitutionSelect && currentInstitution) {
+        window.filterInstitutionSelect.setValue(currentInstitution);
       }
       return;
     }
@@ -203,29 +203,41 @@ function updateSearchAndFilters() {
     const selectedInstitution = window.usersData?.selectedInstitution || '';
     
     regionalInstitutionFilters = `
-      <div class="relative" style="min-width: 180px; flex-shrink: 0;">
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Regional</label>
-        <select id="userRegionalFilter" onchange="handleUserRegionalFilterChange(this.value)" class="appearance-none w-full px-4 pr-10 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white dark:bg-gray-800 transition-all duration-200 shadow-sm hover:shadow-md text-sm" style="height: 56px; padding-top: 0.75rem; padding-bottom: 0.75rem;">
-          <option value="">Todas las regionales</option>
-        </select>
-        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style="top: 1.75rem;">
-          <i class="fas fa-chevron-down text-[#00AF00] text-xs"></i>
+      <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
+        <div class="custom-select" id="filterRegionalSelect">
+          <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+            <span class="custom-select-text">Todas las regionales</span>
+            <i class="fas fa-chevron-down custom-select-arrow"></i>
+          </div>
+          <div class="custom-select-dropdown">
+            <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+            <div class="custom-select-options" id="filterRegionalOptions">
+              <!-- Options loaded dynamically -->
+            </div>
+          </div>
         </div>
+        <input type="hidden" id="userRegionalFilter" name="regional">
       </div>
-      <div class="relative" style="min-width: 180px; flex-shrink: 0;">
-        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Institución</label>
-        <select id="userInstitutionFilter" onchange="handleUserInstitutionFilterChange(this.value)" class="appearance-none w-full px-4 pr-10 border-2 border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white dark:bg-gray-800 transition-all duration-200 shadow-sm hover:shadow-md text-sm" style="height: 56px; padding-top: 0.75rem; padding-bottom: 0.75rem;" ${!selectedRegional ? 'disabled' : ''}>
-          <option value="">Todas las instituciones</option>
-        </select>
-        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style="top: 1.75rem;">
-          <i class="fas fa-chevron-down text-[#00AF00] text-xs"></i>
+      <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
+        <div class="custom-select" id="filterInstitutionSelect">
+          <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+            <span class="custom-select-text">Todas las instituciones</span>
+            <i class="fas fa-chevron-down custom-select-arrow"></i>
+          </div>
+          <div class="custom-select-dropdown">
+            <input type="text" class="custom-select-search" placeholder="Buscar institución...">
+            <div class="custom-select-options" id="filterInstitutionOptions">
+              <!-- Options loaded dynamically -->
+            </div>
+          </div>
         </div>
+        <input type="hidden" id="userInstitutionFilter" name="institution">
       </div>
     `;
   }
 
   container.innerHTML = `
-        <div class="flex gap-2 items-end w-full flex-nowrap overflow-x-auto" style="scrollbar-width: thin;">
+        <div class="flex gap-2 items-end w-full flex-nowrap overflow-x-visible" style="overflow-x: visible !important;">
             <div class="relative flex-1" style="min-width: 250px;">
                 <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
                 <input type="text" id="filterUserSearch" value="${currentSearchTerm}" placeholder="Buscar por nombre, email o rol..." class="w-full pl-12 pr-4 py-3 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] transition-all bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" style="height: 56px; font-size: 0.9375rem;">
@@ -267,21 +279,41 @@ function updateSearchAndFilters() {
         </div>
     `;
 
-  // Load regionals and institutions if super admin
-  if (isSuperAdmin) {
-    // Use setTimeout to ensure DOM is ready
-    setTimeout(() => {
-      loadRegionalsForUserFilter();
-      const selectedRegional = window.usersData?.selectedRegional || '';
-      if (selectedRegional) {
-        loadInstitutionsForUserFilter(selectedRegional);
-      }
-    }, 100);
-  }
-
-  // Initialize CustomSelects for filters (with delay to ensure DOM and scripts are ready)
+  // Initialize CustomSelects for filters first (with delay to ensure DOM and scripts are ready)
   setTimeout(() => {
     initializeFilterSelects();
+    
+    // Load regionals and institutions after CustomSelects are initialized
+    const isSuperAdmin = (window.usersData?.currentLoggedInUserRole && window.usersData.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
+                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    
+    if (isSuperAdmin) {
+      // Wait a bit more to ensure CustomSelects are fully ready
+      // Use a function to check if CustomSelects are ready before loading data
+      const waitForCustomSelects = (retries = 0, maxRetries = 10) => {
+        const regionalReady = window.filterRegionalSelect && typeof window.filterRegionalSelect.setOptions === 'function';
+        const institutionReady = window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function';
+        
+        if (regionalReady && institutionReady) {
+          // Both are ready, load the data
+          loadRegionalsForUserFilter();
+          const selectedRegional = window.usersData?.selectedRegional || '';
+          if (selectedRegional) {
+            loadInstitutionsForUserFilter(selectedRegional);
+          }
+        } else if (retries < maxRetries) {
+          // Not ready yet, retry after a short delay
+          setTimeout(() => waitForCustomSelects(retries + 1, maxRetries), 100);
+        } else {
+          // Max retries reached, try to load anyway (might work if only one is needed)
+          if (regionalReady) {
+            loadRegionalsForUserFilter();
+          }
+        }
+      };
+      
+      waitForCustomSelects();
+    }
   }, 100);
 
   const filterSearchInput = document.getElementById("filterUserSearch");
@@ -1060,6 +1092,132 @@ function initializeFilterSelects() {
       window.filterStatusSelect.setValue(selectedStatus);
     }
   }, 50);
+
+  // Regional filter select (super admin only)
+  const regionalSelectContainer = document.getElementById("filterRegionalSelect");
+  if (regionalSelectContainer) {
+    if (!window.filterRegionalSelect) {
+      try {
+        // Check if CustomSelectClass is available
+        if (typeof CustomSelectClass === 'undefined' && typeof window.CustomSelect !== 'undefined') {
+          window.CustomSelectClass = window.CustomSelect;
+        }
+        
+        if (typeof CustomSelectClass === 'undefined') {
+          return;
+        }
+        
+        window.filterRegionalSelect = new CustomSelectClass("filterRegionalSelect", {
+          placeholder: "Todas las regionales",
+          onChange: function (option) {
+            if (typeof handleUserRegionalFilterChange === 'function') {
+              handleUserRegionalFilterChange(option.value);
+            }
+          },
+        });
+        
+        // Initialize with empty options - will be populated by loadRegionalsForUserFilter
+        if (window.filterRegionalSelect && typeof window.filterRegionalSelect.setOptions === 'function') {
+          window.filterRegionalSelect.setOptions([
+            { value: '', label: 'Todas las regionales' }
+          ]);
+        }
+      } catch (error) {
+        // Silently handle initialization errors
+      }
+    } else {
+      // Already exists, verify it's still valid
+      if (!window.filterRegionalSelect.setOptions || typeof window.filterRegionalSelect.setOptions !== 'function') {
+        window.filterRegionalSelect = null;
+        // Retry initialization
+        setTimeout(() => {
+          const retryContainer = document.getElementById("filterRegionalSelect");
+          if (retryContainer && !window.filterRegionalSelect) {
+            try {
+              window.filterRegionalSelect = new CustomSelectClass("filterRegionalSelect", {
+                placeholder: "Todas las regionales",
+                onChange: function (option) {
+                  if (typeof handleUserRegionalFilterChange === 'function') {
+                    handleUserRegionalFilterChange(option.value);
+                  }
+                },
+              });
+              if (window.filterRegionalSelect && typeof window.filterRegionalSelect.setOptions === 'function') {
+                window.filterRegionalSelect.setOptions([
+                  { value: '', label: 'Todas las regionales' }
+                ]);
+              }
+              } catch (error) {
+              // Silently handle reinitialization errors
+            }
+          }
+        }, 100);
+      }
+    }
+  }
+
+  // Institution filter select (super admin only)
+  const institutionSelectContainer = document.getElementById("filterInstitutionSelect");
+  if (institutionSelectContainer) {
+    if (!window.filterInstitutionSelect) {
+      try {
+        // Check if CustomSelectClass is available
+        if (typeof CustomSelectClass === 'undefined' && typeof window.CustomSelect !== 'undefined') {
+          window.CustomSelectClass = window.CustomSelect;
+        }
+        
+        if (typeof CustomSelectClass === 'undefined') {
+          return;
+        }
+        
+        window.filterInstitutionSelect = new CustomSelectClass("filterInstitutionSelect", {
+          placeholder: "Todas las instituciones",
+          onChange: function (option) {
+            if (typeof handleUserInstitutionFilterChange === 'function') {
+              handleUserInstitutionFilterChange(option.value);
+            }
+          },
+        });
+        
+        // Initialize with empty options - will be populated by loadInstitutionsForUserFilter
+        if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+          window.filterInstitutionSelect.setOptions([
+            { value: '', label: 'Todas las instituciones', disabled: true }
+          ]);
+        }
+      } catch (error) {
+        // Silently handle initialization errors
+      }
+    } else {
+      // Already exists, verify it's still valid
+      if (!window.filterInstitutionSelect.setOptions || typeof window.filterInstitutionSelect.setOptions !== 'function') {
+        window.filterInstitutionSelect = null;
+        // Retry initialization
+        setTimeout(() => {
+          const retryContainer = document.getElementById("filterInstitutionSelect");
+          if (retryContainer && !window.filterInstitutionSelect) {
+            try {
+              window.filterInstitutionSelect = new CustomSelectClass("filterInstitutionSelect", {
+                placeholder: "Todas las instituciones",
+                onChange: function (option) {
+                  if (typeof handleUserInstitutionFilterChange === 'function') {
+                    handleUserInstitutionFilterChange(option.value);
+                  }
+                },
+              });
+              if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+                window.filterInstitutionSelect.setOptions([
+                  { value: '', label: 'Todas las instituciones', disabled: true }
+                ]);
+              }
+              } catch (error) {
+              // Silently handle reinitialization errors
+            }
+          }
+        }, 100);
+      }
+    }
+  }
 }
 
 window.setRoleFilter = setRoleFilter;
