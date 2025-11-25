@@ -903,6 +903,209 @@ window.closeEditUserModal = closeEditUserModal;
 window.showDeleteUserModal = showDeleteUserModal;
 window.closeDeleteUserModal = closeDeleteUserModal;
 window.showUserLoansModal = showUserLoansModal;
+
+// User Inventories Modal Functions
+async function showUserInventoriesModal(userId, type) {
+    const numericUserId = typeof userId === 'string' ? parseInt(userId, 10) : userId;
+    
+    // Get user from local data first
+    let user = usersData.users.find(u => u && u.id === numericUserId);
+    
+    // If user not found in local data, fetch from API
+    if (!user) {
+        try {
+            const token = localStorage.getItem('jwt');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(`/api/v1/users/${numericUserId}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                user = await response.json();
+            } else {
+                showErrorToast('Error', 'No se pudo cargar la información del usuario');
+                return;
+            }
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            showErrorToast('Error', 'Error al cargar la información del usuario');
+            return;
+        }
+    }
+
+    if (!user) {
+        showErrorToast('Error', 'Usuario no encontrado');
+        return;
+    }
+
+    // Update modal title based on type
+    const titleElement = document.getElementById('userInventoriesTitle');
+    const userNameElement = document.getElementById('userInventoriesUserName');
+    const iconElement = document.getElementById('userInventoriesIcon');
+    
+    let title = '';
+    let iconClass = '';
+    let iconColor = '';
+    
+    if (type === 'owner') {
+        title = 'Inventarios como Owner';
+        iconClass = 'fa-crown';
+        iconColor = 'text-blue-600';
+    } else if (type === 'signatory') {
+        title = 'Inventarios como Signatory';
+        iconClass = 'fa-signature';
+        iconColor = 'text-green-600';
+    } else if (type === 'manager') {
+        title = 'Inventarios como Manager';
+        iconClass = 'fa-user-cog';
+        iconColor = 'text-orange-600';
+    }
+    
+    if (titleElement) titleElement.textContent = title;
+    if (userNameElement) userNameElement.textContent = user.fullName || user.email || 'Usuario';
+    if (iconElement) {
+        iconElement.className = `fas ${iconClass} ${iconColor} text-3xl`;
+    }
+
+    // Show loading state
+    const loadingElement = document.getElementById('userInventoriesLoading');
+    const contentElement = document.getElementById('userInventoriesContent');
+    const inventoriesListElement = document.getElementById('userInventoriesList');
+    const inventoriesEmptyElement = document.getElementById('userInventoriesEmpty');
+
+    if (loadingElement) loadingElement.style.display = 'block';
+    if (contentElement) contentElement.style.display = 'none';
+    if (inventoriesEmptyElement) inventoriesEmptyElement.style.display = 'none';
+
+    // Open modal
+    const modal = document.getElementById('userInventoriesModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+
+    // Load inventories
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        let endpoint = '';
+        if (type === 'owner') {
+            endpoint = `/api/v1/users/${numericUserId}/inventories/owner`;
+        } else if (type === 'signatory') {
+            endpoint = `/api/v1/users/${numericUserId}/inventories/signatory`;
+        } else if (type === 'manager') {
+            endpoint = `/api/v1/inventory/managed/${numericUserId}`;
+        }
+
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: headers
+        });
+
+        let inventories = [];
+        if (response.ok) {
+            inventories = await response.json();
+        } else if (response.status === 404) {
+            inventories = [];
+        } else {
+            throw new Error('Error al cargar los inventarios');
+        }
+
+        // Display inventories
+        displayUserInventories(inventories, loadingElement, contentElement, inventoriesListElement, inventoriesEmptyElement);
+    } catch (error) {
+        console.error('Error loading user inventories:', error);
+        showErrorToast('Error', 'Error al cargar los inventarios del usuario');
+        if (loadingElement) {
+            loadingElement.innerHTML = `
+                <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                <p class="text-red-600">Error al cargar los inventarios</p>
+                <button onclick="showUserInventoriesModal('${numericUserId}', '${type}')" class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                    Reintentar
+                </button>
+            `;
+        }
+    }
+}
+
+function displayUserInventories(inventories, loadingElement, contentElement, inventoriesListElement, inventoriesEmptyElement) {
+    if (loadingElement) loadingElement.style.display = 'none';
+    if (contentElement) contentElement.style.display = 'block';
+
+    if (!inventories || inventories.length === 0) {
+        if (inventoriesEmptyElement) inventoriesEmptyElement.style.display = 'block';
+        if (inventoriesListElement) inventoriesListElement.innerHTML = '';
+        return;
+    }
+
+    if (inventoriesEmptyElement) inventoriesEmptyElement.style.display = 'none';
+
+    let inventoriesHtml = '';
+    inventories.forEach(inventory => {
+        const statusColor = inventory.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+        const statusText = inventory.status ? 'Activo' : 'Inactivo';
+        const totalPrice = inventory.totalPrice ? `$${inventory.totalPrice.toLocaleString('es-ES')}` : '$0';
+        const location = inventory.location || 'Sin ubicación';
+        const name = inventory.name || 'Sin nombre';
+
+        inventoriesHtml += `
+            <div class="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">${name}</h3>
+                        <p class="text-sm text-gray-600 mb-1">
+                            <i class="fas fa-map-marker-alt mr-2"></i>${location}
+                        </p>
+                        <p class="text-sm text-gray-600">
+                            <i class="fas fa-dollar-sign mr-2"></i>${totalPrice}
+                        </p>
+                    </div>
+                    <span class="px-3 py-1 ${statusColor} rounded-full text-xs font-medium">${statusText}</span>
+                </div>
+                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <span class="text-xs text-gray-500">ID: ${inventory.id}</span>
+                    <button onclick="window.location.href='/superadmin/inventory'" class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        Ver detalles <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    if (inventoriesListElement) {
+        inventoriesListElement.innerHTML = inventoriesHtml;
+    }
+}
+
+function closeUserInventoriesModal() {
+    const modal = document.getElementById('userInventoriesModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        // Reset content
+        const loadingElement = document.getElementById('userInventoriesLoading');
+        const contentElement = document.getElementById('userInventoriesContent');
+        const inventoriesListElement = document.getElementById('userInventoriesList');
+        const inventoriesEmptyElement = document.getElementById('userInventoriesEmpty');
+        
+        if (loadingElement) {
+            loadingElement.style.display = 'block';
+            loadingElement.innerHTML = `
+                <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+                <p class="text-gray-600">Cargando inventarios...</p>
+            `;
+        }
+        if (contentElement) contentElement.style.display = 'none';
+        if (inventoriesListElement) inventoriesListElement.innerHTML = '';
+        if (inventoriesEmptyElement) inventoriesEmptyElement.style.display = 'none';
+    }
+}
+
+window.showUserInventoriesModal = showUserInventoriesModal;
+window.closeUserInventoriesModal = closeUserInventoriesModal;
 window.closeUserLoansModal = closeUserLoansModal;
 window.filterUserLoans = filterUserLoans;
 

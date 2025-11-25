@@ -731,6 +731,38 @@
         </div>
     </div>
 
+    <!-- User Inventories Modal -->
+    <div id="userInventoriesModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-warehouse text-blue-600 text-3xl" id="userInventoriesIcon"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800" id="userInventoriesTitle">Inventarios</h2>
+                        <p class="text-sm text-gray-600" id="userInventoriesUserName">Cargando...</p>
+                    </div>
+                </div>
+                <button onclick="closeUserInventoriesModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div id="userInventoriesLoading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+                <p class="text-gray-600">Cargando inventarios...</p>
+            </div>
+
+            <div id="userInventoriesContent" style="display: none;">
+                <div id="userInventoriesList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div id="userInventoriesEmpty" class="text-center py-12" style="display: none;">
+                    <i class="fas fa-warehouse text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 text-lg">Este usuario no tiene inventarios registrados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="../../js/dashboard.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
     <!-- Users module scripts -->
