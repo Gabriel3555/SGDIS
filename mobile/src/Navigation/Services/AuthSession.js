@@ -1,8 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 import { resetToAuth } from "../NavigationService";
-import webSocketService from "./WebSocketService";
-import pushNotificationService from "./PushNotificationService";
 
 let logoutInProgress = false;
 
@@ -54,13 +52,6 @@ export const clearSessionAndRedirect = async (options = {}) => {
   logoutInProgress = true;
 
   try {
-    // Desconectar WebSocket
-    webSocketService.disconnect();
-    
-    // Desactivar token de push notifications
-    await pushNotificationService.deactivateToken();
-    pushNotificationService.cleanup();
-    
     await AsyncStorage.multiRemove(SESSION_KEYS);
   } catch (error) {
     console.warn("Error clearing auth storage", error);

@@ -413,7 +413,19 @@ const NotificationBell = {
             
             // Mostrar animación en la campanita
             this.animateBell();
+            
+            // Reproducir sonido de notificación
+            this.playNotificationSound();
         });
+    },
+
+    /**
+     * Reproduce un sonido de notificación
+     */
+    playNotificationSound() {
+        if (window.NotificationSound) {
+            window.NotificationSound.play();
+        }
     },
 
     /**

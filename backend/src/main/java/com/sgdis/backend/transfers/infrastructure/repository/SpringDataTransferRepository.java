@@ -2,6 +2,8 @@ package com.sgdis.backend.transfers.infrastructure.repository;
 
 import com.sgdis.backend.transfers.domain.TransferStatus;
 import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -48,5 +50,8 @@ public interface SpringDataTransferRepository extends JpaRepository<TransferEnti
             ORDER BY t.requestedAt DESC
             """)
     List<TransferEntity> findAllByItemId(@Param("itemId") Long itemId);
+
+    @Query("SELECT t FROM TransferEntity t ORDER BY t.requestedAt DESC")
+    Page<TransferEntity> findAllOrderedByRequestedAt(Pageable pageable);
 }
 
