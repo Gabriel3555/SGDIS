@@ -24,6 +24,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import com.sgdis.backend.item.mapper.ItemMapper;
+// Auditoría
+import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
+import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +47,7 @@ public class ItemService implements
     private final SpringDataInventoryRepository inventoryRepository;
     private final SpringDataLoanRepository loanRepository;
     private final FileUploadService fileUploadService;
+    private final RecordActionUseCase recordActionUseCase;
 
     @Override
     @Transactional
@@ -89,6 +93,17 @@ public class ItemService implements
         inventoryRepository.save(inventoryEntity);
         itemRepository.save(itemEntity);
 
+        // Registrar auditoría
+        String inventoryName = inventoryEntity.getName() != null ? inventoryEntity.getName() : "sin nombre";
+        String itemName = itemEntity.getProductName() != null ? itemEntity.getProductName() : "sin nombre";
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Item creado: %s (ID: %d) - Inventario: %s (ID: %d)", 
+                        itemName,
+                        itemEntity.getId(),
+                        inventoryName,
+                        inventoryEntity.getId())
+        ));
+
         return new CreateItemResponse(itemEntity.getProductName(), "Successfully created item");
     }
 
@@ -98,7 +113,9 @@ public class ItemService implements
         ItemEntity existingItem = itemRepository.findById(request.itemId())
                 .orElseThrow(() -> new DomainNotFoundException("Item not found with id: " + request.itemId()));
 
-        // Guardar el valor anterior de acquisitionValue para actualizar el totalPrice del inventario
+        // Guardar valores originales para auditoría
+        String originalProductName = existingItem.getProductName();
+        String originalLicencePlateNumber = existingItem.getLicencePlateNumber();
         Double oldAcquisitionValue = existingItem.getAcquisitionValue() != null ? existingItem.getAcquisitionValue() : 0.0;
         Double newAcquisitionValue = request.acquisitionValue() != null ? request.acquisitionValue() : 0.0;
 
@@ -118,6 +135,33 @@ public class ItemService implements
         }
         
         itemRepository.save(updatedItem);
+
+        // Registrar auditoría - construir descripción de cambios
+        StringBuilder changes = new StringBuilder();
+        if (request.productName() != null && !request.productName().equals(originalProductName)) {
+            changes.append("Nombre actualizado | ");
+        }
+        if (request.licencePlateNumber() != null && !request.licencePlateNumber().equals(originalLicencePlateNumber)) {
+            changes.append("Placa actualizada | ");
+        }
+        if (!oldAcquisitionValue.equals(newAcquisitionValue)) {
+            changes.append("Valor de adquisición actualizado | ");
+        }
+        
+        String changesDescription = changes.length() > 0 
+                ? changes.toString().substring(0, changes.length() - 3) 
+                : "Sin cambios";
+        
+        String itemName = updatedItem.getProductName() != null ? updatedItem.getProductName() : "sin nombre";
+        String inventoryName = inventoryEntity != null && inventoryEntity.getName() != null ? inventoryEntity.getName() : "sin nombre";
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Item actualizado: %s (ID: %d) - Inventario: %s - %s", 
+                        itemName,
+                        updatedItem.getId(),
+                        inventoryName,
+                        changesDescription)
+        ));
 
         return new UpdateItemResponse(updatedItem.getId(), "Item updated successfully");
     }
@@ -178,6 +222,8 @@ public class ItemService implements
 
         // Save item name before deletion
         String itemName = item.getProductName() != null ? item.getProductName() : "Item " + itemId;
+        String inventoryName = inventory != null && inventory.getName() != null ? inventory.getName() : "sin nombre";
+        Long inventoryId = inventory != null ? inventory.getId() : null;
 
         // Delete the item
         itemRepository.deleteById(itemId);
@@ -189,6 +235,15 @@ public class ItemService implements
             inventory.setTotalPrice(updatedTotal);
             inventoryRepository.save(inventory);
         }
+
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Item eliminado: %s (ID: %d) - Inventario: %s%s", 
+                        itemName,
+                        itemId,
+                        inventoryName,
+                        inventoryId != null ? " (ID: " + inventoryId + ")" : "")
+        ));
 
         return new DeleteItemResponse(itemId, itemName, "Item deleted successfully");
     }

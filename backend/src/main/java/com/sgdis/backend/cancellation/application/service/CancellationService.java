@@ -10,6 +10,9 @@ import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+// Auditoría
+import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
+import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -42,6 +45,7 @@ public class CancellationService implements
     private final SpringDataItemRepository itemRepository;
     private final FileUploadService fileUploadService;
     private final AuthService authService;
+    private final RecordActionUseCase recordActionUseCase;
 
     @Override
     public AskForCancellationResponse askForCancellation(AskForCancellationRequest request) {
@@ -60,6 +64,29 @@ public class CancellationService implements
 
         CancellationEntity savedEntity = cancellationRepository.save(entity);
 
+        // Registrar auditoría
+        StringBuilder itemsInfo = new StringBuilder();
+        if (items != null && !items.isEmpty()) {
+            items.forEach(item -> {
+                String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+                itemsInfo.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
+            });
+            if (itemsInfo.length() > 0) {
+                itemsInfo.setLength(itemsInfo.length() - 2); // Remover última coma y espacio
+            }
+        } else {
+            itemsInfo.append("N/A");
+        }
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Solicitud de baja creada: ID %d - Items: %s - Solicitado por: %s (%s) - Razón: %s", 
+                        savedEntity.getId(),
+                        itemsInfo.toString(),
+                        requester.getFullName(),
+                        requester.getEmail(),
+                        request.reason() != null ? request.reason() : "N/A")
+        ));
+
         return CancellationMapper.toResponse(savedEntity);
     }
 
@@ -67,12 +94,24 @@ public class CancellationService implements
     @Override
     public RefuseCancellationResponse refuseCancellation(RefuseCancellationRequest request) {
         CancellationEntity cancellation = cancellationRepository.getReferenceById(request.cancellationId());
+        UserEntity checker = authService.getCurrentUser();
+        String requesterName = cancellation.getRequester() != null ? cancellation.getRequester().getFullName() : "N/A";
 
         cancellation.setRefusedAt(LocalDateTime.now());
         cancellation.setComment(request.comment());
-        cancellation.setChecker(authService.getCurrentUser());
+        cancellation.setChecker(checker);
 
         cancellationRepository.save(cancellation);
+
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Baja rechazada: ID %d - Rechazado por: %s (%s) - Solicitado por: %s - Comentario: %s", 
+                        cancellation.getId(),
+                        checker.getFullName(),
+                        checker.getEmail(),
+                        requesterName,
+                        request.comment() != null && !request.comment().isBlank() ? request.comment() : "N/A")
+        ));
 
         return new RefuseCancellationResponse("Baja rechazada exitosamente");
     }
@@ -80,12 +119,39 @@ public class CancellationService implements
     @Override
     public AcceptCancellationResponse acceptCancellation(AcceptCancellationRequest request) {
         CancellationEntity cancellation = cancellationRepository.getReferenceById(request.cancellationId());
+        UserEntity checker = authService.getCurrentUser();
+        String requesterName = cancellation.getRequester() != null ? cancellation.getRequester().getFullName() : "N/A";
+        
+        // Obtener información de items antes de guardar
+        StringBuilder itemsInfo = new StringBuilder();
+        if (cancellation.getItems() != null && !cancellation.getItems().isEmpty()) {
+            cancellation.getItems().forEach(item -> {
+                String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+                itemsInfo.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
+            });
+            if (itemsInfo.length() > 0) {
+                itemsInfo.setLength(itemsInfo.length() - 2); // Remover última coma y espacio
+            }
+        } else {
+            itemsInfo.append("N/A");
+        }
 
         cancellation.setApprovedAt(LocalDateTime.now());
         cancellation.setComment(request.comment());
-        cancellation.setChecker(authService.getCurrentUser());
+        cancellation.setChecker(checker);
 
         cancellationRepository.save(cancellation);
+
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Baja aceptada: ID %d - Items: %s - Aceptado por: %s (%s) - Solicitado por: %s - Comentario: %s", 
+                        cancellation.getId(),
+                        itemsInfo.toString(),
+                        checker.getFullName(),
+                        checker.getEmail(),
+                        requesterName,
+                        request.comment() != null && !request.comment().isBlank() ? request.comment() : "N/A")
+        ));
 
         return new AcceptCancellationResponse("Baja aceptada exitosamente");
     }
@@ -95,11 +161,22 @@ public class CancellationService implements
     @Transactional
     public String uploadFormat(Long cancellationId, MultipartFile file) throws IOException {
         CancellationEntity entity = cancellationRepository.getReferenceById(cancellationId);
+        UserEntity currentUser = authService.getCurrentUser();
+        String requesterName = entity.getRequester() != null ? entity.getRequester().getFullName() : "N/A";
 
         String path = fileUploadService.saveCancellationFormatFile(file, entity.getUuid());
         entity.setUrlFormat(path);
 
         cancellationRepository.save(entity);
+
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Formato de baja subido: ID %d - Subido por: %s (%s) - Solicitado por: %s", 
+                        cancellationId,
+                        currentUser.getFullName(),
+                        currentUser.getEmail(),
+                        requesterName)
+        ));
 
         return "Formato subido correctamente";
     }
@@ -153,11 +230,22 @@ public class CancellationService implements
     @Transactional
     public String uploadFormatExample(Long cancellationId, MultipartFile file) throws IOException {
         CancellationEntity entity = cancellationRepository.getReferenceById(cancellationId);
+        UserEntity currentUser = authService.getCurrentUser();
+        String requesterName = entity.getRequester() != null ? entity.getRequester().getFullName() : "N/A";
 
         String path = fileUploadService.saveCancellationFormatExampleFile(file, entity.getUuid());
         entity.setUrlCorrectedExample(path);
 
         cancellationRepository.save(entity);
+
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Formato de ejemplo de baja subido: ID %d - Subido por: %s (%s) - Solicitado por: %s", 
+                        cancellationId,
+                        currentUser.getFullName(),
+                        currentUser.getEmail(),
+                        requesterName)
+        ));
 
         return "Formato subido correctamente";
     }
