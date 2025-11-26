@@ -175,16 +175,80 @@ if (
         return;
       }
       this.container.classList.add("open");
+      
+      // Add class to parent container to increase z-index
+      const container = this.container.closest('.custom-select-container');
+      if (container) {
+        container.classList.add('select-open');
+      }
+      
+      // Check if dropdown should open upward
+      // Use setTimeout to ensure dropdown is rendered first
+      setTimeout(() => {
+        if (this.dropdown && this.trigger) {
+          const triggerRect = this.trigger.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const spaceBelow = viewportHeight - triggerRect.bottom;
+          const spaceAbove = triggerRect.top;
+          const dropdownHeight = 250; // Approximate max height of dropdown (increased for safety)
+          
+          // Always check if we're in the filter section (bottom half of viewport)
+          // If trigger is in bottom 40% of viewport, prefer opening upward
+          const isInBottomHalf = triggerRect.top > (viewportHeight * 0.6);
+          
+          // If not enough space below but enough space above, open upward
+          // Or if in bottom half of viewport, prefer upward
+          if ((spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) || 
+              (isInBottomHalf && spaceAbove > dropdownHeight)) {
+            this.container.classList.add('dropdown-up');
+          } else {
+            this.container.classList.remove('dropdown-up');
+          }
+          
+          // Set dropdown position using fixed positioning
+          const rect = this.trigger.getBoundingClientRect();
+          this.dropdown.style.position = 'fixed';
+          this.dropdown.style.width = `${rect.width}px`;
+          
+          if (this.container.classList.contains('dropdown-up')) {
+            this.dropdown.style.bottom = `${viewportHeight - rect.top}px`;
+            this.dropdown.style.top = 'auto';
+          } else {
+            this.dropdown.style.top = `${rect.bottom}px`;
+            this.dropdown.style.bottom = 'auto';
+          }
+          
+          this.dropdown.style.left = `${rect.left}px`;
+        }
+      }, 10);
+      
       if (this.searchable && this.searchInput) {
-        this.searchInput.focus();
+        setTimeout(() => {
+          if (this.searchInput) {
+            this.searchInput.focus();
+          }
+        }, 10);
       }
     }
 
     close() {
       this.container.classList.remove("open");
+      const container = this.container.closest('.custom-select-container');
+      if (container) {
+        container.classList.remove('select-open');
+        container.classList.remove('dropdown-up'); // Ensure this is removed on close
+      }
       if (this.searchInput) {
         this.searchInput.value = "";
         this.filterOptions("");
+      }
+      // Reset dropdown position properties
+      if (this.dropdown) {
+        this.dropdown.style.position = '';
+        this.dropdown.style.top = '';
+        this.dropdown.style.bottom = '';
+        this.dropdown.style.left = '';
+        this.dropdown.style.width = '';
       }
     }
 
