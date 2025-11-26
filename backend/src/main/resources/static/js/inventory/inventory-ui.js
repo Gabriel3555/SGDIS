@@ -51,51 +51,73 @@ async function updateInventoryStats() {
   const container = document.getElementById("inventoryStatsContainer");
   if (!container) return;
 
-  if (!window.inventoryData || !window.inventoryData.inventories) {
+  if (!window.inventoryData) {
     return;
   }
 
-  const totalInventories = window.inventoryData.inventories.length;
-  const activeInventories = window.inventoryData.inventories.filter(
-    (i) => i && i.status !== false
-  ).length;
+  const currentRole = window.currentUserRole || '';
+  const isSuperAdmin = currentRole === 'SUPERADMIN';
 
-  // Calculate total value and total items of all inventories
-  let totalValue = 0;
-  let totalItems = 0;
-  try {
-    const token = localStorage.getItem('jwt');
-    if (token && totalInventories > 0) {
-      // Fetch statistics for each inventory to get its total value and total items
-      const statisticsPromises = window.inventoryData.inventories.map(async (inventory) => {
-        try {
-          const response = await fetch(`/api/v1/inventory/${inventory.id}/statistics`, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          if (response.ok) {
-            const stats = await response.json();
-            return {
-              totalValue: stats.totalValue || 0,
-              totalItems: stats.totalItems || 0
-            };
-          }
-          return { totalValue: 0, totalItems: 0 };
-        } catch (error) {
-          console.error(`Error fetching statistics for inventory ${inventory.id}:`, error);
-          return { totalValue: 0, totalItems: 0 };
-        }
-      });
-      
-      const statistics = await Promise.all(statisticsPromises);
-      totalValue = statistics.reduce((sum, stat) => sum + (stat.totalValue || 0), 0);
-      totalItems = statistics.reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+  // Use statistics from endpoint if available (for SUPERADMIN), otherwise calculate from current page
+  let totalInventories, activeInventories, inactiveInventories, totalItems, totalValue;
+
+  if (isSuperAdmin && window.inventoryData.statistics) {
+    // Use total statistics from endpoint
+    const stats = window.inventoryData.statistics;
+    totalInventories = stats.totalInventories || 0;
+    activeInventories = stats.activeInventories || 0;
+    inactiveInventories = stats.inactiveInventories || 0;
+    totalItems = stats.totalItems || 0;
+    totalValue = stats.totalValue || 0;
+  } else {
+    // Fallback to local calculation from current page data
+    if (!window.inventoryData.inventories) {
+      return;
     }
-  } catch (error) {
-    console.error('Error calculating total value and items:', error);
+    
+    totalInventories = window.inventoryData.inventories.length;
+    activeInventories = window.inventoryData.inventories.filter(
+      (i) => i && i.status !== false
+    ).length;
+    inactiveInventories = totalInventories - activeInventories;
+
+    // Calculate total value and total items of all inventories
+    totalValue = 0;
+    totalItems = 0;
+    try {
+      const token = localStorage.getItem('jwt');
+      if (token && totalInventories > 0) {
+        // Fetch statistics for each inventory to get its total value and total items
+        const statisticsPromises = window.inventoryData.inventories.map(async (inventory) => {
+          try {
+            const response = await fetch(`/api/v1/inventory/${inventory.id}/statistics`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            if (response.ok) {
+              const stats = await response.json();
+              return {
+                totalValue: stats.totalValue || 0,
+                totalItems: stats.totalItems || 0
+              };
+            }
+            return { totalValue: 0, totalItems: 0 };
+          } catch (error) {
+            console.error(`Error fetching statistics for inventory ${inventory.id}:`, error);
+            return { totalValue: 0, totalItems: 0 };
+          }
+        });
+        
+        const statistics = await Promise.all(statisticsPromises);
+        totalValue = statistics.reduce((sum, stat) => sum + (stat.totalValue || 0), 0);
+        totalItems = statistics.reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+      }
+    } catch (error) {
+      console.error('Error calculating total value and items:', error);
+    }
   }
 
   // Format currency
@@ -134,6 +156,19 @@ async function updateInventoryStats() {
             </div>
             <p class="text-emerald-600 text-sm font-medium">Inventarios activos</p>
         </div>
+
+        ${isSuperAdmin ? `<div class="stat-card">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-gray-600 text-sm font-medium mb-1">Inactivos</p>
+                    <h3 class="text-3xl font-bold text-gray-800">${inactiveInventories}</h3>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                </div>
+            </div>
+            <p class="text-red-600 text-sm font-medium">Inventarios inactivos</p>
+        </div>` : ''}
 
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">

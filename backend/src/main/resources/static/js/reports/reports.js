@@ -74,9 +74,6 @@ function setupEventListeners() {
     // Export buttons
     const exportPdfBtn = document.getElementById('exportPdfBtn');
     if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
-    
-    const exportExcelBtn = document.getElementById('exportExcelBtn');
-    if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
 }
 
 // Load all regionals - make it globally accessible
@@ -609,31 +606,50 @@ async function fetchVerificationsReport(regionalId, institutionId, inventoryId, 
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    let endpoint = '/api/v1/verification?page=0&size=10000';
-    const response = await fetch(endpoint, {
-        method: 'GET',
-        headers: headers
-    });
+    // Build endpoint with filters
+    const params = new URLSearchParams();
+    params.append('page', '0');
+    params.append('size', '10000');
+    
+    if (inventoryId) {
+        params.append('inventoryId', inventoryId.toString());
+    } else if (institutionId) {
+        params.append('institutionId', institutionId.toString());
+    } else if (regionalId) {
+        params.append('regionalId', regionalId.toString());
+    }
+    
+    const endpoint = `/api/v1/verifications?${params.toString()}`;
+    
+    try {
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: headers
+        });
 
-    if (response.ok) {
-        const data = await response.json();
-        let verifications = data.content || data || [];
-        
-        // Filter by date if provided
-        if (startDate || endDate) {
-            verifications = verifications.filter(verification => {
-                const verDate = verification.createdAt || verification.verificationDate;
-                if (!verDate) return false;
-                const date = new Date(verDate);
-                if (startDate && date < new Date(startDate)) return false;
-                if (endDate && date > new Date(endDate)) return false;
-                return true;
-            });
+        if (response.ok) {
+            const data = await response.json();
+            let verifications = data.content || data || [];
+            
+            // Filter by date if provided
+            if (startDate || endDate) {
+                verifications = verifications.filter(verification => {
+                    const verDate = verification.createdAt;
+                    if (!verDate) return false;
+                    const date = new Date(verDate);
+                    if (startDate && date < new Date(startDate)) return false;
+                    if (endDate && date > new Date(endDate)) return false;
+                    return true;
+                });
+            }
+            
+            return verifications;
+        } else {
+            throw new Error('Error al cargar verificaciones');
         }
-        
-        return verifications;
-    } else {
-        throw new Error('Error al cargar verificaciones');
+    } catch (error) {
+        console.error('Error fetching verifications:', error);
+        throw new Error('Error al cargar verificaciones: ' + error.message);
     }
 }
 
@@ -654,13 +670,19 @@ async function fetchInventoryReport(regionalId, institutionId, inventoryId, star
             const inventory = await response.json();
             if (!inventory) return [];
             
-            // Filter by date if provided
-            const invDate = inventory.createdAt || inventory.registrationDate;
-            if (startDate || endDate) {
-                if (!invDate) return [];
-                const date = new Date(invDate);
-                if (startDate && date < new Date(startDate)) return [];
-                if (endDate && date > new Date(endDate)) return [];
+            // Get statistics for this inventory
+            try {
+                const statsResponse = await fetch(`/api/v1/inventory/${inventoryId}/statistics`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                if (statsResponse.ok) {
+                    const stats = await statsResponse.json();
+                    inventory.quantityItems = stats.totalItems || 0;
+                    inventory.totalPrice = stats.totalValue || 0;
+                }
+            } catch (error) {
+                console.error('Error fetching inventory statistics:', error);
             }
             
             return [inventory];
@@ -688,16 +710,31 @@ async function fetchInventoryReport(regionalId, institutionId, inventoryId, star
         const data = await response.json();
         let inventories = data.content || data || [];
         
-        // Filter by date if provided
-        if (startDate || endDate) {
-            inventories = inventories.filter(inv => {
-                const invDate = inv.createdAt || inv.registrationDate;
-                if (!invDate) return false;
-                const date = new Date(invDate);
-                if (startDate && date < new Date(startDate)) return false;
-                if (endDate && date > new Date(endDate)) return false;
-                return true;
-            });
+        // If no date filter, return all inventories
+        // Note: InventoryResponse doesn't have createdAt field, so we skip date filtering
+        // but we can still enrich with statistics
+        
+        // Enrich inventories with statistics if needed
+        if (inventories.length > 0 && inventories.length <= 100) {
+            // Only enrich if reasonable number of inventories (to avoid too many requests)
+            const enrichedInventories = await Promise.all(inventories.map(async (inv) => {
+                try {
+                    const statsResponse = await fetch(`/api/v1/inventory/${inv.id}/statistics`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    if (statsResponse.ok) {
+                        const stats = await statsResponse.json();
+                        inv.quantityItems = stats.totalItems || inv.quantityItems || 0;
+                        inv.totalPrice = stats.totalValue || inv.totalPrice || 0;
+                    }
+                } catch (error) {
+                    // If statistics fail, use existing values
+                    console.error(`Error fetching statistics for inventory ${inv.id}:`, error);
+                }
+                return inv;
+            }));
+            return enrichedInventories;
         }
         
         return inventories;
@@ -850,6 +887,18 @@ function displayTableReport(data) {
         displayItemsReport(data);
         return;
     }
+    
+    // Special handling for inventory report - show statistics and table
+    if (currentReportType === 'inventory') {
+        displayInventoryReport(data);
+        return;
+    }
+    
+    // Special handling for verifications report - show statistics and table
+    if (currentReportType === 'verifications') {
+        displayVerificationsReport(data);
+        return;
+    }
 
     if (!Array.isArray(data) || data.length === 0) {
         document.getElementById('reportEmptyState').classList.remove('hidden');
@@ -871,10 +920,26 @@ function displayTableReport(data) {
 
     // Create header row
     const headerRow = document.createElement('tr');
-    headers.forEach(header => {
+    headers.forEach((header, colIndex) => {
         const th = document.createElement('th');
         th.textContent = header.label;
-        th.className = 'px-4 py-3 text-left';
+        th.className = 'py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap';
+        // Remove padding classes and set inline styles for precise control
+        th.style.paddingTop = '8px';
+        th.style.paddingBottom = '8px';
+        // Set specific width and padding for ID column (first column)
+        if (colIndex === 0) {
+            th.style.width = '40px';
+            th.style.minWidth = '40px';
+            th.style.maxWidth = '40px';
+            th.style.paddingLeft = '8px';
+            th.style.paddingRight = '2px';
+        }
+        // Other columns
+        else {
+            th.style.paddingLeft = '6px';
+            th.style.paddingRight = '6px';
+        }
         headerRow.appendChild(th);
     });
     tableHeader.appendChild(headerRow);
@@ -882,13 +947,29 @@ function displayTableReport(data) {
     // Create body rows
     data.forEach((item, index) => {
         const row = document.createElement('tr');
-        row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50';
+        row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600';
         
-        headers.forEach(header => {
+        headers.forEach((header, colIndex) => {
             const td = document.createElement('td');
             const value = getValueForField(item, header.field);
-            td.textContent = formatValue(value, header.type);
-            td.className = 'px-4 py-3';
+            td.textContent = formatValue(value, header.type, header.field);
+            td.className = 'py-2 text-sm text-gray-800 dark:text-gray-200';
+            // Remove padding classes and set inline styles for precise control
+            td.style.paddingTop = '6px';
+            td.style.paddingBottom = '6px';
+            // Set specific width and padding for ID column (first column)
+            if (colIndex === 0) {
+                td.style.width = '40px';
+                td.style.minWidth = '40px';
+                td.style.maxWidth = '40px';
+                td.style.paddingLeft = '8px';
+                td.style.paddingRight = '2px';
+            }
+            // Other columns
+            else {
+                td.style.paddingLeft = '6px';
+                td.style.paddingRight = '6px';
+            }
             row.appendChild(td);
         });
         
@@ -897,6 +978,287 @@ function displayTableReport(data) {
 
     // Update row count
     document.getElementById('reportRowCount').textContent = `${data.length} ${data.length === 1 ? 'registro' : 'registros'}`;
+}
+
+// Display inventory report with statistics
+function displayInventoryReport(data) {
+    const inventories = Array.isArray(data) ? data : [];
+
+    if (inventories.length === 0) {
+        document.getElementById('reportEmptyState').classList.remove('hidden');
+        document.getElementById('reportResultsSection').classList.add('hidden');
+        return;
+    }
+
+    // Calculate statistics
+    const totalInventories = inventories.length;
+    const activeInventories = inventories.filter(inv => inv.status !== false).length;
+    const inactiveInventories = totalInventories - activeInventories;
+    
+    const totalItems = inventories.reduce((sum, inv) => sum + (inv.quantityItems || 0), 0);
+    const totalValue = inventories.reduce((sum, inv) => sum + (inv.totalPrice || 0), 0);
+    
+    // Get top 5 inventories by value
+    const topInventoriesByValue = inventories
+        .filter(inv => inv.totalPrice && inv.totalPrice > 0)
+        .map(inv => ({
+            id: inv.id,
+            name: inv.name || `Inventario ${inv.id}`,
+            value: inv.totalPrice
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+    
+    // Get top 5 inventories by items count
+    const topInventoriesByItems = inventories
+        .filter(inv => inv.quantityItems && inv.quantityItems > 0)
+        .map(inv => ({
+            id: inv.id,
+            name: inv.name || `Inventario ${inv.id}`,
+            items: inv.quantityItems
+        }))
+        .sort((a, b) => b.items - a.items)
+        .slice(0, 5);
+
+    // Generate statistics cards
+    const statsContainer = document.getElementById('reportStats');
+    statsContainer.innerHTML = `
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Inventarios</span>
+                <i class="fas fa-boxes text-blue-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${totalInventories}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Inventarios Activos</span>
+                <i class="fas fa-check-circle text-green-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${activeInventories}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Items</span>
+                <i class="fas fa-cubes text-purple-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${totalItems.toLocaleString('es-CO')}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Valor Total</span>
+                <i class="fas fa-dollar-sign text-orange-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue)}</div>
+        </div>
+    `;
+
+    // Generate table
+    const headers = getHeadersForReportType('inventory');
+    const tableHeader = document.getElementById('reportTableHeader');
+    const tableBody = document.getElementById('reportTableBody');
+
+    // Clear existing content
+    tableHeader.innerHTML = '';
+    tableBody.innerHTML = '';
+
+    // Create header row
+    const headerRow = document.createElement('tr');
+    headers.forEach((header, colIndex) => {
+        const th = document.createElement('th');
+        th.textContent = header.label;
+        th.className = 'py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap';
+        // Remove padding classes and set inline styles for precise control
+        th.style.paddingTop = '8px';
+        th.style.paddingBottom = '8px';
+        // Set specific width and padding for ID column (first column)
+        if (colIndex === 0) {
+            th.style.width = '40px';
+            th.style.minWidth = '40px';
+            th.style.maxWidth = '40px';
+            th.style.paddingLeft = '8px';
+            th.style.paddingRight = '2px';
+        }
+        // Other columns
+        else {
+            th.style.paddingLeft = '6px';
+            th.style.paddingRight = '6px';
+        }
+        headerRow.appendChild(th);
+    });
+    tableHeader.appendChild(headerRow);
+
+    // Create body rows
+    inventories.forEach((inventory, index) => {
+        const row = document.createElement('tr');
+        row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600';
+        
+        headers.forEach((header, colIndex) => {
+            const td = document.createElement('td');
+            const value = getValueForField(inventory, header.field);
+            td.textContent = formatValue(value, header.type, header.field);
+            td.className = 'py-2 text-sm text-gray-800 dark:text-gray-200';
+            // Remove padding classes and set inline styles for precise control
+            td.style.paddingTop = '6px';
+            td.style.paddingBottom = '6px';
+            // Set specific width and padding for ID column (first column)
+            if (colIndex === 0) {
+                td.style.width = '40px';
+                td.style.minWidth = '40px';
+                td.style.maxWidth = '40px';
+                td.style.paddingLeft = '8px';
+                td.style.paddingRight = '2px';
+            }
+            // Other columns
+            else {
+                td.style.paddingLeft = '6px';
+                td.style.paddingRight = '6px';
+            }
+            row.appendChild(td);
+        });
+        
+        tableBody.appendChild(row);
+    });
+
+    // Update row count
+    document.getElementById('reportRowCount').textContent = `${inventories.length} ${inventories.length === 1 ? 'registro' : 'registros'}`;
+}
+
+// Display verifications report with statistics
+function displayVerificationsReport(data) {
+    const verifications = Array.isArray(data) ? data : [];
+
+    if (verifications.length === 0) {
+        document.getElementById('reportEmptyState').classList.remove('hidden');
+        document.getElementById('reportResultsSection').classList.add('hidden');
+        return;
+    }
+
+    // Calculate statistics
+    const totalVerifications = verifications.length;
+    const verificationsWithEvidence = verifications.filter(v => v.photoUrl && v.photoUrl.trim() !== '').length;
+    const verificationsWithoutEvidence = totalVerifications - verificationsWithEvidence;
+    
+    // Get unique items verified
+    const uniqueItems = new Set(verifications.map(v => v.itemId).filter(id => id != null));
+    const uniqueUsers = new Set(verifications.map(v => v.userId).filter(id => id != null));
+    
+    // Get verifications by date (last 30 days, last 7 days, today)
+    const now = new Date();
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const verificationsLast30Days = verifications.filter(v => {
+        if (!v.createdAt) return false;
+        const date = new Date(v.createdAt);
+        return date >= last30Days;
+    }).length;
+    
+    const verificationsLast7Days = verifications.filter(v => {
+        if (!v.createdAt) return false;
+        const date = new Date(v.createdAt);
+        return date >= last7Days;
+    }).length;
+    
+    const verificationsToday = verifications.filter(v => {
+        if (!v.createdAt) return false;
+        const date = new Date(v.createdAt);
+        return date >= today;
+    }).length;
+
+    // Generate statistics cards
+    const statsContainer = document.getElementById('reportStats');
+    statsContainer.innerHTML = `
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Verificaciones</span>
+                <i class="fas fa-clipboard-check text-blue-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${totalVerifications}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Con Evidencia</span>
+                <i class="fas fa-camera text-green-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${verificationsWithEvidence}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Items Únicos</span>
+                <i class="fas fa-box text-purple-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${uniqueItems.size}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Verificaciones Hoy</span>
+                <i class="fas fa-calendar-day text-orange-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${verificationsToday}</div>
+        </div>
+    `;
+
+    // Generate table
+    const headers = getHeadersForReportType('verifications');
+    const tableHeader = document.getElementById('reportTableHeader');
+    const tableBody = document.getElementById('reportTableBody');
+
+    // Clear existing content
+    tableHeader.innerHTML = '';
+    tableBody.innerHTML = '';
+
+    // Create header row
+    const headerRow = document.createElement('tr');
+    headers.forEach((header, colIndex) => {
+        const th = document.createElement('th');
+        th.textContent = header.label;
+        th.className = 'text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap';
+        // Set consistent padding for alignment - MUST match td padding
+        th.style.padding = '8px 12px';
+        th.style.margin = '0';
+        th.style.boxSizing = 'border-box';
+        th.style.verticalAlign = 'middle';
+        // Set specific width for Placa Item column (first column now)
+        if (colIndex === 0) {
+            th.style.width = '120px';
+            th.style.minWidth = '120px';
+            th.style.maxWidth = '120px';
+        }
+        headerRow.appendChild(th);
+    });
+    tableHeader.appendChild(headerRow);
+
+    // Create body rows
+    verifications.forEach((verification, index) => {
+        const row = document.createElement('tr');
+        row.className = index % 2 === 0 ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600';
+        
+        headers.forEach((header, colIndex) => {
+            const td = document.createElement('td');
+            const value = getValueForField(verification, header.field);
+            td.textContent = formatValue(value, header.type, header.field);
+            td.className = 'text-sm text-gray-800 dark:text-gray-200';
+            // Set consistent padding matching the header EXACTLY for perfect alignment
+            td.style.padding = '6px 12px';
+            td.style.margin = '0';
+            td.style.boxSizing = 'border-box';
+            td.style.verticalAlign = 'middle';
+            // Set specific width for Placa Item column (first column now) - MUST match th
+            if (colIndex === 0) {
+                td.style.width = '120px';
+                td.style.minWidth = '120px';
+                td.style.maxWidth = '120px';
+            }
+            row.appendChild(td);
+        });
+        
+        tableBody.appendChild(row);
+    });
+
+    // Update row count
+    document.getElementById('reportRowCount').textContent = `${verifications.length} ${verifications.length === 1 ? 'registro' : 'registros'}`;
 }
 
 // Display items report with statistics
@@ -1378,17 +1740,21 @@ function getHeadersForReportType(reportType) {
             { field: 'status', label: 'Estado', type: 'string' }
         ],
         verifications: [
-            { field: 'id', label: 'ID', type: 'number' },
-            { field: 'itemName', label: 'Item', type: 'string' },
-            { field: 'verificationDate', label: 'Fecha Verificación', type: 'date' },
-            { field: 'status', label: 'Estado', type: 'string' },
-            { field: 'verifiedBy', label: 'Verificado Por', type: 'string' }
+            { field: 'itemLicencePlateNumber', label: 'Placa Item', type: 'string' },
+            { field: 'userFullName', label: 'Verificado Por', type: 'string' },
+            { field: 'userEmail', label: 'Email Verificador', type: 'string' },
+            { field: 'createdAt', label: 'Fecha Verificación', type: 'date' },
+            { field: 'photoUrl', label: 'Tiene Evidencia', type: 'string' }
         ],
         inventory: [
+            { field: 'id', label: 'ID', type: 'number' },
             { field: 'name', label: 'Nombre', type: 'string' },
-            { field: 'description', label: 'Descripción', type: 'string' },
-            { field: 'ownerName', label: 'Propietario', type: 'string' },
-            { field: 'createdAt', label: 'Fecha Creación', type: 'date' }
+            { field: 'location', label: 'Ubicación', type: 'string' },
+            { field: 'owner.fullName', label: 'Propietario', type: 'string' },
+            { field: 'institutionName', label: 'Institución', type: 'string' },
+            { field: 'quantityItems', label: 'Cantidad Items', type: 'number' },
+            { field: 'totalPrice', label: 'Valor Total', type: 'currency' },
+            { field: 'status', label: 'Estado', type: 'boolean' }
         ]
     };
 
@@ -1410,8 +1776,13 @@ function getValueForField(item, field) {
 }
 
 // Format value based on type
-function formatValue(value, type) {
+function formatValue(value, type, fieldName) {
     if (value === null || value === undefined) return '-';
+    
+    // Special handling for photoUrl field
+    if (fieldName === 'photoUrl') {
+        return (value && value.trim() !== '') ? 'Sí' : 'No';
+    }
     
     switch (type) {
         case 'date':
@@ -2403,10 +2774,11 @@ async function exportToPDF() {
         // Enhanced Table report for other types
         const headers = getHeadersForReportType(currentReportType);
         const tableData = Array.isArray(currentReportData) ? currentReportData.map(item => 
-            headers.map(header => formatValue(getValueForField(item, header.field), header.type))
+            headers.map(header => formatValue(getValueForField(item, header.field), header.type, header.field))
         ) : [];
 
         // Section title
+        yPos += 10; // Add space before the title
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 140, 0);
@@ -2491,189 +2863,6 @@ async function exportToPDF() {
     showReportSuccessToast('Éxito', 'Reporte exportado a PDF correctamente');
 }
 
-// Export to Excel
-function exportToExcel() {
-    if (!currentReportData) {
-        showReportErrorToast('Error', 'No hay datos para exportar');
-        return;
-    }
-    
-    // Check if it's an empty array
-    if (Array.isArray(currentReportData) && currentReportData.length === 0) {
-        showReportErrorToast('Error', 'No hay datos para exportar');
-        return;
-    }
-    
-    // Check if it's an items report object with empty items
-    if (currentReportType === 'items' && typeof currentReportData === 'object' && !Array.isArray(currentReportData)) {
-        const items = currentReportData.items || [];
-        if (items.length === 0) {
-            showReportErrorToast('Error', 'No hay datos para exportar');
-            return;
-        }
-    }
-
-    const reportTypeNames = {
-        items: 'Reporte de Items',
-        users: 'Reporte de Usuarios',
-        loans: 'Reporte de Préstamos',
-        verifications: 'Reporte de Verificaciones',
-        inventory: 'Reporte de Inventarios',
-        general: 'Reporte General'
-    };
-
-    let wb = XLSX.utils.book_new();
-
-    if (currentReportType === 'general') {
-        // General report - multiple sheets
-        const data = currentReportData;
-        
-        if (data.items && data.items.length > 0) {
-            const headers = getHeadersForReportType('items');
-            const wsData = [
-                headers.map(h => h.label),
-                ...data.items.map(item => headers.map(header => formatValue(getValueForField(item, header.field), header.type)))
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, 'Items');
-        }
-
-        if (data.users && data.users.length > 0) {
-            const headers = getHeadersForReportType('users');
-            const wsData = [
-                headers.map(h => h.label),
-                ...data.users.map(item => headers.map(header => formatValue(getValueForField(item, header.field), header.type)))
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, 'Usuarios');
-        }
-
-        if (data.loans && data.loans.length > 0) {
-            const headers = getHeadersForReportType('loans');
-            const wsData = [
-                headers.map(h => h.label),
-                ...data.loans.map(item => headers.map(header => formatValue(getValueForField(item, header.field), header.type)))
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, 'Préstamos');
-        }
-
-        if (data.verifications && data.verifications.length > 0) {
-            const headers = getHeadersForReportType('verifications');
-            const wsData = [
-                headers.map(h => h.label),
-                ...data.verifications.map(item => headers.map(header => formatValue(getValueForField(item, header.field), header.type)))
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, 'Verificaciones');
-        }
-
-        if (data.inventories && data.inventories.length > 0) {
-            const headers = getHeadersForReportType('inventory');
-            const wsData = [
-                headers.map(h => h.label),
-                ...data.inventories.map(item => headers.map(header => formatValue(getValueForField(item, header.field), header.type)))
-            ];
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            XLSX.utils.book_append_sheet(wb, ws, 'Inventarios');
-        }
-    } else if (currentReportType === 'items') {
-        // Items report - statistics and top items
-        const data = currentReportData;
-        const items = data.items || [];
-        const loans = data.loans || [];
-        const transfers = data.transfers || [];
-        
-        // Calculate statistics
-        const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
-        const totalItems = items.length;
-        
-        // Calculate items on loan
-        const itemsOnLoan = new Set();
-        loans.forEach(loan => {
-            if (!loan.returned && loan.itemId) {
-                itemsOnLoan.add(loan.itemId);
-            }
-        });
-        const totalItemsOnLoan = itemsOnLoan.size;
-        
-        // Calculate items with most transfers
-        const itemTransferCounts = {};
-        transfers.forEach(transfer => {
-            const itemId = transfer.itemId || transfer.item?.id;
-            if (itemId) {
-                itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
-            }
-        });
-        
-        const mostMovedItems = Object.entries(itemTransferCounts)
-            .map(([itemId, count]) => {
-                const item = items.find(i => i.id === parseInt(itemId));
-                return {
-                    id: itemId,
-                    name: item?.name || item?.licencePlateNumber || item?.productName || `Item ${itemId}`,
-                    count: count
-                };
-            })
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-        
-        // Get top 5 most expensive items
-        const mostExpensiveItems = items
-            .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
-            .map(item => ({
-                id: item.id,
-                name: item.name || item.licencePlateNumber || item.productName || `Item ${item.id}`,
-                value: item.acquisitionValue
-            }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-        
-        // Statistics sheet
-        const statsData = [
-            ['ESTADISTICAS DE ITEMS'],
-            [],
-            ['Cantidad Total de Items', totalItems],
-            ['Valor Total de Items', new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue)],
-            ['Total Items en Préstamo', totalItemsOnLoan],
-            ['Items Más Movidos (máximo)', mostMovedItems.length > 0 ? mostMovedItems[0].count : 0],
-            [],
-            ['ITEMS MAS MOVIDOS'],
-            ['#', 'Nombre del Item', 'Transferencias'],
-            ...mostMovedItems.map((item, idx) => [
-                idx + 1,
-                item.name || '',
-                item.count
-            ]),
-            [],
-            ['ITEMS MAS CAROS'],
-            ['#', 'Nombre del Item', 'Valor'],
-            ...mostExpensiveItems.map((item, idx) => [
-                idx + 1,
-                item.name || '',
-                new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
-            ])
-        ];
-        
-        const ws = XLSX.utils.aoa_to_sheet(statsData);
-        XLSX.utils.book_append_sheet(wb, ws, 'Estadísticas Items');
-    } else {
-        // Single sheet report
-        const headers = getHeadersForReportType(currentReportType);
-        const wsData = [
-            headers.map(h => h.label),
-            ...(Array.isArray(currentReportData) ? currentReportData : []).map(item => headers.map(header => formatValue(getValueForField(item, header.field), header.type)))
-        ];
-        const ws = XLSX.utils.aoa_to_sheet(wsData);
-        XLSX.utils.book_append_sheet(wb, ws, reportTypeNames[currentReportType] || 'Reporte');
-    }
-
-    // Save Excel file
-    const fileName = `${reportTypeNames[currentReportType] || 'Reporte'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    
-    showReportSuccessToast('Éxito', 'Reporte exportado a Excel correctamente');
-}
 
 // Toast helper functions (use global functions if available)
 function showReportErrorToast(title, message) {
