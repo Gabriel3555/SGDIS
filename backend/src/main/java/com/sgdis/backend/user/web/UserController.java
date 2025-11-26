@@ -4,6 +4,7 @@ import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.loan.application.dto.LoanResponse;
 import com.sgdis.backend.loan.application.port.GetMyLoansUseCase;
+import com.sgdis.backend.loan.application.service.LoanService;
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
 import com.sgdis.backend.user.domain.Role;
@@ -56,6 +57,7 @@ public class UserController {
     private final FileUploadService fileUploadService;
     private final AuthService authService;
     private final GetMyLoansUseCase getMyLoansUseCase;
+    private final LoanService loanService;
 
     @Operation(
             summary = "Get user by ID",
@@ -249,6 +251,65 @@ public class UserController {
     }
 
     @Operation(
+            summary = "Get current user owned inventories",
+            description = "Retrieves all inventories owned by the currently authenticated user"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Owned inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/me/inventories/owner")
+    public ResponseEntity<List<InventoryResponse>> getMyOwnedInventories() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        
+        List<InventoryEntity> inventories = 
+                userRepository.findInventoriesByOwnerId(userId);
+        
+        List<InventoryResponse> responses = inventories.stream()
+                .map(InventoryMapper::toResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(
+            summary = "Get current user signatory inventories",
+            description = "Retrieves all inventories where the currently authenticated user is a signatory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Signatory inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/me/inventories/signatory")
+    public ResponseEntity<List<InventoryResponse>> getMySignatoryInventories() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        
+        // Force initialization of lazy collection within transaction
+        List<InventoryEntity> inventories = user.getMySignatories();
+        if (inventories == null) {
+            inventories = List.of();
+        } else {
+            // Initialize the collection to avoid LazyInitializationException
+            inventories.size();
+        }
+        
+        List<InventoryResponse> responses = inventories.stream()
+                .map(InventoryMapper::toResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(
             summary = "Get managed inventories by user ID",
             description = "Retrieves all inventories managed by a specific user (Admin only)"
     )
@@ -364,6 +425,24 @@ public class UserController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = (Long) authentication.getPrincipal();
         List<LoanResponse> loans = getMyLoansUseCase.getMyLoans(userId);
+        return ResponseEntity.ok(loans);
+    }
+
+    @Operation(
+            summary = "Get loans I made",
+            description = "Retrieves all loans that the currently authenticated user has made (where user is the lender)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Loans retrieved successfully",
+            content = @Content(schema = @Schema(implementation = LoanResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/me/loans-made")
+    public ResponseEntity<List<LoanResponse>> getMyLoansMade() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        List<LoanResponse> loans = loanService.getLoansByLenderId(userId);
         return ResponseEntity.ok(loans);
     }
 

@@ -312,8 +312,24 @@ async function fetchInventoryStatistics(inventoryId) {
   }
 }
 
-async function lendItem(itemId, responsibleName, details) {
+async function lendItem(itemId, responsibleId, details) {
   try {
+    // Check if user has permission to create loans (for USER role)
+    if (window.loansData && window.loansData.userRole === 'USER') {
+      if (!window.loansData.canCreateLoans) {
+        throw new Error('No tienes permisos para crear préstamos. Solo los propietarios y firmantes de inventarios pueden crear préstamos.');
+      }
+      
+      // Verify that the item belongs to an inventory where user is owner or signatory
+      if (window.itemsData && window.itemsData.currentInventoryId) {
+        const inventoryId = window.itemsData.currentInventoryId;
+        if (window.loansData.userInventoriesWithPermission && 
+            !window.loansData.userInventoriesWithPermission.includes(inventoryId)) {
+          throw new Error('No tienes permisos para crear préstamos en este inventario. Solo puedes crear préstamos en inventarios donde eres propietario o firmante.');
+        }
+      }
+    }
+
     const token = localStorage.getItem("jwt");
     const headers = {
       "Content-Type": "application/json",
@@ -327,30 +343,63 @@ async function lendItem(itemId, responsibleName, details) {
       headers: headers,
       body: JSON.stringify({
         itemId: itemId,
-        responsibleName: responsibleName,
+        responsibleId: responsibleId,
         details: details || "",
       }),
     });
 
     if (!response.ok) {
       let errorMessage = "Error al prestar el item";
+      let errorDetails = null;
+      
       try {
         const contentType = response.headers.get("content-type");
+        console.log("Error response status:", response.status);
+        console.log("Error response content-type:", contentType);
+        
         if (contentType && contentType.includes("application/json")) {
           const errorData = await response.json();
+          console.log("Error data from server:", errorData);
+          
           errorMessage =
             errorData.message ||
             errorData.detail ||
             errorData.error ||
             errorMessage;
+          errorDetails = errorData;
         } else {
           const errorText = await response.text();
+          console.log("Error text from server:", errorText);
           errorMessage = errorText || errorMessage;
         }
+        
+        // Check for specific loan error
+        if (errorMessage.includes("cannot be lent") || errorMessage.includes("not been returned") || errorMessage.includes("currently lent")) {
+          if (errorMessage.includes("currently lent to:")) {
+            // Extract the responsible person's name from the error message
+            const match = errorMessage.match(/currently lent to: (.+?)(?:\.|$)/);
+            if (match && match[1]) {
+              errorMessage = `Este item no puede ser prestado porque actualmente está prestado a: "${match[1].trim()}". Debe ser devuelto primero antes de poder prestarlo nuevamente.`;
+            } else {
+              errorMessage = "Este item no puede ser prestado porque tiene un préstamo activo. Debe ser devuelto primero.";
+            }
+          } else {
+            errorMessage = "Este item no puede ser prestado porque tiene un préstamo activo. Debe ser devuelto primero.";
+          }
+        }
+        
+        console.log("Final error message:", errorMessage);
       } catch (parseError) {
-        // Error al parsear respuesta
+        console.error("Error al parsear respuesta de error:", parseError);
+        errorMessage = `Error al prestar el item (Código: ${response.status}). Por favor, inténtalo de nuevo.`;
       }
-      throw new Error(errorMessage);
+      
+      const finalError = new Error(errorMessage);
+      if (errorDetails) {
+        finalError.details = errorDetails;
+      }
+      finalError.status = response.status;
+      throw finalError;
     }
 
     return await response.json();

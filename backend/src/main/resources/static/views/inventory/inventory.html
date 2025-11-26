@@ -39,7 +39,81 @@
 </head>
 
 <body>
-
+    <script>
+        // Replace sidebar with user sidebar immediately if user route
+        (function() {
+            const path = window.location.pathname;
+            const isUserRoute = path.includes('/user/') || 
+                               path.includes('/dashboard/user') || 
+                               path === '/info-me' ||
+                               path.includes('/info-me');
+            
+            if (isUserRoute) {
+                function buildUserSidebarHTML(currentPath) {
+                    return `
+                        <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/dashboard' || currentPath === '/dashboard/user' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/dashboard')">
+                            <i class="fas fa-chart-line text-lg"></i>
+                            <span class="font-medium">Dashboard</span>
+                        </a>
+                        <a href="/user/my-inventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/my-inventories' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/my-inventories')">
+                            <i class="fas fa-boxes text-lg"></i>
+                            <span class="font-medium">Mis Inventarios</span>
+                        </a>
+                        <a href="/user/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/notifications' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/notifications')">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="font-medium">Notificaciones</span>
+                        </a>
+                        <a href="/user/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/loans' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/loans')">
+                            <i class="fas fa-hand-holding text-lg"></i>
+                            <span class="font-medium">Préstamos</span>
+                        </a>
+                        <a href="/user/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/verification' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/verification')">
+                            <i class="fas fa-clipboard-check text-lg"></i>
+                            <span class="font-medium">Verificación</span>
+                        </a>
+                        <a href="/user/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/transfers' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/transfers')">
+                            <i class="fas fa-exchange-alt text-lg"></i>
+                            <span class="font-medium">Transferencias</span>
+                        </a>
+                        <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/info-me' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/info-me')">
+                            <i class="fas fa-user-circle text-lg"></i>
+                            <span class="font-medium">Mi Perfil</span>
+                        </a>`;
+                }
+                
+                function replaceSidebarWithUser() {
+                    const nav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
+                    if (nav) {
+                        nav.innerHTML = buildUserSidebarHTML(window.location.pathname);
+                        return true;
+                    }
+                    return false;
+                }
+                
+                if (!replaceSidebarWithUser()) {
+                    const observer = new MutationObserver(function(mutations, obs) {
+                        if (replaceSidebarWithUser()) {
+                            obs.disconnect();
+                        }
+                    });
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', replaceSidebarWithUser);
+                    }
+                }
+            }
+        })();
+    </script>
     <!-- Overlay for mobile -->
     <div class="overlay" id="overlay"
         style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
@@ -444,6 +518,7 @@
         </div>
     </div>
 
+    <script src="../../js/user-sidebar.js"></script>
     <script src="../../js/dashboard.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
     <!-- Inventory Module Scripts -->

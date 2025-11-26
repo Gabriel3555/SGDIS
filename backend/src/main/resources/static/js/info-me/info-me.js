@@ -21,7 +21,10 @@ async function loadUserProfile() {
             const userData = await response.json();
             populateUserProfile(userData);
             updateHeaderInfo(userData);
-            loadSidebarNavigation(userData.role);
+            // Don't call loadSidebarNavigation for USER role - user-sidebar.js handles it
+            if (userData.role !== 'USER') {
+                loadSidebarNavigation(userData.role);
+            }
             hideLoadingState();
         } else if (response.status === 401) {
             // Token expired or invalid

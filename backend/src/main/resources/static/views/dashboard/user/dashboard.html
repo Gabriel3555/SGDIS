@@ -68,6 +68,33 @@
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
+            <a href="/user/my-inventories" id="navMyInventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/my-inventories')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Mis Inventarios</span>
+            </a>
+            <a href="/user/notifications" id="navNotifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/user/loans" id="navLoans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                style="display: none;"
+                onclick="handleSidebarClick(event, '/user/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/user/verification" id="navVerification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/user/transfers" id="navTransfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                style="display: none;"
+                onclick="handleSidebarClick(event, '/user/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
             <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
@@ -458,6 +485,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
             loadCurrentUserInfo(); // Load user info for header
+            loadUserPermissions(); // Load user permissions for sidebar
         });
 
         // Logout function - shows confirmation modal
@@ -480,6 +508,62 @@
         function confirmLogout() {
             localStorage.removeItem('jwt');
             window.location.href = '/';
+        }
+
+        // Load user permissions to show/hide sidebar items
+        async function loadUserPermissions() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    return;
+                }
+
+                // Check if user is owner of any inventory
+                const ownerResponse = await fetch('/api/v1/users/me/inventories/owner', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                let isOwner = false;
+                if (ownerResponse.ok) {
+                    const ownedInventories = await ownerResponse.json();
+                    isOwner = ownedInventories && ownedInventories.length > 0;
+                }
+
+                // Check if user is signatory of any inventory
+                const signatoryResponse = await fetch('/api/v1/users/me/inventories/signatory', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                let isSignatory = false;
+                if (signatoryResponse.ok) {
+                    const signatoryInventories = await signatoryResponse.json();
+                    isSignatory = signatoryInventories && signatoryInventories.length > 0;
+                }
+
+                // Show/hide sidebar items based on permissions
+                const navLoans = document.getElementById('navLoans');
+                const navTransfers = document.getElementById('navTransfers');
+
+                // Show loans if user is owner or signatory
+                if (navLoans && (isOwner || isSignatory)) {
+                    navLoans.style.display = 'flex';
+                }
+
+                // Show transfers only if user is owner
+                if (navTransfers && isOwner) {
+                    navTransfers.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error loading user permissions:', error);
+            }
         }
     </script>
 

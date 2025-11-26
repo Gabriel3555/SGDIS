@@ -27,6 +27,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -257,6 +258,34 @@ public class LoanController {
                 .collect(java.util.stream.Collectors.toList());
         
         return ResponseEntity.ok(loanResponses);
+    }
+
+    @DeleteMapping("/{loanId}")
+    @Operation(
+            summary = "Delete a loan",
+            description = "Deletes a loan record by its ID"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Loan deleted successfully"
+    )
+    @ApiResponse(responseCode = "404", description = "Loan not found")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    public ResponseEntity<String> deleteLoan(@PathVariable Long loanId) {
+        LoanEntity loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found"));
+        
+        // Delete associated document if exists
+        if (loan.getDocumentUrl() != null) {
+            try {
+                fileUploadService.deleteFile(loan.getDocumentUrl());
+            } catch (IOException e) {
+                // Log error but continue with deletion
+            }
+        }
+        
+        loanRepository.delete(loan);
+        return ResponseEntity.ok("Loan deleted successfully");
     }
 
 }

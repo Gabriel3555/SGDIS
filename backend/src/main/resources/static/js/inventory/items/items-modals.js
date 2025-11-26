@@ -1069,9 +1069,37 @@ async function showLendItemModal(itemId) {
   const modal = document.getElementById("lendItemModal");
   if (!modal) return;
 
+  // Reset processing flag when opening modal
+  isProcessingLoan = false;
+
+  // Check if user has permission (only for user role view)
+  // If userInventoryRole is defined, check it (means we're in user view)
+  if (typeof window.userInventoryRole !== 'undefined' && window.userInventoryRole !== null) {
+    if (window.userInventoryRole !== 'owner' && window.userInventoryRole !== 'signatory') {
+      if (window.showErrorToast) {
+        window.showErrorToast('No tienes permisos para prestar items. Solo los propietarios y firmantes pueden hacer préstamos.');
+      } else {
+        alert('No tienes permisos para prestar items. Solo los propietarios y firmantes pueden hacer préstamos.');
+      }
+      return;
+    }
+  }
+
   // Store current item ID
   if (window.itemsData) {
     window.itemsData.currentItemId = itemId;
+  }
+  
+  // Re-setup form handler when modal is shown to ensure it's properly attached
+  const lendForm = document.getElementById("lendItemForm");
+  if (lendForm && lendFormSubmitHandler) {
+    // Remove old handler if exists
+    lendForm.removeEventListener("submit", lendFormSubmitHandler);
+    // Add handler again
+    lendForm.addEventListener("submit", lendFormSubmitHandler);
+  } else if (lendForm) {
+    // Setup handler if not already done
+    setupLendFormHandler();
   }
 
   // Find item to show name
@@ -1089,7 +1117,135 @@ async function showLendItemModal(itemId) {
     itemNameElement.textContent = itemName;
   }
 
+  // Load users for responsible selection
+  await loadUsersForLendModal();
+
   modal.classList.remove("hidden");
+}
+
+// Load users for lend modal
+async function loadUsersForLendModal() {
+  const responsibleSelect = document.getElementById("lendResponsibleId");
+  const usersLoading = document.getElementById("lendUsersLoading");
+
+  if (!responsibleSelect) return;
+
+  // Show loading
+  if (usersLoading) usersLoading.style.display = "block";
+  responsibleSelect.innerHTML = '<option value="">Cargando usuarios...</option>';
+  responsibleSelect.disabled = true;
+
+  try {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+      throw new Error("No authentication token found");
+    }
+
+    // Get current user to exclude from list
+    let currentUserId = null;
+    try {
+      const currentUserResponse = await fetch("/api/v1/users/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (currentUserResponse.ok) {
+        const currentUser = await currentUserResponse.json();
+        currentUserId = currentUser.id;
+      }
+    } catch (userError) {
+      console.warn("Could not get current user info:", userError);
+    }
+
+    // Fetch all users from institution endpoint - load all pages
+    let allUsers = [];
+    let page = 0;
+    let hasMore = true;
+    const pageSize = 1000;
+
+    while (hasMore) {
+      const response = await fetch(`/api/v1/users/institution?page=${page}&size=${pageSize}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Error al cargar los usuarios";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+          
+          // If user doesn't have institution assigned
+          if (response.status === 404) {
+            errorMessage = "No tienes una institución asignada. Contacta a un administrador.";
+          }
+        } catch (parseError) {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      const users = data.users || (Array.isArray(data) ? data : []);
+      
+      // Debug: Log to see what we're getting
+      console.log(`Page ${page}: Received ${users.length} users, total so far: ${allUsers.length + users.length}`);
+      console.log(`Total users in response: ${data.totalUsers || 'unknown'}, Last page: ${data.last}`);
+      
+      if (users.length > 0) {
+        allUsers = allUsers.concat(users);
+        // Check if there are more pages
+        hasMore = !data.last && users.length === pageSize;
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    // Filter out current user
+    if (currentUserId) {
+      allUsers = allUsers.filter(user => user.id !== currentUserId);
+    }
+
+    responsibleSelect.innerHTML = '<option value="">Seleccionar usuario responsable...</option>';
+
+    if (allUsers.length === 0) {
+      responsibleSelect.innerHTML = '<option value="">No hay usuarios disponibles en tu institución</option>';
+    } else {
+      // Sort users by full name
+      allUsers.sort((a, b) => {
+        const nameA = (a.fullName || `${a.name || ""} ${a.lastName || ""}`.trim() || a.email || "").toLowerCase();
+        const nameB = (b.fullName || `${b.name || ""} ${b.lastName || ""}`.trim() || b.email || "").toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      allUsers.forEach((user) => {
+        const option = document.createElement("option");
+        option.value = user.id;
+        option.textContent =
+          user.fullName ||
+          `${user.name || ""} ${user.lastName || ""}`.trim() ||
+          user.email ||
+          `Usuario #${user.id}`;
+        responsibleSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error("Error loading users:", error);
+    responsibleSelect.innerHTML = `<option value="">${error.message || "Error al cargar usuarios"}</option>`;
+    if (window.showErrorToast) {
+      window.showErrorToast("Error", error.message || "No se pudieron cargar los usuarios de tu institución");
+    }
+  } finally {
+    if (usersLoading) usersLoading.style.display = "none";
+    responsibleSelect.disabled = false;
+  }
 }
 
 function closeLendItemModal() {
@@ -1101,30 +1257,76 @@ function closeLendItemModal() {
   if (form) {
     form.reset();
   }
+  
+  // Reset user select
+  const responsibleSelect = document.getElementById("lendResponsibleId");
+  if (responsibleSelect) {
+    responsibleSelect.innerHTML = '<option value="">Cargando usuarios...</option>';
+  }
 }
 
+// Flag to prevent multiple simultaneous loan submissions
+let isProcessingLoan = false;
+
 async function confirmLendItem() {
-  if (!window.itemsData || !window.itemsData.currentItemId) return;
+  // Prevent multiple submissions - check FIRST before anything else
+  if (isProcessingLoan) {
+    console.log("Ya hay un préstamo en proceso, ignorando solicitud duplicada");
+    return;
+  }
+
+  // Get submit button and check if already disabled
+  const submitButton = document.querySelector("#lendItemForm button[type='submit']");
+  if (submitButton && submitButton.disabled) {
+    console.log("Botón ya deshabilitado, ignorando solicitud duplicada");
+    return;
+  }
+
+  // Do all validations BEFORE setting processing flag
+  if (!window.itemsData || !window.itemsData.currentItemId) {
+    console.warn("No hay item seleccionado");
+    if (window.showErrorToast) {
+      window.showErrorToast("Error", "No se ha seleccionado un item para prestar");
+    }
+    return;
+  }
+
+  // Check if user has permission (only for user role view)
+  if (typeof window.userInventoryRole !== 'undefined' && window.userInventoryRole !== null) {
+    if (window.userInventoryRole !== 'owner' && window.userInventoryRole !== 'signatory') {
+      if (window.showErrorToast) {
+        window.showErrorToast('No tienes permisos para prestar items. Solo los propietarios y firmantes pueden hacer préstamos.');
+      } else {
+        alert('No tienes permisos para prestar items. Solo los propietarios y firmantes pueden hacer préstamos.');
+      }
+      return;
+    }
+  }
 
   const itemId = window.itemsData.currentItemId;
-  const responsibleName = document
-    .getElementById("lendResponsibleName")
-    .value.trim();
+  const responsibleId = document.getElementById("lendResponsibleId")?.value;
   const details = document.getElementById("lendDetails").value.trim();
 
-  if (!responsibleName) {
+  if (!responsibleId) {
     if (window.showErrorToast) {
       window.showErrorToast(
         "Campo requerido",
-        "Por favor ingresa el nombre del responsable"
+        "Por favor seleccione el usuario responsable"
       );
     }
     return;
   }
 
+  // NOW set processing flag and disable submit button AFTER all validations pass
+  isProcessingLoan = true;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Prestando...';
+  }
+
   try {
     if (window.lendItem) {
-      const result = await window.lendItem(itemId, responsibleName, details);
+      const result = await window.lendItem(itemId, parseInt(responsibleId, 10), details);
 
       if (window.showSuccessToast) {
         window.showSuccessToast(
@@ -1136,34 +1338,190 @@ async function confirmLendItem() {
       // Close modal
       closeLendItemModal();
 
-      // Reload items to reflect changes
-      if (window.loadItemsData) {
-        await window.loadItemsData();
-      }
+      // Verify and remove duplicate loans if any
+      await checkAndRemoveDuplicateLoans(itemId);
+      
+      // Reload page after verification to ensure data is updated
+      window.location.reload();
     } else {
       throw new Error("Función lendItem no está disponible");
     }
   } catch (error) {
     console.error("Error lending item:", error);
+    console.error("Error details:", {
+      message: error.message,
+      stack: error.stack,
+      itemId: itemId,
+      responsibleId: responsibleId
+    });
+    
+    let errorMessage = error.message || "No se pudo prestar el item";
+    let errorTitle = "Error al prestar item";
+    
+    // Check for specific loan error
+    if (errorMessage.includes("cannot be lent") || errorMessage.includes("not been returned") || errorMessage.includes("actualmente está prestado")) {
+      errorTitle = "Item no disponible";
+      // El mensaje ya viene formateado desde items-api.js, solo lo usamos
+      if (!errorMessage.includes("actualmente está prestado")) {
+        errorMessage = "Este item no puede ser prestado porque tiene un préstamo activo. Debe ser devuelto primero.";
+      }
+    } else if (errorMessage.includes("permisos")) {
+      errorTitle = "Permisos insuficientes";
+    } else if (errorMessage.includes("not found") || errorMessage.includes("no encontrado")) {
+      errorTitle = "Recurso no encontrado";
+    }
+    
+    // Intentar mostrar toast con múltiples métodos de fallback
+    let toastShown = false;
+    
     if (window.showErrorToast) {
-      window.showErrorToast(
-        "Error",
-        error.message || "No se pudo prestar el item"
-      );
+      try {
+        window.showErrorToast(errorTitle, errorMessage);
+        toastShown = true;
+        console.log("Toast mostrado usando showErrorToast");
+      } catch (toastError) {
+        console.error("Error al mostrar toast:", toastError);
+      }
+    }
+    
+    if (!toastShown && window.showInventoryErrorToast) {
+      try {
+        window.showInventoryErrorToast(errorTitle, errorMessage);
+        toastShown = true;
+        console.log("Toast mostrado usando showInventoryErrorToast");
+      } catch (toastError) {
+        console.error("Error al mostrar toast:", toastError);
+      }
+    }
+    
+    if (!toastShown && window.showInventoryToast) {
+      try {
+        window.showInventoryToast({ 
+          tipo: 'error', 
+          titulo: errorTitle, 
+          descripcion: errorMessage 
+        });
+        toastShown = true;
+        console.log("Toast mostrado usando showInventoryToast");
+      } catch (toastError) {
+        console.error("Error al mostrar toast:", toastError);
+      }
+    }
+    
+    // Fallback final: alert si no se pudo mostrar toast
+    if (!toastShown) {
+      console.warn("No se pudo mostrar toast, usando alert como fallback");
+      alert(`${errorTitle}: ${errorMessage}`);
+    }
+  } finally {
+    // Reset processing flag and re-enable submit button
+    isProcessingLoan = false;
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.innerHTML = '<i class="fas fa-hand-holding mr-2"></i>Prestar Item';
     }
   }
 }
 
-// Setup lend form handler
-document.addEventListener("DOMContentLoaded", function () {
-  const lendForm = document.getElementById("lendItemForm");
-  if (lendForm) {
-    lendForm.addEventListener("submit", async function (e) {
-      e.preventDefault();
-      await confirmLendItem();
+// Function to check and remove duplicate loans
+async function checkAndRemoveDuplicateLoans(itemId) {
+  try {
+    const token = localStorage.getItem('jwt');
+    if (!token) return;
+
+    // Get all loans for this item
+    const response = await fetch(`/api/v1/loan/item/${itemId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
+
+    if (!response.ok) {
+      console.warn('No se pudieron obtener los préstamos para verificar duplicados');
+      return;
+    }
+
+    const loans = await response.json();
+    
+    // Check if there are at least 2 loans
+    if (loans.length < 2) {
+      return; // No duplicates possible
+    }
+
+    // Get the last 2 loans (most recent first)
+    const lastLoan = loans[0];
+    const secondLastLoan = loans[1];
+
+    // Check if they are duplicates
+    // Compare: itemId, responsibleId, details, and if they were created within a few seconds of each other
+    const areDuplicates = 
+      lastLoan.itemId === secondLastLoan.itemId &&
+      lastLoan.responsibleId === secondLastLoan.responsibleId &&
+      lastLoan.detailsLend === secondLastLoan.detailsLend &&
+      lastLoan.returned === secondLastLoan.returned;
+
+    if (areDuplicates) {
+      // Check if they were created very close in time (within 5 seconds)
+      const lastLoanDate = new Date(lastLoan.lendAt);
+      const secondLastLoanDate = new Date(secondLastLoan.lendAt);
+      const timeDiff = Math.abs(lastLoanDate - secondLastLoanDate) / 1000; // difference in seconds
+
+      if (timeDiff < 5) {
+        // They are duplicates, delete the most recent one (lastLoan)
+        console.log('Préstamos duplicados detectados, eliminando el más reciente...');
+        
+        const deleteResponse = await fetch(`/api/v1/loan/${lastLoan.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (deleteResponse.ok) {
+          console.log('Préstamo duplicado eliminado exitosamente');
+        } else {
+          console.warn('No se pudo eliminar el préstamo duplicado');
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error al verificar préstamos duplicados:', error);
+    // Don't throw, just log the error
   }
-});
+}
+
+// Setup lend form handler (only once to prevent duplicate submissions)
+let lendFormHandlerSetup = false;
+let lendFormSubmitHandler = null;
+
+function setupLendFormHandler() {
+  const lendForm = document.getElementById("lendItemForm");
+  if (!lendForm) return;
+  
+  // Create a single handler function if not already created
+  if (!lendFormSubmitHandler) {
+    lendFormSubmitHandler = async function (e) {
+      e.preventDefault();
+      e.stopImmediatePropagation(); // Prevent other handlers
+      await confirmLendItem();
+    };
+  }
+  
+  // Remove any existing listener first to prevent duplicates
+  lendForm.removeEventListener("submit", lendFormSubmitHandler);
+  // Add the listener
+  lendForm.addEventListener("submit", lendFormSubmitHandler);
+  lendFormHandlerSetup = true;
+}
+
+// Setup handler when DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener("DOMContentLoaded", setupLendFormHandler);
+} else {
+  setupLendFormHandler();
+}
 
 // Approve Transfer Modal Functions
 async function showApproveTransferModal(itemId) {
