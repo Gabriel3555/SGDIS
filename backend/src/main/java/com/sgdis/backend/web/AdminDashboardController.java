@@ -407,4 +407,18 @@ public class AdminDashboardController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/superadmin/centers")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminCenters() throws IOException {
+        Resource resource = new ClassPathResource("static/views/centers/centers.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }
