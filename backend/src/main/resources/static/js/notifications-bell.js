@@ -6,6 +6,7 @@ const NotificationBell = {
     notifications: [],
     isOpen: false,
     pollInterval: null,
+    clickOutsideTimeout: null,
 
     /**
      * Inicializa la campanita de notificaciones
@@ -23,12 +24,39 @@ const NotificationBell = {
      * Crea el elemento HTML de la campanita
      */
     createBellElement() {
-        const navbar = document.querySelector('.navbar') || 
-                      document.querySelector('header') || 
-                      document.querySelector('.main-content');
+        // Verificar si ya existe la campanita
+        if (document.getElementById('notification-bell-container')) {
+            console.log('La campanita ya existe');
+            return;
+        }
+
+        // Buscar el header del dashboard
+        const header = document.querySelector('header');
+        if (!header) {
+            console.error('No se encontró el header para agregar la campanita');
+            return;
+        }
+
+        // Buscar el contenedor de items del header del lado derecho (donde está el usuario)
+        // Buscar primero el div del usuario usando el ID único del avatar
+        const userAvatar = document.getElementById('headerUserAvatar');
+        if (!userAvatar) {
+            console.error('No se encontró el avatar del usuario');
+            return;
+        }
         
-        if (!navbar) {
-            console.error('No se encontró el navbar para agregar la campanita');
+        // Encontrar el div padre que contiene el avatar (el div del usuario)
+        const userDiv = userAvatar.closest('.flex.items-center.gap-3.cursor-pointer') || 
+                       userAvatar.parentElement;
+        if (!userDiv) {
+            console.error('No se encontró el div del usuario');
+            return;
+        }
+        
+        // El contenedor padre del usuario es el contenedor del lado derecho
+        const headerItemsContainer = userDiv.parentElement;
+        if (!headerItemsContainer || !headerItemsContainer.classList.contains('flex')) {
+            console.error('No se encontró el contenedor de items del header');
             return;
         }
 
@@ -63,42 +91,91 @@ const NotificationBell = {
             </div>
         `;
 
-        // Insertar antes del botón de logout o al final del navbar
-        const logoutButton = navbar.querySelector('[onclick="logout()"]');
-        if (logoutButton && logoutButton.parentElement) {
-            logoutButton.parentElement.insertBefore(bellContainer, logoutButton.parentElement);
-        } else {
-            navbar.appendChild(bellContainer);
-        }
+        // Insertar la campanita justo antes del div del usuario (como elemento hermano)
+        headerItemsContainer.insertBefore(bellContainer, userDiv);
+
+        console.log('Campanita de notificaciones creada exitosamente');
     },
 
     /**
      * Configura los event listeners
      */
     setupEventListeners() {
+        const bellContainer = document.getElementById('notification-bell-container');
         const bell = document.getElementById('notificationBell');
         const markAllBtn = document.getElementById('markAllAsRead');
+        const viewAllBtn = document.getElementById('viewAllNotifications');
         
+        // Agregar listener específico al icono de la campanita
         if (bell) {
             bell.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.toggleDropdown();
             });
         }
+        
+        // También agregar listener al contenedor para clicks en el badge
+        if (bellContainer) {
+            bellContainer.addEventListener('click', (e) => {
+                // Si el click es en el icono o badge, hacer toggle
+                if (bell && (bell.contains(e.target) || e.target.id === 'notificationBadge')) {
+                    e.stopPropagation();
+                    this.toggleDropdown();
+                }
+            });
+        }
 
         if (markAllBtn) {
-            markAllBtn.addEventListener('click', () => this.markAllAsRead());
+            markAllBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.markAllAsRead();
+            });
+        }
+        
+        if (viewAllBtn) {
+            viewAllBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Detectar la ruta de notificaciones basándose en la URL actual
+                const currentPath = window.location.pathname;
+                let notificationsPath = '/superadmin/notifications'; // Default
+                
+                // Detectar el prefijo de ruta según la URL actual
+                if (currentPath.includes('/admin-institution/')) {
+                    notificationsPath = '/admin-institution/notifications';
+                } else if (currentPath.includes('/admin-regional/')) {
+                    notificationsPath = '/admin-regional/notifications';
+                } else if (currentPath.includes('/warehouse/')) {
+                    notificationsPath = '/warehouse/notifications';
+                } else if (currentPath.includes('/user/')) {
+                    notificationsPath = '/user/notifications';
+                } else if (currentPath.includes('/superadmin/')) {
+                    notificationsPath = '/superadmin/notifications';
+                }
+                
+                window.location.href = notificationsPath;
+            });
         }
 
         // Cerrar dropdown al hacer click fuera
+        // Usar un pequeño delay para evitar conflictos con el toggle
         document.addEventListener('click', (e) => {
             const dropdown = document.getElementById('notificationDropdown');
-            const bell = document.getElementById('notificationBell');
+            const container = document.getElementById('notification-bell-container');
             
-            if (dropdown && bell && 
+            // Solo cerrar si el clic fue realmente fuera del contenedor y del dropdown
+            if (dropdown && container && 
                 !dropdown.contains(e.target) && 
-                !bell.contains(e.target)) {
-                this.closeDropdown();
+                !container.contains(e.target) &&
+                this.isOpen) {
+                // Usar setTimeout para que el toggle se ejecute primero si se hizo clic en la campanita
+                setTimeout(() => {
+                    // Verificar nuevamente que el dropdown sigue abierto y el clic fue fuera
+                    if (this.isOpen && 
+                        !dropdown.contains(e.target) && 
+                        !container.contains(e.target)) {
+                        this.closeDropdown();
+                    }
+                }, 100);
             }
         });
     },
@@ -110,7 +187,7 @@ const NotificationBell = {
         try {
             const response = await fetch('/api/v1/notifications/my-notifications/unread/count', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
                 }
             });
 
@@ -130,7 +207,7 @@ const NotificationBell = {
         try {
             const response = await fetch('/api/v1/notifications/my-notifications/unread', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
                 }
             });
 
@@ -232,13 +309,26 @@ const NotificationBell = {
      */
     toggleDropdown() {
         const dropdown = document.getElementById('notificationDropdown');
-        if (dropdown) {
-            this.isOpen = !this.isOpen;
-            dropdown.classList.toggle('hidden');
-            
-            if (this.isOpen) {
-                this.loadNotifications();
-            }
+        if (!dropdown) {
+            console.error('No se encontró el dropdown de notificaciones');
+            return;
+        }
+        
+        const isCurrentlyHidden = dropdown.classList.contains('hidden');
+        
+        if (isCurrentlyHidden) {
+            // Mostrar dropdown
+            this.isOpen = true;
+            dropdown.classList.remove('hidden');
+            dropdown.style.display = 'block';
+            this.loadNotifications();
+            console.log('Dropdown de notificaciones abierto');
+        } else {
+            // Ocultar dropdown
+            this.isOpen = false;
+            dropdown.classList.add('hidden');
+            dropdown.style.display = 'none';
+            console.log('Dropdown de notificaciones cerrado');
         }
     },
 
@@ -261,7 +351,7 @@ const NotificationBell = {
             const response = await fetch(`/api/v1/notifications/${notificationId}/mark-as-read`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
                 }
             });
 
@@ -282,7 +372,7 @@ const NotificationBell = {
             const response = await fetch('/api/v1/notifications/mark-all-as-read', {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
                 }
             });
 
@@ -349,14 +439,65 @@ const NotificationBell = {
     }
 };
 
+// Variable para evitar múltiples inicializaciones
+let notificationBellInitialized = false;
+
 // Inicializar la campanita cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    // Esperar un poco para asegurar que el dashboard esté completamente cargado
-    setTimeout(() => {
-        if (localStorage.getItem('token')) {
-            NotificationBell.init();
-        }
-    }, 1000);
+function initializeNotificationBell() {
+    // Evitar múltiples inicializaciones
+    if (notificationBellInitialized) {
+        return;
+    }
+
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+        console.log('No hay token, no se inicializará la campanita');
+        return;
+    }
+
+    // Verificar que el header y el avatar existan antes de inicializar
+    const header = document.querySelector('header');
+    const userAvatar = document.getElementById('headerUserAvatar');
+    
+    if (!header || !userAvatar) {
+        console.log('Header o avatar no encontrado, reintentando...');
+        // Reintentar después de un breve delay
+        setTimeout(initializeNotificationBell, 200);
+        return;
+    }
+
+    // Intentar inicializar
+    try {
+        NotificationBell.init();
+        notificationBellInitialized = true;
+        console.log('Campanita de notificaciones inicializada correctamente');
+    } catch (error) {
+        console.error('Error al inicializar campanita:', error);
+        // Reintentar después de un segundo si falla
+        setTimeout(() => {
+            try {
+                NotificationBell.init();
+                notificationBellInitialized = true;
+            } catch (retryError) {
+                console.error('Error al reintentar inicialización de campanita:', retryError);
+            }
+        }, 1000);
+    }
+}
+
+// Inicializar cuando el DOM esté listo
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initializeNotificationBell, 100);
+    });
+} else {
+    // DOM ya está listo, inicializar después de un breve delay
+    setTimeout(initializeNotificationBell, 100);
+}
+
+// También intentar después de que se cargue completamente la página
+window.addEventListener('load', () => {
+    setTimeout(initializeNotificationBell, 300);
 });
 
 // Limpiar al cerrar la página

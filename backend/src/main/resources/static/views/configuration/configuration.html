@@ -173,6 +173,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
     <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
     <style>
         /* Prevenir flash de contenido - aplicar inmediatamente según preferencia */
         html {
@@ -307,12 +308,7 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="relative cursor-pointer">
-                        <i
-                            class="fas fa-bell text-gray-600 dark:text-gray-300 text-xl hover:text-[#00AF00] transition-colors"></i>
-                        <span class="notification-badge">3</span>
-                    </div>
-
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
@@ -416,6 +412,7 @@
     <script src="../../js/dashboard.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
     <script src="../../js/dark-mode.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
 
     <style>
         /* Smooth transition animation for dark/light mode changes - 0.5 seconds */

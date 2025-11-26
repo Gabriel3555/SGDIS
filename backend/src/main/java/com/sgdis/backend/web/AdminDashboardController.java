@@ -268,6 +268,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/notifications")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminNotifications() throws IOException {
+        Resource resource = new ClassPathResource("static/views/notifications/notifications.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/admin_regional/verification")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
