@@ -69,6 +69,7 @@ public class AuditoryService implements RecordActionUseCase, ListAuditoryUseCase
                 .performerId(entity.getPerformer() != null ? entity.getPerformer().getId() : null)
                 .performerName(entity.getPerformer() != null ? entity.getPerformer().getFullName() : null)
                 .performerEmail(entity.getPerformer() != null ? entity.getPerformer().getEmail() : null)
+                .performerImgUrl(entity.getPerformer() != null ? entity.getPerformer().getImgUrl() : null)
                 .institutionId(entity.getInstitution() != null ? entity.getInstitution().getId() : null)
                 .institutionName(entity.getInstitution() != null ? entity.getInstitution().getName() : null)
                 .regionalId(entity.getRegional() != null ? entity.getRegional().getId() : null)
