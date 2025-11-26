@@ -366,6 +366,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping({"/admin_institution/reports", "/admininstitution/reports"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionReports() throws IOException {
+        Resource resource = new ClassPathResource("static/views/reports/admin-institution-reports.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/warehouse/reports")
     @PreAuthorize("hasRole('WAREHOUSE')")
     @ResponseBody
