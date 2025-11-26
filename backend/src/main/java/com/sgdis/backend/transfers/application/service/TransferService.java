@@ -23,6 +23,9 @@ import com.sgdis.backend.transfers.infrastructure.repository.SpringDataTransferR
 import com.sgdis.backend.transfers.mapper.TransferMapper;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+// Auditoría
+import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
+import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +45,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
     private final SpringDataTransferRepository transferRepository;
     private final SpringDataItemRepository itemRepository;
     private final SpringDataInventoryRepository inventoryRepository;
+    private final RecordActionUseCase recordActionUseCase;
 
     @Override
     @Transactional
@@ -105,6 +109,26 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         }
 
         TransferEntity saved = transferRepository.save(transfer);
+        
+        // Registrar auditoría
+        String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+        String sourceInventoryName = sourceInventory.getName() != null ? sourceInventory.getName() : "sin nombre";
+        String destinationInventoryName = destinationInventory.getName() != null ? destinationInventory.getName() : "sin nombre";
+        String transferType = isDirectTransfer ? "Transferencia directa" : "Solicitud de transferencia";
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("%s: Item %s (ID: %d) - De: %s (ID: %d) → A: %s (ID: %d) - Solicitado por: %s (%s)", 
+                        transferType,
+                        itemName,
+                        item.getId(),
+                        sourceInventoryName,
+                        sourceInventory.getId(),
+                        destinationInventoryName,
+                        destinationInventory.getId(),
+                        requester.getFullName(),
+                        requester.getEmail())
+        ));
+        
         return TransferMapper.toRequestResponse(saved);
     }
 
@@ -184,6 +208,25 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
             transfer.setApprovalNotes(request.approvalNotes().trim());
         }
         transferRepository.save(transfer);
+
+        // Registrar auditoría
+        String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+        String sourceInventoryName = sourceInventory.getName() != null ? sourceInventory.getName() : "sin nombre";
+        String destinationInventoryName = destinationInventory.getName() != null ? destinationInventory.getName() : "sin nombre";
+        String requesterName = transfer.getRequestedBy() != null ? transfer.getRequestedBy().getFullName() : "N/A";
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Transferencia aprobada: Item %s (ID: %d) - De: %s (ID: %d) → A: %s (ID: %d) - Aprobado por: %s (%s) - Solicitado por: %s", 
+                        itemName,
+                        item.getId(),
+                        sourceInventoryName,
+                        sourceInventory.getId(),
+                        destinationInventoryName,
+                        destinationInventory.getId(),
+                        approver.getFullName(),
+                        approver.getEmail(),
+                        requesterName)
+        ));
 
         return TransferMapper.toApproveResponse(transfer);
     }

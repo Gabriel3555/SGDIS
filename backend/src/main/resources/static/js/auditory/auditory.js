@@ -48,6 +48,37 @@ async function loadAuditories(page = 0) {
     }
 }
 
+// Helper function to create avatar HTML
+function createUserAvatar(imgUrl, fullName, size = 'w-10 h-10') {
+    const initials = (fullName || 'U').charAt(0).toUpperCase();
+    const escapedInitials = escapeHtml(initials);
+    
+    if (imgUrl) {
+        const uniqueId = 'avatar-' + Math.random().toString(36).substr(2, 9);
+        const escapedImgUrl = escapeHtml(imgUrl);
+        const escapedFullName = escapeHtml(fullName || 'Usuario');
+        
+        return `
+            <div class="relative ${size} rounded-full overflow-hidden flex-shrink-0" id="avatar-container-${uniqueId}">
+                <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="avatar-spinner-${uniqueId}">
+                    <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-green-600"></div>
+                </div>
+                <img src="${escapedImgUrl}" alt="${escapedFullName}" 
+                     class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                     id="avatar-img-${uniqueId}"
+                     onload="(function() { const img = document.getElementById('avatar-img-${uniqueId}'); const spinner = document.getElementById('avatar-spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
+                     onerror="(function() { const spinner = document.getElementById('avatar-spinner-${uniqueId}'); const container = document.getElementById('avatar-container-${uniqueId}'); if (spinner) spinner.style.display='none'; container.innerHTML='<div class=\\'w-full h-full bg-[#00AF00] rounded-full flex items-center justify-center text-white text-sm font-bold\\'>${escapedInitials}</div>'; })();">
+            </div>
+        `;
+    } else {
+        return `
+            <div class="${size} bg-[#00AF00] rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                ${escapedInitials}
+            </div>
+        `;
+    }
+}
+
 // Display auditories in table
 function displayAuditories(auditories) {
     const tbody = document.getElementById('auditoryTableBody');
@@ -76,14 +107,22 @@ function displayAuditories(auditories) {
             second: '2-digit'
         });
         
+        const performerName = auditory.performerName || 'N/A';
+        const avatarHtml = createUserAvatar(auditory.performerImgUrl, performerName, 'w-10 h-10');
+        
         return `
             <tr class="border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${formattedDate}</td>
-                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${escapeHtml(auditory.action || 'N/A')}</td>
-                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">
-                    ${auditory.performerName ? escapeHtml(auditory.performerName) : 'N/A'}
-                    ${auditory.performerEmail ? `<br><span class="text-xs text-gray-500">${escapeHtml(auditory.performerEmail)}</span>` : ''}
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-3">
+                        ${avatarHtml}
+                        <div class="flex flex-col">
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">${escapeHtml(performerName)}</span>
+                            ${auditory.performerEmail ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(auditory.performerEmail)}</span>` : ''}
+                        </div>
+                    </div>
                 </td>
+                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${escapeHtml(auditory.action || 'N/A')}</td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${auditory.institutionName ? escapeHtml(auditory.institutionName) : 'N/A'}</td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${auditory.regionalName ? escapeHtml(auditory.regionalName) : 'N/A'}</td>
             </tr>

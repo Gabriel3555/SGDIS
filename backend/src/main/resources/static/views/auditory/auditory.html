@@ -78,10 +78,10 @@
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
             </a>
-            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
-                onclick="handleSidebarClick(event, '/superadmin/auditory')">
-                <i class="fas fa-clipboard-list text-lg"></i>
-                <span class="font-medium">Auditoría</span>
+            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/centers')">
+                <i class="fas fa-building text-lg"></i>
+                <span class="font-medium">Centros</span>
             </a>
             <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/transfers')">
@@ -102,6 +102,11 @@
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/superadmin/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
             </a>
             <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/notifications')">
@@ -187,8 +192,8 @@
                         <thead>
                             <tr class="border-b border-gray-200">
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Fecha/Hora</th>
-                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Acción</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Usuario</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700">Acción</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Institución</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Regional</th>
                             </tr>
