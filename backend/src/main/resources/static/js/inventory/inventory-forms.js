@@ -163,9 +163,21 @@ async function handleNewInventorySubmit(e) {
     await loadInventoryData();
   } catch (error) {
     console.error("Error creating inventory:", error);
+    
+    let errorMessage = error.message || "Inténtalo de nuevo.";
+    
+    // Mejorar mensajes de error específicos
+    if (errorMessage.includes("ya tiene un inventario asignado") || 
+        errorMessage.includes("ya tiene un inventorio") ||
+        errorMessage.includes("already assigned")) {
+      errorMessage = `El usuario seleccionado ya tiene un inventario asignado como propietario. Un usuario solo puede ser propietario de un inventario. Si necesitas asignar este inventario a este usuario, primero debes quitarle el inventario actual o asignar otro usuario como propietario.`;
+    } else if (errorMessage.includes("409") || errorMessage.includes("Conflict")) {
+      errorMessage = "No se puede crear el inventario: El usuario seleccionado ya tiene un inventario asignado como propietario.";
+    }
+    
     showErrorToast(
       "Error al crear inventario",
-      error.message || "Inténtalo de nuevo."
+      errorMessage
     );
   }
 }

@@ -537,6 +537,17 @@ function renderInventoryTree(data) {
         .attr("class", "node-circle-group")
         .style("cursor", "pointer");
 
+      // Get initial letter from name
+      const getInitial = (name) => {
+        if (!name || name.trim() === "") return "?";
+        const trimmed = name.trim();
+        // Get first letter, handling special cases
+        const firstChar = trimmed.charAt(0).toUpperCase();
+        return firstChar.match(/[A-ZÁÉÍÓÚÑ]/) ? firstChar : "?";
+      };
+
+      const initial = getInitial(node.name);
+
       // Draw circle background
       circleGroup
         .append("circle")
@@ -547,9 +558,22 @@ function renderInventoryTree(data) {
         .style("filter", "drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.2))");
 
       // Add image if available (using clipPath for circular mask)
-      if (node.imgUrl || node.inventoryImgUrl) {
-        const imageUrl = node.imgUrl || node.inventoryImgUrl;
-        
+      const imageUrl = node.imgUrl || node.inventoryImgUrl;
+      
+      // Always add initial text first (will be hidden if image loads successfully)
+      const initialText = circleGroup
+        .append("text")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("dy", "0.35em")
+        .attr("text-anchor", "middle")
+        .attr("fill", "#ffffff")
+        .attr("font-size", config.radius * 0.7)
+        .attr("font-weight", "bold")
+        .attr("font-family", "Arial, sans-serif")
+        .text(initial);
+      
+      if (imageUrl) {
         // Create circular clip path
         const clipId = `clip-${Math.random().toString(36).substr(2, 9)}`;
         circleGroup
@@ -562,7 +586,7 @@ function renderInventoryTree(data) {
           .attr("cy", 0);
 
         // Add image with clip path
-        circleGroup
+        const imageElement = circleGroup
           .append("image")
           .attr("xlink:href", imageUrl)
           .attr("x", -config.radius)
@@ -571,10 +595,20 @@ function renderInventoryTree(data) {
           .attr("height", config.radius * 2)
           .attr("clip-path", `url(#${clipId})`)
           .attr("preserveAspectRatio", "xMidYMid slice")
+          .style("opacity", 0)
+          .on("load", function() {
+            // Image loaded successfully, hide initial and show image
+            initialText.style("opacity", 0);
+            d3.select(this).style("opacity", 1);
+          })
           .on("error", function() {
-            // If image fails to load, remove it and show colored circle
+            // If image fails to load, remove it and keep initial visible
             d3.select(this).remove();
+            initialText.style("opacity", 1);
           });
+        
+        // Set initial text to hidden initially (will show if image fails)
+        initialText.style("opacity", 0);
       }
 
       // Add click event based on node type
