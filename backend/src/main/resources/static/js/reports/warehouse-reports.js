@@ -500,9 +500,6 @@ async function generateReport() {
                     transfers: transfers || []
                 };
                 break;
-            case 'users':
-                data = await fetchUsersReport(userRegionalId, userInstitutionId, startDate, endDate);
-                break;
             case 'loans':
                 data = await fetchLoansReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
                 break;
@@ -913,9 +910,8 @@ async function fetchTransfersReport(regionalId, institutionId, inventoryId, star
 // Fetch general report
 async function fetchGeneralReport(regionalId, institutionId, startDate, endDate) {
     // General report combines multiple data types
-    const [items, users, loans, verifications, inventories] = await Promise.all([
+    const [items, loans, verifications, inventories] = await Promise.all([
         fetchItemsReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
-        fetchUsersReport(regionalId, institutionId, startDate, endDate).catch(() => []),
         fetchLoansReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
         fetchVerificationsReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
         fetchInventoryReport(regionalId, institutionId, null, startDate, endDate).catch(() => [])
@@ -927,7 +923,6 @@ async function fetchGeneralReport(regionalId, institutionId, startDate, endDate)
 
     return {
         items: items || [],
-        users: users || [],
         loans: loans || [],
         verifications: verifications || [],
         inventories: inventories || [],
@@ -966,7 +961,6 @@ function displayReport(data) {
     // Update title
     const reportTypeNames = {
         items: 'Reporte de Items',
-        users: 'Reporte de Usuarios',
         loans: 'Reporte de Préstamos',
         verifications: 'Reporte de Verificaciones',
         inventory: 'Reporte de Inventarios',
@@ -1848,13 +1842,6 @@ function getHeadersForReportType(reportType) {
             { field: 'acquisitionValue', label: 'Valor', type: 'currency' },
             { field: 'createdAt', label: 'Fecha Registro', type: 'date' }
         ],
-        users: [
-            { field: 'fullName', label: 'Nombre Completo', type: 'string' },
-            { field: 'email', label: 'Email', type: 'string' },
-            { field: 'role', label: 'Rol', type: 'string' },
-            { field: 'status', label: 'Estado', type: 'boolean' },
-            { field: 'createdAt', label: 'Fecha Registro', type: 'date' }
-        ],
         loans: [
             { field: 'id', label: 'ID', type: 'number' },
             { field: 'userName', label: 'Usuario', type: 'string' },
@@ -2019,7 +2006,6 @@ async function exportToPDF() {
         // Report type names
         const reportTypeNames = {
             items: 'Reporte de Items',
-            users: 'Reporte de Usuarios',
             loans: 'Reporte de Préstamos',
             verifications: 'Reporte de Verificaciones',
             inventory: 'Reporte de Inventarios',

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reportes - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <title>Reporte de Préstamos - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function () {
@@ -30,7 +30,6 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -57,32 +56,38 @@
                 </div>
                 <div class="text-gray-800">
                     <div class="font-bold text-lg">SGDIS</div>
-                    <div class="text-xs opacity-70">Reportes</div>
+                    <div class="text-xs opacity-70">Reporte de Préstamos</div>
                 </div>
             </div>
         </div>
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/warehouse/dashboard')">
+            <a href="/admin_institution/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="/warehouse/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/warehouse/inventory')">
+            <a href="/admin_institution/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/inventory')">
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
             </a>
-            <a href="/warehouse/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
-                onclick="handleSidebarClick(event, '/warehouse/reports')">
-                <i class="fas fa-chart-bar text-lg"></i>
-                <span class="font-medium">Reportes</span>
+            <a href="/admin_institution/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
             </a>
-            <a href="/warehouse/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/warehouse/import-export')">
-                <i class="fas fa-exchange-alt text-lg"></i>
-                <span class="font-medium">Importar/Exportar</span>
+            <a href="/admin_institution/verification"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/admin_institution/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/admin_institution/reports')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Reporte de Préstamos</span>
             </a>
             <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/info-me')">
@@ -135,8 +140,8 @@
             <!-- Welcome Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">Reportes</h1>
-                    <p class="text-gray-600 dark:text-gray-400">Genere y exporte reportes detallados del sistema (solo PDF)</p>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">Reporte de Préstamos</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Genere y descargue el reporte de préstamos en PDF</p>
                 </div>
             </div>
 
@@ -150,36 +155,14 @@
                     <div>
                         <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">Filtros de Reporte</h2>
                         <p class="text-sm text-gray-500 dark:text-gray-400">Seleccione los criterios para generar su
-                            reporte</p>
+                            reporte de préstamos</p>
                         <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            <i class="fas fa-info-circle"></i> Los reportes se generan automáticamente para su institución y regional
+                            <i class="fas fa-info-circle"></i> El reporte se genera automáticamente para su institución
                         </p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <!-- Report Type -->
-                    <div class="form-group">
-                        <label
-                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                            <i class="fas fa-file-alt text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Tipo de
-                            Reporte
-                        </label>
-                        <div class="relative">
-                            <select id="reportTypeSelect"
-                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-pointer">
-                                <option value="items">Items</option>
-                                <option value="loans">Préstamos</option>
-                                <option value="verifications">Verificaciones</option>
-                                <option value="inventory">Inventarios</option>
-                                <option value="general">Reporte General</option>
-                            </select>
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Inventory -->
                     <div class="form-group">
                         <label
@@ -243,11 +226,11 @@
                         <div class="flex items-center gap-4">
                             <div
                                 class="w-14 h-14 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-2xl flex items-center justify-center shadow-sm">
-                                <i class="fas fa-chart-bar text-green-600 dark:text-green-400 text-xl"></i>
+                                <i class="fas fa-hand-holding text-green-600 dark:text-green-400 text-xl"></i>
                             </div>
                             <div>
                                 <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1" id="reportTitle">
-                                    Reporte</h2>
+                                    Reporte de Préstamos</h2>
                                 <p class="text-sm text-gray-500 dark:text-gray-400" id="reportSubtitle">Resultados del
                                     reporte generado</p>
                             </div>
@@ -256,34 +239,13 @@
                             <button id="exportPdfBtn"
                                 class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
                                 <i class="fas fa-file-pdf"></i>
-                                <span>Exportar PDF</span>
+                                <span>Descargar PDF</span>
                             </button>
                         </div>
                     </div>
 
                     <!-- Report Statistics -->
                     <div id="reportStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
-
-                    <!-- Charts Container (for general reports) -->
-                    <div id="chartsContainer" class="hidden mb-6">
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                            <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
-                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Items Más Movidos
-                                </h3>
-                                <canvas id="mostMovedChart"></canvas>
-                            </div>
-                            <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
-                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Items Más Caros</h3>
-                                <canvas id="mostExpensiveChart"></canvas>
-                            </div>
-                            <div
-                                class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl lg:col-span-2">
-                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Items con Más
-                                    Verificaciones</h3>
-                                <canvas id="mostVerifiedChart"></canvas>
-                            </div>
-                        </div>
-                    </div>
 
                     <!-- Report Table -->
                     <div
@@ -316,11 +278,11 @@
             </div>
 
             <!-- Empty State -->
-            <div id="reportEmptyState" class="hidden stat-card shadow-lg border border-gray-100 dark:border-gray-700">
+            <div id="reportEmptyState" class="stat-card shadow-lg border border-gray-100 dark:border-gray-700">
                 <div class="flex flex-col items-center justify-center py-12">
                     <div
                         class="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-4">
-                        <i class="fas fa-chart-bar text-purple-600 dark:text-purple-400 text-3xl"></i>
+                        <i class="fas fa-hand-holding text-purple-600 dark:text-purple-400 text-3xl"></i>
                     </div>
                     <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">No hay datos para mostrar</h3>
                     <p class="text-gray-600 dark:text-gray-400 text-center max-w-md">Seleccione los filtros y genere un
@@ -331,7 +293,7 @@
     </div>
 
     <script src="../../../js/inventory/inventory-toast.js"></script>
-    <script src="../../../js/reports/warehouse-reports.js"></script>
+    <script src="../../../js/reports/admin-institution-reports.js"></script>
     <script src="../../../js/inactivity-monitor.js"></script>
     <script src="../../../js/notifications-bell.js"></script>
 
@@ -417,12 +379,6 @@
             text-align: left;
         }
 
-        #reportTable thead th:first-child {
-            width: 120px;
-            min-width: 120px;
-            max-width: 120px;
-        }
-
         .dark #reportTable thead th {
             color: #f1f5f9;
         }
@@ -437,12 +393,6 @@
             box-sizing: border-box;
             vertical-align: middle;
             text-align: left;
-        }
-
-        #reportTable tbody td:first-child {
-            width: 120px;
-            min-width: 120px;
-            max-width: 120px;
         }
 
         .dark #reportTable tbody td {
@@ -564,9 +514,9 @@
             } catch (error) {
                 console.error('Error loading current user info:', error);
                 updateHeaderUserInfo({
-                    fullName: 'Admin Warehouse',
-                    role: 'WAREHOUSE',
-                    email: 'warehouse@sena.edu.co'
+                    fullName: 'Admin Institución',
+                    role: 'ADMIN_INSTITUTION',
+                    email: 'admin@sena.edu.co'
                 });
             }
         }
@@ -577,8 +527,8 @@
             const headerUserRole = document.getElementById('headerUserRole');
             const headerUserAvatar = document.getElementById('headerUserAvatar');
 
-            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Warehouse';
-            if (headerUserRole) headerUserRole.textContent = userData.role || 'WAREHOUSE';
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Institución';
+            if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN_INSTITUTION';
 
             if (headerUserAvatar) {
                 if (userData.imgUrl) {
@@ -588,14 +538,14 @@
                             <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
                                 <div class="image-loading-spinner"></div>
                             </div>
-                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Warehouse'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Institución'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
                                  id="img-${uniqueId}"
                                  onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
                                  onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
                         </div>
                     `;
                 } else {
-                    headerUserAvatar.textContent = (userData.fullName || 'Admin Warehouse').charAt(0).toUpperCase();
+                    headerUserAvatar.textContent = (userData.fullName || 'Admin Institución').charAt(0).toUpperCase();
                 }
             }
         }
@@ -609,4 +559,3 @@
 </body>
 
 </html>
-
