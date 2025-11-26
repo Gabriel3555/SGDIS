@@ -19,6 +19,9 @@ import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository
 import com.sgdis.backend.loan.mapper.LoanMapper;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+// Auditoría
+import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
+import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,7 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
     private final SpringDataLoanRepository loanRepository;
     private final SpringDataItemRepository itemRepository;
     private final SpringDataUserRepository userRepository;
+    private final RecordActionUseCase recordActionUseCase;
 
     @Override
     public LendItemResponse lendItem(LendItemRequest request) {
@@ -69,6 +73,19 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
         itemRepository.save(item);
         loanRepository.save(loanEntity);
+
+        // Registrar auditoría
+        String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+        String inventoryName = item.getInventory() != null && item.getInventory().getName() != null 
+                ? item.getInventory().getName() : "sin nombre";
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Item prestado: %s (ID: %d) - Prestado a: %s (%s) - Inventario: %s", 
+                        itemName,
+                        item.getId(),
+                        responsible.getFullName(),
+                        responsible.getEmail(),
+                        inventoryName)
+        ));
 
         return new LendItemResponse(user.getFullName(), "Item prestado exitosamente a " + responsible.getFullName());
     }
@@ -104,6 +121,19 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
         itemRepository.save(itemEntity);
         loanRepository.save(loanEntity);
+
+        // Registrar auditoría
+        String itemName = itemEntity.getProductName() != null ? itemEntity.getProductName() : "sin nombre";
+        String responsibleName = loanEntity.getResponsible() != null ? loanEntity.getResponsible().getFullName() : "N/A";
+        String inventoryName = itemEntity.getInventory() != null && itemEntity.getInventory().getName() != null 
+                ? itemEntity.getInventory().getName() : "sin nombre";
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Item devuelto: %s (ID: %d) - Devuelto por: %s - Inventario: %s", 
+                        itemName,
+                        itemEntity.getId(),
+                        responsibleName,
+                        inventoryName)
+        ));
 
         return new ReturnItemResponse(user.getFullName(), "Item devuelto exitosamente");
     }

@@ -7,6 +7,7 @@ import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventory
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
+import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
@@ -607,6 +608,41 @@ public class InventoryController {
         Double totalValue = inventory.getTotalPrice() != null ? inventory.getTotalPrice() : 0.0;
 
         return new InventoryStatisticsResponse(totalItems, totalValue);
+    }
+
+    @Operation(
+            summary = "Get general inventory statistics",
+            description = "Retrieves total statistics of all inventories in the system (Superadmin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = GeneralInventoryStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "403", description = "Access denied - SUPERADMIN role required")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping("/statistics")
+    public GeneralInventoryStatisticsResponse getGeneralInventoryStatistics() {
+        long totalInventories = inventoryRepository.count();
+        long activeInventories = inventoryRepository.countByStatus(true);
+        long inactiveInventories = inventoryRepository.countByStatus(false);
+        
+        // Get total value from all inventories
+        Double totalValue = inventoryRepository.sumTotalPrice();
+        if (totalValue == null) {
+            totalValue = 0.0;
+        }
+        
+        // Get total items count from all inventories
+        long totalItems = itemRepository.count();
+        
+        return GeneralInventoryStatisticsResponse.builder()
+                .totalInventories(totalInventories)
+                .activeInventories(activeInventories)
+                .inactiveInventories(inactiveInventories)
+                .totalItems(totalItems)
+                .totalValue(totalValue)
+                .build();
     }
 
 }

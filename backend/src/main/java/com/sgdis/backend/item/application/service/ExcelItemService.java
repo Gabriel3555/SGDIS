@@ -1,9 +1,14 @@
 package com.sgdis.backend.item.application.service;
 
+import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.DomainValidationException;
+import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.item.application.dto.BulkUploadResponse;
 import com.sgdis.backend.item.application.dto.CreateItemRequest;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
+// Auditoría
+import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
+import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -25,6 +30,9 @@ import java.util.regex.Pattern;
 public class ExcelItemService {
 
     private final CreateItemUseCase createItemUseCase;
+    private final AuthService authService;
+    private final SpringDataInventoryRepository inventoryRepository;
+    private final RecordActionUseCase recordActionUseCase;
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("(MARCA|SERIAL|MODELO|OBSERVACIONES):([^;]+)");
     private static final int MAX_STRING_LENGTH = 255;
 
@@ -173,6 +181,40 @@ public class ExcelItemService {
         workbook.close();
         
         int failedItems = totalRows - successfulItems;
+        
+        // Registrar auditoría
+        try {
+            var currentUser = authService.getCurrentUser();
+            var inventory = inventoryRepository.findById(inventoryId);
+            String inventoryName = inventory.isPresent() && inventory.get().getName() != null 
+                    ? inventory.get().getName() : "sin nombre";
+            String fileNameForAudit = filename != null ? filename : "archivo desconocido";
+            
+            recordActionUseCase.recordAction(new RecordActionRequest(
+                    String.format("Carga masiva de items desde Excel: Archivo %s - Inventario: %s (ID: %d) - Total filas: %d - Exitosos: %d - Fallidos: %d - Usuario: %s (%s)", 
+                            fileNameForAudit,
+                            inventoryName,
+                            inventoryId,
+                            totalRows,
+                            successfulItems,
+                            failedItems,
+                            currentUser.getFullName(),
+                            currentUser.getEmail())
+            ));
+        } catch (Exception e) {
+            // Si hay error al obtener el usuario o inventario, no fallar la carga
+            // Solo registrar sin información del usuario
+            String fileNameForAudit = filename != null ? filename : "archivo desconocido";
+            recordActionUseCase.recordAction(new RecordActionRequest(
+                    String.format("Carga masiva de items desde Excel: Archivo %s - Inventario ID %d - Total filas: %d - Exitosos: %d - Fallidos: %d", 
+                            fileNameForAudit,
+                            inventoryId,
+                            totalRows,
+                            successfulItems,
+                            failedItems)
+            ));
+        }
+        
         return new BulkUploadResponse(totalRows, successfulItems, failedItems, errors);
     }
 

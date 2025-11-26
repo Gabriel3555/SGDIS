@@ -15,4 +15,8 @@ public interface SpringDataInstitutionRepository extends JpaRepository<Instituti
     // Additional method to filter by regional ID directly
     @Query("SELECT i FROM InstitutionEntity i WHERE i.regional.id = :regionalId")
     List<InstitutionEntity> findByRegionalId(@Param("regionalId") Long regionalId);
+    
+    // Method to find all institutions with city and regional loaded
+    @Query("SELECT i FROM InstitutionEntity i LEFT JOIN FETCH i.city LEFT JOIN FETCH i.regional")
+    List<InstitutionEntity> findAllWithRelations();
 }

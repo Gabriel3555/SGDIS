@@ -62,7 +62,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
     public ResponseEntity<Resource> adminRegionalDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
+        Resource resource = new ClassPathResource("static/views/dashboard/admin-regional/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -76,7 +76,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
     public ResponseEntity<Resource> adminRegionalUsersManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/users/users.html");
+        Resource resource = new ClassPathResource("static/views/users/users-admin-regional.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -90,7 +90,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
     public ResponseEntity<Resource> adminRegionalInventoryManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/inventory/inventory.html");
+        Resource resource = new ClassPathResource("static/views/inventory/inventory-admin-regional.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -268,11 +268,25 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/notifications")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminNotifications() throws IOException {
+        Resource resource = new ClassPathResource("static/views/notifications/notifications.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/admin_regional/verification")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
     public ResponseEntity<Resource> adminRegionalVerificationManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/verification/verification.html");
+        Resource resource = new ClassPathResource("static/views/verification/verification-admin-regional.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -310,11 +324,123 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/auditory")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminAuditory() throws IOException {
+        Resource resource = new ClassPathResource("static/views/auditory/auditory.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/admin_regional/settings")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
     public ResponseEntity<Resource> adminRegionalConfiguration() throws IOException {
-        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        Resource resource = new ClassPathResource("static/views/configuration/configuration-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/centers")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalCenters() throws IOException {
+        Resource resource = new ClassPathResource("static/views/centers/centers-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/transfers")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalTransfers() throws IOException {
+        Resource resource = new ClassPathResource("static/views/transfers/transfers-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/loans")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalLoans() throws IOException {
+        Resource resource = new ClassPathResource("static/views/loans/loans-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/reports")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalReports() throws IOException {
+        Resource resource = new ClassPathResource("static/views/reports/reports-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/auditory")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalAuditory() throws IOException {
+        Resource resource = new ClassPathResource("static/views/auditory/auditory-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/notifications")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalNotifications() throws IOException {
+        Resource resource = new ClassPathResource("static/views/notifications/notifications-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/import-export")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalImportExport() throws IOException {
+        Resource resource = new ClassPathResource("static/views/import-export/import-export-admin-regional.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -329,6 +455,34 @@ public class AdminDashboardController {
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionConfiguration() throws IOException {
         Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/reports", "/admininstitution/reports"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionReports() throws IOException {
+        Resource resource = new ClassPathResource("static/views/reports/admin-institution-reports.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/warehouse/reports")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseReports() throws IOException {
+        Resource resource = new ClassPathResource("static/views/reports/warehouse-reports.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -371,6 +525,20 @@ public class AdminDashboardController {
     @ResponseBody
     public ResponseEntity<Resource> configuration() throws IOException {
         Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/superadmin/centers")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminCenters() throws IOException {
+        Resource resource = new ClassPathResource("static/views/centers/centers.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

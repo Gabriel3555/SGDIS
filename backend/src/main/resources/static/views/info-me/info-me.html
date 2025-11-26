@@ -35,6 +35,7 @@
     <link rel="stylesheet" href="../../css/dashboard.css">
     <link rel="stylesheet" href="../../css/dark-mode.css">
     <link rel="stylesheet" href="../../css/users-toast.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
     <style>
         .profile-card {
             background: white;
@@ -213,6 +214,11 @@
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
             </a>
+            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/centers')">
+                <i class="fas fa-building text-lg"></i>
+                <span class="font-medium">Centros</span>
+            </a>
             <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/transfers')">
                 <i class="fas fa-exchange-alt text-lg"></i>
@@ -232,6 +238,11 @@
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
             </a>
             <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/notifications')">
@@ -281,11 +292,7 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="relative cursor-pointer">
-                        <i class="fas fa-bell text-gray-600 text-xl hover:text-green-600 transition-colors"></i>
-                        <span class="notification-badge">0</span>
-                    </div>
-
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
@@ -418,13 +425,6 @@
                                 </div>
                                 <div class="info-value" id="profileInstitution">-</div>
                             </div>
-                            <div class="info-row">
-                                <div class="info-label">
-                                    <i class="fas fa-toggle-on text-gray-400"></i>
-                                    <span>Estado de Cuenta</span>
-                                </div>
-                                <div class="info-value" id="profileStatusInfo">-</div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -469,6 +469,7 @@
     <script src="../../js/info-me/info-me.js"></script>
     <script src="../../js/info-me/info-me-images.js"></script>
     <script src="../../js/info-me/info-me-loans.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
@@ -575,6 +576,28 @@
         }
 
         // Initialize mobile menu toggle when DOM is ready
+        // Rewrite sidebar links for admin_regional if needed
+        function rewriteAdminRegionalSidebarLinks(userRole) {
+            if (userRole !== 'ADMIN_REGIONAL') {
+                return;
+            }
+
+            const links = document.querySelectorAll("a.sidebar-item");
+            links.forEach((link) => {
+                const href = link.getAttribute("href");
+                if (href && href.startsWith("/superadmin")) {
+                    link.setAttribute("href", href.replace("/superadmin", "/admin_regional"));
+                    const onclickValue = link.getAttribute("onclick");
+                    if (onclickValue && onclickValue.includes("'/superadmin")) {
+                        link.setAttribute(
+                            "onclick",
+                            onclickValue.replace(/'\/superadmin/g, "'/admin_regional")
+                        );
+                    }
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
         });

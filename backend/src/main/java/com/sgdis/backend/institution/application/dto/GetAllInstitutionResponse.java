@@ -5,5 +5,7 @@ public record GetAllInstitutionResponse(
         String name,
         String codeInstitution,
         Long regionalId,
-        Long cityId
+        String regionalName,
+        Long cityId,
+        String cityName
 ) {}

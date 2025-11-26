@@ -20,27 +20,62 @@ body {
     transition: all 0.3s ease;
 }
 
-.sidebar-item {
-    transition: all 0.3s ease;
-    border-radius: 12px;
-    margin: 8px 12px;
-    padding: 12px 16px;
-    cursor: pointer;
-    color: #374151;
-    display: flex;
-    align-items: center;
+/* Sidebar item styles with high specificity to override Tailwind */
+aside.sidebar nav .sidebar-item,
+.sidebar nav .sidebar-item,
+aside .sidebar-item {
+    transition: all 0.3s ease !important;
+    border-radius: 12px !important;
+    margin: 8px 12px !important;
+    padding: 12px 16px !important;
+    cursor: pointer !important;
+    color: #374151 !important;
+    display: flex !important;
+    align-items: center !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    box-sizing: border-box !important;
+    width: auto !important;
+    height: auto !important;
 }
 
-.sidebar-item:hover {
-    background: rgba(57, 169, 0, 0.15);
-    transform: translateX(5px);
-    color: #1f2937;
+aside.sidebar nav .sidebar-item:hover,
+.sidebar nav .sidebar-item:hover,
+aside .sidebar-item:hover {
+    background: rgba(57, 169, 0, 0.15) !important;
+    transform: translateX(5px) !important;
+    color: #1f2937 !important;
 }
 
-.sidebar-item.active {
-    background: rgba(0, 175, 0, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 175, 0, 0.2);
-    color: #00AF00;
+aside.sidebar nav .sidebar-item.active,
+.sidebar nav .sidebar-item.active,
+aside .sidebar-item.active {
+    background: rgba(0, 175, 0, 0.1) !important;
+    box-shadow: 0 4px 12px rgba(0, 175, 0, 0.2) !important;
+    color: #00AF00 !important;
+}
+
+/* Override Tailwind spacing classes on sidebar items */
+aside.sidebar nav .sidebar-item.mb-2,
+.sidebar nav .sidebar-item.mb-2 {
+    margin-bottom: 0 !important;
+}
+
+/* Ensure icons and text maintain consistent size */
+aside.sidebar nav .sidebar-item i,
+.sidebar nav .sidebar-item i {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    line-height: 18px !important;
+}
+
+aside.sidebar nav .sidebar-item span,
+.sidebar nav .sidebar-item span {
+    font-size: 14px !important;
+    line-height: 1.5 !important;
 }
 
 .stat-card {

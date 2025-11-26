@@ -1,5 +1,6 @@
 package com.sgdis.backend.institution.infrastructure.entity;
 
+import com.sgdis.backend.auditory.infrastructure.entity.AuditoryEntity;
 import com.sgdis.backend.data.departaments_cities.entity.CityEntity;
 import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
@@ -38,4 +39,7 @@ public class InstitutionEntity {
 
     @OneToMany(mappedBy = "institution", fetch = FetchType.LAZY)
     private List<UserEntity> users;
+
+    @OneToMany(mappedBy = "institution", fetch = FetchType.LAZY)
+    private List<AuditoryEntity> auditory;
 }

@@ -1,6 +1,7 @@
 package com.sgdis.backend.data.regional.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sgdis.backend.auditory.infrastructure.entity.AuditoryEntity;
 import com.sgdis.backend.data.departaments_cities.entity.DepartamentEntity;
 import com.sgdis.backend.institution.infrastructure.entity.InstitutionEntity;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
@@ -33,4 +34,6 @@ public class RegionalEntity {
     @OneToMany(mappedBy = "regional", fetch = FetchType.LAZY)
     private List<InstitutionEntity> institutions;
 
+    @OneToMany(mappedBy = "regional")
+    private List<AuditoryEntity> auditory;
 }

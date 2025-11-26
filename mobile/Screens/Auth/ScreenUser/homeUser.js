@@ -254,12 +254,6 @@ export default function DashboardScreen() {
               <Text style={styles.userRole}>Rol: {user?.role || "USER"}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.notificationButton}>
-            <Ionicons name="notifications-outline" size={24} color="#333" />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.badgeText}>2</Text>
-            </View>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -323,16 +317,6 @@ export default function DashboardScreen() {
               <Ionicons name="checkmark-done-outline" size={24} color="#fff" />
             </View>
             <Text style={styles.actionText}>Verificación</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionCard, { backgroundColor: colors.actionCard3 }]}
-            onPress={() => navigation.navigate('Notificaciones')}
-          >
-            <View style={[styles.actionIcon, { backgroundColor: '#9c27b0' }]}>
-              <Ionicons name="notifications-outline" size={24} color="#fff" />
-            </View>
-            <Text style={styles.actionText}>Notificaciones</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -431,25 +415,6 @@ const getStyles = (colors) => StyleSheet.create({
   userRole: {
     fontSize: 12,
     color: colors.institution,
-  },
-  notificationButton: {
-    position: "relative",
-  },
-  notificationBadge: {
-    position: "absolute",
-    top: -5,
-    right: -5,
-    backgroundColor: "#ff4444",
-    borderRadius: 10,
-    width: 20,
-    height: 20,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  badgeText: {
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "bold",
   },
 
   // Stats Section

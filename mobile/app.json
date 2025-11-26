@@ -34,25 +34,11 @@
       "package": "com.cril727.mobile",
       "googleServicesFile": "./google-services.json"
     },
-    "notification": {
-      "icon": "./assets/icon.png",
-      "color": "#00AF00",
-      "androidMode": "default",
-      "androidCollapsedTitle": "SGDIS"
-    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-camera",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#00AF00",
-          "sounds": []
-        }
-      ]
+      "expo-camera"
     ],
     "extra": {
       "eas": {

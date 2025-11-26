@@ -64,4 +64,10 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
     @Modifying
     @Query("UPDATE InventoryEntity i SET i.totalPrice = GREATEST(COALESCE(i.totalPrice, 0) - :value, 0) WHERE i.id = :inventoryId")
     void subtractFromTotalPrice(@Param("inventoryId") Long inventoryId, @Param("value") Double value);
+    
+    // Statistics queries
+    long countByStatus(boolean status);
+    
+    @Query("SELECT COALESCE(SUM(i.totalPrice), 0) FROM InventoryEntity i")
+    Double sumTotalPrice();
 }

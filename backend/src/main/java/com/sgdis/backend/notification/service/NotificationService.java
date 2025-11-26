@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 public class NotificationService {
 
     private final SimpMessagingTemplate messagingTemplate;
-    private final PushNotificationService pushNotificationService;
     private final NotificationPersistenceService notificationPersistenceService;
 
     /**
@@ -60,11 +59,8 @@ public class NotificationService {
                 new InventoryNotificationData(inventoryId, inventoryName)
         );
         
-        // 2. Enviar por WebSocket (para web y móvil activo)
+        // 2. Enviar por WebSocket (para web)
         sendNotificationToUser(ownerId, notification);
-        
-        // 3. Enviar por Push Notification (para móvil en segundo plano)
-        pushNotificationService.sendInventoryCreatedPushNotification(ownerId, inventoryName, inventoryId);
     }
 
     /**
