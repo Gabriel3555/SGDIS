@@ -163,6 +163,136 @@ async function updateInventoryStats() {
     `;
 }
 
+/**
+ * Initialize CustomSelects for inventory filters (regional and institution)
+ */
+function initializeInventoryFilterSelects() {
+  // Check if CustomSelect is available
+  if (typeof CustomSelect === 'undefined' && typeof window.CustomSelect === 'undefined') {
+    setTimeout(initializeInventoryFilterSelects, 100);
+    return;
+  }
+
+  const CustomSelectClass = window.CustomSelect || CustomSelect;
+
+  // Regional filter select
+  const regionalSelectContainer = document.getElementById("inventoryRegionalFilterSelect");
+  if (regionalSelectContainer) {
+    if (!window.inventoryRegionalFilterSelect) {
+      try {
+        window.inventoryRegionalFilterSelect = new CustomSelectClass("inventoryRegionalFilterSelect", {
+          placeholder: "Todas las regionales",
+          onChange: function (option) {
+            if (typeof handleRegionalFilterChange === 'function') {
+              handleRegionalFilterChange(option.value);
+            }
+          },
+        });
+        
+        // Initialize with empty options - will be populated by loadRegionalsForFilter
+        if (window.inventoryRegionalFilterSelect && typeof window.inventoryRegionalFilterSelect.setOptions === 'function') {
+          window.inventoryRegionalFilterSelect.setOptions([
+            { value: '', label: 'Todas las regionales' }
+          ]);
+        }
+      } catch (error) {
+        // Silently handle initialization errors
+      }
+    } else {
+      // Already exists, verify it's still valid
+      if (!window.inventoryRegionalFilterSelect.setOptions || typeof window.inventoryRegionalFilterSelect.setOptions !== 'function') {
+        window.inventoryRegionalFilterSelect = null;
+        // Retry initialization
+        setTimeout(() => {
+          const retryContainer = document.getElementById("inventoryRegionalFilterSelect");
+          if (retryContainer && !window.inventoryRegionalFilterSelect) {
+            try {
+              window.inventoryRegionalFilterSelect = new CustomSelectClass("inventoryRegionalFilterSelect", {
+                placeholder: "Todas las regionales",
+                onChange: function (option) {
+                  if (typeof handleRegionalFilterChange === 'function') {
+                    handleRegionalFilterChange(option.value);
+                  }
+                },
+              });
+              if (window.inventoryRegionalFilterSelect && typeof window.inventoryRegionalFilterSelect.setOptions === 'function') {
+                window.inventoryRegionalFilterSelect.setOptions([
+                  { value: '', label: 'Todas las regionales' }
+                ]);
+              }
+            } catch (error) {
+              // Silently handle reinitialization errors
+            }
+          }
+        }, 100);
+      }
+    }
+  }
+
+  // Institution filter select
+  const institutionSelectContainer = document.getElementById("inventoryInstitutionFilterSelect");
+  if (institutionSelectContainer) {
+    if (!window.inventoryInstitutionFilterSelect) {
+      try {
+        window.inventoryInstitutionFilterSelect = new CustomSelectClass("inventoryInstitutionFilterSelect", {
+          placeholder: "Todas las instituciones",
+          onChange: function (option) {
+            if (typeof handleInstitutionFilterChange === 'function') {
+              handleInstitutionFilterChange(option.value);
+            }
+          },
+        });
+        
+        // Initialize with empty options - will be populated by loadInstitutionsForFilter
+        if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
+          window.inventoryInstitutionFilterSelect.setOptions([
+            { value: '', label: 'Todas las instituciones', disabled: true }
+          ]);
+        }
+      } catch (error) {
+        // Silently handle initialization errors
+      }
+    } else {
+      // Already exists, verify it's still valid
+      if (!window.inventoryInstitutionFilterSelect.setOptions || typeof window.inventoryInstitutionFilterSelect.setOptions !== 'function') {
+        window.inventoryInstitutionFilterSelect = null;
+        // Retry initialization
+        setTimeout(() => {
+          const retryContainer = document.getElementById("inventoryInstitutionFilterSelect");
+          if (retryContainer && !window.inventoryInstitutionFilterSelect) {
+            try {
+              window.inventoryInstitutionFilterSelect = new CustomSelectClass("inventoryInstitutionFilterSelect", {
+                placeholder: "Todas las instituciones",
+                onChange: function (option) {
+                  if (typeof handleInstitutionFilterChange === 'function') {
+                    handleInstitutionFilterChange(option.value);
+                  }
+                },
+              });
+              if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
+                window.inventoryInstitutionFilterSelect.setOptions([
+                  { value: '', label: 'Todas las instituciones', disabled: true }
+                ]);
+              }
+            } catch (error) {
+              // Silently handle reinitialization errors
+            }
+          }
+        }, 100);
+      }
+    }
+  }
+  
+  // Load regionals and institutions after initialization
+  if (window.loadRegionalsForFilter) {
+    window.loadRegionalsForFilter();
+  }
+  const selectedRegional = window.inventoryData?.selectedRegional || '';
+  if (selectedRegional && window.loadInstitutionsForFilter) {
+    window.loadInstitutionsForFilter(selectedRegional);
+  }
+}
+
 // Helper functions for stats
 function updateSearchAndFilters() {
   // Only run on inventory page, not on items page
@@ -183,15 +313,33 @@ function updateSearchAndFilters() {
     ? window.inventoryData.searchTerm
     : "";
 
-  // For super admin, check if filters already exist and institutions are loaded
+  // For super admin, check if filters already exist (CustomSelect)
   if (isSuperAdmin) {
-    const existingRegionalSelect = document.getElementById('regionalFilter');
-    const existingInstitutionSelect = document.getElementById('institutionFilter');
-    // If filters exist and institutions are loaded, don't recreate them
-    if (existingRegionalSelect && existingInstitutionSelect && existingInstitutionSelect.options.length > 1) {
+    const existingRegionalSelect = document.getElementById('inventoryRegionalFilterSelect');
+    const existingInstitutionSelect = document.getElementById('inventoryInstitutionFilterSelect');
+    // If filters exist, don't recreate them
+    if (existingRegionalSelect && existingInstitutionSelect) {
       // Just update the search input if needed
       if (existingInput && existingInput.value !== currentSearchTerm) {
         existingInput.value = currentSearchTerm;
+      }
+      // Update selected values if they changed
+      const currentRegional = window.inventoryData?.selectedRegional || '';
+      const currentInstitution = window.inventoryData?.selectedInstitution || '';
+      // Update selected values if they changed (but don't trigger onChange)
+      if (window.inventoryRegionalFilterSelect && currentRegional) {
+        // Temporarily disable onChange to prevent infinite loop
+        const originalOnChange = window.inventoryRegionalFilterSelect.onChange;
+        window.inventoryRegionalFilterSelect.onChange = null;
+        window.inventoryRegionalFilterSelect.setValue(currentRegional);
+        window.inventoryRegionalFilterSelect.onChange = originalOnChange;
+      }
+      if (window.inventoryInstitutionFilterSelect && currentInstitution) {
+        // Temporarily disable onChange to prevent infinite loop
+        const originalOnChange = window.inventoryInstitutionFilterSelect.onChange;
+        window.inventoryInstitutionFilterSelect.onChange = null;
+        window.inventoryInstitutionFilterSelect.setValue(currentInstitution);
+        window.inventoryInstitutionFilterSelect.onChange = originalOnChange;
       }
       return;
     }
@@ -206,28 +354,40 @@ function updateSearchAndFilters() {
   let filterDropdowns = '';
   
   if (isSuperAdmin) {
-    // Super admin gets regional and institution filters
+    // Super admin gets regional and institution filters using CustomSelect
     const selectedRegional = window.inventoryData?.selectedRegional || '';
     const selectedInstitution = window.inventoryData?.selectedInstitution || '';
     
     filterDropdowns = `
-      <div class="relative">
-        <label class="block text-xs font-medium text-gray-600 mb-1">Regional</label>
-        <select id="regionalFilter" onchange="handleRegionalFilterChange(this.value)" class="appearance-none w-full px-4 py-2.5 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md text-sm">
-          <option value="">Todas las regionales</option>
-        </select>
-        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style="top: 1.5rem;">
-          <i class="fas fa-chevron-down text-[#00AF00] text-xs"></i>
+      <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
+        <div class="custom-select" id="inventoryRegionalFilterSelect">
+          <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+            <span class="custom-select-text">Todas las regionales</span>
+            <i class="fas fa-chevron-down custom-select-arrow"></i>
+          </div>
+          <div class="custom-select-dropdown">
+            <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+            <div class="custom-select-options" id="inventoryRegionalFilterOptions">
+              <!-- Options loaded dynamically -->
+            </div>
+          </div>
         </div>
+        <input type="hidden" id="inventoryRegionalFilter" name="regional">
       </div>
-      <div class="relative">
-        <label class="block text-xs font-medium text-gray-600 mb-1">Institución</label>
-        <select id="institutionFilter" onchange="handleInstitutionFilterChange(this.value)" class="appearance-none w-full px-4 py-2.5 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md text-sm" ${!selectedRegional ? 'disabled' : ''}>
-          <option value="">Todas las instituciones</option>
-        </select>
-        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none" style="top: 1.5rem;">
-          <i class="fas fa-chevron-down text-[#00AF00] text-xs"></i>
+      <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
+        <div class="custom-select" id="inventoryInstitutionFilterSelect">
+          <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+            <span class="custom-select-text">Todas las instituciones</span>
+            <i class="fas fa-chevron-down custom-select-arrow"></i>
+          </div>
+          <div class="custom-select-dropdown">
+            <input type="text" class="custom-select-search" placeholder="Buscar institución...">
+            <div class="custom-select-options" id="inventoryInstitutionFilterOptions">
+              <!-- Options loaded dynamically -->
+            </div>
+          </div>
         </div>
+        <input type="hidden" id="inventoryInstitutionFilter" name="institution">
       </div>
     `;
   } else {
@@ -265,16 +425,10 @@ function updateSearchAndFilters() {
         </div>
     `;
 
-  // Load regionals and institutions if super admin
+  // Initialize CustomSelects for filters (super admin only)
   if (isSuperAdmin) {
-    // Use setTimeout to ensure DOM is ready
     setTimeout(() => {
-      loadRegionalsForFilter();
-      // Get selectedRegional from window.inventoryData safely
-      const selectedRegional = window.inventoryData?.selectedRegional || '';
-      if (selectedRegional) {
-        loadInstitutionsForFilter(selectedRegional);
-      }
+      initializeInventoryFilterSelects();
     }, 100);
   }
 
@@ -431,8 +585,6 @@ function updateInventoryTable() {
     endIndex
   );
   
-  console.log('Updating table with', paginatedInventories.length, 'inventories (from', window.inventoryData.filteredInventories.length, 'total)');
-
   let inventoryTableHtml = ``;
 
   if (paginatedInventories.length === 0) {
@@ -655,8 +807,6 @@ function updateInventoryCards() {
     endIndex
   );
   
-  console.log('Updating cards with', paginatedInventories.length, 'inventories (from', window.inventoryData.filteredInventories.length, 'total)');
-
   let cardsHtml = ``;
 
   if (paginatedInventories.length === 0) {
@@ -797,4 +947,5 @@ window.handleInventorySearchInput = handleInventorySearchInput;
 window.handleInventorySearchKeyup = handleInventorySearchKeyup;
 window.handleInventorySearchKeypress = handleInventorySearchKeypress;
 window.updateViewModeButtons = updateViewModeButtons;
+window.initializeInventoryFilterSelects = initializeInventoryFilterSelects;
 // setViewMode is defined in inventory-data.js and exported there, no need to export again

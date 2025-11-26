@@ -114,8 +114,6 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
         const selectedRegional = data.selectedRegional;
         const selectedInstitution = data.selectedInstitution;
         
-        console.log('Building endpoint with filters - Regional:', selectedRegional, 'Institution:', selectedInstitution);
-        
         if (selectedRegional && selectedInstitution) {
             // Filter by both regional and institution
             const params = new URLSearchParams({
@@ -123,7 +121,6 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
                 size: size.toString()
             });
             const endpoint = `/api/v1/inventory/regional/${selectedRegional}/institution/${selectedInstitution}?${params.toString()}`;
-            console.log('Using endpoint:', endpoint);
             return endpoint;
         } else if (selectedRegional) {
             // Filter by regional only
@@ -132,7 +129,6 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
                 size: size.toString()
             });
             const endpoint = `/api/v1/inventory/regionalAdminInventories/${selectedRegional}?${params.toString()}`;
-            console.log('Using endpoint:', endpoint);
             return endpoint;
         }
     }
@@ -143,7 +139,6 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
         size: size.toString()
     });
     const endpoint = `/api/v1/inventory?${params.toString()}`;
-    console.log('Using default endpoint:', endpoint);
     return endpoint;
 }
 
@@ -228,9 +223,6 @@ async function loadInventories(options = {}) {
                 inventoryData.filteredInventories = data.filteredInventories;
             }
             
-            console.log('Inventories loaded:', data.inventories.length);
-            console.log('Filtered inventories:', data.filteredInventories.length);
-            
             // If super admin, ensure filters are updated after loading inventories
             const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                                  (window.location.pathname && window.location.pathname.includes('/superadmin'));
@@ -305,7 +297,8 @@ async function createInventory(inventoryDataToCreate) {
             throw new Error('No tienes permisos para crear inventarios.');
         } else if (response.status === 409) {
             const errorData = await response.json();
-            throw new Error(errorData.detail || errorData.message || 'Este propietario ya tiene un inventario asignado');
+            const errorMessage = errorData.detail || errorData.message || 'Este propietario ya tiene un inventario asignado';
+            throw new Error(errorMessage);
         } else {
             let errorMessage = 'Error al crear el inventario';
             try {
@@ -789,26 +782,50 @@ async function loadRegionalsForFilter() {
 
         if (response.ok) {
             const regionals = await response.json();
-            const select = document.getElementById('regionalFilter');
-            if (select) {
-                // Clear existing options except the first one
-                while (select.options.length > 1) {
-                    select.remove(1);
-                }
-                
-                // Add regional options
-                // Safely get inventoryData - check if we're in items page context
+            
+            // Use CustomSelect if available, otherwise fallback to native select
+            if (window.inventoryRegionalFilterSelect && typeof window.inventoryRegionalFilterSelect.setOptions === 'function') {
+                // Safely get inventoryData
                 const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
                 const currentRegional = inventoryDataRef?.selectedRegional || '';
-                regionals.forEach(regional => {
-                    const option = document.createElement('option');
-                    option.value = regional.id.toString();
-                    option.textContent = regional.name;
-                    if (currentRegional === regional.id.toString()) {
-                        option.selected = true;
+                
+                const options = [
+                    { value: '', label: 'Todas las regionales' },
+                    ...regionals.map(regional => ({
+                        value: regional.id.toString(),
+                        label: regional.name
+                    }))
+                ];
+                
+                window.inventoryRegionalFilterSelect.setOptions(options);
+                
+                // Set current value if exists
+                if (currentRegional) {
+                    setTimeout(() => {
+                        if (window.inventoryRegionalFilterSelect && typeof window.inventoryRegionalFilterSelect.setValue === 'function') {
+                            window.inventoryRegionalFilterSelect.setValue(currentRegional);
+                        }
+                    }, 50);
+                }
+            } else {
+                // Fallback to native select (for backward compatibility)
+                const select = document.getElementById('regionalFilter');
+                if (select) {
+                    while (select.options.length > 1) {
+                        select.remove(1);
                     }
-                    select.appendChild(option);
-                });
+                    const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
+                    const currentRegional = inventoryDataRef?.selectedRegional || '';
+                    regionals.forEach(regional => {
+                        const option = document.createElement('option');
+                        option.value = regional.id.toString();
+                        option.textContent = regional.name;
+                        if (currentRegional === regional.id.toString()) {
+                            option.selected = true;
+                        }
+                        select.appendChild(option);
+                    });
+                }
             }
         } else {
             console.error('Error loading regionals:', response.statusText);
@@ -836,7 +853,6 @@ async function loadInstitutionsForFilter(regionalId) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        console.log('Loading institutions for regional:', regionalId);
         const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
             method: 'GET',
             headers: headers
@@ -844,76 +860,100 @@ async function loadInstitutionsForFilter(regionalId) {
 
         if (response.ok) {
             const institutions = await response.json();
-            console.log('Institutions loaded:', institutions);
             
-            // Function to add institutions to select
-            const addInstitutionsToSelect = (selectElement) => {
-                if (!selectElement) return false;
+            // Use CustomSelect if available, otherwise fallback to native select
+            if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
+                // Safely get inventoryData
+                const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
+                const currentInstitution = inventoryDataRef?.selectedInstitution || '';
                 
-                // Clear existing options except the first one
-                while (selectElement.options.length > 1) {
-                    selectElement.remove(1);
-                }
-                
-                // Enable the select
-                selectElement.disabled = false;
-                
-                // Add institution options
                 if (institutions && Array.isArray(institutions) && institutions.length > 0) {
-                    // Safely get inventoryData - check if we're in items page context
-                    const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
-                    const currentInstitution = inventoryDataRef?.selectedInstitution || '';
-                    institutions.forEach(institution => {
-                        const option = document.createElement('option');
-                        option.value = institution.id.toString();
-                        option.textContent = institution.name || `Institución ${institution.id}`;
-                        if (currentInstitution === institution.id.toString()) {
-                            option.selected = true;
-                        }
-                        selectElement.appendChild(option);
-                    });
-                    console.log(`Added ${institutions.length} institutions to dropdown`);
-                    return true;
-                } else {
-                    // No institutions found
-                    const option = document.createElement('option');
-                    option.value = '';
-                    option.textContent = 'No hay instituciones disponibles';
-                    option.disabled = true;
-                    selectElement.appendChild(option);
-                    console.log('No institutions found for this regional');
-                    return true;
-                }
-            };
-            
-            // Try to find the select element with multiple retries
-            let select = document.getElementById('institutionFilter');
-            let attempts = 0;
-            const maxAttempts = 5;
-            
-            while (!select && attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                select = document.getElementById('institutionFilter');
-                attempts++;
-                console.log(`Attempt ${attempts} to find institutionFilter select`);
-            }
-            
-            console.log('Institution select element:', select);
-            
-            if (select) {
-                addInstitutionsToSelect(select);
-            } else {
-                console.error('Institution filter select not found in DOM after', maxAttempts, 'attempts');
-                // Try one more time after a longer delay
-                setTimeout(() => {
-                    const retrySelect = document.getElementById('institutionFilter');
-                    if (retrySelect) {
-                        console.log('Found select on final retry, adding institutions');
-                        addInstitutionsToSelect(retrySelect);
-                    } else {
-                        console.error('Could not find institutionFilter select even after final retry');
+                    const options = [
+                        { value: '', label: 'Todas las instituciones' },
+                        ...institutions.map(institution => ({
+                            value: institution.id.toString(),
+                            label: institution.name || `Institución ${institution.id}`
+                        }))
+                    ];
+                    
+                    window.inventoryInstitutionFilterSelect.setOptions(options);
+                    
+                    // Enable the CustomSelect
+                    if (typeof window.inventoryInstitutionFilterSelect.setDisabled === 'function') {
+                        window.inventoryInstitutionFilterSelect.setDisabled(false);
                     }
-                }, 500);
+                    
+                    // Set current value if exists
+                    if (currentInstitution) {
+                        setTimeout(() => {
+                            if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setValue === 'function') {
+                                window.inventoryInstitutionFilterSelect.setValue(currentInstitution);
+                            }
+                        }, 50);
+                    }
+                } else {
+                    window.inventoryInstitutionFilterSelect.setOptions([
+                        { value: '', label: 'No hay instituciones disponibles', disabled: true }
+                    ]);
+                    // Disable if no institutions
+                    if (typeof window.inventoryInstitutionFilterSelect.setDisabled === 'function') {
+                        window.inventoryInstitutionFilterSelect.setDisabled(true);
+                    }
+                }
+            } else {
+                // Fallback to native select (for backward compatibility)
+                const addInstitutionsToSelect = (selectElement) => {
+                    if (!selectElement) return false;
+                    
+                    while (selectElement.options.length > 1) {
+                        selectElement.remove(1);
+                    }
+                    
+                    selectElement.disabled = false;
+                    
+                    if (institutions && Array.isArray(institutions) && institutions.length > 0) {
+                        const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
+                        const currentInstitution = inventoryDataRef?.selectedInstitution || '';
+                        institutions.forEach(institution => {
+                            const option = document.createElement('option');
+                            option.value = institution.id.toString();
+                            option.textContent = institution.name || `Institución ${institution.id}`;
+                            if (currentInstitution === institution.id.toString()) {
+                                option.selected = true;
+                            }
+                            selectElement.appendChild(option);
+                        });
+                        return true;
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'No hay instituciones disponibles';
+                        option.disabled = true;
+                        selectElement.appendChild(option);
+                        return true;
+                    }
+                };
+                
+                let select = document.getElementById('institutionFilter');
+                let attempts = 0;
+                const maxAttempts = 5;
+                
+                while (!select && attempts < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    select = document.getElementById('institutionFilter');
+                    attempts++;
+                }
+                
+                if (select) {
+                    addInstitutionsToSelect(select);
+                } else {
+                    setTimeout(() => {
+                        const retrySelect = document.getElementById('institutionFilter');
+                        if (retrySelect) {
+                            addInstitutionsToSelect(retrySelect);
+                        }
+                    }, 500);
+                }
             }
         } else {
             const errorText = await response.text();
@@ -950,11 +990,15 @@ async function loadInstitutionsForFilter(regionalId) {
 
 // Handle regional filter change
 async function handleRegionalFilterChange(regionalId) {
-    console.log('Regional filter changed to:', regionalId);
-    
     // Ensure inventoryData exists
     if (!window.inventoryData) {
         window.inventoryData = inventoryData || {};
+    }
+    
+    // Prevent infinite loop: check if regional is already set to this value
+    const currentRegional = window.inventoryData.selectedRegional || '';
+    if (currentRegional === (regionalId || '')) {
+        return; // Already set to this value, skip
     }
     
     window.inventoryData.selectedRegional = regionalId || '';
@@ -962,28 +1006,45 @@ async function handleRegionalFilterChange(regionalId) {
     // Clear institution selection when regional changes
     window.inventoryData.selectedInstitution = '';
     
-    // Reset institution dropdown
-    const institutionSelect = document.getElementById('institutionFilter');
-    if (institutionSelect) {
-        institutionSelect.disabled = !regionalId;
-        // Clear options except the first one
-        while (institutionSelect.options.length > 1) {
-            institutionSelect.remove(1);
-        }
-        institutionSelect.value = '';
-        
+    // Reset institution dropdown (CustomSelect or native select)
+    if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
         if (!regionalId) {
-            // If no regional selected, show placeholder
-            const option = document.createElement('option');
-            option.value = '';
-            option.textContent = 'Todas las instituciones';
-            institutionSelect.appendChild(option);
+            window.inventoryInstitutionFilterSelect.setOptions([
+                { value: '', label: 'Todas las instituciones', disabled: true }
+            ]);
+            window.inventoryInstitutionFilterSelect.clear();
+            // Disable the CustomSelect
+            if (typeof window.inventoryInstitutionFilterSelect.setDisabled === 'function') {
+                window.inventoryInstitutionFilterSelect.setDisabled(true);
+            }
+        } else {
+            window.inventoryInstitutionFilterSelect.clear();
+            // Enable the CustomSelect
+            if (typeof window.inventoryInstitutionFilterSelect.setDisabled === 'function') {
+                window.inventoryInstitutionFilterSelect.setDisabled(false);
+            }
+        }
+    } else {
+        // Fallback to native select
+        const institutionSelect = document.getElementById('institutionFilter');
+        if (institutionSelect) {
+            institutionSelect.disabled = !regionalId;
+            while (institutionSelect.options.length > 1) {
+                institutionSelect.remove(1);
+            }
+            institutionSelect.value = '';
+            
+            if (!regionalId) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'Todas las instituciones';
+                institutionSelect.appendChild(option);
+            }
         }
     }
     
     // Load institutions for the selected regional BEFORE reloading inventories
     if (regionalId) {
-        console.log('Loading institutions for regional:', regionalId);
         // Wait a bit to ensure DOM is ready
         await new Promise(resolve => setTimeout(resolve, 100));
         await loadInstitutionsForFilter(regionalId);
@@ -991,13 +1052,24 @@ async function handleRegionalFilterChange(regionalId) {
         await new Promise(resolve => setTimeout(resolve, 100));
     } else {
         // Clear institutions if no regional selected
-        const institutionSelect = document.getElementById('institutionFilter');
-        if (institutionSelect) {
-            institutionSelect.disabled = true;
-            while (institutionSelect.options.length > 1) {
-                institutionSelect.remove(1);
+        if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
+            window.inventoryInstitutionFilterSelect.setOptions([
+                { value: '', label: 'Todas las instituciones', disabled: true }
+            ]);
+            window.inventoryInstitutionFilterSelect.clear();
+            if (typeof window.inventoryInstitutionFilterSelect.setDisabled === 'function') {
+                window.inventoryInstitutionFilterSelect.setDisabled(true);
             }
-            institutionSelect.value = '';
+        } else {
+            // Fallback to native select
+            const institutionSelect = document.getElementById('institutionFilter');
+            if (institutionSelect) {
+                institutionSelect.disabled = true;
+                while (institutionSelect.options.length > 1) {
+                    institutionSelect.remove(1);
+                }
+                institutionSelect.value = '';
+            }
         }
     }
     
@@ -1006,7 +1078,6 @@ async function handleRegionalFilterChange(regionalId) {
         window.inventoryData = inventoryData || {};
     }
     window.inventoryData.currentPage = 1; // Use 1-based for UI
-    console.log('Reloading inventories with regional filter:', regionalId);
     await loadInventories({ page: 0 });
     
     // Update UI but preserve the institution dropdown
@@ -1040,18 +1111,21 @@ async function handleRegionalFilterChange(regionalId) {
 
 // Handle institution filter change
 async function handleInstitutionFilterChange(institutionId) {
-    console.log('Institution filter changed to:', institutionId);
-    
     // Ensure inventoryData exists
     if (!window.inventoryData) {
         window.inventoryData = inventoryData || {};
+    }
+    
+    // Prevent infinite loop: check if institution is already set to this value
+    const currentInstitution = window.inventoryData.selectedInstitution || '';
+    if (currentInstitution === (institutionId || '')) {
+        return; // Already set to this value, skip
     }
     
     window.inventoryData.selectedInstitution = institutionId || '';
     
     // Reload inventories with new filter
     window.inventoryData.currentPage = 1; // Use 1-based for UI
-    console.log('Reloading inventories with institution filter:', institutionId);
     await loadInventories({ page: 0 });
     if (typeof updateInventoryUI === 'function') {
         updateInventoryUI();
