@@ -17,7 +17,7 @@ pluginManagement {
   includeBuild(expoPluginsPath)
 }
 
-plugins {
+plugins {   
   id("com.facebook.react.settings")
   id("expo-autolinking-settings")
 }
