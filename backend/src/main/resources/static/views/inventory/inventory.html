@@ -60,6 +60,7 @@
             </div>
         </div>
 
+
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
             <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
@@ -104,7 +105,7 @@
             </a>
             <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-exchange-alt text-lg"></i>
+                <i class="fas fa-file-import text-lg"></i>
                 <span class="font-medium">Importar/Exportar</span>
             </a>
             <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
@@ -262,7 +263,8 @@
     </div>
 
     <!-- New Inventory Modal -->
-    <div id="newInventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+    <div id="newInventoryModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
         style="z-index: 9999;">
         <div class="bg-white rounded-2xl p-8 max-w-5xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
@@ -302,14 +304,16 @@
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Inventario <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Nombre del Inventario <span
+                                    class="text-red-500">*</span></label>
                             <input type="text" id="newInventoryName"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
                                 placeholder="Ej: Oficina Principal" required>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Ubicación <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Ubicación <span
+                                    class="text-red-500">*</span></label>
                             <input type="text" id="newInventoryLocation"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
                                 placeholder="Ej: Bloque A, Piso 1" required>
@@ -326,7 +330,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Owner Selection -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Propietario del Inventario <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Propietario del Inventario <span
+                                    class="text-red-500">*</span></label>
                             <div class="custom-select-container">
                                 <div class="custom-select" id="newInventoryOwnerIdSelect">
                                     <div class="custom-select-trigger">
@@ -357,7 +362,8 @@
                                         </div>
                                     </div>
                                     <div class="custom-select-dropdown">
-                                        <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                        <input type="text" class="custom-select-search"
+                                            placeholder="Buscar regional...">
                                         <div class="custom-select-options" id="newInventoryRegionalIdOptions">
                                             <!-- Options loaded dynamically -->
                                         </div>
@@ -380,7 +386,8 @@
                     </h3>
                     <div class="grid grid-cols-1 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Institución del Inventario <span class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Institución del Inventario <span
+                                    class="text-red-500">*</span></label>
                             <div class="custom-select-container">
                                 <div class="custom-select" id="newInventoryInstitutionIdSelect">
                                     <div class="custom-select-trigger">
@@ -390,7 +397,8 @@
                                         </div>
                                     </div>
                                     <div class="custom-select-dropdown">
-                                        <input type="text" class="custom-select-search" placeholder="Buscar institución...">
+                                        <input type="text" class="custom-select-search"
+                                            placeholder="Buscar institución...">
                                         <div class="custom-select-options" id="newInventoryInstitutionIdOptions">
                                             <!-- Options loaded dynamically -->
                                         </div>
@@ -461,6 +469,11 @@
         /* Custom Select Styles */
         .custom-select-container {
             position: relative;
+            z-index: 1;
+        }
+
+        .custom-select-container.select-open {
+            z-index: 10002;
         }
 
         .custom-select {
@@ -529,24 +542,60 @@
         }
 
         .custom-select-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+            position: fixed;
             background: white;
             border: 2px solid #10b981;
             border-top: none;
             border-bottom-left-radius: 0.75rem;
             border-bottom-right-radius: 0.75rem;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
+            z-index: 10050;
             max-height: 200px;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             display: none;
+            min-width: 180px;
+        }
+
+        /* Dropdown opening upward */
+        .custom-select.dropdown-up .custom-select-dropdown {
+            border-top: 2px solid #10b981;
+            border-bottom: none;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .custom-select.dropdown-up .custom-select-trigger {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        .custom-select.dropdown-up .custom-select-arrow {
+            transform: rotate(0deg);
+            /* Reset arrow rotation for upward dropdown */
         }
 
         .custom-select.open .custom-select-dropdown {
             display: block;
+        }
+
+        /* Ensure open select container is above others */
+        .custom-select.open {
+            z-index: 10002;
+        }
+
+        /* Ensure filter container doesn't clip dropdowns */
+        #searchFilterContainer {
+            overflow: visible !important;
+        }
+
+        #searchFilterContainer>div {
+            overflow: visible !important;
         }
 
         .custom-select-search {
@@ -876,7 +925,8 @@
     </div>
 
     <!-- Delete Inventory Modal (Multi-function) -->
-    <div id="deleteInventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+    <div id="deleteInventoryModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
         style="z-index: 9999;">
         <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 my-8">
             <div class="flex items-center justify-between mb-6">
@@ -901,7 +951,7 @@
                     <i class="fas fa-user-times text-red-500 mr-2"></i>
                     Eliminar Asignación de Rol
                 </h3>
-                
+
                 <!-- Role Selection Buttons -->
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Tipo de Rol</label>
@@ -937,8 +987,9 @@
                         </div>
                         <input type="hidden" id="deleteRoleUserId" name="userId">
                     </div>
-                    <p class="text-xs text-gray-500 mt-1" id="deleteRoleDescription">Selecciona el usuario al que se le eliminará el rol</p>
-                    
+                    <p class="text-xs text-gray-500 mt-1" id="deleteRoleDescription">Selecciona el usuario al que se le
+                        eliminará el rol</p>
+
                     <!-- Delete Role Button -->
                     <button type="button" onclick="confirmDeleteRole()"
                         class="w-full mt-3 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2">
@@ -956,7 +1007,8 @@
                 </h3>
                 <div class="text-center mb-4">
                     <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-3"></i>
-                    <p class="text-gray-600 text-sm" id="deleteInventoryMessage">Esta acción eliminará permanentemente el inventario y no se puede deshacer.</p>
+                    <p class="text-gray-600 text-sm" id="deleteInventoryMessage">Esta acción eliminará permanentemente
+                        el inventario y no se puede deshacer.</p>
                 </div>
 
                 <div class="flex gap-3">
@@ -989,49 +1041,66 @@
                 <!-- Horizontal Layout con Flecha -->
                 <div class="flex flex-col lg:flex-row items-stretch gap-6">
                     <!-- Inventory Basic Information -->
-                    <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 relative border-2 border-green-200 dark:border-green-700 flex flex-col">
+                    <div
+                        class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 relative border-2 border-green-200 dark:border-green-700 flex flex-col">
                         <div class="flex flex-col lg:flex-row gap-6 flex-1">
                             <!-- Left Side: Information -->
                             <div class="flex-1 flex flex-col">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
+                                <h3
+                                    class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
                                     <i class="fas fa-box text-[#00AF00] mr-2"></i>
                                     Información del Inventario
                                 </h3>
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
-                                        <span class="px-3 py-1 rounded-full text-xs font-medium" id="viewInventoryStatus">-</span>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+                                        <span class="px-3 py-1 rounded-full text-xs font-medium"
+                                            id="viewInventoryStatus">-</span>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Inventario</label>
-                                        <p class="text-gray-900 dark:text-gray-100 font-bold text-xl" id="viewInventoryName">-</p>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre
+                                            del Inventario</label>
+                                        <p class="text-gray-900 dark:text-gray-100 font-bold text-xl"
+                                            id="viewInventoryName">-</p>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</label>
-                                        <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryLocation">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</label>
+                                        <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2"
+                                            id="viewInventoryLocation">
                                             <i class="fas fa-map-marker-alt text-[#00AF00]"></i>
                                             <span>-</span>
                                         </p>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
-                                        <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryInstitution">
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
+                                        <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2"
+                                            id="viewInventoryInstitution">
                                             <i class="fas fa-building text-[#00AF00]"></i>
                                             <span>-</span>
                                         </p>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad de Items</label>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad
+                                            de Items</label>
                                         <div class="flex items-center gap-2">
                                             <i class="fas fa-cubes text-[#00AF00] text-xl"></i>
-                                            <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl" id="viewInventoryQuantityItems">0</p>
+                                            <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl"
+                                                id="viewInventoryQuantityItems">0</p>
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor Total</label>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor
+                                            Total</label>
                                         <div class="flex items-center gap-2">
                                             <i class="fas fa-dollar-sign text-[#00AF00] text-xl"></i>
-                                            <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl" id="viewInventoryTotalPrice">$0</p>
+                                            <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl"
+                                                id="viewInventoryTotalPrice">$0</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1042,30 +1111,32 @@
                                     Ver Items
                                 </button>
                             </div>
-                    
-                    <!-- Right Side: Image -->
-                    <div class="flex-shrink-0 flex items-start justify-end">
-                        <button onclick="showInventoryImageModal(); return false;"
-                            class="cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0 flex items-center justify-center"
-                            id="viewInventoryImageButton" style="display: none;">
-                            <div class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
-                                id="viewInventoryImage">
-                                <i class="fas fa-box"></i>
+
+                            <!-- Right Side: Image -->
+                            <div class="flex-shrink-0 flex items-start justify-end">
+                                <button onclick="showInventoryImageModal(); return false;"
+                                    class="cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0 flex items-center justify-center"
+                                    id="viewInventoryImageButton" style="display: none;">
+                                    <div class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                                        id="viewInventoryImage">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                </button>
+                                <div id="viewInventoryImagePlaceholder"
+                                    class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl">
+                                    <i class="fas fa-box"></i>
+                                </div>
                             </div>
-                        </button>
-                        <div id="viewInventoryImagePlaceholder"
-                            class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl">
-                            <i class="fas fa-box"></i>
                         </div>
                     </div>
-                </div>
-            </div>
 
                     <!-- Flecha Indicadora -->
                     <div class="flex items-center justify-center">
                         <div class="hidden lg:flex flex-col items-center gap-2">
                             <i class="fas fa-arrow-right text-[#00AF00] text-4xl"></i>
-                            <p class="text-xs font-medium text-gray-600 dark:text-gray-400 text-center whitespace-nowrap">Pertenece a</p>
+                            <p
+                                class="text-xs font-medium text-gray-600 dark:text-gray-400 text-center whitespace-nowrap">
+                                Pertenece a</p>
                         </div>
                         <div class="flex lg:hidden flex-row items-center gap-2">
                             <i class="fas fa-arrow-down text-[#00AF00] text-3xl"></i>
@@ -1074,49 +1145,66 @@
                     </div>
 
                     <!-- Owner Information -->
-                    <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 flex flex-col">
+                    <div
+                        class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 flex flex-col">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
                             <i class="fas fa-user-shield text-[#00AF00] mr-2"></i>
                             Información del Propietario
                         </h3>
                         <div class="grid grid-cols-1 gap-4 flex-1">
-                            <div class="flex items-center space-x-4 pb-4 border-b border-green-200 dark:border-green-700">
+                            <div
+                                class="flex items-center space-x-4 pb-4 border-b border-green-200 dark:border-green-700">
                                 <div class="w-20 h-20 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-full flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0"
                                     id="viewInventoryOwnerAvatar">
                                     <span class="text-white font-bold text-2xl">U</span>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nombre Completo</label>
-                                    <p class="text-gray-900 dark:text-gray-100 font-bold text-lg truncate" id="viewInventoryOwnerName">-</p>
+                                    <label
+                                        class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nombre
+                                        Completo</label>
+                                    <p class="text-gray-900 dark:text-gray-100 font-bold text-lg truncate"
+                                        id="viewInventoryOwnerName">-</p>
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                                <p class="text-gray-900 dark:text-gray-100 text-sm break-all flex items-center gap-2" id="viewInventoryOwnerEmail">
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                <p class="text-gray-900 dark:text-gray-100 text-sm break-all flex items-center gap-2"
+                                    id="viewInventoryOwnerEmail">
                                     <i class="fas fa-envelope text-[#00AF00]"></i>
                                     <span>-</span>
                                 </p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
-                                <span class="inline-flex items-center px-3 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-semibold text-sm" id="viewInventoryOwnerRole">-</span>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
+                                <span
+                                    class="inline-flex items-center px-3 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-semibold text-sm"
+                                    id="viewInventoryOwnerRole">-</span>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
                                 <span class="px-3 py-1 rounded-full text-xs font-medium inline-block"
                                     id="viewInventoryOwnerStatus">-</span>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
-                                <p class="text-gray-900 dark:text-gray-100 font-medium" id="viewInventoryOwnerJobTitle">-</p>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
+                                <p class="text-gray-900 dark:text-gray-100 font-medium" id="viewInventoryOwnerJobTitle">
+                                    -</p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento Laboral</label>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento
+                                    Laboral</label>
                                 <p class="text-gray-900 dark:text-gray-100" id="viewInventoryOwnerDepartment">-</p>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
-                                <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2" id="viewInventoryOwnerInstitution">
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
+                                <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2"
+                                    id="viewInventoryOwnerInstitution">
                                     <i class="fas fa-building text-[#00AF00]"></i>
                                     <span>-</span>
                                 </p>
@@ -1156,7 +1244,8 @@
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Editar Inventario</h2>
-                <button onclick="closeEditInventoryModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <button onclick="closeEditInventoryModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
@@ -1168,7 +1257,8 @@
 
             <form id="editInventoryForm" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre del Inventario</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre del
+                        Inventario</label>
                     <input type="text" id="editInventoryName"
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
                         placeholder="Ej: Oficina Principal" required>
@@ -1182,18 +1272,24 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado del Inventario</label>
-                    <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado del
+                        Inventario</label>
+                    <div
+                        class="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-3">
                             <i class="fas fa-power-off text-[#00AF00] text-xl"></i>
                             <div>
-                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">Estado del Inventario</p>
-                                <p class="text-xs text-gray-600 dark:text-gray-400" id="editInventoryStatusLabel">Activo</p>
+                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">Estado del Inventario
+                                </p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400" id="editInventoryStatusLabel">Activo
+                                </p>
                             </div>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="editInventoryStatus" class="sr-only peer" checked>
-                            <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-[#00AF00]"></div>
+                            <div
+                                class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-[#00AF00]">
+                            </div>
                         </label>
                     </div>
                 </div>
@@ -1487,7 +1583,8 @@
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Información del Usuario</h2>
-                <button onclick="closeUserDetailsModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <button onclick="closeUserDetailsModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
@@ -1495,7 +1592,9 @@
             <!-- Loading Spinner -->
             <div id="userDetailsLoading" class="flex flex-col items-center justify-center p-12 hidden">
                 <div class="relative w-16 h-16 mb-4">
-                    <div class="absolute inset-0 border-4 border-[#00AF00] border-t-transparent rounded-full animate-spin"></div>
+                    <div
+                        class="absolute inset-0 border-4 border-[#00AF00] border-t-transparent rounded-full animate-spin">
+                    </div>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">Cargando información...</p>
             </div>
@@ -1509,7 +1608,8 @@
                         <span class="text-white font-bold text-3xl">U</span>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-1" id="userDetailsFullName">-</h3>
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-1" id="userDetailsFullName">-
+                        </h3>
                         <p class="text-gray-600 dark:text-gray-400 mb-2" id="userDetailsEmail">-</p>
                         <span class="px-3 py-1 rounded-full text-xs font-medium" id="userDetailsStatus">-</span>
                     </div>
@@ -1523,7 +1623,8 @@
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID de Usuario</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ID de
+                                Usuario</label>
                             <p class="text-gray-900 dark:text-gray-100 font-semibold" id="userDetailsId">-</p>
                         </div>
                         <div>
@@ -1535,11 +1636,13 @@
                             <p class="text-gray-900 dark:text-gray-100" id="userDetailsJobTitle">-</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento</label>
+                            <label
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento</label>
                             <p class="text-gray-900 dark:text-gray-100" id="userDetailsLaborDepartment">-</p>
                         </div>
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
+                            <label
+                                class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
                             <p class="text-gray-900 dark:text-gray-100" id="userDetailsInstitution">-</p>
                         </div>
                     </div>

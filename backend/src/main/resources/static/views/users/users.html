@@ -106,7 +106,7 @@
             </a>
             <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-exchange-alt text-lg"></i>
+                <i class="fas fa-file-import text-lg"></i>
                 <span class="font-medium">Importar/Exportar</span>
             </a>
             <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
@@ -734,13 +734,16 @@
 
             <!-- Filter Tabs -->
             <div id="userLoansFilters" class="flex gap-2 mb-6" style="display: none;">
-                <button onclick="filterUserLoans('all')" id="filterAll" class="px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white">
+                <button onclick="filterUserLoans('all')" id="filterAll"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white">
                     Todos
                 </button>
-                <button onclick="filterUserLoans('active')" id="filterActive" class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
+                <button onclick="filterUserLoans('active')" id="filterActive"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
                     Activos
                 </button>
-                <button onclick="filterUserLoans('returned')" id="filterReturned" class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
+                <button onclick="filterUserLoans('returned')" id="filterReturned"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
                     Devueltos
                 </button>
             </div>
@@ -974,7 +977,7 @@
             overflow: visible !important;
         }
 
-        #searchFilterContainer > div {
+        #searchFilterContainer>div {
             overflow: visible !important;
         }
 
@@ -992,7 +995,7 @@
             overflow: visible !important;
         }
 
-        #searchFilterContainer > div {
+        #searchFilterContainer>div {
             overflow: visible !important;
         }
 

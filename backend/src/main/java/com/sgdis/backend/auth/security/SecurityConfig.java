@@ -80,7 +80,8 @@ public class SecurityConfig  {
                             "/svg/**",
                             "/uploads/**",
                             "/css/**",
-                            "/js/**"
+                            "/js/**",
+                            "/ws/**"
                     ).permitAll();
                     // Dashboard endpoints require authentication and proper roles
                     http.requestMatchers("/dashboard/user").hasRole("USER");

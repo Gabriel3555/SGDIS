@@ -197,37 +197,54 @@
         </div>
 
         <!-- Sidebar navigation -->
-        <nav class="flex-1 px-4 py-4 overflow-y-auto" id="sidebarNav">
-            <!-- Navigation will be loaded dynamically based on user role -->
-            <a href="#" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" id="navDashboard">
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="#" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" id="navInventory">
+            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/inventory')">
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
             </a>
-            <a href="#" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" id="navUsers" style="display: none;">
+            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/users')">
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
             </a>
-            <a href="#" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" id="navVerification" style="display: none;">
+            <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
+            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/verification')">
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
-            <a href="#" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" id="navReports" style="display: none;">
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
             </a>
-            <a href="#" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" id="navNotifications" style="display: none;">
+            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/notifications')">
                 <i class="fas fa-bell text-lg"></i>
                 <span class="font-medium">Notificaciones</span>
             </a>
-            <a href="#" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" id="navImportExport" style="display: none;">
-                <i class="fas fa-exchange-alt text-lg"></i>
+            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/import-export')">
+                <i class="fas fa-file-import text-lg"></i>
                 <span class="font-medium">Importar/Exportar</span>
             </a>
-            <a href="#" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" id="navSettings" style="display: none;">
+            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/settings')">
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>

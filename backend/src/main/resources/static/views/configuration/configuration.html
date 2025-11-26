@@ -91,12 +91,12 @@
     <script>
         // Establecer estilo del sidebar inmediatamente para evitar flash
         // Este script se ejecuta después del anterior pero antes del renderizado
-        (function() {
+        (function () {
             try {
                 const saved = localStorage.getItem('sgdis-dark-mode');
-                const isDark = saved === 'true' || 
+                const isDark = saved === 'true' ||
                     (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                
+
                 // Crear estilos específicos para sidebar y header que se aplicarán inmediatamente
                 if (!document.getElementById('sidebar-inline-styles')) {
                     const sidebarStyle = document.createElement('style');
@@ -215,62 +215,57 @@
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/superadmin/dashboard"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="/superadmin/inventory"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/inventory')">
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
             </a>
-            <a href="/superadmin/users"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/users')">
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
             </a>
-            <a href="/superadmin/transfers"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/transfers')">
                 <i class="fas fa-exchange-alt text-lg"></i>
                 <span class="font-medium">Transferencias</span>
             </a>
-            <a href="/superadmin/verification"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/verification')">
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
-            <a href="/superadmin/reports"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
             </a>
-            <a href="/superadmin/notifications"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/notifications')">
                 <i class="fas fa-bell text-lg"></i>
                 <span class="font-medium">Notificaciones</span>
             </a>
-            <a href="/superadmin/import-export"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-exchange-alt text-lg"></i>
+                <i class="fas fa-file-import text-lg"></i>
                 <span class="font-medium">Importar/Exportar</span>
             </a>
-            <a href="/superadmin/settings"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2 active"
+            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
                 onclick="handleSidebarClick(event, '/superadmin/settings')">
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>
-            <a href="/info-me"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 dark:hover:bg-gray-700 mb-2"
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
@@ -421,10 +416,10 @@
         /* Smooth transition animation for dark/light mode changes - 0.5 seconds */
         html,
         html *:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6) {
-            transition: background-color 0.5s ease-in-out, 
-                        color 0.5s ease-in-out, 
-                        border-color 0.5s ease-in-out,
-                        box-shadow 0.5s ease-in-out !important;
+            transition: background-color 0.5s ease-in-out,
+                color 0.5s ease-in-out,
+                border-color 0.5s ease-in-out,
+                box-shadow 0.5s ease-in-out !important;
         }
 
         /* Specific transitions for key elements */
@@ -454,15 +449,34 @@
         }
 
         /* Títulos sin animaciones - mayor especificidad */
-        h1, h2, h3, h4, h5, h6,
-        h1 *, h2 *, h3 *, h4 *, h5 *, h6 *,
-        .text-3xl, .text-2xl, .text-xl, .text-lg,
-        h1.text-gray-800, h1.dark\:text-white,
-        h2.text-gray-800, h2.dark\:text-white,
-        h3.text-gray-800, h3.dark\:text-white,
-        h4.text-gray-800, h4.dark\:text-white,
-        h5.text-gray-800, h5.dark\:text-white,
-        h6.text-gray-800, h6.dark\:text-white {
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6,
+        h1 *,
+        h2 *,
+        h3 *,
+        h4 *,
+        h5 *,
+        h6 *,
+        .text-3xl,
+        .text-2xl,
+        .text-xl,
+        .text-lg,
+        h1.text-gray-800,
+        h1.dark\:text-white,
+        h2.text-gray-800,
+        h2.dark\:text-white,
+        h3.text-gray-800,
+        h3.dark\:text-white,
+        h4.text-gray-800,
+        h4.dark\:text-white,
+        h5.text-gray-800,
+        h5.dark\:text-white,
+        h6.text-gray-800,
+        h6.dark\:text-white {
             transition: none !important;
         }
 
@@ -886,8 +900,8 @@
         // Después de que la página se carga completamente, permitir transiciones
         // Modificar estilos inline para que solo establezcan transiciones, no colores
         // Esto permite que las clases de Tailwind establezcan los colores y las transiciones animen el cambio
-        window.addEventListener('load', function() {
-            setTimeout(function() {
+        window.addEventListener('load', function () {
+            setTimeout(function () {
                 // Modificar estilos inline para permitir transiciones en cambios dinámicos
                 // Solo establecer transiciones, no colores, para que las clases de Tailwind hagan el trabajo
                 let sidebarStyle = document.getElementById('sidebar-inline-styles');
