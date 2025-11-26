@@ -50,7 +50,7 @@ public class DashboardController {
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
     public ResponseEntity<Resource> adminRegionalDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
+        Resource resource = new ClassPathResource("static/views/dashboard/admin-regional/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

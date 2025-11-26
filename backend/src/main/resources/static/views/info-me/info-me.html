@@ -576,6 +576,28 @@
         }
 
         // Initialize mobile menu toggle when DOM is ready
+        // Rewrite sidebar links for admin_regional if needed
+        function rewriteAdminRegionalSidebarLinks(userRole) {
+            if (userRole !== 'ADMIN_REGIONAL') {
+                return;
+            }
+
+            const links = document.querySelectorAll("a.sidebar-item");
+            links.forEach((link) => {
+                const href = link.getAttribute("href");
+                if (href && href.startsWith("/superadmin")) {
+                    link.setAttribute("href", href.replace("/superadmin", "/admin_regional"));
+                    const onclickValue = link.getAttribute("onclick");
+                    if (onclickValue && onclickValue.includes("'/superadmin")) {
+                        link.setAttribute(
+                            "onclick",
+                            onclickValue.replace(/'\/superadmin/g, "'/admin_regional")
+                        );
+                    }
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
         });
