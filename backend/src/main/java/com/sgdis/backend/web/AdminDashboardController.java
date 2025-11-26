@@ -310,6 +310,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/auditory")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminAuditory() throws IOException {
+        Resource resource = new ClassPathResource("static/views/auditory/auditory.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/admin_regional/settings")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
