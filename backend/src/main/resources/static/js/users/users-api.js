@@ -8,6 +8,8 @@ async function loadUsersData() {
         await loadCurrentUserInfo();
         // Load statistics for SUPERADMIN
         await loadUserStatistics();
+        // Update welcome message based on role
+        updateUsersWelcomeMessage();
         // Reset to page 0 when loading fresh data
         await loadUsers(0);
         updateUsersUI();
@@ -19,6 +21,24 @@ async function loadUsersData() {
     } finally {
         usersData.isLoading = false;
         hideLoadingState();
+    }
+}
+
+function updateUsersWelcomeMessage() {
+    const welcomeMessage = document.getElementById('usersWelcomeMessage');
+    if (!welcomeMessage) return;
+    
+    const currentRole = window.currentUserRole || usersData.currentLoggedInUserRole || '';
+    const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+    
+    if (isAdminRegional) {
+        welcomeMessage.textContent = 'Administración de usuarios de la regional';
+    } else if (isAdminInstitution) {
+        welcomeMessage.textContent = 'Administración de usuarios de la institución';
+    } else {
+        welcomeMessage.textContent = 'Administración de usuarios del sistema';
     }
 }
 
@@ -98,9 +118,11 @@ async function loadUsers(page = 0) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Check if current user is ADMIN_INSTITUTION
+        // Check if current user is ADMIN_INSTITUTION or ADMIN_REGIONAL
         const currentRole = usersData.currentLoggedInUserRole || '';
         const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+        const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                                (window.location.pathname && window.location.pathname.includes('/admin_regional'));
         
         // Check if filters are active (including regional and institution for super admin)
         const isSuperAdmin = (usersData.currentLoggedInUserRole && usersData.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
@@ -119,6 +141,15 @@ async function loadUsers(page = 0) {
             } else {
                 // Use pagination
                 url = `/api/v1/users/institution?page=${page}&size=${usersData.itemsPerPage}`;
+            }
+        } else if (isAdminRegional) {
+            // Use regional endpoint for ADMIN_REGIONAL
+            if (hasFilters) {
+                // Load all users for filtering (set a large page size)
+                url = `/api/v1/users/regional?page=0&size=1000`;
+            } else {
+                // Use pagination
+                url = `/api/v1/users/regional?page=${page}&size=${usersData.itemsPerPage}`;
             }
         } else {
             // Use regular endpoint for other roles
@@ -800,3 +831,4 @@ window.loadUserStatistics = loadUserStatistics;
 window.loadUsersData = loadUsersData;
 window.loadUsers = loadUsers;
 window.loadCurrentUserInfo = loadCurrentUserInfo;
+window.updateUsersWelcomeMessage = updateUsersWelcomeMessage;

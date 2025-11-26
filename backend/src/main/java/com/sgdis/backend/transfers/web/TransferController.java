@@ -10,6 +10,7 @@ import com.sgdis.backend.transfers.application.port.in.RequestTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetAllTransfersUseCase;
+import com.sgdis.backend.transfers.application.port.in.GetRegionalTransfersUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -40,6 +41,7 @@ public class TransferController {
     private final GetInventoryTransfersUseCase getInventoryTransfersUseCase;
     private final GetItemTransfersUseCase getItemTransfersUseCase;
     private final GetAllTransfersUseCase getAllTransfersUseCase;
+    private final GetRegionalTransfersUseCase getRegionalTransfersUseCase;
 
     @Operation(
             summary = "Get all transfers",
@@ -135,6 +137,32 @@ public class TransferController {
     ) {
         ApproveTransferResponse response = approveTransferUseCase.approveTransfer(transferId, request);
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "Get transfers by regional",
+            description = "Retrieves all transfers from inventories belonging to institutions in the specified regional with pagination"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Transfers retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @ApiResponse(responseCode = "404", description = "Regional not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/regional/{regionalId}")
+    public ResponseEntity<Page<TransferSummaryResponse>> getTransfersByRegional(
+            @Parameter(description = "Regional ID", required = true)
+            @PathVariable Long regionalId,
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "6") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "requestedAt"));
+        Page<TransferSummaryResponse> transfers = getRegionalTransfersUseCase.getTransfersByRegional(regionalId, pageable);
+        return ResponseEntity.ok(transfers);
     }
 }
 

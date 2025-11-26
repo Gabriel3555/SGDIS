@@ -7,7 +7,10 @@ if (
   var CustomSelect = class CustomSelect {
     constructor(containerId, options = {}) {
       this.container = document.getElementById(containerId);
-      if (!this.container) return;
+      if (!this.container) {
+        console.error(`CustomSelect: Container with id "${containerId}" not found`);
+        return;
+      }
 
       this.trigger = this.container.querySelector(".custom-select-trigger");
       this.dropdown = this.container.querySelector(".custom-select-dropdown");
@@ -16,6 +19,15 @@ if (
         ".custom-select-options"
       );
       this.textElement = this.container.querySelector(".custom-select-text");
+      
+      // Debug: log if optionsContainer is found
+      if (!this.optionsContainer) {
+        console.error(`CustomSelect: optionsContainer not found for "${containerId}"`, {
+          container: this.container,
+          hasDropdown: !!this.dropdown,
+          html: this.container.innerHTML.substring(0, 200)
+        });
+      }
 
       // Try to find hidden input inside container first, then in parent container
       this.hiddenInput = this.container.querySelector('input[type="hidden"]');
@@ -39,15 +51,31 @@ if (
     }
 
     init() {
+      // Verify all required elements exist
+      if (!this.container || !this.trigger || !this.textElement) {
+        console.warn('CustomSelect initialization failed: missing required elements', {
+          container: !!this.container,
+          trigger: !!this.trigger,
+          textElement: !!this.textElement
+        });
+        return;
+      }
+
       // Set initial placeholder
       this.textElement.textContent = this.placeholder;
       this.textElement.classList.add("custom-select-placeholder");
 
       // Event listeners
       if (this.trigger) {
+        // Remove any existing listeners to prevent duplicates
+        const newTrigger = this.trigger.cloneNode(true);
+        this.trigger.parentNode.replaceChild(newTrigger, this.trigger);
+        this.trigger = newTrigger;
+        
         this.trigger.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
           if (this.isDisabled) {
-            event.preventDefault();
             return;
           }
           this.toggle();
@@ -86,6 +114,16 @@ if (
     }
 
     renderOptions() {
+      // Verify optionsContainer exists, if not try to find it again
+      if (!this.optionsContainer) {
+        this.optionsContainer = this.container.querySelector(".custom-select-options");
+      }
+
+      if (!this.optionsContainer) {
+        console.error('CustomSelect: optionsContainer not found', this.container);
+        return;
+      }
+
       this.optionsContainer.innerHTML = "";
 
       if (this.filteredOptions.length === 0) {
@@ -119,6 +157,9 @@ if (
         }
         this.optionsContainer.appendChild(optionElement);
       });
+      
+      // Debug: log options rendered
+      console.log(`CustomSelect: Rendered ${this.filteredOptions.length} options in container`, this.optionsContainer);
     }
 
     filterOptions(searchTerm) {
