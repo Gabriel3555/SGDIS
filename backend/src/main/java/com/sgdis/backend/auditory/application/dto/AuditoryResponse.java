@@ -33,6 +33,9 @@ public class AuditoryResponse {
     @Schema(description = "Performer user email")
     private String performerEmail;
 
+    @Schema(description = "Performer user profile image URL")
+    private String performerImgUrl;
+
     @Schema(description = "Institution ID")
     private Long institutionId;
 

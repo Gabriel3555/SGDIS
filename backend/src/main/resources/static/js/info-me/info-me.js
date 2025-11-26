@@ -87,38 +87,51 @@ function populateUserProfile(userData) {
     }
 
     // Personal Information
-    document.getElementById('profileId').textContent = userData.id || 'N/A';
-    document.getElementById('profileFullNameInfo').textContent = userData.fullName || 'Sin nombre';
-    document.getElementById('profileEmail').textContent = userData.email || 'Sin correo';
-    document.getElementById('profileJobTitleInfo').textContent = userData.jobTitle || 'Sin cargo';
+    const profileId = document.getElementById('profileId');
+    if (profileId) profileId.textContent = userData.id || 'N/A';
+    
+    const profileFullNameInfo = document.getElementById('profileFullNameInfo');
+    if (profileFullNameInfo) profileFullNameInfo.textContent = userData.fullName || 'Sin nombre';
+    
+    const profileEmail = document.getElementById('profileEmail');
+    if (profileEmail) profileEmail.textContent = userData.email || 'Sin correo';
+    
+    const profileJobTitleInfo = document.getElementById('profileJobTitleInfo');
+    if (profileJobTitleInfo) profileJobTitleInfo.textContent = userData.jobTitle || 'Sin cargo';
 
     // Work Information
-    document.getElementById('profileDepartment').textContent = userData.laborDepartment || 'Sin departamento';
-    document.getElementById('profileRoleInfo').textContent = getRoleDisplayName(userData.role);
+    const profileDepartment = document.getElementById('profileDepartment');
+    if (profileDepartment) profileDepartment.textContent = userData.laborDepartment || 'Sin departamento';
+    
+    const profileRoleInfo = document.getElementById('profileRoleInfo');
+    if (profileRoleInfo) profileRoleInfo.textContent = getRoleDisplayName(userData.role);
     
     // Load institution and regional information
     let institutionName = userData.institution || 'Sin institución';
     let regionalName = 'Sin regional';
     
     // Set institution name initially
-    document.getElementById('profileInstitution').textContent = institutionName;
-    document.getElementById('profileRegional').textContent = regionalName;
+    const profileInstitution = document.getElementById('profileInstitution');
+    if (profileInstitution) profileInstitution.textContent = institutionName;
+    
+    const profileRegional = document.getElementById('profileRegional');
+    if (profileRegional) profileRegional.textContent = regionalName;
     
     // Fetch regional information if institution exists
     if (userData.institution) {
         loadInstitutionAndRegionalInfo(userData.institution).then(({ institution, regional }) => {
-            if (institution) {
-                document.getElementById('profileInstitution').textContent = institution.name || institutionName;
+            const profileInstitutionEl = document.getElementById('profileInstitution');
+            if (institution && profileInstitutionEl) {
+                profileInstitutionEl.textContent = institution.name || institutionName;
             }
-            if (regional) {
-                document.getElementById('profileRegional').textContent = regional.name || regionalName;
+            const profileRegionalEl = document.getElementById('profileRegional');
+            if (regional && profileRegionalEl) {
+                profileRegionalEl.textContent = regional.name || regionalName;
             }
         }).catch(error => {
             console.error('Error loading institution/regional info:', error);
         });
     }
-    
-    document.getElementById('profileStatusInfo').textContent = userData.status ? 'Cuenta Activa' : 'Cuenta Inactiva';
 }
 
 // Function to load institution and regional information
