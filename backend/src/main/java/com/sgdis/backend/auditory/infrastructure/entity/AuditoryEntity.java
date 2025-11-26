@@ -25,7 +25,7 @@ public class AuditoryEntity {
     private Long id;
 
     private String action;
-    private LocalDateTime date = LocalDateTime.now();
+    private LocalDateTime date;
 
     @ManyToOne
     @JoinColumn(name = "performer_id")
