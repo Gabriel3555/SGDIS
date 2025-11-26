@@ -44,6 +44,7 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
     private final RecordActionUseCase recordActionUseCase;
 
     @Override
+    @Transactional
     public LendItemResponse lendItem(LendItemRequest request) {
         UserEntity user = authService.getCurrentUser();
 
@@ -53,9 +54,63 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         UserEntity responsible = userRepository.findById(request.responsibleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Responsible user not found"));
 
-        Optional<LoanEntity> lastLoan = loanRepository.findLastLoanByItemId(request.itemId());
-        if (lastLoan.isPresent() && !Boolean.TRUE.equals(lastLoan.get().getReturned())) {
-            throw new IllegalStateException("Item cannot be lent because it has not been returned from its last loan");
+        // First, check if there are any active loans (not returned) in the database
+        // This is the source of truth for whether an item is currently lent
+        List<LoanEntity> allLoans = loanRepository.findAllByItemId(request.itemId());
+        List<LoanEntity> activeLoans = allLoans.stream()
+                .filter(loan -> loan.getReturned() == null || !loan.getReturned())
+                .collect(Collectors.toList());
+
+        // If there are active loans, the item cannot be lent
+        if (!activeLoans.isEmpty()) {
+            // Get the responsible person from the most recent active loan
+            LoanEntity mostRecentActiveLoan = activeLoans.stream()
+                    .max((l1, l2) -> {
+                        if (l1.getLendAt() == null && l2.getLendAt() == null) return 0;
+                        if (l1.getLendAt() == null) return -1;
+                        if (l2.getLendAt() == null) return 1;
+                        return l1.getLendAt().compareTo(l2.getLendAt());
+                    })
+                    .orElse(activeLoans.get(0));
+            
+            String responsibleName = mostRecentActiveLoan.getResponsible() != null 
+                    ? mostRecentActiveLoan.getResponsible().getFullName() 
+                    : "Unknown";
+            
+            throw new IllegalStateException("Item cannot be lent because it is currently lent to: " + responsibleName);
+        }
+
+        // Double-check just before creating the loan to prevent race conditions
+        // This ensures that even if two requests arrive simultaneously, only one will succeed
+        List<LoanEntity> doubleCheckLoans = loanRepository.findAllByItemId(request.itemId());
+        List<LoanEntity> doubleCheckActiveLoans = doubleCheckLoans.stream()
+                .filter(loan -> loan.getReturned() == null || !loan.getReturned())
+                .collect(Collectors.toList());
+        
+        if (!doubleCheckActiveLoans.isEmpty()) {
+            LoanEntity mostRecentActiveLoan = doubleCheckActiveLoans.stream()
+                    .max((l1, l2) -> {
+                        if (l1.getLendAt() == null && l2.getLendAt() == null) return 0;
+                        if (l1.getLendAt() == null) return -1;
+                        if (l2.getLendAt() == null) return 1;
+                        return l1.getLendAt().compareTo(l2.getLendAt());
+                    })
+                    .orElse(doubleCheckActiveLoans.get(0));
+            
+            String responsibleName = mostRecentActiveLoan.getResponsible() != null 
+                    ? mostRecentActiveLoan.getResponsible().getFullName() 
+                    : "Unknown";
+            
+            throw new IllegalStateException("Item cannot be lent because it is currently lent to: " + responsibleName);
+        }
+
+        // If there are no active loans but the item has a responsible field set,
+        // this indicates a data inconsistency (e.g., loan was deleted from DB but item wasn't updated)
+        // Auto-fix by clearing the responsible field
+        if (item.getResponsible() != null && !item.getResponsible().trim().isEmpty()) {
+            // Data inconsistency detected: clear the responsible field
+            item.setResponsible("");
+            itemRepository.save(item);
         }
 
         LoanEntity loanEntity = LoanMapper.toEntity(request, item, user, responsible);
@@ -164,6 +219,16 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         List<LoanEntity> loans = loanRepository.findAllByResponsibleId(userId);
+        return loans.stream()
+                .map(LoanMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    public List<LoanResponse> getLoansByLenderId(Long lenderId) {
+        userRepository.findById(lenderId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        List<LoanEntity> loans = loanRepository.findAllByLenderId(lenderId);
         return loans.stream()
                 .map(LoanMapper::toDto)
                 .collect(Collectors.toList());

@@ -38,6 +38,8 @@ public interface SpringDataLoanRepository extends JpaRepository<LoanEntity, Long
     @Query("SELECT l FROM LoanEntity l WHERE l.item.inventory.institution.regional.id = :regionalId AND l.item.inventory.institution.id = :institutionId AND l.item.inventory.id = :inventoryId ORDER BY l.lendAt DESC")
     List<LoanEntity> findAllByRegionalIdAndInstitutionIdAndInventoryId(@Param("regionalId") Long regionalId, @Param("institutionId") Long institutionId, @Param("inventoryId") Long inventoryId);
 
+    @Query("SELECT l FROM LoanEntity l WHERE l.lender.id = :lenderId ORDER BY l.lendAt DESC")
+    List<LoanEntity> findAllByLenderId(@Param("lenderId") Long lenderId);
     @Query("""
             SELECT l FROM LoanEntity l
             LEFT JOIN FETCH l.item item

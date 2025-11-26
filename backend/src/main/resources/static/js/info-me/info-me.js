@@ -21,6 +21,10 @@ async function loadUserProfile() {
             const userData = await response.json();
             populateUserProfile(userData);
             updateHeaderInfo(userData);
+            // Don't call loadSidebarNavigation for USER role - user-sidebar.js handles it
+            if (userData.role !== 'USER') {
+                loadSidebarNavigation(userData.role);
+            }
             loadSidebarNavigation(userData.role);
             rewriteAdminRegionalSidebarLinks(userData.role);
             hideLoadingState();

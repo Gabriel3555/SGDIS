@@ -35,13 +35,161 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
-    <link rel="stylesheet" href="../../css/inventory-toast.css">
     <link rel="stylesheet" href="../../css/dark-mode.css">
     <link rel="stylesheet" href="../../css/notifications-bell.css">
+    <style>
+        .item-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .item-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 175, 0, 0.15);
+            border-color: #d1d5db;
+        }
+
+        .dark .item-card {
+            background: #1f2937;
+            border-color: #374151;
+        }
+
+        .dark .item-card:hover {
+            border-color: #4b5563;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            box-shadow: 0 2px 4px rgba(6, 95, 70, 0.1);
+            border-radius: 9999px;
+        }
+
+        .dark .status-active {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            color: #d1fae5;
+            border-color: #10b981;
+        }
+
+        .status-inactive {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            box-shadow: 0 2px 4px rgba(153, 27, 27, 0.1);
+            border-radius: 9999px;
+        }
+
+        .dark .status-inactive {
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+            color: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .item-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 0.75rem;
+            border: 2px solid #e5e7eb;
+        }
+
+        .dark .item-image {
+            border-color: #374151;
+        }
+    </style>
 </head>
 
 <body>
-
+    <script>
+        // Replace sidebar with user sidebar immediately if user route
+        (function() {
+            const path = window.location.pathname;
+            const isUserRoute = path.includes('/user/') || 
+                               path.includes('/dashboard/user') || 
+                               path === '/info-me' ||
+                               path.includes('/info-me');
+            
+            if (isUserRoute) {
+                function buildUserSidebarHTML(currentPath) {
+                    return `
+                        <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/dashboard' || currentPath === '/dashboard/user' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/dashboard')">
+                            <i class="fas fa-chart-line text-lg"></i>
+                            <span class="font-medium">Dashboard</span>
+                        </a>
+                        <a href="/user/my-inventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/my-inventories' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/my-inventories')">
+                            <i class="fas fa-boxes text-lg"></i>
+                            <span class="font-medium">Mis Inventarios</span>
+                        </a>
+                        <a href="/user/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/notifications' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/notifications')">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="font-medium">Notificaciones</span>
+                        </a>
+                        <a href="/user/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/loans' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/loans')">
+                            <i class="fas fa-hand-holding text-lg"></i>
+                            <span class="font-medium">Préstamos</span>
+                        </a>
+                        <a href="/user/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/verification' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/verification')">
+                            <i class="fas fa-clipboard-check text-lg"></i>
+                            <span class="font-medium">Verificación</span>
+                        </a>
+                        <a href="/user/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/transfers' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/transfers')">
+                            <i class="fas fa-exchange-alt text-lg"></i>
+                            <span class="font-medium">Transferencias</span>
+                        </a>
+                        <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/info-me' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/info-me')">
+                            <i class="fas fa-user-circle text-lg"></i>
+                            <span class="font-medium">Mi Perfil</span>
+                        </a>`;
+                }
+                
+                function replaceSidebarWithUser() {
+                    const nav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
+                    if (nav) {
+                        nav.innerHTML = buildUserSidebarHTML(window.location.pathname);
+                        return true;
+                    }
+                    return false;
+                }
+                
+                if (!replaceSidebarWithUser()) {
+                    const observer = new MutationObserver(function(mutations, obs) {
+                        if (replaceSidebarWithUser()) {
+                            obs.disconnect();
+                        }
+                    });
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', replaceSidebarWithUser);
+                    }
+                }
+            }
+        })();
+    </script>
     <!-- Overlay for mobile -->
     <div class="overlay" id="overlay"
         style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
@@ -51,240 +199,141 @@
     <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar"
         style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
         <!-- Sidebar header -->
-        <div class="p-6 border-b border-gray-200">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center gap-2">
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
                     <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
-                <div class="text-gray-800">
+                <div class="text-gray-800 dark:text-gray-100">
                     <div class="font-bold text-lg">SGDIS</div>
-                    <div class="text-xs opacity-70">Items</div>
+                    <div class="text-xs opacity-70">Items del Inventario</div>
                 </div>
             </div>
         </div>
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
-                <i class="fas fa-chart-line text-lg"></i>
-                <span class="font-medium">Dashboard</span>
-            </a>
-            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/inventory')">
-                <i class="fas fa-boxes text-lg"></i>
-                <span class="font-medium">Inventario</span>
-            </a>
-            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/users')">
-                <i class="fas fa-users text-lg"></i>
-                <span class="font-medium">Usuarios</span>
-            </a>
-            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/centers')">
-                <i class="fas fa-building text-lg"></i>
-                <span class="font-medium">Centros</span>
-            </a>
-            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/verification')">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </a>
-            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/loans')">
-                <i class="fas fa-hand-holding text-lg"></i>
-                <span class="font-medium">Préstamos</span>
-            </a>
-            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/reports')">
-                <i class="fas fa-chart-bar text-lg"></i>
-                <span class="font-medium">Reportes</span>
-            </a>
-            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/auditory')">
-                <i class="fas fa-clipboard-list text-lg"></i>
-                <span class="font-medium">Auditoría</span>
-            </a>
-            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/notifications')">
-                <i class="fas fa-bell text-lg"></i>
-                <span class="font-medium">Notificaciones</span>
-            </a>
-            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-exchange-alt text-lg"></i>
-                <span class="font-medium">Importar/Exportar</span>
-            </a>
-            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/settings')">
-                <i class="fas fa-sliders-h text-lg"></i>
-                <span class="font-medium">Configuración</span>
-            </a>
-            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/info-me')">
-                <i class="fas fa-user-circle text-lg"></i>
-                <span class="font-medium">Mi Perfil</span>
-            </a>
+            <!-- Content will be replaced by script -->
         </nav>
 
         <!-- Logout button -->
-        <div class="p-4 border-t border-gray-200 mt-auto">
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700 mt-auto">
             <button onclick="logout()"
-                class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
+                class="w-full flex items-center justify-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold py-3 px-4 rounded-xl transition-colors">
                 <i class="fas fa-sign-out-alt text-lg"></i>
                 <span>Cerrar Sesión</span>
             </button>
         </div>
-
     </aside>
 
     <!-- Main Content -->
     <div class="main-content min-h-screen">
         <!-- Header -->
-        <header class="bg-white shadow-sm sticky top-0 z-50">
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
+                    <button class="sidebar-toggle text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-colors" id="menuToggle">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
-                    <button onclick="goBackToInventory()"
-                        class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                        <i class="fas fa-arrow-left"></i>
-                        <span>Volver al Inventario</span>
-                    </button>
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="goBack()" class="text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-colors">
+                                <i class="fas fa-arrow-left text-xl"></i>
+                            </button>
+                            <div>
+                                <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="inventoryName">Items del Inventario</h1>
+                                <p class="text-sm text-gray-500 dark:text-gray-400" id="inventoryLocation"></p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <button onclick="showNewItemModal()"
-                        class="bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
-                        <i class="fas fa-plus mr-2"></i>
-                        Nuevo Item
-                    </button>
-
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
-
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
                         <div class="hidden sm:block">
-                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
-                            <div class="text-xs text-gray-500" id="headerUserRole"></div>
+                            <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400" id="headerUserRole"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Items Management Content -->
+        <!-- Content -->
         <main class="p-6">
-            <!-- Header Section -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Gestión de Items</h1>
-                    <p class="text-gray-600" id="itemsWelcomeMessage">Administración de items del inventario</p>
-                    <div class="mt-2 flex items-center gap-2 text-sm text-gray-600">
-                        <i class="fas fa-box text-[#00AF00]"></i>
-                        <span id="inventoryNameDisplay">Inventario</span>
-                    </div>
-                </div>
-                <button onclick="loadItemsData()"
-                    class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
-                    <span id="refreshText">Actualizar</span>
-                </button>
-            </div>
-
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="itemsStatsContainer">
-                <!-- Loading State -->
-                <div class="stat-card animate-pulse">
+            <!-- Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+                <div class="stat-card">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Total Items</p>
+                            <p class="text-3xl font-bold text-gray-800 dark:text-gray-100" id="totalItems">0</p>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                            <i class="fas fa-box text-green-600 dark:text-green-400 text-xl"></i>
+                        </div>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-32"></div>
                 </div>
-                <div class="stat-card animate-pulse">
+                <div class="stat-card">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-12"></div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Items Activos</p>
+                            <p class="text-3xl font-bold text-gray-800 dark:text-gray-100" id="activeItems">0</p>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                            <i class="fas fa-check-circle text-blue-600 dark:text-blue-400 text-xl"></i>
+                        </div>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-28"></div>
                 </div>
-                <div class="stat-card animate-pulse">
+                <div class="stat-card">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <div class="h-4 bg-gray-200 rounded w-16 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-12"></div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Items Inactivos</p>
+                            <p class="text-3xl font-bold text-gray-800 dark:text-gray-100" id="inactiveItems">0</p>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
-                    </div>
-                    <div class="h-3 bg-gray-200 rounded w-20"></div>
-                </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-12"></div>
+                        <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center">
+                            <i class="fas fa-times-circle text-red-600 dark:text-red-400 text-xl"></i>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-24"></div>
                 </div>
             </div>
 
-            <!-- Search and Filter Section -->
-            <div class="flex flex-col sm:flex-row gap-4 mb-6" id="searchFilterContainer">
-                <!-- Dynamic content loaded by JavaScript -->
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-green-600 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400">Cargando items...</p>
             </div>
 
-            <!-- View Mode Buttons -->
-            <div id="viewModeButtonsContainer" class="mb-4">
-                <!-- Dynamic content loaded by JavaScript -->
+            <!-- Items Grid -->
+            <div id="itemsContainer" class="stat-card" style="display: none;">
+                <!-- Items will be loaded here -->
             </div>
 
-            <!-- Items Content -->
-            <div class="stat-card" id="itemsContainer">
-                <!-- Loading State -->
-                <div class="animate-pulse">
-                    <div class="space-y-4">
-                        <div class="h-32 bg-gray-200 rounded-xl"></div>
-                        <div class="h-32 bg-gray-200 rounded-xl"></div>
-                        <div class="h-32 bg-gray-200 rounded-xl"></div>
-                    </div>
-                </div>
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-12" style="display: none;">
+                <i class="fas fa-inbox text-6xl text-gray-400 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">No hay items</h3>
+                <p class="text-gray-600 dark:text-gray-400">Este inventario no tiene items registrados.</p>
             </div>
 
             <!-- Pagination -->
-            <div class="flex items-center justify-between mt-6" id="itemsPaginationContainer">
-                <!-- Loading State -->
-                <div class="animate-pulse">
-                    <div class="h-4 bg-gray-200 rounded w-32"></div>
-                </div>
-                <div class="flex gap-2 animate-pulse">
-                    <div class="h-10 bg-gray-200 rounded w-10"></div>
-                    <div class="h-10 bg-gray-200 rounded w-10"></div>
-                    <div class="h-10 bg-gray-200 rounded w-10"></div>
-                    <div class="h-10 bg-gray-200 rounded w-10"></div>
-                </div>
+            <div class="flex items-center justify-center gap-2 mt-6" id="paginationContainer" style="display: none;">
+                <!-- Pagination buttons will be loaded here -->
             </div>
         </main>
     </div>
 
     <!-- View Item Modal -->
     <div id="viewItemModal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4 dark:bg-opacity-70"
         style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Detalles del Item</h2>
-                <button onclick="closeViewItemModal()" class="text-gray-400 hover:text-gray-600">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Detalles del Item</h2>
+                <button onclick="closeViewItemModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
@@ -293,14 +342,10 @@
                 <!-- Content loaded dynamically -->
             </div>
 
-            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
                 <button onclick="closeViewItemModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cerrar
-                </button>
-                <button onclick="showEditItemModal()"
-                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                    Editar
                 </button>
             </div>
         </div>
@@ -308,12 +353,12 @@
 
     <!-- New Item Modal -->
     <div id="newItemModal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4 dark:bg-opacity-70"
         style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Nuevo Item</h2>
-                <button onclick="closeNewItemModal()" class="text-gray-400 hover:text-gray-600">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Nuevo Item</h2>
+                <button onclick="closeNewItemModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
@@ -326,12 +371,12 @@
 
     <!-- Edit Item Modal -->
     <div id="editItemModal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4 dark:bg-opacity-70"
         style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Editar Item</h2>
-                <button onclick="closeEditItemModal()" class="text-gray-400 hover:text-gray-600">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Editar Item</h2>
+                <button onclick="closeEditItemModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
@@ -343,25 +388,25 @@
     </div>
 
     <!-- Delete Item Modal -->
-    <div id="deleteItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+    <div id="deleteItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden dark:bg-opacity-70"
         style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-red-600">Eliminar Item</h2>
-                <button onclick="closeDeleteItemModal()" class="text-gray-400 hover:text-gray-600">
+                <h2 class="text-2xl font-bold text-red-600 dark:text-red-400">Eliminar Item</h2>
+                <button onclick="closeDeleteItemModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
 
             <div class="text-center mb-6">
                 <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro?</h3>
-                <p class="text-gray-600" id="deleteItemMessage">Esta acción no se puede deshacer.</p>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">¿Está seguro?</h3>
+                <p class="text-gray-600 dark:text-gray-400" id="deleteItemMessage">Esta acción no se puede deshacer.</p>
             </div>
 
             <div class="flex gap-3">
                 <button onclick="closeDeleteItemModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cancelar
                 </button>
                 <button onclick="confirmDeleteItem()"
@@ -373,7 +418,7 @@
     </div>
 
     <!-- Lend Item Modal -->
-    <div id="lendItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+    <div id="lendItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden dark:bg-opacity-70"
         style="z-index: 9999;">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
@@ -407,16 +452,6 @@
                     <textarea id="lendDetails" rows="3"
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
                         placeholder="Motivo del préstamo u observaciones adicionales..."></textarea>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Opcional: Agrega información adicional sobre el préstamo</p>
-                </div>
-
-                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
-                    <div class="flex items-start gap-2">
-                        <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 mt-1"></i>
-                        <p class="text-sm text-blue-800 dark:text-blue-300">
-                            El item será prestado y quedará registrado en el sistema. Asegúrate de que el responsable esté informado.
-                        </p>
-                    </div>
                 </div>
 
                 <div class="flex gap-3 pt-4">
@@ -435,7 +470,7 @@
     </div>
 
     <!-- Transfer Item Modal -->
-    <div id="transferItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+    <div id="transferItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden dark:bg-opacity-70"
         style="z-index: 9999;">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
@@ -456,9 +491,7 @@
                     <select id="transferDestinationInventory" required
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
                         <option value="">Seleccionar inventario...</option>
-                        <!-- Options loaded dynamically -->
                     </select>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecciona el inventario al que deseas transferir el item</p>
                 </div>
 
                 <div>
@@ -466,16 +499,6 @@
                     <textarea id="transferDetails" rows="3"
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
                         placeholder="Motivo de la transferencia u observaciones adicionales..."></textarea>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Opcional: Agrega información adicional sobre la transferencia</p>
-                </div>
-
-                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl p-4">
-                    <div class="flex items-start gap-2">
-                        <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 mt-1"></i>
-                        <p class="text-sm text-blue-800 dark:text-blue-300">
-                            La transferencia quedará en estado <span class="font-semibold">PENDIENTE</span> hasta que sea aprobada por el responsable del inventario de destino.
-                        </p>
-                    </div>
                 </div>
 
                 <div class="flex gap-3 pt-4">
@@ -484,9 +507,9 @@
                         Cancelar
                     </button>
                     <button type="submit"
-                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        class="flex-1 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-colors">
                         <i class="fas fa-exchange-alt mr-2"></i>
-                        Solicitar Transferencia
+                        Transferir Item
                     </button>
                 </div>
             </form>
@@ -494,7 +517,7 @@
     </div>
 
     <!-- Approve Transfer Modal -->
-    <div id="approveTransferModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+    <div id="approveTransferModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4 dark:bg-opacity-70"
         style="z-index: 9999;">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-2xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
@@ -505,7 +528,6 @@
             </div>
 
             <div id="approveTransferContent" class="space-y-4">
-                <!-- Content loaded dynamically -->
                 <div class="flex items-center justify-center py-8">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AF00]"></div>
                 </div>
@@ -521,7 +543,7 @@
     </div>
 
     <!-- Item Transfer History Modal -->
-    <div id="itemTransferHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+    <div id="itemTransferHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4 dark:bg-opacity-70"
         style="z-index: 9999;">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
@@ -535,7 +557,6 @@
             </div>
 
             <div id="itemTransferHistoryContent" class="space-y-4">
-                <!-- Content loaded dynamically -->
                 <div class="flex items-center justify-center py-8">
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AF00]"></div>
                 </div>
@@ -551,7 +572,7 @@
     </div>
 
     <!-- Item Loans History Modal -->
-    <div id="itemLoansHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+    <div id="itemLoansHistoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4 dark:bg-opacity-70"
         style="z-index: 9999;">
         <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-5xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
@@ -612,9 +633,8 @@
             </div>
 
             <div id="itemLoansHistoryContent" class="space-y-4">
-                <!-- Content loaded dynamically -->
                 <div class="flex items-center justify-center py-8">
-                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-600"></div>
+                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AF00]"></div>
                 </div>
             </div>
 
@@ -627,89 +647,22 @@
         </div>
     </div>
 
-    <!-- Logout Confirmation Modal -->
-    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
-        style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
-                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-
-            <div class="text-center mb-6">
-                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
-                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
-            </div>
-
-            <div class="flex gap-3">
-                <button onclick="closeLogoutModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
-                    Cancelar
-                </button>
-                <button onclick="confirmLogout()"
-                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                    Cerrar Sesión
-                </button>
-            </div>
-        </div>
-    </div>
-
+    <script src="../../js/user-sidebar.js"></script>
     <script src="../../js/dashboard.js"></script>
-    <!-- Items Module Scripts -->
+    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
     <script src="../../js/inventory/items/items-data.js"></script>
     <script src="../../js/inventory/items/items-api.js"></script>
     <script src="../../js/inventory/items/items-ui.js"></script>
     <script src="../../js/inventory/items/items-modals.js"></script>
     <script src="../../js/inventory/items/items-forms.js"></script>
-    <script src="../../js/inventory/inventory-toast.js"></script>
-    <script src="../../js/inventory/inventory-api.js"></script>
-    <script src="../../js/inventory/inventory-ui.js"></script>
-    <script src="../../js/users/users-api.js"></script>
-    <script src="../../js/notifications-bell.js"></script>
+    <script src="../../js/inventory/user-inventory-items.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
         .main-content {
             margin-left: 280px;
             transition: margin-left 0.3s ease;
-        }
-
-        /* Header user avatar styles */
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 14px;
-            overflow: hidden;
-        }
-
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        /* Image loading spinner */
-        .image-loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 175, 0, 0.2);
-            border-top-color: #00AF00;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
         }
 
         /* Responsive adjustments */
@@ -738,29 +691,27 @@
     </style>
 
     <script>
-        // Handle sidebar click with debounce
+        // Handle sidebar click
         function handleSidebarClick(event, link) {
             if (link === '#') {
                 event.preventDefault();
                 return;
             }
-
             event.preventDefault();
-
             if (window.innerWidth <= 1024) {
                 const sidebar = document.getElementById('sidebar');
                 const overlay = document.getElementById('overlay');
                 if (sidebar) sidebar.classList.remove('active');
                 if (overlay) overlay.classList.remove('active');
             }
-
             if (link.startsWith('/')) {
-                if (typeof debouncedNavigate === 'function') {
-                    debouncedNavigate(link);
-                } else {
-                    window.location.href = link;
-                }
+                window.location.href = link;
             }
+        }
+
+        // Go back function
+        function goBack() {
+            window.location.href = '/user/my-inventories';
         }
 
         // Setup mobile menu toggle
@@ -771,98 +722,31 @@
 
             if (menuToggle && sidebar && overlay) {
                 menuToggle.addEventListener('click', function () {
-                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+                    sidebar.classList.toggle('active');
+                    overlay.classList.toggle('active');
+                });
 
-                    if (isHidden) {
-                        sidebar.style.transform = 'translateX(0)';
-                        overlay.style.display = 'block';
-                    } else {
-                        sidebar.style.transform = 'translateX(-100%)';
-                        overlay.style.display = 'none';
-                    }
+                overlay.addEventListener('click', function () {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('active');
                 });
             }
         }
 
-        // Initialize mobile menu toggle when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
         });
 
-        // Logout function - shows confirmation modal
+        // Logout function
         function logout() {
-            const modal = document.getElementById('logoutModal');
-            if (modal) {
-                modal.classList.remove('hidden');
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                localStorage.removeItem('jwt');
+                window.location.href = '/';
             }
         }
-
-        // Close logout modal
-        function closeLogoutModal() {
-            const modal = document.getElementById('logoutModal');
-            if (modal) {
-                modal.classList.add('hidden');
-            }
-        }
-
-        // Confirm logout - actually logs out
-        function confirmLogout() {
-            localStorage.removeItem('jwt');
-            window.location.href = '/';
-        }
-
-        // Go back to inventory view
-        function goBackToInventory() {
-            const inventoryId = sessionStorage.getItem('currentInventoryId');
-            if (inventoryId) {
-                // Navigate back to inventory page
-                // The inventory page will check for viewInventory parameter and open the modal
-                window.location.href = `/superadmin/inventory?viewInventory=${inventoryId}`;
-            } else {
-                window.location.href = '/superadmin/inventory';
-            }
-        }
-
-        window.goBackToInventory = goBackToInventory;
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', async function () {
-            // Get inventory ID from URL or sessionStorage
-            const urlParams = new URLSearchParams(window.location.search);
-            const inventoryId = urlParams.get('inventoryId') || sessionStorage.getItem('currentInventoryId');
-
-            if (inventoryId) {
-                if (window.itemsData) {
-                    window.itemsData.currentInventoryId = parseInt(inventoryId, 10);
-                }
-
-                // Load inventory name
-                try {
-                    if (window.getInventoryById) {
-                        const inventory = await window.getInventoryById(parseInt(inventoryId, 10));
-                        const inventoryNameElement = document.getElementById('inventoryNameDisplay');
-                        if (inventoryNameElement && inventory) {
-                            inventoryNameElement.textContent = inventory.name || 'Inventario';
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error loading inventory name:', error);
-                }
-
-                // Load items
-                if (window.loadItemsData) {
-                    await window.loadItemsData();
-                }
-            }
-
-            // Load user info in header
-            if (window.loadCurrentUserInfo) {
-                await window.loadCurrentUserInfo();
-            } else if (window.updateUserInfoDisplay) {
-                window.updateUserInfoDisplay();
-            }
-        });
     </script>
+
 </body>
 
 </html>
+
