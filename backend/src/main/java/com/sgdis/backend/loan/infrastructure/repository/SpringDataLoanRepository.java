@@ -1,6 +1,8 @@
 package com.sgdis.backend.loan.infrastructure.repository;
 
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,4 +37,16 @@ public interface SpringDataLoanRepository extends JpaRepository<LoanEntity, Long
 
     @Query("SELECT l FROM LoanEntity l WHERE l.item.inventory.institution.regional.id = :regionalId AND l.item.inventory.institution.id = :institutionId AND l.item.inventory.id = :inventoryId ORDER BY l.lendAt DESC")
     List<LoanEntity> findAllByRegionalIdAndInstitutionIdAndInventoryId(@Param("regionalId") Long regionalId, @Param("institutionId") Long institutionId, @Param("inventoryId") Long inventoryId);
+
+    @Query("""
+            SELECT l FROM LoanEntity l
+            LEFT JOIN FETCH l.item item
+            LEFT JOIN FETCH item.inventory inv
+            LEFT JOIN FETCH inv.institution inst
+            LEFT JOIN FETCH l.lender
+            LEFT JOIN FETCH l.responsible
+            WHERE inst.regional.id = :regionalId
+            ORDER BY l.lendAt DESC
+            """)
+    Page<LoanEntity> findAllByRegionalIdPaged(@Param("regionalId") Long regionalId, Pageable pageable);
 }

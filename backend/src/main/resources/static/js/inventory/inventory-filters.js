@@ -1,13 +1,16 @@
 function filterInventories() {
-    if (!inventoryData.inventories || !Array.isArray(inventoryData.inventories)) {
+    // Use window.inventoryData if available, otherwise fallback to inventoryData
+    const data = window.inventoryData || inventoryData;
+    
+    if (!data || !data.inventories || !Array.isArray(data.inventories)) {
         return;
     }
 
-    let filtered = [...inventoryData.inventories];
+    let filtered = [...data.inventories];
 
     // Filter by search term
-    if (inventoryData.searchTerm && inventoryData.searchTerm.trim() !== '') {
-        const searchLower = inventoryData.searchTerm.toLowerCase().trim();
+    if (data.searchTerm && data.searchTerm.trim() !== '') {
+        const searchLower = data.searchTerm.toLowerCase().trim();
 
         filtered = filtered.filter(inventory => {
             let matches = false;
@@ -47,15 +50,15 @@ function filterInventories() {
     }
 
     // Filter by location
-    if (inventoryData.selectedLocation !== 'all') {
-        filtered = filtered.filter(inventory => inventory.location === inventoryData.selectedLocation);
+    if (data.selectedLocation !== 'all') {
+        filtered = filtered.filter(inventory => inventory.location === data.selectedLocation);
     }
 
     // Filter by status (for future use when status field is added)
-    if (inventoryData.selectedStatus !== 'all') {
+    if (data.selectedStatus !== 'all') {
         // For now, we'll assume all inventories are active
         // When status field is added to the backend, this will work properly
-        const isActive = inventoryData.selectedStatus === 'active';
+        const isActive = data.selectedStatus === 'active';
         filtered = filtered.filter(inventory => {
             // For now, all inventories are considered active
             // This will be updated when the backend provides status information
@@ -64,8 +67,30 @@ function filterInventories() {
         });
     }
 
-    inventoryData.filteredInventories = filtered;
-    inventoryData.currentPage = 1;
+    // Filter by institution (for admin_regional and superadmin)
+    const selectedInstitution = data.selectedInstitution || '';
+    if (selectedInstitution && selectedInstitution !== '') {
+        filtered = filtered.filter(inventory => {
+            // Check multiple possible fields for institution ID
+            const inventoryInstitutionId = inventory.institutionId || 
+                                          inventory.institution?.id || 
+                                          (inventory.institution && inventory.institution.id ? inventory.institution.id.toString() : null);
+            
+            if (inventoryInstitutionId) {
+                return inventoryInstitutionId.toString() === selectedInstitution.toString();
+            }
+            return false;
+        });
+    }
+
+    data.filteredInventories = filtered;
+    data.currentPage = 1;
+    
+    // Also update local inventoryData reference if different
+    if (inventoryData && inventoryData !== data) {
+        inventoryData.filteredInventories = filtered;
+        inventoryData.currentPage = 1;
+    }
 
     setTimeout(() => {
         if (typeof updateInventoryTable === 'function') {

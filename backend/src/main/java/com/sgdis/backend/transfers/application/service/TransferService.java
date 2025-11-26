@@ -16,6 +16,7 @@ import com.sgdis.backend.transfers.application.port.in.ApproveTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetAllTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
+import com.sgdis.backend.transfers.application.port.in.GetRegionalTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.RequestTransferUseCase;
 import com.sgdis.backend.transfers.domain.TransferStatus;
 import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class TransferService implements ApproveTransferUseCase, RequestTransferUseCase, GetInventoryTransfersUseCase,
-        GetItemTransfersUseCase, GetAllTransfersUseCase {
+        GetItemTransfersUseCase, GetAllTransfersUseCase, GetRegionalTransfersUseCase {
 
     private final AuthService authService;
     private final SpringDataTransferRepository transferRepository;
@@ -318,6 +319,29 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                 content,
                 pageable,
                 transferIds.getTotalElements()
+        );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TransferSummaryResponse> getTransfersByRegional(Long regionalId, Pageable pageable) {
+        if (regionalId == null) {
+            throw new DomainValidationException("El id de la regional es obligatorio");
+        }
+
+        // Obtener transferencias paginadas por regional
+        Page<TransferEntity> transferPage = transferRepository.findAllByRegionalId(regionalId, pageable);
+        
+        // Convertir a DTOs
+        List<TransferSummaryResponse> content = transferPage.getContent().stream()
+                .map(TransferMapper::toSummaryResponse)
+                .collect(Collectors.toList());
+        
+        // Retornar página con el contenido
+        return new org.springframework.data.domain.PageImpl<>(
+                content,
+                pageable,
+                transferPage.getTotalElements()
         );
     }
 

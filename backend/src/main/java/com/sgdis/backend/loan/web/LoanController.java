@@ -24,9 +24,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -257,6 +262,33 @@ public class LoanController {
                 .collect(java.util.stream.Collectors.toList());
         
         return ResponseEntity.ok(loanResponses);
+    }
+
+    @GetMapping("/regional/{regionalId}")
+    @Operation(
+            summary = "Get loans by regional",
+            description = "Retrieves all loans from items belonging to inventories within institutions in the specified regional with pagination"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Loans retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @ApiResponse(responseCode = "404", description = "Regional not found")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    public ResponseEntity<Page<LoanResponse>> getLoansByRegional(
+            @Parameter(description = "Regional ID", required = true)
+            @PathVariable Long regionalId,
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "lendAt"));
+        Page<LoanEntity> loanPage = loanRepository.findAllByRegionalIdPaged(regionalId, pageable);
+        Page<LoanResponse> responsePage = loanPage.map(LoanMapper::toDto);
+        return ResponseEntity.ok(responsePage);
     }
 
 }

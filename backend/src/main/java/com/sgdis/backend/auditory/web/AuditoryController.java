@@ -45,5 +45,31 @@ public class AuditoryController {
         Pageable pageable = PageRequest.of(page, size);
         return listAuditoryUseCase.listAuditories(pageable);
     }
+
+    @Operation(
+            summary = "List auditory records by regional",
+            description = "Retrieves all auditory records for a specific regional with pagination"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Auditory records retrieved successfully",
+            content = @Content(schema = @Schema(implementation = PagedAuditoryResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @ApiResponse(responseCode = "404", description = "Regional not found")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/regional/{regionalId}")
+    public PagedAuditoryResponse listAuditoriesByRegional(
+            @Parameter(description = "Regional ID", required = true)
+            @org.springframework.web.bind.annotation.PathVariable Long regionalId,
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ((com.sgdis.backend.auditory.application.service.AuditoryService) listAuditoryUseCase)
+                .listAuditoriesByRegional(regionalId, pageable);
+    }
 }
 

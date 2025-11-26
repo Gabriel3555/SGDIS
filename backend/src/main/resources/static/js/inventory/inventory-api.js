@@ -57,7 +57,9 @@ async function loadCurrentUserInfo() {
             const userData = await response.json();
             window.currentUserData = userData;
             window.currentUserRole = userData.role;
-            updateUserInfoDisplay(userData);
+            if (typeof updateUserInfoDisplay === 'function') {
+                updateUserInfoDisplay(userData);
+            }
             
             // If super admin or admin_regional, trigger filter update to show filters
             if (userData.role && (userData.role.toUpperCase() === 'SUPERADMIN' || userData.role.toUpperCase() === 'ADMIN_REGIONAL')) {
@@ -78,11 +80,13 @@ async function loadCurrentUserInfo() {
         if (path.includes('/superadmin')) {
             window.currentUserRole = 'SUPERADMIN';
         }
-        updateUserInfoDisplay({
-            fullName: 'Super Admin',
-            role: 'ADMIN',
-            email: 'admin@sena.edu.co'
-        });
+        if (typeof updateUserInfoDisplay === 'function') {
+            updateUserInfoDisplay({
+                fullName: 'Super Admin',
+                role: 'ADMIN',
+                email: 'admin@sena.edu.co'
+            });
+        }
     }
 }
 
@@ -873,11 +877,51 @@ async function loadRegionalsForFilter() {
     }
 }
 
+// Helper function to populate native select with institutions
+function populateSelectWithInstitutions(selectElement, institutions, currentInstitution) {
+    console.log('populateSelectWithInstitutions called');
+    console.log('Select element:', selectElement);
+    console.log('Institutions to add:', institutions);
+    console.log('Current options count:', selectElement.options.length);
+    
+    // Clear existing options except the first one (which should be "Todos los centros")
+    while (selectElement.options.length > 1) {
+        selectElement.remove(1);
+    }
+    
+    console.log('After clearing, options count:', selectElement.options.length);
+    
+    // Add institutions as options
+    if (institutions && Array.isArray(institutions) && institutions.length > 0) {
+        institutions.forEach((institution, index) => {
+            const option = document.createElement('option');
+            option.value = institution.id ? institution.id.toString() : '';
+            option.textContent = institution.name || `Institución ${institution.id || index}`;
+            selectElement.appendChild(option);
+            console.log(`Added option ${index + 1}:`, option.value, option.textContent);
+        });
+        
+        console.log(`Total options in select after adding: ${selectElement.options.length}`);
+        console.log(`Successfully added ${institutions.length} institutions to native select`);
+    } else {
+        console.warn('No institutions to add or institutions array is empty');
+    }
+    
+    // Set current value if exists
+    if (currentInstitution) {
+        selectElement.value = currentInstitution;
+    }
+}
+
 // Load institutions for filter dropdown based on selected regional (super admin only)
 async function loadInstitutionsForFilter(regionalId) {
+    console.log('=== loadInstitutionsForFilter called ===');
+    console.log('regionalId:', regionalId);
+    
     // Only run on inventory page, not on items page
     const path = window.location.pathname || '';
     if (path.includes('/items')) {
+        console.log('Skipping - on items page');
         return; // Don't run on items page
     }
     
@@ -891,23 +935,66 @@ async function loadInstitutionsForFilter(regionalId) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
+        console.log('Fetching institutions from API...');
         const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
             method: 'GET',
             headers: headers
         });
 
+        console.log('API response status:', response.status);
+
         if (response.ok) {
             const institutions = await response.json();
+            console.log('Institutions received:', institutions);
+            console.log('Institutions type:', typeof institutions);
+            console.log('Is array?', Array.isArray(institutions));
+            console.log('Institutions length:', institutions ? institutions.length : 0);
             
-            // Use CustomSelect if available, otherwise fallback to native select
-            if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
-                // Safely get inventoryData
-                const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
-                const currentInstitution = inventoryDataRef?.selectedInstitution || '';
+            // Safely get inventoryData
+            const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
+            const currentInstitution = inventoryDataRef?.selectedInstitution || '';
+            
+            // Store institutions globally for console logging
+            window.currentUserInstitutions = institutions;
+            
+            console.log('About to check if institutions array is valid...');
+            if (institutions && Array.isArray(institutions) && institutions.length > 0) {
+                console.log('Institutions array is valid, proceeding...');
+                const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                                       (window.location.pathname && window.location.pathname.includes('/admin_regional'));
                 
-                if (institutions && Array.isArray(institutions) && institutions.length > 0) {
-                    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
-                                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+                console.log('isAdminRegional:', isAdminRegional);
+                
+                // Check if it's a native select (admin_regional) or CustomSelect (superadmin)
+                // IMPORTANT: Check native select FIRST before checking CustomSelect
+                console.log('About to get select element by ID...');
+                let institutionSelect = document.getElementById("inventoryInstitutionFilterSelect");
+                
+                console.log('Looking for select element. Found:', institutionSelect);
+                console.log('Select tagName:', institutionSelect ? institutionSelect.tagName : 'null');
+                console.log('isAdminRegional:', isAdminRegional);
+                
+                // If not found, wait a bit and try again (select might not be created yet)
+                if (!institutionSelect) {
+                    console.log('Select not found, waiting 500ms and retrying...');
+                    setTimeout(() => {
+                        institutionSelect = document.getElementById("inventoryInstitutionFilterSelect");
+                        console.log('Retry - Select found:', institutionSelect);
+                        if (institutionSelect && institutionSelect.tagName === 'SELECT') {
+                            populateSelectWithInstitutions(institutionSelect, institutions, currentInstitution);
+                        } else {
+                            console.error('Select still not found after retry or is not a SELECT element');
+                        }
+                    }, 500);
+                    return;
+                }
+                
+                // Check if it's a native select first (for admin_regional)
+                if (institutionSelect && institutionSelect.tagName === 'SELECT') {
+                    console.log('Using native select for admin_regional');
+                    populateSelectWithInstitutions(institutionSelect, institutions, currentInstitution);
+                } else if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
+                    // CustomSelect for superadmin
                     const defaultLabel = isAdminRegional ? 'Todos los centros' : 'Todas las instituciones';
                     
                     const options = [
@@ -920,11 +1007,6 @@ async function loadInstitutionsForFilter(regionalId) {
                     
                     window.inventoryInstitutionFilterSelect.setOptions(options);
                     
-                    // Enable the CustomSelect
-                    if (typeof window.inventoryInstitutionFilterSelect.setDisabled === 'function') {
-                        window.inventoryInstitutionFilterSelect.setDisabled(false);
-                    }
-                    
                     // Set current value if exists
                     if (currentInstitution) {
                         setTimeout(() => {
@@ -934,75 +1016,36 @@ async function loadInstitutionsForFilter(regionalId) {
                         }, 50);
                     }
                 } else {
-                    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
-                                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+                    console.error('No valid select element or CustomSelect instance found');
+                }
+            } else {
+                // No institutions or empty array
+                console.log('No institutions to add or array is empty');
+                const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                                       (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+                
+                // Handle empty institutions for native select
+                const institutionSelect = document.getElementById("inventoryInstitutionFilterSelect");
+                if (institutionSelect && institutionSelect.tagName === 'SELECT') {
+                    // Native select - clear options except first one
+                    while (institutionSelect.options.length > 1) {
+                        institutionSelect.remove(1);
+                    }
                     const noInstitutionsLabel = isAdminRegional ? 'No hay centros disponibles' : 'No hay instituciones disponibles';
-                    
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = noInstitutionsLabel;
+                    option.disabled = true;
+                    institutionSelect.appendChild(option);
+                } else if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
+                    // CustomSelect
+                    const noInstitutionsLabel = isAdminRegional ? 'No hay centros disponibles' : 'No hay instituciones disponibles';
                     window.inventoryInstitutionFilterSelect.setOptions([
                         { value: '', label: noInstitutionsLabel, disabled: true }
                     ]);
-                    // Disable if no institutions
                     if (typeof window.inventoryInstitutionFilterSelect.setDisabled === 'function') {
                         window.inventoryInstitutionFilterSelect.setDisabled(true);
                     }
-                }
-            } else {
-                // Fallback to native select (for backward compatibility)
-                const addInstitutionsToSelect = (selectElement) => {
-                    if (!selectElement) return false;
-                    
-                    while (selectElement.options.length > 1) {
-                        selectElement.remove(1);
-                    }
-                    
-                    selectElement.disabled = false;
-                    
-                    if (institutions && Array.isArray(institutions) && institutions.length > 0) {
-                        const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
-                        const currentInstitution = inventoryDataRef?.selectedInstitution || '';
-                        institutions.forEach(institution => {
-                            const option = document.createElement('option');
-                            option.value = institution.id.toString();
-                            option.textContent = institution.name || `Institución ${institution.id}`;
-                            if (currentInstitution === institution.id.toString()) {
-                                option.selected = true;
-                            }
-                            selectElement.appendChild(option);
-                        });
-                        return true;
-                    } else {
-                        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
-                                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
-                        const noInstitutionsLabel = isAdminRegional ? 'No hay centros disponibles' : 'No hay instituciones disponibles';
-                        
-                        const option = document.createElement('option');
-                        option.value = '';
-                        option.textContent = noInstitutionsLabel;
-                        option.disabled = true;
-                        selectElement.appendChild(option);
-                        return true;
-                    }
-                };
-                
-                let select = document.getElementById('institutionFilter');
-                let attempts = 0;
-                const maxAttempts = 5;
-                
-                while (!select && attempts < maxAttempts) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    select = document.getElementById('institutionFilter');
-                    attempts++;
-                }
-                
-                if (select) {
-                    addInstitutionsToSelect(select);
-                } else {
-                    setTimeout(() => {
-                        const retrySelect = document.getElementById('institutionFilter');
-                        if (retrySelect) {
-                            addInstitutionsToSelect(retrySelect);
-                        }
-                    }, 500);
                 }
             }
         } else {
@@ -1174,9 +1217,20 @@ async function handleInstitutionFilterChange(institutionId) {
     
     window.inventoryData.selectedInstitution = institutionId || '';
     
+    // Also update local inventoryData reference
+    if (inventoryData && inventoryData !== window.inventoryData) {
+        inventoryData.selectedInstitution = institutionId || '';
+    }
+    
     // Reload inventories with new filter
     window.inventoryData.currentPage = 1; // Use 1-based for UI
     await loadInventories({ page: 0 });
+    
+    // Filter inventories locally after reloading
+    if (typeof window.filterInventories === 'function') {
+        window.filterInventories();
+    }
+    
     if (typeof updateInventoryUI === 'function') {
         updateInventoryUI();
     }
@@ -1226,4 +1280,5 @@ window.loadRegionalsForFilter = loadRegionalsForFilter;
 window.loadInstitutionsForFilter = loadInstitutionsForFilter;
 window.handleRegionalFilterChange = handleRegionalFilterChange;
 window.handleInstitutionFilterChange = handleInstitutionFilterChange;
+window.loadInventoryStatistics = loadInventoryStatistics;
 window.loadInventoryStatistics = loadInventoryStatistics;

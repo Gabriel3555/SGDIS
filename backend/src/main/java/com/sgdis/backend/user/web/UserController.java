@@ -320,6 +320,55 @@ public class UserController {
     }
 
     @Operation(
+            summary = "Get users by current user's regional",
+            description = "Retrieves all users from the current user's regional with pagination, excluding SUPERADMIN role and the current user"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Users retrieved successfully",
+            content = @Content(schema = @Schema(implementation = PagedUserResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @ApiResponse(responseCode = "404", description = "Current user or regional not found")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/regional")
+    public PagedUserResponse getUsersByRegional(
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "6") int size) {
+        UserEntity currentUser = authService.getCurrentUser();
+        
+        if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+            throw new ResourceNotFoundException("Current user does not have an institution or regional assigned");
+        }
+        
+        Long regionalId = currentUser.getInstitution().getRegional().getId();
+        Long currentUserId = currentUser.getId();
+        
+        Pageable pageable = PageRequest.of(page, size);
+        org.springframework.data.domain.Page<UserEntity> userPage = userRepository.findByRegionalExcludingRoleAndCurrentUser(
+                regionalId,
+                Role.SUPERADMIN,
+                currentUserId,
+                pageable
+        );
+        
+        List<UserResponse> userResponses = userPage.getContent()
+                .stream()
+                .map(UserMapper::toResponse)
+                .toList();
+        
+        return PagedUserResponse.builder()
+                .users(userResponses)
+                .currentPage(userPage.getNumber())
+                .totalPages(userPage.getTotalPages())
+                .totalUsers(userPage.getTotalElements())
+                .pageSize(userPage.getSize())
+                .first(userPage.isFirst())
+                .last(userPage.isLast())
+                .build();
+    }
+
+    @Operation(
             summary = "Get user statistics",
             description = "Retrieves total statistics of users by role (Superadmin only)"
     )
