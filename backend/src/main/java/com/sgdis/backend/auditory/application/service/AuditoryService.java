@@ -15,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,7 +35,7 @@ public class AuditoryService implements RecordActionUseCase, ListAuditoryUseCase
                         .action(recordActionRequest.action())
                         .performer(user)
                         .institution(user.getInstitution())
-                        .date(LocalDateTime.now())
+                        .date(ZonedDateTime.now(ZoneId.of("America/Bogota")).toLocalDateTime())
                         .regional(user.getInstitution() != null ? user.getInstitution().getRegional() : null)
                         .build()
         );
