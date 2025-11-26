@@ -34,6 +34,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
     <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
 </head>
 
 <body>
@@ -153,10 +154,7 @@
                         Nueva Transferencia
                     </button>
 
-                    <div class="relative cursor-pointer">
-                        <i class="fas fa-bell text-gray-600 dark:text-gray-300 text-xl hover:text-[#00AF00] transition-colors"></i>
-                        <span class="notification-badge">3</span>
-                    </div>
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
 
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/info-me'">
@@ -271,6 +269,7 @@
     <script src="../../js/transfers/transfers-modals.js"></script>
     <script src="../../js/transfers/transfers-forms.js"></script>
     <script src="../../js/transfers/transfers.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */

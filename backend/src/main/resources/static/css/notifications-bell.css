@@ -3,7 +3,6 @@
 .notification-bell-container {
     position: relative;
     display: inline-block;
-    margin-right: 1rem;
 }
 
 .notification-bell {
@@ -41,7 +40,7 @@
     background: white;
     border-radius: 0.75rem;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: 9999;
     overflow: hidden;
 }
 
