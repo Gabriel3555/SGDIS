@@ -13,6 +13,7 @@ import com.sgdis.backend.transfers.application.dto.RequestTransferRequest;
 import com.sgdis.backend.transfers.application.dto.RequestTransferResponse;
 import com.sgdis.backend.transfers.application.dto.TransferSummaryResponse;
 import com.sgdis.backend.transfers.application.port.in.ApproveTransferUseCase;
+import com.sgdis.backend.transfers.application.port.in.GetAllTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.RequestTransferUseCase;
@@ -23,6 +24,8 @@ import com.sgdis.backend.transfers.mapper.TransferMapper;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +36,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class TransferService implements ApproveTransferUseCase, RequestTransferUseCase, GetInventoryTransfersUseCase,
-        GetItemTransfersUseCase {
+        GetItemTransfersUseCase, GetAllTransfersUseCase {
 
     private final AuthService authService;
     private final SpringDataTransferRepository transferRepository;
@@ -246,6 +249,33 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                user.getRole() == Role.ADMIN_INSTITUTION ||
                user.getRole() == Role.ADMIN_REGIONAL ||
                user.getRole() == Role.WAREHOUSE;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<TransferSummaryResponse> getAllTransfers(Pageable pageable) {
+        // Obtener IDs paginados primero
+        Page<Long> transferIds = transferRepository.findAllOrderedByRequestedAt(pageable)
+                .map(TransferEntity::getId);
+        
+        // Cargar las transferencias con todas sus relaciones usando los IDs
+        List<TransferEntity> transfers = transferIds.getContent().stream()
+                .map(id -> transferRepository.findByIdWithRelations(id))
+                .filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get)
+                .collect(Collectors.toList());
+        
+        // Convertir a DTOs
+        List<TransferSummaryResponse> content = transfers.stream()
+                .map(TransferMapper::toSummaryResponse)
+                .collect(Collectors.toList());
+        
+        // Crear Page con el contenido y la información de paginación
+        return new org.springframework.data.domain.PageImpl<>(
+                content,
+                pageable,
+                transferIds.getTotalElements()
+        );
     }
 
     /**
