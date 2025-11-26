@@ -142,8 +142,8 @@ const NotificationBell = {
                 // Detectar el prefijo de ruta según la URL actual
                 if (currentPath.includes('/admin-institution/')) {
                     notificationsPath = '/admin-institution/notifications';
-                } else if (currentPath.includes('/admin-regional/')) {
-                    notificationsPath = '/admin-regional/notifications';
+                } else if (currentPath.includes('/admin_regional/')) {
+                    notificationsPath = '/admin_regional/notifications';
                 } else if (currentPath.includes('/warehouse/')) {
                     notificationsPath = '/warehouse/notifications';
                 } else if (currentPath.includes('/user/')) {

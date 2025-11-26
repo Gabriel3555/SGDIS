@@ -239,6 +239,11 @@
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
             </a>
+            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
+            </a>
             <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/notifications')">
                 <i class="fas fa-bell text-lg"></i>
@@ -578,6 +583,28 @@
         }
 
         // Initialize mobile menu toggle when DOM is ready
+        // Rewrite sidebar links for admin_regional if needed
+        function rewriteAdminRegionalSidebarLinks(userRole) {
+            if (userRole !== 'ADMIN_REGIONAL') {
+                return;
+            }
+
+            const links = document.querySelectorAll("a.sidebar-item");
+            links.forEach((link) => {
+                const href = link.getAttribute("href");
+                if (href && href.startsWith("/superadmin")) {
+                    link.setAttribute("href", href.replace("/superadmin", "/admin_regional"));
+                    const onclickValue = link.getAttribute("onclick");
+                    if (onclickValue && onclickValue.includes("'/superadmin")) {
+                        link.setAttribute(
+                            "onclick",
+                            onclickValue.replace(/'\/superadmin/g, "'/admin_regional")
+                        );
+                    }
+                }
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
         });
