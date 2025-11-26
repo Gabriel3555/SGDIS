@@ -13,6 +13,7 @@ public class NotificationService {
 
     private final SimpMessagingTemplate messagingTemplate;
     private final PushNotificationService pushNotificationService;
+    private final NotificationPersistenceService notificationPersistenceService;
 
     /**
      * Envía una notificación a un usuario específico
@@ -50,10 +51,19 @@ public class NotificationService {
                 new InventoryNotificationData(inventoryId, inventoryName)
         );
         
-        // Enviar por WebSocket (para web y móvil activo)
+        // 1. Guardar en base de datos (para campanita)
+        notificationPersistenceService.saveNotification(
+                ownerId,
+                "INVENTORY_CREATED",
+                "Nuevo Inventario Asignado",
+                String.format("Se te ha asignado como dueño del inventario '%s'", inventoryName),
+                new InventoryNotificationData(inventoryId, inventoryName)
+        );
+        
+        // 2. Enviar por WebSocket (para web y móvil activo)
         sendNotificationToUser(ownerId, notification);
         
-        // Enviar por Push Notification (para móvil en segundo plano)
+        // 3. Enviar por Push Notification (para móvil en segundo plano)
         pushNotificationService.sendInventoryCreatedPushNotification(ownerId, inventoryName, inventoryId);
     }
 
