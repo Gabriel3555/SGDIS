@@ -87,8 +87,7 @@
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
-            <a href="/superadmin/loans"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
                 onclick="handleSidebarClick(event, '/superadmin/loans')">
                 <i class="fas fa-hand-holding text-lg"></i>
                 <span class="font-medium">Préstamos</span>
@@ -105,7 +104,7 @@
             </a>
             <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-exchange-alt text-lg"></i>
+                <i class="fas fa-file-import text-lg"></i>
                 <span class="font-medium">Importar/Exportar</span>
             </a>
             <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
@@ -136,20 +135,22 @@
         <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <button class="sidebar-toggle text-gray-600 dark:text-gray-300 hover:text-[#00AF00] transition-colors" id="menuToggle">
+                    <button
+                        class="sidebar-toggle text-gray-600 dark:text-gray-300 hover:text-[#00AF00] transition-colors"
+                        id="menuToggle">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
                     <div class="relative flex-1 max-w-xl">
                         <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                         <input type="text" id="loansSearch"
-                            placeholder="Buscar préstamos por responsable, prestador o item..."
-                            class="search-input">
+                            placeholder="Buscar préstamos por responsable, prestador o item..." class="search-input">
                     </div>
                 </div>
 
                 <div class="flex items-center gap-4">
                     <div class="relative cursor-pointer">
-                        <i class="fas fa-bell text-gray-600 dark:text-gray-300 text-xl hover:text-[#00AF00] transition-colors"></i>
+                        <i
+                            class="fas fa-bell text-gray-600 dark:text-gray-300 text-xl hover:text-[#00AF00] transition-colors"></i>
                         <span class="notification-badge">3</span>
                     </div>
 
@@ -157,7 +158,8 @@
                         onclick="window.location.href='/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
                         <div class="hidden sm:block">
-                            <div class="font-semibold text-gray-800 dark:text-gray-200 text-sm" id="headerUserName"></div>
+                            <div class="font-semibold text-gray-800 dark:text-gray-200 text-sm" id="headerUserName">
+                            </div>
                             <div class="text-xs text-gray-500 dark:text-gray-400" id="headerUserRole"></div>
                         </div>
                     </div>
@@ -221,7 +223,8 @@
 
                     <!-- Institution Filter -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Institución</label>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Institución</label>
                         <div class="custom-select-container">
                             <div class="custom-select" id="institutionSelect">
                                 <div class="custom-select-trigger">
@@ -241,7 +244,8 @@
 
                     <!-- Inventory Filter -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario</label>
+                        <label
+                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario</label>
                         <div class="custom-select-container">
                             <div class="custom-select" id="inventorySelect">
                                 <div class="custom-select-trigger">
@@ -476,7 +480,7 @@
         }
 
         /* Asegurar que los contenedores de filtros tengan el mismo ancho */
-        .stat-card .grid > div {
+        .stat-card .grid>div {
             display: flex;
             flex-direction: column;
         }
@@ -490,4 +494,3 @@
 </body>
 
 </html>
-
