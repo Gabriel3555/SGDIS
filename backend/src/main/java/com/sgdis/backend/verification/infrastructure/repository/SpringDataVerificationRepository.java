@@ -20,5 +20,14 @@ public interface SpringDataVerificationRepository extends JpaRepository<Verifica
 
     @Query("SELECT v FROM VerificationEntity v WHERE v.item.inventory.id = :inventoryId ORDER BY v.createdAt DESC")
     List<VerificationEntity> findLatestByInventory(@Param("inventoryId") Long inventoryId, Pageable pageable);
+    
+    @Query("SELECT v FROM VerificationEntity v WHERE v.item.inventory.id = :inventoryId ORDER BY v.createdAt DESC")
+    Page<VerificationEntity> findAllByInventoryId(@Param("inventoryId") Long inventoryId, Pageable pageable);
+    
+    @Query("SELECT v FROM VerificationEntity v WHERE v.item.inventory.institution.id = :institutionId ORDER BY v.createdAt DESC")
+    Page<VerificationEntity> findAllByInstitutionId(@Param("institutionId") Long institutionId, Pageable pageable);
+    
+    @Query("SELECT v FROM VerificationEntity v WHERE v.item.inventory.institution.regional.id = :regionalId ORDER BY v.createdAt DESC")
+    Page<VerificationEntity> findAllByRegionalId(@Param("regionalId") Long regionalId, Pageable pageable);
 }
 

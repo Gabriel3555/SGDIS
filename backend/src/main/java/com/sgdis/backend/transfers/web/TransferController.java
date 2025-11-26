@@ -9,7 +9,9 @@ import com.sgdis.backend.transfers.application.port.in.ApproveTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.RequestTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
+import com.sgdis.backend.transfers.application.port.in.GetAllTransfersUseCase;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +19,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +39,30 @@ public class TransferController {
     private final RequestTransferUseCase requestTransferUseCase;
     private final GetInventoryTransfersUseCase getInventoryTransfersUseCase;
     private final GetItemTransfersUseCase getItemTransfersUseCase;
+    private final GetAllTransfersUseCase getAllTransfersUseCase;
+
+    @Operation(
+            summary = "Get all transfers",
+            description = "Retrieves all transfers with pagination (6 transfers per page, ordered by requested date descending)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Transfers retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping
+    public ResponseEntity<Page<TransferSummaryResponse>> getAllTransfers(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "6") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "requestedAt"));
+        Page<TransferSummaryResponse> transfers = getAllTransfersUseCase.getAllTransfers(pageable);
+        return ResponseEntity.ok(transfers);
+    }
 
     @Operation(
             summary = "Retrieves transfers related to an inventory",

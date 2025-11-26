@@ -17,8 +17,6 @@ import { login } from "../../src/Navigation/Services/AuthService";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { navigationRef } from "../../src/Navigation/NavigationService";
 import { useTheme } from "../../src/ThemeContext";
-import webSocketService from "../../src/Navigation/Services/WebSocketService";
-import pushNotificationService from "../../src/Navigation/Services/PushNotificationService";
 
 export default function LoginScreen({ navigation }) {
   const { isDarkMode, toggleDarkMode, colors } = useTheme();
@@ -122,16 +120,6 @@ export default function LoginScreen({ navigation }) {
       await AsyncStorage.setItem("userToken", data.jwt);
       await AsyncStorage.setItem("refreshToken", data.refreshToken);
       await AsyncStorage.setItem("userRole", role);
-
-      // Conectar al WebSocket para recibir notificaciones en tiempo real
-      setTimeout(() => {
-        webSocketService.connect();
-      }, 1000);
-
-      // Inicializar notificaciones push para segundo plano
-      setTimeout(async () => {
-        await pushNotificationService.initialize();
-      }, 1500);
 
       navigationRef.current?.reset({
         index: 0,

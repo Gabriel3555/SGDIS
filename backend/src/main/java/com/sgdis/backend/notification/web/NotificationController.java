@@ -1,10 +1,7 @@
 package com.sgdis.backend.notification.web;
 
 import com.sgdis.backend.notification.dto.NotificationResponse;
-import com.sgdis.backend.notification.dto.RegisterDeviceTokenRequest;
-import com.sgdis.backend.notification.service.DeviceTokenService;
 import com.sgdis.backend.notification.service.NotificationPersistenceService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,45 +19,7 @@ import java.util.Map;
 @Slf4j
 public class NotificationController {
 
-    private final DeviceTokenService deviceTokenService;
     private final NotificationPersistenceService notificationPersistenceService;
-
-    @PostMapping("/register-token")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Map<String, String>> registerDeviceToken(
-            @Valid @RequestBody RegisterDeviceTokenRequest request) {
-        try {
-            deviceTokenService.registerDeviceToken(request);
-            return ResponseEntity.ok(Map.of(
-                "message", "Token registrado exitosamente",
-                "status", "success"
-            ));
-        } catch (Exception e) {
-            log.error("Error al registrar token: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of(
-                "message", "Error al registrar token",
-                "status", "error"
-            ));
-        }
-    }
-
-    @DeleteMapping("/deactivate-token")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<Map<String, String>> deactivateToken(@RequestParam String token) {
-        try {
-            deviceTokenService.deactivateDeviceToken(token);
-            return ResponseEntity.ok(Map.of(
-                "message", "Token desactivado exitosamente",
-                "status", "success"
-            ));
-        } catch (Exception e) {
-            log.error("Error al desactivar token: {}", e.getMessage(), e);
-            return ResponseEntity.badRequest().body(Map.of(
-                "message", "Error al desactivar token",
-                "status", "error"
-            ));
-        }
-    }
 
     @GetMapping("/my-notifications")
     @PreAuthorize("isAuthenticated()")

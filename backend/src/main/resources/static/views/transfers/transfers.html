@@ -34,6 +34,7 @@
         rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
     <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
 </head>
 
 <body>
@@ -76,6 +77,11 @@
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
             </a>
+            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/centers')">
+                <i class="fas fa-building text-lg"></i>
+                <span class="font-medium">Centros</span>
+            </a>
             <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
                 onclick="handleSidebarClick(event, '/superadmin/transfers')">
                 <i class="fas fa-exchange-alt text-lg"></i>
@@ -95,6 +101,11 @@
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
             </a>
             <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/notifications')">
@@ -153,10 +164,7 @@
                         Nueva Transferencia
                     </button>
 
-                    <div class="relative cursor-pointer">
-                        <i class="fas fa-bell text-gray-600 dark:text-gray-300 text-xl hover:text-[#00AF00] transition-colors"></i>
-                        <span class="notification-badge">3</span>
-                    </div>
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
 
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/info-me'">
@@ -271,6 +279,7 @@
     <script src="../../js/transfers/transfers-modals.js"></script>
     <script src="../../js/transfers/transfers-forms.js"></script>
     <script src="../../js/transfers/transfers.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */

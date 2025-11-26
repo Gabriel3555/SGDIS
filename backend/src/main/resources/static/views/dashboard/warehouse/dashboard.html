@@ -73,6 +73,11 @@
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
             </a>
+            <a href="/warehouse/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
             <a href="/warehouse/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/warehouse/import-export')">
                 <i class="fas fa-exchange-alt text-lg"></i>
@@ -111,10 +116,7 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="relative cursor-pointer">
-                        <i class="fas fa-bell text-gray-600 text-xl hover:text-[#00AF00] transition-colors"></i>
-                        <span class="notification-badge">2</span>
-                    </div>
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/info-me'">
                         <div class="user-avatar" id="headerUserAvatar">W</div>

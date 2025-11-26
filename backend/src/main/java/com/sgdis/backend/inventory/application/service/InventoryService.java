@@ -19,6 +19,9 @@ import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import com.sgdis.backend.user.mapper.UserMapper;
 import com.sgdis.backend.notification.service.NotificationService;
+// Auditoría
+import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
+import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -59,6 +62,7 @@ public class InventoryService
         private final SpringDataInstitutionRepository institutionRepository;
         private final AuthService authService;
         private final NotificationService notificationService;
+        private final RecordActionUseCase recordActionUseCase;
 
         @Override
         @Transactional
@@ -69,7 +73,15 @@ public class InventoryService
                 List<InventoryEntity> existingInventories = inventoryRepository
                                 .findInventoryEntitiesByOwnerId(owner.getId());
                 if (existingInventories != null && !existingInventories.isEmpty()) {
-                        throw new DomainConflictException("Este propietario ya tiene un inventario asignado");
+                        InventoryEntity existingInventory = existingInventories.get(0);
+                        String inventoryName = existingInventory.getName() != null ? existingInventory.getName() : "sin nombre";
+                        throw new DomainConflictException(
+                                String.format("El usuario '%s' (ID: %d) ya tiene un inventario asignado como propietario: '%s' (ID: %d). Un usuario solo puede ser propietario de un inventario a la vez.",
+                                        owner.getFullName() != null ? owner.getFullName() : owner.getEmail(),
+                                        owner.getId(),
+                                        inventoryName,
+                                        existingInventory.getId())
+                        );
                 }
 
                 // Validar que institutionId no sea null
@@ -94,6 +106,15 @@ public class InventoryService
                         savedInventory.getId()
                 );
                 
+                // Registrar auditoría
+                recordActionUseCase.recordAction(new RecordActionRequest(
+                        String.format("Inventario creado: %s (ID: %d) - Propietario: %s (%s)", 
+                                savedInventory.getName() != null ? savedInventory.getName() : "sin nombre",
+                                savedInventory.getId(),
+                                owner.getFullName(),
+                                owner.getEmail())
+                ));
+                
                 return InventoryMapper.toCreateResponse(savedInventory);
         }
 
@@ -115,7 +136,19 @@ public class InventoryService
         public InventoryResponse deleteInventoryById(Long id) {
                 InventoryEntity inventory = inventoryRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + id));
+                
+                String inventoryName = inventory.getName() != null ? inventory.getName() : "sin nombre";
+                String ownerName = inventory.getOwner() != null ? inventory.getOwner().getFullName() : "N/A";
+                String ownerEmail = inventory.getOwner() != null ? inventory.getOwner().getEmail() : "N/A";
+                
                 inventoryRepository.deleteById(id);
+                
+                // Registrar auditoría
+                recordActionUseCase.recordAction(new RecordActionRequest(
+                        String.format("Inventario eliminado: %s (ID: %d) - Propietario: %s (%s)", 
+                                inventoryName, id, ownerName, ownerEmail)
+                ));
+                
                 return InventoryMapper.toResponse(inventory);
         }
 
@@ -124,8 +157,37 @@ public class InventoryService
         public UpdateInventoryResponse updateInventory(Long id, UpdateInventoryRequest request) {
                 InventoryEntity inventory = inventoryRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + id));
+                
+                String originalName = inventory.getName();
+                String originalLocation = inventory.getLocation();
+                boolean originalStatus = inventory.isStatus();
+                
                 InventoryEntity updatedInventory = InventoryMapper.fromUpdateRequest(request, inventory);
                 updatedInventory = inventoryRepository.save(updatedInventory);
+                
+                // Registrar auditoría
+                StringBuilder changes = new StringBuilder();
+                if (request.name() != null && !request.name().equals(originalName)) {
+                        changes.append("Nombre actualizado | ");
+                }
+                if (request.location() != null && !request.location().equals(originalLocation)) {
+                        changes.append("Ubicación actualizada | ");
+                }
+                if (request.status() != null && request.status() != originalStatus) {
+                        changes.append("Estado actualizado | ");
+                }
+                
+                String changesDescription = changes.length() > 0 
+                        ? changes.toString().substring(0, changes.length() - 3) 
+                        : "Sin cambios";
+                
+                recordActionUseCase.recordAction(new RecordActionRequest(
+                        String.format("Inventario actualizado: %s (ID: %d) - %s", 
+                                updatedInventory.getName() != null ? updatedInventory.getName() : "sin nombre",
+                                id,
+                                changesDescription)
+                ));
+                
                 return InventoryMapper.toUpdateResponse(updatedInventory);
         }
 
@@ -157,8 +219,23 @@ public class InventoryService
                                 throw new DomainConflictException("Este usuario ya es dueño de un inventario");
                         }
 
+                        // Guardar información del propietario anterior para auditoría
+                        String oldOwnerName = inventory.getOwner() != null ? inventory.getOwner().getFullName() : "N/A";
+                        String oldOwnerEmail = inventory.getOwner() != null ? inventory.getOwner().getEmail() : "N/A";
+                        
                         inventory.setOwner(newOwner);
                         inventory = inventoryRepository.save(inventory);
+                        
+                        // Registrar auditoría
+                        recordActionUseCase.recordAction(new RecordActionRequest(
+                                String.format("Propietario de inventario actualizado: %s (ID: %d) - Anterior: %s (%s) → Nuevo: %s (%s)", 
+                                        inventory.getName() != null ? inventory.getName() : "sin nombre",
+                                        inventory.getId(),
+                                        oldOwnerName,
+                                        oldOwnerEmail,
+                                        newOwner.getFullName(),
+                                        newOwner.getEmail())
+                        ));
                 }
 
                 return InventoryMapper.toResponse(inventory);
@@ -178,8 +255,17 @@ public class InventoryService
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Institution not found with id " + request.institutionId()));
 
+                String oldInstitutionName = inventory.getInstitution() != null ? inventory.getInstitution().getName() : "N/A";
                 inventory.setInstitution(institution);
                 inventory = inventoryRepository.save(inventory);
+
+                // Registrar auditoría
+                recordActionUseCase.recordAction(new RecordActionRequest(
+                        String.format("Institución de inventario actualizada: %s (ID: %d) - Nueva institución: %s", 
+                                inventory.getName() != null ? inventory.getName() : "sin nombre",
+                                inventory.getId(),
+                                institution.getName())
+                ));
 
                 return InventoryMapper.toResponse(inventory);
         }
@@ -218,6 +304,15 @@ public class InventoryService
 
                 inventoryRepository.save(inventory);
 
+                // Registrar auditoría
+                recordActionUseCase.recordAction(new RecordActionRequest(
+                        String.format("Manejador asignado a inventario: %s (ID: %d) - Manejador: %s (%s)", 
+                                inventory.getName() != null ? inventory.getName() : "sin nombre",
+                                inventory.getId(),
+                                user.getFullName(),
+                                user.getEmail())
+                ));
+
                 return new AssignManagerInventoryResponse(
                                 new AssignManagerInventoryUserResponse(user.getId(), user.getFullName(),
                                                 user.getEmail()),
@@ -246,6 +341,15 @@ public class InventoryService
                 managers.remove(user);
                 inventory.setManagers(managers);
                 inventoryRepository.save(inventory);
+
+                // Registrar auditoría
+                recordActionUseCase.recordAction(new RecordActionRequest(
+                        String.format("Manejador eliminado de inventario: %s (ID: %d) - Manejador: %s (%s)", 
+                                inventory.getName() != null ? inventory.getName() : "sin nombre",
+                                inventory.getId(),
+                                user.getFullName(),
+                                user.getEmail())
+                ));
 
                 return new DeleteManagerInventoryResponse(
                                 user.getId(),
@@ -325,6 +429,15 @@ public class InventoryService
             inventory.setManagers(managers);
             inventoryRepository.save(inventory);
 
+            // Registrar auditoría
+            recordActionUseCase.recordAction(new RecordActionRequest(
+                    String.format("Manejador renunció a inventario: %s (ID: %d) - Manejador: %s (%s)", 
+                            inventory.getName() != null ? inventory.getName() : "sin nombre",
+                            inventory.getId(),
+                            user.getFullName(),
+                            user.getEmail())
+            ));
+
             return new QuitInventoryResponse("Ha renunciado exitosamente a este inventario", inventory.getName());
         }
 
@@ -374,6 +487,15 @@ public class InventoryService
         userRepository.save(user);
         inventoryRepository.save(inventory);
 
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Firmante asignado a inventario: %s (ID: %d) - Firmante: %s (%s)", 
+                        inventory.getName() != null ? inventory.getName() : "sin nombre",
+                        inventory.getId(),
+                        user.getFullName(),
+                        user.getEmail())
+        ));
+
         return new AssignSignatoryInventoryResponse(
                 new AssignSignatoryInventoryUserResponse(user.getId(), user.getFullName(), user.getEmail()),
                 inventory.getUuid(),
@@ -409,6 +531,15 @@ public class InventoryService
         userInventories.remove(inventory);
         user.setMySignatories(userInventories);
         userRepository.save(user);
+
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Firmante renunció a inventario: %s (ID: %d) - Firmante: %s (%s)", 
+                        inventory.getName() != null ? inventory.getName() : "sin nombre",
+                        inventory.getId(),
+                        user.getFullName(),
+                        user.getEmail())
+        ));
 
         return new QuitInventoryResponse(
                 "Ha renunciado exitosamente al inventario " + inventory.getName(),
@@ -447,6 +578,15 @@ public class InventoryService
             user.setMySignatories(inventorySignatories);
             userRepository.save(user);
         }
+
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Firmante eliminado de inventario: %s (ID: %d) - Firmante: %s (%s)", 
+                        inventory.getName() != null ? inventory.getName() : "sin nombre",
+                        inventory.getId(),
+                        user.getFullName(),
+                        user.getEmail())
+        ));
 
         return new DeleteSignatoryInventoryResponse(
                 user.getId(),
@@ -509,6 +649,15 @@ public class InventoryService
         inventoryEntities.remove(inventory);
         user.setMyManagers(inventoryEntities);
         userRepository.save(user);
+
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Manejador renunció a inventario: %s (ID: %d) - Manejador: %s (%s)", 
+                        inventory.getName() != null ? inventory.getName() : "sin nombre",
+                        inventory.getId(),
+                        user.getFullName(),
+                        user.getEmail())
+        ));
 
         return new QuitInventoryResponse(
                         "Successfully quit as manager",

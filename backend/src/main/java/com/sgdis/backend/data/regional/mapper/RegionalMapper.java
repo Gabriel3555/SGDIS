@@ -13,7 +13,8 @@ public final class RegionalMapper {
     public static RegionalResponse toResponse(RegionalEntity entity) {
         return new RegionalResponse(
                 entity.getId(),
-                entity.getName()
+                entity.getName(),
+                entity.getDepartament() != null ? entity.getDepartament().getId() : null
         );
     }
 

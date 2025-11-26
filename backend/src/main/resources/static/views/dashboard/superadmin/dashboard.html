@@ -78,6 +78,11 @@
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
             </a>
+            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/centers')">
+                <i class="fas fa-building text-lg"></i>
+                <span class="font-medium">Centros</span>
+            </a>
             <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/transfers')">
                 <i class="fas fa-exchange-alt text-lg"></i>
@@ -97,6 +102,11 @@
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
             </a>
             <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/notifications')">
@@ -146,10 +156,7 @@
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <div class="relative cursor-pointer">
-                        <i class="fas fa-bell text-gray-600 text-xl hover:text-[#00AF00] transition-colors"></i>
-                        <span class="notification-badge">5</span>
-                    </div>
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
@@ -340,6 +347,7 @@
     <script src="../../../js/dashboard.js"></script>
     <script src="../../../js/inactivity-monitor.js"></script>
     <script src="../../../js/websocket-client.js"></script>
+    <script src="../../../js/notification-sound.js"></script>
     <script src="../../../js/notifications-bell.js"></script>
 
     <style>

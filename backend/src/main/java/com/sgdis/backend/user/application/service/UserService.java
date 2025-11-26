@@ -16,6 +16,12 @@ import com.sgdis.backend.exception.userExceptions.EmailAlreadyInUseException;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import com.sgdis.backend.exception.userExceptions.UserHasAssignedInventoriesException;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+// Auditoría
+import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
+import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
+// Regional
+import com.sgdis.backend.data.regional.entity.RegionalEntity;
+import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -26,6 +32,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -44,13 +51,58 @@ public class UserService implements
 
     private final SpringDataUserRepository userRepository;
     private final SpringDataInstitutionRepository  institutionRepository;
+    private final SpringDataRegionalRepository regionalRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RecordActionUseCase recordActionUseCase;
 
     private static final Pattern ALLOWED_EMAIL =
             Pattern.compile("^[A-Za-z0-9._%+-]+@(soy\\.sena\\.edu\\.co|sena\\.edu\\.co)$");
 
     private static boolean isAllowedEmail(String email) {
         return email != null && ALLOWED_EMAIL.matcher(email).matches();
+    }
+
+    /**
+     * Sincroniza la relación bidireccional User <-> Institution
+     */
+    private void syncUserInstitutionRelation(UserEntity user, InstitutionEntity institution) {
+        if (user == null || institution == null) {
+            return;
+        }
+        
+        // Establecer la relación en User
+        user.setInstitution(institution);
+        
+        // Sincronizar la relación en Institution
+        List<UserEntity> users = institution.getUsers();
+        if (users == null) {
+            users = new ArrayList<>();
+            institution.setUsers(users);
+        }
+        if (!users.contains(user)) {
+            users.add(user);
+        }
+    }
+
+    /**
+     * Sincroniza la relación bidireccional Institution <-> Regional
+     */
+    private void syncInstitutionRegionalRelation(InstitutionEntity institution) {
+        if (institution == null || institution.getRegional() == null) {
+            return;
+        }
+        
+        RegionalEntity regional = institution.getRegional();
+        
+        // Sincronizar la relación en Regional
+        List<InstitutionEntity> institutions = regional.getInstitutions();
+        if (institutions == null) {
+            institutions = new ArrayList<>();
+            regional.setInstitutions(institutions);
+        }
+        if (!institutions.contains(institution)) {
+            institutions.add(institution);
+        }
     }
 
     @Override
@@ -104,18 +156,28 @@ public class UserService implements
             throw new DomainValidationException("La institución es obligatoria para crear un usuario");
         }
 
-        InstitutionEntity institution = institutionRepository.getReferenceById(createUserRequest.institutionId());
+        InstitutionEntity institution = institutionRepository.findById(createUserRequest.institutionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Institution not found with id: " + createUserRequest.institutionId()));
 
         UserEntity user = UserMapper.fromCreateRequest(createUserRequest);
-        user.setInstitution(institution);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        List<UserEntity> users = institution.getUsers();
-        users.add(user);
-        institution.setUsers(users);
-        institutionRepository.save(institution);
+        // Sincronizar relaciones bidireccionales
+        syncUserInstitutionRelation(user, institution);
+        syncInstitutionRegionalRelation(institution);
 
+        // Guardar las entidades (JPA propagará los cambios)
+        if (institution.getRegional() != null) {
+            regionalRepository.save(institution.getRegional());
+        }
+        institutionRepository.save(institution);
         UserEntity saved = userRepository.save(user);
+        
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Usuario creado: %s (%s) - Rol: %s", saved.getFullName(), saved.getEmail(), saved.getRole())
+        ));
+        
         return UserMapper.toResponse(saved);
     }
 
@@ -127,6 +189,15 @@ public class UserService implements
 
         UserEntity existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
+        
+        // Guardar valores originales para auditoría
+        String originalFullName = existingUser.getFullName();
+        String originalEmail = existingUser.getEmail();
+        Role originalRole = existingUser.getRole();
+        boolean originalStatus = existingUser.isStatus();
+        String originalJobTitle = existingUser.getJobTitle();
+        String originalLaborDepartment = existingUser.getLaborDepartment();
+        String originalInstitutionName = existingUser.getInstitution() != null ? existingUser.getInstitution().getName() : null;
         
         if (currentUserId.equals(id) && updateUserRequest.status() != null && !updateUserRequest.status()) {
             throw new DomainValidationException("No puedes desactivar tu propio estado de usuario");
@@ -174,9 +245,28 @@ public class UserService implements
         
         if (institutionIdValue != null && institutionIdValue > 0) {
             try {
-                InstitutionEntity institution = institutionRepository.findById(institutionIdValue)
+                InstitutionEntity newInstitution = institutionRepository.findById(institutionIdValue)
                         .orElseThrow(() -> new ResourceNotFoundException("Institution not found with id: " + institutionIdValue));
-                existingUser.setInstitution(institution);
+                
+                // Si el usuario ya tenía una institución, removerlo de la lista anterior
+                InstitutionEntity oldInstitution = existingUser.getInstitution();
+                if (oldInstitution != null && !oldInstitution.getId().equals(newInstitution.getId())) {
+                    List<UserEntity> oldUsers = oldInstitution.getUsers();
+                    if (oldUsers != null) {
+                        oldUsers.remove(existingUser);
+                        institutionRepository.save(oldInstitution);
+                    }
+                }
+                
+                // Sincronizar relaciones bidireccionales con la nueva institución
+                syncUserInstitutionRelation(existingUser, newInstitution);
+                syncInstitutionRegionalRelation(newInstitution);
+                
+                // Guardar la nueva institución y su regional si existe
+                if (newInstitution.getRegional() != null) {
+                    regionalRepository.save(newInstitution.getRegional());
+                }
+                institutionRepository.save(newInstitution);
             } catch (ResourceNotFoundException e) {
                 // If institution not found, keep existing institution (already set, no change needed)
             } catch (Exception e) {
@@ -190,6 +280,43 @@ public class UserService implements
         
         // Reload to verify the institution was saved
         UserEntity reloaded = userRepository.findById(updated.getId()).orElse(updated);
+        
+        // Registrar auditoría - construir descripción de cambios usando valores originales
+        StringBuilder changes = new StringBuilder();
+        if (updateUserRequest.fullName() != null && !updateUserRequest.fullName().equals(originalFullName)) {
+            changes.append("Nombre actualizado | ");
+        }
+        if (updateUserRequest.email() != null && !updateUserRequest.email().equalsIgnoreCase(originalEmail)) {
+            changes.append("Email actualizado | ");
+        }
+        if (updateUserRequest.role() != null) {
+            Role newRole = Role.valueOf(updateUserRequest.role().toUpperCase());
+            if (!newRole.equals(originalRole)) {
+                changes.append("Rol actualizado | ");
+            }
+        }
+        if (updateUserRequest.status() != null && updateUserRequest.status() != originalStatus) {
+            changes.append("Estado actualizado | ");
+        }
+        if (updateUserRequest.jobTitle() != null && (originalJobTitle == null || !updateUserRequest.jobTitle().equals(originalJobTitle))) {
+            changes.append("Cargo actualizado | ");
+        }
+        if (updateUserRequest.laborDepartment() != null && (originalLaborDepartment == null || !updateUserRequest.laborDepartment().equals(originalLaborDepartment))) {
+            changes.append("Departamento actualizado | ");
+        }
+        if (institutionIdValue != null && institutionIdValue > 0 && reloaded.getInstitution() != null) {
+            String newInstitution = reloaded.getInstitution().getName();
+            String oldInstitution = originalInstitutionName != null ? originalInstitutionName : "N/A";
+            if (!newInstitution.equals(oldInstitution)) {
+                changes.append("Institución actualizada | ");
+            }
+        }
+        
+        String changesDescription = changes.length() > 0 ? changes.toString().substring(0, changes.length() - 3) : "Sin cambios";
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Usuario actualizado: %s (%s) - %s", reloaded.getFullName(), reloaded.getEmail(), changesDescription)
+        ));
         
         return UserMapper.toResponse(reloaded);
     }
@@ -218,7 +345,15 @@ public class UserService implements
         }
         
         try {
+            String userEmail = user.getEmail();
+            String userName = user.getFullName();
             userRepository.deleteById(id);
+            
+            // Registrar auditoría
+            recordActionUseCase.recordAction(new RecordActionRequest(
+                    String.format("Usuario eliminado: %s (%s)", userName, userEmail)
+            ));
+            
             return UserMapper.toResponse(user);
         } catch (Exception e) {
             // Catch any database constraint violations
@@ -251,6 +386,12 @@ public class UserService implements
         UserEntity userEntity = userRepository.findById(request.id()).orElseThrow(() -> new UserNotFoundException(request.id()));
         userEntity.setPassword(passwordEncoder.encode(request.newPassword()));
         userRepository.save(userEntity);
+        
+        // Registrar auditoría
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Contraseña restablecida: %s (%s)", userEntity.getFullName(), userEntity.getEmail())
+        ));
+        
         return new ChangePasswordResponse("Password changed successfully",userEntity.getFullName());
     }
 }

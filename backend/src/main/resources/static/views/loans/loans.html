@@ -133,6 +133,78 @@
     <!-- Logout button -->
     <div class="p-4 border-t border-gray-200 mt-auto">
         <button onclick="logout()"
+        <!-- Sidebar navigation -->
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/inventory')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>
+            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/centers')">
+                <i class="fas fa-building text-lg"></i>
+                <span class="font-medium">Centros</span>
+            </a>
+            <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
+            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/superadmin/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
+            </a>
+            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/import-export')">
+                <i class="fas fa-file-import text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/info-me')">
+                <i class="fas fa-user-circle text-lg"></i>
+                <span class="font-medium">Mi Perfil</span>
+            </a>
+        </nav>
+
+        <!-- Logout button -->
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()"
                 class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
             <i class="fas fa-sign-out-alt text-lg"></i>
             <span>Cerrar Sesión</span>
@@ -192,6 +264,28 @@
                     <i class="fas fa-sync-alt" id="refreshIcon"></i>
                     <span id="refreshText">Actualizar</span>
                 </button>
+        </header>
+
+        <!-- Loans Management Content -->
+        <main class="p-6">
+            <!-- Header Section -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Préstamos</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Control y administración de préstamos de items</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="openLendItemModal()"
+                        class="bg-[#00AF00] hover:bg-[#008800] text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
+                        <i class="fas fa-hand-holding"></i>
+                        <span>Prestar Item</span>
+                    </button>
+                    <button onclick="loadLoansData()"
+                        class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                        <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                        <span id="refreshText">Actualizar</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -332,6 +426,349 @@
                         <input type="hidden" id="loanSelectedRegionalId" value="">
                     </div>
                 </div>
+        </main>
+    </div>
+
+    <!-- Lend Item Modal -->
+    <div id="lendItemModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Prestar Item</h2>
+                <button onclick="closeLendItemModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form onsubmit="event.preventDefault(); handleLendItem();" class="space-y-6">
+                    <!-- Regional -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Regional <span class="text-red-500">*</span>
+                        </label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="loanRegionalSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccione una regional</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                    <div class="custom-select-options"></div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="loanSelectedRegionalId" value="">
+                        </div>
+                    </div>
+
+                    <!-- Institution -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Institución <span class="text-red-500">*</span>
+                        </label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="loanInstitutionSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccione una institución</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar institución...">
+                                    <div class="custom-select-options"></div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="loanSelectedInstitutionId" value="">
+                        </div>
+                    </div>
+
+                    <!-- Inventory -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Inventario <span class="text-red-500">*</span>
+                        </label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="loanInventorySelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccione un inventario</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
+                                    <div class="custom-select-options"></div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="loanSelectedInventoryId" value="">
+                        </div>
+                    </div>
+
+                    <!-- Item -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Item <span class="text-red-500">*</span>
+                        </label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="loanItemSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccione un item</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar item...">
+                                    <div class="custom-select-options"></div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="loanSelectedItemId" value="">
+                        </div>
+                    </div>
+
+                    <!-- Responsible -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Responsable <span class="text-red-500">*</span>
+                        </label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="loanResponsibleSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccione un responsable</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar responsable...">
+                                    <div class="custom-select-options"></div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="loanSelectedResponsibleId" value="">
+                        </div>
+                    </div>
+
+                    <!-- Details -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Detalles (Opcional)
+                        </label>
+                        <textarea id="loanDetails" rows="3"
+                            class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white"
+                            placeholder="Ingrese detalles adicionales sobre el préstamo..."></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button type="button" onclick="closeLendItemModal()"
+                            class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="px-6 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                            Prestar Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Return Item Modal -->
+    <div id="returnItemModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Devolver Item</h2>
+                <button onclick="closeReturnItemModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form onsubmit="event.preventDefault(); submitReturnItem();" class="space-y-6">
+                    <input type="hidden" id="returnLoanId" value="">
+                    
+                    <!-- Details -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Detalles de Devolución (Opcional)
+                        </label>
+                        <textarea id="returnDetails" rows="3"
+                            class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white"
+                            placeholder="Ingrese detalles sobre la devolución del item..."></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button type="button" onclick="closeReturnItemModal()"
+                            class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                            class="px-6 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                            Devolver Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/dashboard.js"></script>
+    <!-- Loans Module Scripts -->
+    <script src="../../js/loans/loans-data.js"></script>
+    <script src="../../js/loans/loans-api.js"></script>
+    <script src="../../js/loans/loans-ui.js"></script>
+    <script src="../../js/loans/loans-filters.js"></script>
+    <script src="../../js/loans/loan-actions.js"></script>
+    <script src="../../js/inventory/inventory-toast.js"></script>
+    <script src="../../js/users/users-api.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
+    <script>
+        // Initialize loan selects when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeLoanSelects();
+        });
+    </script>
+
+    <style>
+        /* Adjust main content margin to account for fixed sidebar */
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Header user avatar styles */
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Custom Select Styles - Asegurar alineación y tamaño consistente */
+        .custom-select-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-select {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.625rem 0.875rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.75rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 2.75rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .dark .custom-select-trigger {
+            background-color: #1f2937;
+            border-color: #374151;
+            color: #f3f4f6;
+        }
+
+        .custom-select-trigger:hover {
+            border-color: #10b981;
+        }
+
+        .custom-select-trigger:focus-within {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: #10b981;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .custom-select-text {
+            color: #374151;
+            font-size: 0.875rem;
+            flex: 1;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dark .custom-select-text {
+            color: #f3f4f6;
+        }
+
+        .custom-select-arrow {
+            color: #10b981;
+            transition: transform 0.2s ease;
+            margin-left: 0.5rem;
+            flex-shrink: 0;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+        }
+
+        .custom-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #10b981;
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            max-height: 300px;
+            overflow: hidden;
+            display: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .dark .custom-select-dropdown {
+            background-color: #1f2937;
+            border-color: #10b981;
+        }
+
+        .custom-select.open .custom-select-dropdown {
+            display: block;
+        }
+
+        .custom-select-search {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            outline: none;
+            font-size: 0.875rem;
+            background: white;
+            box-sizing: border-box;
+        }
+
+        .dark .custom-select-search {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            border-bottom-color: #374151;
+        }
+
+        .custom-select-options {
+            max-height: 240px;
+            overflow-y: auto;
+        }
 
                 <!-- Institution -->
                 <div>

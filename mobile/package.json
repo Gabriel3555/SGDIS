@@ -23,7 +23,6 @@
     "expo-image": "~2.0.3",
     "expo-image-picker": "^17.0.8",
     "expo-linear-gradient": "~14.1.5",
-    "expo-notifications": "~0.31.3",
     "expo-status-bar": "~2.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
