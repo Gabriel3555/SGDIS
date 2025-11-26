@@ -1,29 +1,34 @@
-// Reports functionality
+// Warehouse Reports functionality
 
-let regionals = [];
-let institutions = {};
+let userInstitutionId = null;
+let userRegionalId = null;
+let userInstitutionName = null;
+let userRegionalName = null;
 let inventories = {};
 let currentReportData = [];
 let currentReportType = 'items';
 let currentReportFilters = {};
 
+// Store chart instances for PDF export
+let chartInstances = {
+    mostMoved: null,
+    mostExpensive: null,
+    mostVerified: null
+};
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Reports page DOMContentLoaded - Initializing...');
-    if (typeof window.loadRegionals === 'function') {
-        window.loadRegionals();
-    }
+    console.log('Warehouse Reports page DOMContentLoaded - Initializing...');
+    loadUserInfoAndInventories();
     setupEventListeners();
     setupDateInputs();
 });
 
 // Also try if DOM is already loaded (for dynamic navigation)
 if (document.readyState !== 'loading') {
-    console.log('Reports page - DOM already loaded, initializing...');
+    console.log('Warehouse Reports page - DOM already loaded, initializing...');
     setTimeout(function() {
-        if (typeof window.loadRegionals === 'function') {
-            window.loadRegionals();
-        }
+        loadUserInfoAndInventories();
         setupEventListeners();
         setupDateInputs();
     }, 200);
@@ -39,27 +44,77 @@ function setupDateInputs() {
     document.getElementById('endDate').valueAsDate = lastDay;
 }
 
+// Load user info and inventories
+async function loadUserInfoAndInventories() {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        const headers = { 'Content-Type': 'application/json' };
+        headers['Authorization'] = `Bearer ${token}`;
+
+        // Get current user info
+        const userResponse = await fetch('/api/v1/users/me', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (!userResponse.ok) {
+            throw new Error('Failed to load user info');
+        }
+
+        const userData = await userResponse.json();
+        userInstitutionName = userData.institution;
+
+        // Get all institutions to find the one matching the user's institution
+        const institutionsResponse = await fetch('/api/v1/institutions', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (institutionsResponse.ok) {
+            const institutions = await institutionsResponse.json();
+            const institution = institutions.find(inst => inst.name === userInstitutionName);
+            
+            if (institution) {
+                userInstitutionId = institution.institutionId || institution.id;
+                userRegionalId = institution.regionalId;
+
+                // Get regional name
+                if (userRegionalId) {
+                    const regionalsResponse = await fetch('/api/v1/regional', {
+                        method: 'GET',
+                        headers: headers
+                    });
+
+                    if (regionalsResponse.ok) {
+                        const regionals = await regionalsResponse.json();
+                        const regional = regionals.find(reg => reg.id === userRegionalId);
+                        if (regional) {
+                            userRegionalName = regional.name;
+                        }
+                    }
+                }
+
+                // Load inventories for the user's institution
+                await loadInventories(userInstitutionId);
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user info and inventories:', error);
+        showReportErrorToast('Error', 'Error al cargar información del usuario');
+    }
+}
+
 // Setup event listeners
 function setupEventListeners() {
-    // Dropdowns
-    const regionalSelect = document.getElementById('regionalSelect');
-    if (!regionalSelect) {
-        console.error('regionalSelect not found in setupEventListeners');
-        return;
-    }
-    
-    regionalSelect.addEventListener('change', function() {
-        const regionalId = this.value;
-        loadInstitutions(regionalId);
-        resetDropdowns(['institution', 'inventory']);
-    });
-
-    const institutionSelect = document.getElementById('institutionSelect');
-    if (institutionSelect) {
-        institutionSelect.addEventListener('change', function() {
-            const institutionId = this.value;
-            loadInventories(institutionId);
-            resetDropdowns(['inventory']);
+    // Inventory dropdown
+    const inventorySelect = document.getElementById('inventorySelect');
+    if (inventorySelect) {
+        inventorySelect.addEventListener('change', function() {
+            // Inventory changed, no need to reload
         });
     }
 
@@ -71,11 +126,46 @@ function setupEventListeners() {
     const clearBtn = document.getElementById('clearFiltersBtn');
     if (clearBtn) clearBtn.addEventListener('click', clearFilters);
 
-    // Export buttons
+    // Export buttons - only PDF
     const exportPdfBtn = document.getElementById('exportPdfBtn');
     if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
 }
 
+// Load inventories for the user's institution
+async function loadInventories(institutionId) {
+    if (!institutionId) {
+        document.getElementById('inventorySelect').innerHTML = '<option value="">Cargando inventarios...</option>';
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/inventory/institutionAdminInventories/${institutionId}?page=0&size=1000`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const inventoriesList = data.content || [];
+            inventories[institutionId] = inventoriesList;
+            populateInventoryDropdown(inventoriesList);
+        } else {
+            const errorText = await response.text().catch(() => 'Error desconocido');
+            console.error('Error loading inventories:', response.status, errorText);
+            showReportErrorToast('Error', `No se pudieron cargar los inventarios (${response.status})`);
+            document.getElementById('inventorySelect').innerHTML = '<option value="">Error al cargar inventarios...</option>';
+        }
+    } catch (error) {
+        console.error('Error loading inventories:', error);
+        showReportErrorToast('Error', 'Error de conexión al cargar inventarios');
+    }
+}
+
+// OLD FUNCTION - NOT USED IN WAREHOUSE
 // Load all regionals - make it globally accessible
 window.loadRegionals = async function loadRegionals() {
     console.log('=== loadRegionals() called ===');
@@ -329,8 +419,6 @@ function resetDropdowns(types) {
 // Clear all filters
 function clearFilters() {
     document.getElementById('reportTypeSelect').value = 'items';
-    document.getElementById('regionalSelect').value = '';
-    document.getElementById('institutionSelect').value = '';
     document.getElementById('inventorySelect').value = '';
     
     const today = new Date();
@@ -340,7 +428,6 @@ function clearFilters() {
     document.getElementById('startDate').valueAsDate = firstDay;
     document.getElementById('endDate').valueAsDate = lastDay;
     
-    resetDropdowns(['institution', 'inventory']);
     hideReportResults();
 }
 
@@ -370,9 +457,16 @@ function hideReportResults() {
 
 // Generate report
 async function generateReport() {
+    // Wait for user info to be loaded if not already loaded
+    if (!userInstitutionId || !userRegionalId) {
+        await loadUserInfoAndInventories();
+        if (!userInstitutionId || !userRegionalId) {
+            showReportErrorToast('Error', 'No se pudo cargar la información del usuario. Por favor recargue la página.');
+            return;
+        }
+    }
+
     const reportType = document.getElementById('reportTypeSelect').value;
-    const regionalId = document.getElementById('regionalSelect').value;
-    const institutionId = document.getElementById('institutionSelect').value;
     const inventoryId = document.getElementById('inventorySelect').value;
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
@@ -384,8 +478,8 @@ async function generateReport() {
 
     currentReportType = reportType;
     currentReportFilters = {
-        regionalId,
-        institutionId,
+        regionalId: userRegionalId,
+        institutionId: userInstitutionId,
         inventoryId,
         startDate,
         endDate
@@ -397,29 +491,26 @@ async function generateReport() {
         switch (reportType) {
             case 'items':
                 // For items report, we need items, loans, and transfers
-                const items = await fetchItemsReport(regionalId, institutionId, inventoryId, startDate, endDate);
-                const loans = await fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []);
-                const transfers = await fetchTransfersReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []);
+                const items = await fetchItemsReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
+                const loans = await fetchLoansReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate).catch(() => []);
+                const transfers = await fetchTransfersReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate).catch(() => []);
                 data = {
                     items: items || [],
                     loans: loans || [],
                     transfers: transfers || []
                 };
                 break;
-            case 'users':
-                data = await fetchUsersReport(regionalId, institutionId, startDate, endDate);
-                break;
             case 'loans':
-                data = await fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate);
+                data = await fetchLoansReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
                 break;
             case 'verifications':
-                data = await fetchVerificationsReport(regionalId, institutionId, inventoryId, startDate, endDate);
+                data = await fetchVerificationsReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
                 break;
             case 'inventory':
-                data = await fetchInventoryReport(regionalId, institutionId, inventoryId, startDate, endDate);
+                data = await fetchInventoryReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
                 break;
             case 'general':
-                data = await fetchGeneralReport(regionalId, institutionId, startDate, endDate);
+                data = await fetchGeneralReport(userRegionalId, userInstitutionId, startDate, endDate);
                 break;
         }
 
@@ -540,15 +631,23 @@ async function fetchUsersReport(regionalId, institutionId, startDate, endDate) {
 
     if (response.ok) {
         const data = await response.json();
-        let users = data.content || data || [];
+        // Ensure users is always an array
+        let users = [];
+        if (Array.isArray(data)) {
+            users = data;
+        } else if (data && Array.isArray(data.content)) {
+            users = data.content;
+        } else if (data && data.content) {
+            users = Array.isArray(data.content) ? data.content : [];
+        }
         
         // Filter by institution if provided
-        if (institutionId) {
+        if (institutionId && Array.isArray(users)) {
             users = users.filter(user => user.institutionId === parseInt(institutionId));
         }
         
         // Filter by date if provided
-        if (startDate || endDate) {
+        if ((startDate || endDate) && Array.isArray(users)) {
             users = users.filter(user => {
                 const userDate = user.createdAt || user.registrationDate;
                 if (!userDate) return false;
@@ -568,20 +667,11 @@ async function fetchUsersReport(regionalId, institutionId, startDate, endDate) {
 // Fetch loans report
 async function fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate) {
     const token = localStorage.getItem('jwt');
-    if (!token) {
-        throw new Error('No se encontró el token de autenticación');
-    }
-    
-    const headers = { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-    };
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    // Build endpoint with filters using /api/v1/loan/filter
+    // Build endpoint with filters
     const params = new URLSearchParams();
-    if (regionalId) {
-        params.append('regionalId', regionalId.toString());
-    }
     if (institutionId) {
         params.append('institutionId', institutionId.toString());
     }
@@ -619,7 +709,7 @@ async function fetchLoansReport(regionalId, institutionId, inventoryId, startDat
     // Filter by date if provided
     if (startDate || endDate) {
         loans = loans.filter(loan => {
-            const loanDate = loan.lendAt || loan.createdAt || loan.loanDate;
+            const loanDate = loan.lendAt;
             if (!loanDate) return false;
             try {
                 const date = new Date(loanDate);
@@ -644,23 +734,71 @@ async function fetchLoansReport(regionalId, institutionId, inventoryId, startDat
         console.log(`Filtered to ${loans.length} loans by date range`);
     }
     
+    // Fetch item names for all unique item IDs
+    const uniqueItemIds = [...new Set(loans.map(loan => loan.itemId).filter(id => id != null))];
+    const itemNamesMap = await fetchItemNames(uniqueItemIds, headers);
+    
     // Map loan data to expected format for display
     return loans.map(loan => {
+        const itemId = loan.itemId;
+        const itemName = itemNamesMap[itemId] || `Item #${itemId || 'N/A'}`;
+        
         return {
             id: loan.id,
             userName: loan.responsibleName || 'N/A',
-            itemName: `Item #${loan.itemId || 'N/A'}`,
+            itemName: itemName,
             loanDate: loan.lendAt,
             returnDate: loan.returnAt || null,
             status: (loan.returned === true || loan.returned === 'true') ? 'Devuelto' : 'Prestado',
-            responsibleName: loan.responsibleName,
-            lenderName: loan.lenderName,
+            responsibleName: loan.responsibleName || 'N/A',
+            lenderName: loan.lenderName || 'N/A',
             itemId: loan.itemId,
             detailsLend: loan.detailsLend,
             detailsReturn: loan.detailsReturn,
             returned: (loan.returned === true || loan.returned === 'true')
         };
     });
+}
+
+// Fetch item names for given item IDs
+async function fetchItemNames(itemIds, headers) {
+    if (!itemIds || itemIds.length === 0) {
+        return {};
+    }
+
+    const itemNamesMap = {};
+    
+    // Initialize with item IDs as fallback
+    itemIds.forEach(id => {
+        itemNamesMap[id] = `Item #${id}`;
+    });
+    
+    // Try to get all items for the institution
+    try {
+        const allItemsResponse = await fetch(`/api/v1/items?page=0&size=10000`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (allItemsResponse.ok) {
+            const itemsData = await allItemsResponse.json();
+            const items = Array.isArray(itemsData) ? itemsData : (itemsData.content || []);
+            
+            items.forEach(item => {
+                if (item.id && itemIds.includes(item.id)) {
+                    const name = item.productName || item.name || item.licencePlateNumber;
+                    if (name) {
+                        itemNamesMap[item.id] = name;
+                    }
+                }
+            });
+        }
+    } catch (error) {
+        console.warn('Error fetching item names:', error);
+        // Continue with item IDs as fallback
+    }
+
+    return itemNamesMap;
 }
 
 // Fetch verifications report
@@ -874,9 +1012,8 @@ async function fetchTransfersReport(regionalId, institutionId, inventoryId, star
 // Fetch general report
 async function fetchGeneralReport(regionalId, institutionId, startDate, endDate) {
     // General report combines multiple data types
-    const [items, users, loans, verifications, inventories] = await Promise.all([
+    const [items, loans, verifications, inventories] = await Promise.all([
         fetchItemsReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
-        fetchUsersReport(regionalId, institutionId, startDate, endDate).catch(() => []),
         fetchLoansReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
         fetchVerificationsReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
         fetchInventoryReport(regionalId, institutionId, null, startDate, endDate).catch(() => [])
@@ -888,7 +1025,6 @@ async function fetchGeneralReport(regionalId, institutionId, startDate, endDate)
 
     return {
         items: items || [],
-        users: users || [],
         loans: loans || [],
         verifications: verifications || [],
         inventories: inventories || [],
@@ -900,8 +1036,22 @@ async function fetchGeneralReport(regionalId, institutionId, startDate, endDate)
 function displayReport(data) {
     document.getElementById('reportLoadingState').classList.add('hidden');
     
-    if (!data || (Array.isArray(data) && data.length === 0) || 
-        (typeof data === 'object' && !Array.isArray(data) && Object.keys(data).length === 0)) {
+    // Check if data is empty
+    let isEmpty = false;
+    if (!data) {
+        isEmpty = true;
+    } else if (Array.isArray(data)) {
+        isEmpty = data.length === 0;
+    } else if (typeof data === 'object') {
+        // For items report, check if items array is empty
+        if (currentReportType === 'items' && data.items) {
+            isEmpty = !data.items || data.items.length === 0;
+        } else {
+            isEmpty = Object.keys(data).length === 0;
+        }
+    }
+    
+    if (isEmpty) {
         document.getElementById('reportEmptyState').classList.remove('hidden');
         document.getElementById('reportResultsSection').classList.add('hidden');
         return;
@@ -913,7 +1063,6 @@ function displayReport(data) {
     // Update title
     const reportTypeNames = {
         items: 'Reporte de Items',
-        users: 'Reporte de Usuarios',
         loans: 'Reporte de Préstamos',
         verifications: 'Reporte de Verificaciones',
         inventory: 'Reporte de Inventarios',
@@ -922,8 +1071,8 @@ function displayReport(data) {
 
     document.getElementById('reportTitle').textContent = reportTypeNames[currentReportType] || 'Reporte';
     
-    const regionalName = document.getElementById('regionalSelect').selectedOptions[0]?.text || 'Todas';
-    const institutionName = document.getElementById('institutionSelect').selectedOptions[0]?.text || 'Todos';
+    const regionalName = userRegionalName || 'Regional';
+    const institutionName = userInstitutionName || 'Institución';
     document.getElementById('reportSubtitle').textContent = `${regionalName} - ${institutionName}`;
 
     // Show/hide charts container based on report type
@@ -1325,10 +1474,25 @@ function displayVerificationsReport(data) {
 }
 
 // Display items report with statistics
-async function displayItemsReport(data) {
-    const items = data.items || [];
-    const loans = data.loans || [];
-    const transfers = data.transfers || [];
+function displayItemsReport(data) {
+    // Handle both object format {items, loans, transfers} and array format
+    let items, loans, transfers;
+    
+    if (Array.isArray(data)) {
+        // If data is an array, treat it as items only
+        items = data;
+        loans = [];
+        transfers = [];
+    } else if (data && typeof data === 'object') {
+        // If data is an object, extract items, loans, and transfers
+        items = data.items || [];
+        loans = data.loans || [];
+        transfers = data.transfers || [];
+    } else {
+        items = [];
+        loans = [];
+        transfers = [];
+    }
 
     if (items.length === 0) {
         document.getElementById('reportEmptyState').classList.remove('hidden');
@@ -1631,13 +1795,6 @@ async function displayGeneralReport(data) {
     document.getElementById('reportRowCount').textContent = `Total: ${items.length} items`;
 }
 
-// Store chart instances for PDF export
-let chartInstances = {
-    mostMoved: null,
-    mostExpensive: null,
-    mostVerified: null
-};
-
 // Create charts for general report
 function createGeneralReportCharts(mostMovedItems, mostExpensiveItems, mostVerifiedItems) {
     // Destroy existing charts if they exist
@@ -1787,13 +1944,6 @@ function getHeadersForReportType(reportType) {
             { field: 'acquisitionValue', label: 'Valor', type: 'currency' },
             { field: 'createdAt', label: 'Fecha Registro', type: 'date' }
         ],
-        users: [
-            { field: 'fullName', label: 'Nombre Completo', type: 'string' },
-            { field: 'email', label: 'Email', type: 'string' },
-            { field: 'role', label: 'Rol', type: 'string' },
-            { field: 'status', label: 'Estado', type: 'boolean' },
-            { field: 'createdAt', label: 'Fecha Registro', type: 'date' }
-        ],
         loans: [
             { field: 'id', label: 'ID', type: 'number' },
             { field: 'userName', label: 'Usuario', type: 'string' },
@@ -1925,1007 +2075,945 @@ function generateStatistics(data) {
 
 // Export to PDF
 async function exportToPDF() {
-    if (!currentReportData) {
-        showReportErrorToast('Error', 'No hay datos para exportar');
-        return;
-    }
-    
-    // Check if it's an empty array
-    if (Array.isArray(currentReportData) && currentReportData.length === 0) {
-        showReportErrorToast('Error', 'No hay datos para exportar');
-        return;
-    }
-    
-    // Check if it's an items report object with empty items
-    if (currentReportType === 'items' && typeof currentReportData === 'object' && !Array.isArray(currentReportData)) {
-        const items = currentReportData.items || [];
-        if (items.length === 0) {
+    try {
+        if (!currentReportData) {
             showReportErrorToast('Error', 'No hay datos para exportar');
             return;
         }
-    }
+        
+        // Check if it's an empty array
+        if (Array.isArray(currentReportData) && currentReportData.length === 0) {
+            showReportErrorToast('Error', 'No hay datos para exportar');
+            return;
+        }
+        
+        // Check if it's an items report object with empty items
+        if (currentReportType === 'items' && typeof currentReportData === 'object' && !Array.isArray(currentReportData)) {
+            const items = currentReportData.items || [];
+            if (items.length === 0) {
+                showReportErrorToast('Error', 'No hay datos para exportar');
+                return;
+            }
+        }
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
+        // Check if jsPDF is available
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            showReportErrorToast('Error', 'La librería PDF no está disponible. Por favor recargue la página.');
+            return;
+        }
 
-    // Report type names
-    const reportTypeNames = {
-        items: 'Reporte de Items',
-        users: 'Reporte de Usuarios',
-        loans: 'Reporte de Préstamos',
-        verifications: 'Reporte de Verificaciones',
-        inventory: 'Reporte de Inventarios',
-        general: 'Reporte General'
-    };
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
 
-    // Load logo (optional - continue even if it fails)
-    // Skip logo for loans reports as per user request
-    let logoImageData = null;
-    if (currentReportType !== 'loans') {
-        try {
-            const logoUrl = window.location.origin + '/svg/box.png';
-            const img = new Image();
+        // Report type names
+        const reportTypeNames = {
+            items: 'Reporte de Items',
+            loans: 'Reporte de Préstamos',
+            verifications: 'Reporte de Verificaciones',
+            inventory: 'Reporte de Inventarios',
+            general: 'Reporte General'
+        };
+
+        // Logo removed - no logo in PDF
+
+        // Enhanced Header with gradient effect
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const headerHeight = 60;
+        
+        // Main header background with gradient effect (dark green)
+        doc.setFillColor(0, 140, 0); // Darker SENA green
+        doc.rect(0, 0, pageWidth, headerHeight, 'F');
+    
+        // Accent bar at bottom of header
+        doc.setFillColor(0, 175, 0); // Brighter green
+        doc.rect(0, headerHeight - 5, pageWidth, 5, 'F');
+        
+        // Logo removed - no logo in PDF
+        
+        // Header text with better styling
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(28);
+        doc.setFont('helvetica', 'bold');
+        doc.text('SGDIS', 20, 28);
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Sistema de Gestión de Inventario SENA', 20, 38);
+        
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'italic');
+        doc.text(reportTypeNames[currentReportType] || 'Reporte', 20, 48);
+        
+        // Decorative line
+        doc.setDrawColor(255, 255, 255);
+        doc.setLineWidth(0.8);
+        doc.line(20, 52, pageWidth - 20, 52);
+
+        // Reset text color
+        doc.setTextColor(0, 0, 0);
+        
+        // Enhanced Filters section with box
+        let yPos = headerHeight + 18;
+        
+        // Background box for filters
+        doc.setFillColor(248, 250, 252); // Light gray background
+        doc.roundedRect(14, yPos - 10, pageWidth - 28, 58, 4, 4, 'F');
+        
+        // Border for filters box
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.8);
+        doc.roundedRect(14, yPos - 10, pageWidth - 28, 58, 4, 4);
+        
+        doc.setFontSize(13);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 140, 0); // Green for title
+        doc.text('INFORMACION DEL REPORTE', 20, yPos);
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(40, 40, 40);
+        
+        const regionalName = userRegionalName || 'Regional';
+        const institutionName = userInstitutionName || 'Institución';
+        const startDate = document.getElementById('startDate').value || 'No especificada';
+        const endDate = document.getElementById('endDate').value || 'No especificada';
+        const generatedDate = new Date().toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        // Two column layout for filters
+        yPos += 7;
+        doc.text('Regional:', 20, yPos);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(60, 60, 60);
+        doc.text(regionalName.length > 35 ? regionalName.substring(0, 35) + '...' : regionalName, 20 + 45, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(40, 40, 40);
+        
+        yPos += 7;
+        doc.text('Centro:', 20, yPos);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(60, 60, 60);
+        doc.text(institutionName.length > 35 ? institutionName.substring(0, 35) + '...' : institutionName, 20 + 45, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(40, 40, 40);
+        
+        yPos += 7;
+        doc.text('Fecha inicio:', 20, yPos);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(60, 60, 60);
+        doc.text(startDate || 'No especificada', 20 + 45, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(40, 40, 40);
+        
+        yPos += 7;
+        doc.text('Fecha fin:', 20, yPos);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(60, 60, 60);
+        doc.text(endDate || 'No especificada', 20 + 45, yPos);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(40, 40, 40);
+        
+        yPos += 7;
+        doc.text('Generado el:', 20, yPos);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(60, 60, 60);
+        doc.text(generatedDate, 20 + 45, yPos);
+        doc.setFont('helvetica', 'normal');
+        
+        doc.setTextColor(0, 0, 0); // Reset to black
+        yPos += 18;
+
+        if (currentReportType === 'general') {
+            // General report with statistics and charts
+            const data = currentReportData;
             
-            await new Promise((resolve) => {
-                let resolved = false;
-                const timeout = setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true;
-                        resolve();
-                    }
-                }, 1500);
-                
-                img.onload = () => {
-                    if (resolved) return;
-                    clearTimeout(timeout);
-                    try {
-                        // Create a hidden canvas to convert the image (never added to DOM)
-                        const canvas = document.createElement('canvas');
-                        canvas.width = img.width || 100;
-                        canvas.height = img.height || 100;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0);
-                        logoImageData = canvas.toDataURL('image/png');
-                        
-                        // Clean up canvas immediately (remove reference)
-                        canvas.width = 0;
-                        canvas.height = 0;
-                        canvas = null;
-                        resolved = true;
-                        resolve();
-                    } catch (e) {
-                        console.warn('Error processing logo for PDF:', e);
-                        resolved = true;
-                        resolve();
-                    }
-                };
-                
-                img.onerror = () => {
-                    if (resolved) return;
-                    clearTimeout(timeout);
-                    resolved = true;
-                    resolve();
-                };
-                
-                // Try to load the image
-                img.src = logoUrl;
-                img.crossOrigin = 'anonymous';
+            // Calculate statistics
+            const items = data.items || [];
+            const verifications = data.verifications || [];
+            const transfers = data.transfers || [];
+            const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+            
+            // Calculate items with most transfers
+            const itemTransferCounts = {};
+            transfers.forEach(transfer => {
+                const itemId = transfer.itemId || transfer.item?.id;
+                if (itemId) {
+                    itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
+                }
             });
+
+            const mostMovedItems = Object.entries(itemTransferCounts)
+                .map(([itemId, count]) => {
+                    const item = items.find(i => i.id === parseInt(itemId));
+                    return {
+                        id: itemId,
+                        name: item?.name || item?.licencePlateNumber || `Item ${itemId}`,
+                        count: count
+                    };
+                })
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            // Get top 5 most expensive items
+            const mostExpensiveItems = items
+                .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
+                .map(item => ({
+                    id: item.id,
+                    name: item.name || item.licencePlateNumber || `Item ${item.id}`,
+                    value: item.acquisitionValue
+                }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 5);
+
+            // Calculate items with most verifications
+            const itemVerificationCounts = {};
+            verifications.forEach(verification => {
+                const itemId = verification.itemId || verification.item?.id;
+                if (itemId) {
+                    itemVerificationCounts[itemId] = (itemVerificationCounts[itemId] || 0) + 1;
+                }
+            });
+
+            const mostVerifiedItems = Object.entries(itemVerificationCounts)
+                .map(([itemId, count]) => {
+                    const item = items.find(i => i.id === parseInt(itemId));
+                    return {
+                        id: itemId,
+                        name: item?.name || item?.licencePlateNumber || `Item ${itemId}`,
+                        count: count
+                    };
+                })
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            // Enhanced Statistics section with cards
+            yPos += 10; // Bajar 10px más
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('ESTADISTICAS GENERALES', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 14;
+
+            // Statistics cards in 2x2 grid
+            const cardWidth = (pageWidth - 42) / 2;
+            const cardHeight = 32;
+            const cardSpacing = 10;
             
-            // Add logo to PDF if loaded successfully
-            if (logoImageData) {
+            // Card 1: Total Items
+            doc.setFillColor(59, 130, 246); // Blue
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(40, 100, 200);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('TOTAL DE ITEMS', 20, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(items.length.toString(), 20, yPos + 22);
+            
+            // Card 2: Total Value
+            doc.setFillColor(34, 197, 94); // Green
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(20, 150, 70);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('VALOR TOTAL', 20 + cardWidth + cardSpacing, yPos + 8);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            const valueText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue);
+            // Split value text if too long
+            if (valueText.length > 28) {
+                const mid = Math.floor(valueText.length / 2);
+                doc.text(valueText.substring(0, mid), 20 + cardWidth + cardSpacing, yPos + 20);
+                doc.text(valueText.substring(mid), 20 + cardWidth + cardSpacing, yPos + 26);
+            } else {
+                doc.text(valueText, 20 + cardWidth + cardSpacing, yPos + 22);
+            }
+            
+            yPos += cardHeight + cardSpacing;
+            
+            // Card 3: Total Transfers
+            doc.setFillColor(147, 51, 234); // Purple
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(100, 30, 180);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('TOTAL TRANSFERENCIAS', 20, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(transfers.length.toString(), 20, yPos + 22);
+            
+            // Card 4: Total Verifications
+            doc.setFillColor(249, 115, 22); // Orange
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(200, 80, 10);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('TOTAL VERIFICACIONES', 20 + cardWidth + cardSpacing, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(verifications.length.toString(), 20 + cardWidth + cardSpacing, yPos + 22);
+            
+            doc.setTextColor(0, 0, 0); // Reset to black
+            yPos += cardHeight + 18;
+
+            // Enhanced Charts section - Nueva página
+            // Check if we need a new page for charts section
+            if (yPos > doc.internal.pageSize.getHeight() - 100) {
+                doc.addPage();
+                yPos = 20;
+            } else {
+                // Si hay espacio pero poco, también crear nueva página para mejor presentación
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('ANALISIS VISUAL', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 16;
+
+            // Charts with more width and centered
+            const chartWidth = (pageWidth - 50) / 2; // Más ancho (reducir márgenes)
+            const chartHeight = 60; // Más alto para mejor visualización
+            const chartSpacing = 12;
+            const chartStartX = (pageWidth - (chartWidth * 2 + chartSpacing)) / 2; // Centrado
+
+            // Chart 1: Most Moved Items (left side)
+            if (chartInstances.mostMoved && mostMovedItems.length > 0) {
                 try {
-                    doc.addImage(logoImageData, 'PNG', doc.internal.pageSize.getWidth() - 32, 8, 22, 22);
+                    // Chart box with border
+                    doc.setFillColor(250, 250, 252);
+                    doc.roundedRect(chartStartX, yPos - 5, chartWidth, chartHeight + 25, 4, 4, 'F');
+                    doc.setDrawColor(220, 220, 220);
+                    doc.setLineWidth(0.8);
+                    doc.roundedRect(chartStartX, yPos - 5, chartWidth, chartHeight + 25, 4, 4);
+                    
+                    const chartImage = chartInstances.mostMoved.toBase64Image('image/png', 1);
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(147, 51, 234);
+                    doc.text('ITEMS MAS MOVIDOS', chartStartX + 8, yPos);
+                    doc.setTextColor(0, 0, 0);
+                    
+                    doc.addImage(chartImage, 'PNG', chartStartX + 8, yPos + 6, chartWidth - 16, chartHeight);
                 } catch (e) {
-                    console.warn('Could not add logo to PDF page:', e);
+                    console.warn('Error exporting most moved chart:', e);
                 }
             }
-        } catch (error) {
-            // Silently continue without logo
-        }
-    }
 
-    // Enhanced Header with gradient effect
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const headerHeight = 60;
-    
-    // Main header background with gradient effect (dark green)
-    doc.setFillColor(0, 140, 0); // Darker SENA green
-    doc.rect(0, 0, pageWidth, headerHeight, 'F');
-    
-    // Accent bar at bottom of header
-    doc.setFillColor(0, 175, 0); // Brighter green
-    doc.rect(0, headerHeight - 5, pageWidth, 5, 'F');
-    
-    // Logo positioning (if available) - Skip for loans reports
-    if (logoImageData && currentReportType !== 'loans') {
-        try {
-            doc.addImage(logoImageData, 'PNG', pageWidth - 50, 10, 40, 40);
-        } catch (e) {
-            console.warn('Could not add logo to PDF page:', e);
-        }
-    }
-    
-    // Header text with better styling
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(28);
-    doc.setFont('helvetica', 'bold');
-    doc.text('SGDIS', 20, 28);
-    
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Sistema de Gestión de Inventario SENA', 20, 38);
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'italic');
-    doc.text(reportTypeNames[currentReportType] || 'Reporte', 20, 48);
-    
-    // Decorative line
-    doc.setDrawColor(255, 255, 255);
-    doc.setLineWidth(0.8);
-    doc.line(20, 52, pageWidth - 20, 52);
-
-    // Reset text color
-    doc.setTextColor(0, 0, 0);
-    
-    // Enhanced Filters section with box
-    let yPos = headerHeight + 18;
-    
-    // Background box for filters
-    doc.setFillColor(248, 250, 252); // Light gray background
-    doc.roundedRect(14, yPos - 10, pageWidth - 28, 58, 4, 4, 'F');
-    
-    // Border for filters box
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.8);
-    doc.roundedRect(14, yPos - 10, pageWidth - 28, 58, 4, 4);
-    
-    doc.setFontSize(13);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 140, 0); // Green for title
-    doc.text('INFORMACION DEL REPORTE', 20, yPos);
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(40, 40, 40);
-    
-    const regionalName = document.getElementById('regionalSelect').selectedOptions[0]?.text || 'Todas las regionales';
-    const institutionName = document.getElementById('institutionSelect').selectedOptions[0]?.text || 'Todos los centros';
-    const startDate = document.getElementById('startDate').value || 'No especificada';
-    const endDate = document.getElementById('endDate').value || 'No especificada';
-    const generatedDate = new Date().toLocaleDateString('es-ES', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    
-    // Two column layout for filters
-    yPos += 7;
-    doc.text('Regional:', 20, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(60, 60, 60);
-    doc.text(regionalName.length > 35 ? regionalName.substring(0, 35) + '...' : regionalName, 20 + 45, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(40, 40, 40);
-    
-    yPos += 7;
-    doc.text('Centro:', 20, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(60, 60, 60);
-    doc.text(institutionName.length > 35 ? institutionName.substring(0, 35) + '...' : institutionName, 20 + 45, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(40, 40, 40);
-    
-    yPos += 7;
-    doc.text('Fecha inicio:', 20, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(60, 60, 60);
-    doc.text(startDate || 'No especificada', 20 + 45, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(40, 40, 40);
-    
-    yPos += 7;
-    doc.text('Fecha fin:', 20, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(60, 60, 60);
-    doc.text(endDate || 'No especificada', 20 + 45, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(40, 40, 40);
-    
-    yPos += 7;
-    doc.text('Generado el:', 20, yPos);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(60, 60, 60);
-    doc.text(generatedDate, 20 + 45, yPos);
-    doc.setFont('helvetica', 'normal');
-    
-    doc.setTextColor(0, 0, 0); // Reset to black
-    yPos += 18;
-
-    if (currentReportType === 'general') {
-        // General report with statistics and charts
-        const data = currentReportData;
-        
-        // Calculate statistics
-        const items = data.items || [];
-        const verifications = data.verifications || [];
-        const transfers = data.transfers || [];
-        const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
-        
-        // Calculate items with most transfers
-        const itemTransferCounts = {};
-        transfers.forEach(transfer => {
-            const itemId = transfer.itemId || transfer.item?.id;
-            if (itemId) {
-                itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
-            }
-        });
-
-        const mostMovedItems = Object.entries(itemTransferCounts)
-            .map(([itemId, count]) => {
-                const item = items.find(i => i.id === parseInt(itemId));
-                return {
-                    id: itemId,
-                    name: item?.name || item?.licencePlateNumber || `Item ${itemId}`,
-                    count: count
-                };
-            })
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-
-        // Get top 5 most expensive items
-        const mostExpensiveItems = items
-            .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
-            .map(item => ({
-                id: item.id,
-                name: item.name || item.licencePlateNumber || `Item ${item.id}`,
-                value: item.acquisitionValue
-            }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-
-        // Calculate items with most verifications
-        const itemVerificationCounts = {};
-        verifications.forEach(verification => {
-            const itemId = verification.itemId || verification.item?.id;
-            if (itemId) {
-                itemVerificationCounts[itemId] = (itemVerificationCounts[itemId] || 0) + 1;
-            }
-        });
-
-        const mostVerifiedItems = Object.entries(itemVerificationCounts)
-            .map(([itemId, count]) => {
-                const item = items.find(i => i.id === parseInt(itemId));
-                return {
-                    id: itemId,
-                    name: item?.name || item?.licencePlateNumber || `Item ${itemId}`,
-                    count: count
-                };
-            })
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-
-        // Enhanced Statistics section with cards
-        yPos += 10; // Bajar 10px más
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 140, 0);
-        doc.text('ESTADISTICAS GENERALES', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 14;
-
-        // Statistics cards in 2x2 grid
-        const cardWidth = (pageWidth - 42) / 2;
-        const cardHeight = 32;
-        const cardSpacing = 10;
-        
-        // Card 1: Total Items
-        doc.setFillColor(59, 130, 246); // Blue
-        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
-        doc.setDrawColor(40, 100, 200);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text('TOTAL DE ITEMS', 20, yPos + 8);
-        doc.setFontSize(22);
-        doc.setFont('helvetica', 'bold');
-        doc.text(items.length.toString(), 20, yPos + 22);
-        
-        // Card 2: Total Value
-        doc.setFillColor(34, 197, 94); // Green
-        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
-        doc.setDrawColor(20, 150, 70);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text('VALOR TOTAL', 20 + cardWidth + cardSpacing, yPos + 8);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        const valueText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue);
-        // Split value text if too long
-        if (valueText.length > 28) {
-            const mid = Math.floor(valueText.length / 2);
-            doc.text(valueText.substring(0, mid), 20 + cardWidth + cardSpacing, yPos + 20);
-            doc.text(valueText.substring(mid), 20 + cardWidth + cardSpacing, yPos + 26);
-        } else {
-            doc.text(valueText, 20 + cardWidth + cardSpacing, yPos + 22);
-        }
-        
-        yPos += cardHeight + cardSpacing;
-        
-        // Card 3: Total Transfers
-        doc.setFillColor(147, 51, 234); // Purple
-        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
-        doc.setDrawColor(100, 30, 180);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text('TOTAL TRANSFERENCIAS', 20, yPos + 8);
-        doc.setFontSize(22);
-        doc.setFont('helvetica', 'bold');
-        doc.text(transfers.length.toString(), 20, yPos + 22);
-        
-        // Card 4: Total Verifications
-        doc.setFillColor(249, 115, 22); // Orange
-        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
-        doc.setDrawColor(200, 80, 10);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text('TOTAL VERIFICACIONES', 20 + cardWidth + cardSpacing, yPos + 8);
-        doc.setFontSize(22);
-        doc.setFont('helvetica', 'bold');
-        doc.text(verifications.length.toString(), 20 + cardWidth + cardSpacing, yPos + 22);
-        
-        doc.setTextColor(0, 0, 0); // Reset to black
-        yPos += cardHeight + 18;
-
-        // Enhanced Charts section - Nueva página
-        // Check if we need a new page for charts section
-        if (yPos > doc.internal.pageSize.getHeight() - 100) {
-            doc.addPage();
-            yPos = 20;
-        } else {
-            // Si hay espacio pero poco, también crear nueva página para mejor presentación
-            doc.addPage();
-            yPos = 20;
-        }
-        
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 140, 0);
-        doc.text('ANALISIS VISUAL', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 16;
-
-        // Charts with more width and centered
-        const chartWidth = (pageWidth - 50) / 2; // Más ancho (reducir márgenes)
-        const chartHeight = 60; // Más alto para mejor visualización
-        const chartSpacing = 12;
-        const chartStartX = (pageWidth - (chartWidth * 2 + chartSpacing)) / 2; // Centrado
-
-        // Chart 1: Most Moved Items (left side)
-        if (chartInstances.mostMoved && mostMovedItems.length > 0) {
-            try {
-                // Chart box with border
-                doc.setFillColor(250, 250, 252);
-                doc.roundedRect(chartStartX, yPos - 5, chartWidth, chartHeight + 25, 4, 4, 'F');
-                doc.setDrawColor(220, 220, 220);
-                doc.setLineWidth(0.8);
-                doc.roundedRect(chartStartX, yPos - 5, chartWidth, chartHeight + 25, 4, 4);
-                
-                const chartImage = chartInstances.mostMoved.toBase64Image('image/png', 1);
-                doc.setFontSize(11);
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(147, 51, 234);
-                doc.text('ITEMS MAS MOVIDOS', chartStartX + 8, yPos);
-                doc.setTextColor(0, 0, 0);
-                
-                doc.addImage(chartImage, 'PNG', chartStartX + 8, yPos + 6, chartWidth - 16, chartHeight);
-            } catch (e) {
-                console.warn('Error exporting most moved chart:', e);
-            }
-        }
-
-        // Chart 2: Most Expensive Items (right side)
-        if (chartInstances.mostExpensive && mostExpensiveItems.length > 0) {
-            try {
-                // Chart box with border
-                doc.setFillColor(250, 250, 252);
-                doc.roundedRect(chartStartX + chartWidth + chartSpacing, yPos - 5, chartWidth, chartHeight + 25, 4, 4, 'F');
-                doc.setDrawColor(220, 220, 220);
-                doc.setLineWidth(0.8);
-                doc.roundedRect(chartStartX + chartWidth + chartSpacing, yPos - 5, chartWidth, chartHeight + 25, 4, 4);
-                
-                const chartImage = chartInstances.mostExpensive.toBase64Image('image/png', 1);
-                doc.setFontSize(11);
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(34, 197, 94);
-                doc.text('ITEMS MAS CAROS', chartStartX + chartWidth + chartSpacing + 8, yPos);
-                doc.setTextColor(0, 0, 0);
-                
-                doc.addImage(chartImage, 'PNG', chartStartX + chartWidth + chartSpacing + 8, yPos + 6, chartWidth - 16, chartHeight);
-            } catch (e) {
-                console.warn('Error exporting most expensive chart:', e);
-            }
-        }
-
-        yPos += chartHeight + 40;
-
-        // Chart 3: Most Verified Items (full width, centered)
-        if (chartInstances.mostVerified && mostVerifiedItems.length > 0) {
-            try {
-                // Check if we need a new page
-                if (yPos > doc.internal.pageSize.getHeight() - 90) {
-                    doc.addPage();
-                    yPos = 20;
+            // Chart 2: Most Expensive Items (right side)
+            if (chartInstances.mostExpensive && mostExpensiveItems.length > 0) {
+                try {
+                    // Chart box with border
+                    doc.setFillColor(250, 250, 252);
+                    doc.roundedRect(chartStartX + chartWidth + chartSpacing, yPos - 5, chartWidth, chartHeight + 25, 4, 4, 'F');
+                    doc.setDrawColor(220, 220, 220);
+                    doc.setLineWidth(0.8);
+                    doc.roundedRect(chartStartX + chartWidth + chartSpacing, yPos - 5, chartWidth, chartHeight + 25, 4, 4);
+                    
+                    const chartImage = chartInstances.mostExpensive.toBase64Image('image/png', 1);
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(34, 197, 94);
+                    doc.text('ITEMS MAS CAROS', chartStartX + chartWidth + chartSpacing + 8, yPos);
+                    doc.setTextColor(0, 0, 0);
+                    
+                    doc.addImage(chartImage, 'PNG', chartStartX + chartWidth + chartSpacing + 8, yPos + 6, chartWidth - 16, chartHeight);
+                } catch (e) {
+                    console.warn('Error exporting most expensive chart:', e);
                 }
-                
-                // Chart box with border (full width but with margins for centering)
-                const fullChartWidth = pageWidth - 30; // Más ancho, menos márgenes
-                const fullChartStartX = (pageWidth - fullChartWidth) / 2; // Centrado
-                
-                doc.setFillColor(250, 250, 252);
-                doc.roundedRect(fullChartStartX, yPos - 5, fullChartWidth, chartHeight + 25, 4, 4, 'F');
-                doc.setDrawColor(220, 220, 220);
-                doc.setLineWidth(0.8);
-                doc.roundedRect(fullChartStartX, yPos - 5, fullChartWidth, chartHeight + 25, 4, 4);
-                
-                const chartImage = chartInstances.mostVerified.toBase64Image('image/png', 1);
-                doc.setFontSize(11);
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(249, 115, 22);
-                doc.text('ITEMS CON MAS VERIFICACIONES', fullChartStartX + 10, yPos);
+            }
+
+            yPos += chartHeight + 40;
+
+            // Chart 3: Most Verified Items (full width, centered)
+            if (chartInstances.mostVerified && mostVerifiedItems.length > 0) {
+                try {
+                    // Check if we need a new page
+                    if (yPos > doc.internal.pageSize.getHeight() - 90) {
+                        doc.addPage();
+                        yPos = 20;
+                    }
+                    
+                    // Chart box with border (full width but with margins for centering)
+                    const fullChartWidth = pageWidth - 30; // Más ancho, menos márgenes
+                    const fullChartStartX = (pageWidth - fullChartWidth) / 2; // Centrado
+                    
+                    doc.setFillColor(250, 250, 252);
+                    doc.roundedRect(fullChartStartX, yPos - 5, fullChartWidth, chartHeight + 25, 4, 4, 'F');
+                    doc.setDrawColor(220, 220, 220);
+                    doc.setLineWidth(0.8);
+                    doc.roundedRect(fullChartStartX, yPos - 5, fullChartWidth, chartHeight + 25, 4, 4);
+                    
+                    const chartImage = chartInstances.mostVerified.toBase64Image('image/png', 1);
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(249, 115, 22);
+                    doc.text('ITEMS CON MAS VERIFICACIONES', fullChartStartX + 10, yPos);
+                    doc.setTextColor(0, 0, 0);
+                    
+                    doc.addImage(chartImage, 'PNG', fullChartStartX + 10, yPos + 6, fullChartWidth - 20, chartHeight);
+                    yPos += chartHeight + 35;
+                } catch (e) {
+                    console.warn('Error exporting most verified chart:', e);
+                }
+            }
+
+            // Check if we need a new page for tables
+            if (yPos > doc.internal.pageSize.getHeight() - 40) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Enhanced Top Items Tables section
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('DETALLE DE ITEMS DESTACADOS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 14;
+
+            // Table 1: Most Moved Items
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(147, 51, 234);
+            doc.text('ITEMS MAS MOVIDOS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 10;
+
+            if (mostMovedItems.length > 0) {
+                const movedTableData = [
+                    ['#', 'Nombre del Item', 'Transferencias'],
+                    ...mostMovedItems.map((item, idx) => [
+                        (idx + 1).toString(),
+                        item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
+                        item.count.toString() + ' trans.'
+                    ])
+                ];
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [movedTableData[0]],
+                    body: movedTableData.slice(1),
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [147, 51, 234],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 3
+                    },
+                    alternateRowStyles: {
+                        fillColor: [250, 250, 252]
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        lineColor: [220, 220, 220],
+                        lineWidth: 0.3
+                    },
+                    margin: { left: 14, right: 14 }
+                });
+                yPos = doc.lastAutoTable.finalY + 15;
+            } else {
+                // Message when no data
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.setTextColor(140, 140, 140);
+                doc.text('No hay datos disponibles', 20, yPos);
                 doc.setTextColor(0, 0, 0);
-                
-                doc.addImage(chartImage, 'PNG', fullChartStartX + 10, yPos + 6, fullChartWidth - 20, chartHeight);
-                yPos += chartHeight + 35;
-            } catch (e) {
-                console.warn('Error exporting most verified chart:', e);
+                yPos += 12;
+            }
+
+            // Check if we need a new page
+            if (yPos > doc.internal.pageSize.getHeight() - 50) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Table 2: Most Expensive Items
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(34, 197, 94);
+            doc.text('ITEMS MAS CAROS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 10;
+
+            if (mostExpensiveItems.length > 0) {
+                const expensiveTableData = [
+                    ['#', 'Nombre del Item', 'Valor'],
+                    ...mostExpensiveItems.map((item, idx) => [
+                        (idx + 1).toString(),
+                        item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
+                        new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
+                    ])
+                ];
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [expensiveTableData[0]],
+                    body: expensiveTableData.slice(1),
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [34, 197, 94],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 3
+                    },
+                    alternateRowStyles: {
+                        fillColor: [250, 250, 252]
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        lineColor: [220, 220, 220],
+                        lineWidth: 0.3
+                    },
+                    margin: { left: 14, right: 14 }
+                });
+                yPos = doc.lastAutoTable.finalY + 15;
+            } else {
+                // Message when no data
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.setTextColor(140, 140, 140);
+                doc.text('No hay datos disponibles', 20, yPos);
+                doc.setTextColor(0, 0, 0);
+                yPos += 12;
+            }
+
+            // Check if we need a new page
+            if (yPos > doc.internal.pageSize.getHeight() - 50) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Table 3: Most Verified Items
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(249, 115, 22);
+            doc.text('ITEMS CON MAS VERIFICACIONES', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 10;
+
+            if (mostVerifiedItems.length > 0) {
+                const verifiedTableData = [
+                    ['#', 'Nombre del Item', 'Verificaciones'],
+                    ...mostVerifiedItems.map((item, idx) => [
+                        (idx + 1).toString(),
+                        item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
+                        item.count.toString() + ' verif.'
+                    ])
+                ];
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [verifiedTableData[0]],
+                    body: verifiedTableData.slice(1),
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [249, 115, 22],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 3
+                    },
+                    alternateRowStyles: {
+                        fillColor: [250, 250, 252]
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        lineColor: [220, 220, 220],
+                        lineWidth: 0.3
+                    },
+                    margin: { left: 14, right: 14 }
+                });
+            } else {
+                // Message when no data
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.setTextColor(140, 140, 140);
+                doc.text('No hay datos disponibles', 20, yPos);
+                doc.setTextColor(0, 0, 0);
+            }
+        } else if (currentReportType === 'items') {
+            // Items report with statistics
+            const data = currentReportData;
+            const items = data.items || [];
+            const loans = data.loans || [];
+            const transfers = data.transfers || [];
+            
+            // Calculate statistics
+            const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+            const totalItems = items.length;
+            
+            // Calculate items on loan
+            const itemsOnLoan = new Set();
+            loans.forEach(loan => {
+                if (!loan.returned && loan.itemId) {
+                    itemsOnLoan.add(loan.itemId);
+                }
+            });
+            const totalItemsOnLoan = itemsOnLoan.size;
+            
+            // Calculate items with most transfers
+            const itemTransferCounts = {};
+            transfers.forEach(transfer => {
+                const itemId = transfer.itemId || transfer.item?.id;
+                if (itemId) {
+                    itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
+                }
+            });
+            
+            const mostMovedItems = Object.entries(itemTransferCounts)
+                .map(([itemId, count]) => {
+                    const item = items.find(i => i.id === parseInt(itemId));
+                    return {
+                        id: itemId,
+                        name: item?.name || item?.licencePlateNumber || item?.productName || `Item ${itemId}`,
+                        count: count
+                    };
+                })
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+            
+            // Get top 5 most expensive items
+            const mostExpensiveItems = items
+                .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
+                .map(item => ({
+                    id: item.id,
+                    name: item.name || item.licencePlateNumber || item.productName || `Item ${item.id}`,
+                    value: item.acquisitionValue
+                }))
+                .sort((a, b) => b.value - a.value)
+                .slice(0, 5);
+            
+            // Enhanced Statistics section with cards
+            yPos += 10;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('ESTADISTICAS DE ITEMS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 14;
+
+            // Statistics cards in 2x2 grid
+            const cardWidth = (pageWidth - 42) / 2;
+            const cardHeight = 32;
+            const cardSpacing = 10;
+            
+            // Card 1: Total Items
+            doc.setFillColor(59, 130, 246); // Blue
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(40, 100, 200);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('CANTIDAD TOTAL DE ITEMS', 20, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(totalItems.toString(), 20, yPos + 22);
+            
+            // Card 2: Total Value
+            doc.setFillColor(34, 197, 94); // Green
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(20, 150, 70);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('VALOR TOTAL DE ITEMS', 20 + cardWidth + cardSpacing, yPos + 8);
+            doc.setFontSize(11);
+            doc.setFont('helvetica', 'bold');
+            const valueText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue);
+            if (valueText.length > 28) {
+                const mid = Math.floor(valueText.length / 2);
+                doc.text(valueText.substring(0, mid), 20 + cardWidth + cardSpacing, yPos + 20);
+                doc.text(valueText.substring(mid), 20 + cardWidth + cardSpacing, yPos + 26);
+            } else {
+                doc.text(valueText, 20 + cardWidth + cardSpacing, yPos + 22);
+            }
+            
+            yPos += cardHeight + cardSpacing;
+            
+            // Card 3: Items on Loan
+            doc.setFillColor(147, 51, 234); // Purple
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(100, 30, 180);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('TOTAL ITEMS EN PRESTAMO', 20, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(totalItemsOnLoan.toString(), 20, yPos + 22);
+            
+            // Card 4: Most Moved Items
+            doc.setFillColor(249, 115, 22); // Orange
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(200, 80, 10);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('ITEMS MAS MOVIDOS', 20 + cardWidth + cardSpacing, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(mostMovedItems.length > 0 ? mostMovedItems[0].count.toString() : '0', 20 + cardWidth + cardSpacing, yPos + 22);
+            
+            doc.setTextColor(0, 0, 0); // Reset to black
+            yPos += cardHeight + 18;
+
+            // Always add a new page for tables section
+            doc.addPage();
+            yPos = 20;
+
+            // Enhanced Top Items Tables section
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('DETALLE DE ITEMS DESTACADOS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 14;
+
+            // Table 1: Most Moved Items
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(249, 115, 22);
+            doc.text('ITEMS MAS MOVIDOS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 10;
+
+            if (mostMovedItems.length > 0) {
+                const movedTableData = [
+                    ['#', 'Nombre del Item', 'Transferencias'],
+                    ...mostMovedItems.map((item, idx) => [
+                        (idx + 1).toString(),
+                        (item.name || '').length > 35 ? (item.name || '').substring(0, 35) + '...' : (item.name || ''),
+                        item.count.toString() + ' trans.'
+                    ])
+                ];
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [movedTableData[0]],
+                    body: movedTableData.slice(1),
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [249, 115, 22],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 3
+                    },
+                    alternateRowStyles: {
+                        fillColor: [250, 250, 252]
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        lineColor: [220, 220, 220],
+                        lineWidth: 0.3
+                    },
+                    margin: { left: 14, right: 14 }
+                });
+                yPos = doc.lastAutoTable.finalY + 15;
+            } else {
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.setTextColor(140, 140, 140);
+                doc.text('No hay datos disponibles', 20, yPos);
+                doc.setTextColor(0, 0, 0);
+                yPos += 12;
+            }
+
+            // Check if we need a new page
+            if (yPos > doc.internal.pageSize.getHeight() - 50) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Table 2: Most Expensive Items
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(34, 197, 94);
+            doc.text('ITEMS MAS CAROS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 10;
+
+            if (mostExpensiveItems.length > 0) {
+                const expensiveTableData = [
+                    ['#', 'Nombre del Item', 'Valor'],
+                    ...mostExpensiveItems.map((item, idx) => [
+                        (idx + 1).toString(),
+                        (item.name || '').length > 35 ? (item.name || '').substring(0, 35) + '...' : (item.name || ''),
+                        new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
+                    ])
+                ];
+
+                doc.autoTable({
+                    startY: yPos,
+                    head: [expensiveTableData[0]],
+                    body: expensiveTableData.slice(1),
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [34, 197, 94],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 3
+                    },
+                    alternateRowStyles: {
+                        fillColor: [250, 250, 252]
+                    },
+                    styles: {
+                        cellPadding: 3,
+                        lineColor: [220, 220, 220],
+                        lineWidth: 0.3
+                    },
+                    margin: { left: 14, right: 14 }
+                });
+            } else {
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.setTextColor(140, 140, 140);
+                doc.text('No hay datos disponibles', 20, yPos);
+                doc.setTextColor(0, 0, 0);
+            }
+        } else {
+            // Enhanced Table report for other types
+            const headers = getHeadersForReportType(currentReportType);
+            const tableData = Array.isArray(currentReportData) ? currentReportData.map(item => 
+                headers.map(header => formatValue(getValueForField(item, header.field), header.type, header.field))
+            ) : [];
+
+            // Section title
+            yPos += 10; // Add space before the title
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('DETALLE DE REGISTROS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 12;
+
+            if (tableData.length > 0) {
+                doc.autoTable({
+                    startY: yPos,
+                    head: [headers.map(h => h.label)],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [0, 140, 0],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10,
+                        cellPadding: 5,
+                        halign: 'center'
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 4,
+                        halign: 'left'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [250, 250, 252]
+                    },
+                    styles: { 
+                        fontSize: 9,
+                        cellPadding: 3,
+                        lineColor: [220, 220, 220],
+                        lineWidth: 0.3
+                    },
+                    margin: { left: 14, right: 14 },
+                    overflow: 'linebreak'
+                });
             }
         }
 
-        // Check if we need a new page for tables
-        if (yPos > doc.internal.pageSize.getHeight() - 40) {
-            doc.addPage();
-            yPos = 20;
+        // Enhanced Footer on each page
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            const pageHeight = doc.internal.pageSize.getHeight();
+            
+            // Footer background
+            doc.setFillColor(245, 247, 250);
+            doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+            
+            // Footer top line
+            doc.setDrawColor(0, 140, 0);
+            doc.setLineWidth(0.5);
+            doc.line(0, pageHeight - 20, pageWidth, pageHeight - 20);
+            
+            // Footer text
+            doc.setFontSize(8);
+            doc.setTextColor(100, 100, 100);
+            doc.setFont('helvetica', 'normal');
+            doc.text(
+                `Página ${i} de ${pageCount}`,
+                pageWidth / 2,
+                pageHeight - 12,
+                { align: 'center' }
+            );
+            
+            doc.setFontSize(7);
+            doc.setTextColor(150, 150, 150);
+            doc.text(
+                'SGDIS - Sistema de Gestión de Inventario SENA',
+                pageWidth / 2,
+                pageHeight - 6,
+                { align: 'center' }
+            );
         }
 
-        // Enhanced Top Items Tables section
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 140, 0);
-        doc.text('DETALLE DE ITEMS DESTACADOS', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 14;
-
-        // Table 1: Most Moved Items
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(147, 51, 234);
-        doc.text('ITEMS MAS MOVIDOS', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 10;
-
-        if (mostMovedItems.length > 0) {
-            const movedTableData = [
-                ['#', 'Nombre del Item', 'Transferencias'],
-                ...mostMovedItems.map((item, idx) => [
-                    (idx + 1).toString(),
-                    item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
-                    item.count.toString() + ' trans.'
-                ])
-            ];
-
-            doc.autoTable({
-                startY: yPos,
-                head: [movedTableData[0]],
-                body: movedTableData.slice(1),
-                theme: 'striped',
-                headStyles: { 
-                    fillColor: [147, 51, 234],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                bodyStyles: {
-                    fontSize: 9,
-                    cellPadding: 3
-                },
-                alternateRowStyles: {
-                    fillColor: [250, 250, 252]
-                },
-                styles: {
-                    cellPadding: 3,
-                    lineColor: [220, 220, 220],
-                    lineWidth: 0.3
-                },
-                margin: { left: 14, right: 14 }
-            });
-            yPos = doc.lastAutoTable.finalY + 15;
-        } else {
-            // Message when no data
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'italic');
-            doc.setTextColor(140, 140, 140);
-            doc.text('No hay datos disponibles', 20, yPos);
-            doc.setTextColor(0, 0, 0);
-            yPos += 12;
-        }
-
-        // Check if we need a new page
-        if (yPos > doc.internal.pageSize.getHeight() - 50) {
-            doc.addPage();
-            yPos = 20;
-        }
-
-        // Table 2: Most Expensive Items
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(34, 197, 94);
-        doc.text('ITEMS MAS CAROS', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 10;
-
-        if (mostExpensiveItems.length > 0) {
-            const expensiveTableData = [
-                ['#', 'Nombre del Item', 'Valor'],
-                ...mostExpensiveItems.map((item, idx) => [
-                    (idx + 1).toString(),
-                    item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
-                    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
-                ])
-            ];
-
-            doc.autoTable({
-                startY: yPos,
-                head: [expensiveTableData[0]],
-                body: expensiveTableData.slice(1),
-                theme: 'striped',
-                headStyles: { 
-                    fillColor: [34, 197, 94],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                bodyStyles: {
-                    fontSize: 9,
-                    cellPadding: 3
-                },
-                alternateRowStyles: {
-                    fillColor: [250, 250, 252]
-                },
-                styles: {
-                    cellPadding: 3,
-                    lineColor: [220, 220, 220],
-                    lineWidth: 0.3
-                },
-                margin: { left: 14, right: 14 }
-            });
-            yPos = doc.lastAutoTable.finalY + 15;
-        } else {
-            // Message when no data
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'italic');
-            doc.setTextColor(140, 140, 140);
-            doc.text('No hay datos disponibles', 20, yPos);
-            doc.setTextColor(0, 0, 0);
-            yPos += 12;
-        }
-
-        // Check if we need a new page
-        if (yPos > doc.internal.pageSize.getHeight() - 50) {
-            doc.addPage();
-            yPos = 20;
-        }
-
-        // Table 3: Most Verified Items
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(249, 115, 22);
-        doc.text('ITEMS CON MAS VERIFICACIONES', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 10;
-
-        if (mostVerifiedItems.length > 0) {
-            const verifiedTableData = [
-                ['#', 'Nombre del Item', 'Verificaciones'],
-                ...mostVerifiedItems.map((item, idx) => [
-                    (idx + 1).toString(),
-                    item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
-                    item.count.toString() + ' verif.'
-                ])
-            ];
-
-            doc.autoTable({
-                startY: yPos,
-                head: [verifiedTableData[0]],
-                body: verifiedTableData.slice(1),
-                theme: 'striped',
-                headStyles: { 
-                    fillColor: [249, 115, 22],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                bodyStyles: {
-                    fontSize: 9,
-                    cellPadding: 3
-                },
-                alternateRowStyles: {
-                    fillColor: [250, 250, 252]
-                },
-                styles: {
-                    cellPadding: 3,
-                    lineColor: [220, 220, 220],
-                    lineWidth: 0.3
-                },
-                margin: { left: 14, right: 14 }
-            });
-        } else {
-            // Message when no data
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'italic');
-            doc.setTextColor(140, 140, 140);
-            doc.text('No hay datos disponibles', 20, yPos);
-            doc.setTextColor(0, 0, 0);
-        }
-    } else if (currentReportType === 'items') {
-        // Items report with statistics
-        const data = currentReportData;
-        const items = data.items || [];
-        const loans = data.loans || [];
-        const transfers = data.transfers || [];
+        // Save PDF
+        const fileName = `${reportTypeNames[currentReportType] || 'Reporte'}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
         
-        // Calculate statistics
-        const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
-        const totalItems = items.length;
-        
-        // Calculate items on loan
-        const itemsOnLoan = new Set();
-        loans.forEach(loan => {
-            if (!loan.returned && loan.itemId) {
-                itemsOnLoan.add(loan.itemId);
-            }
-        });
-        const totalItemsOnLoan = itemsOnLoan.size;
-        
-        // Calculate items with most transfers
-        const itemTransferCounts = {};
-        transfers.forEach(transfer => {
-            const itemId = transfer.itemId || transfer.item?.id;
-            if (itemId) {
-                itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
-            }
-        });
-        
-        const mostMovedItems = Object.entries(itemTransferCounts)
-            .map(([itemId, count]) => {
-                const item = items.find(i => i.id === parseInt(itemId));
-                return {
-                    id: itemId,
-                    name: item?.name || item?.licencePlateNumber || item?.productName || `Item ${itemId}`,
-                    count: count
-                };
-            })
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-        
-        // Get top 5 most expensive items
-        const mostExpensiveItems = items
-            .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
-            .map(item => ({
-                id: item.id,
-                name: item.name || item.licencePlateNumber || item.productName || `Item ${item.id}`,
-                value: item.acquisitionValue
-            }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 5);
-        
-        // Enhanced Statistics section with cards
-        yPos += 10;
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 140, 0);
-        doc.text('ESTADISTICAS DE ITEMS', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 14;
-
-        // Statistics cards in 2x2 grid
-        const cardWidth = (pageWidth - 42) / 2;
-        const cardHeight = 32;
-        const cardSpacing = 10;
-        
-        // Card 1: Total Items
-        doc.setFillColor(59, 130, 246); // Blue
-        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
-        doc.setDrawColor(40, 100, 200);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text('CANTIDAD TOTAL DE ITEMS', 20, yPos + 8);
-        doc.setFontSize(22);
-        doc.setFont('helvetica', 'bold');
-        doc.text(totalItems.toString(), 20, yPos + 22);
-        
-        // Card 2: Total Value
-        doc.setFillColor(34, 197, 94); // Green
-        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
-        doc.setDrawColor(20, 150, 70);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text('VALOR TOTAL DE ITEMS', 20 + cardWidth + cardSpacing, yPos + 8);
-        doc.setFontSize(11);
-        doc.setFont('helvetica', 'bold');
-        const valueText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue);
-        if (valueText.length > 28) {
-            const mid = Math.floor(valueText.length / 2);
-            doc.text(valueText.substring(0, mid), 20 + cardWidth + cardSpacing, yPos + 20);
-            doc.text(valueText.substring(mid), 20 + cardWidth + cardSpacing, yPos + 26);
-        } else {
-            doc.text(valueText, 20 + cardWidth + cardSpacing, yPos + 22);
-        }
-        
-        yPos += cardHeight + cardSpacing;
-        
-        // Card 3: Items on Loan
-        doc.setFillColor(147, 51, 234); // Purple
-        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
-        doc.setDrawColor(100, 30, 180);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text('TOTAL ITEMS EN PRESTAMO', 20, yPos + 8);
-        doc.setFontSize(22);
-        doc.setFont('helvetica', 'bold');
-        doc.text(totalItemsOnLoan.toString(), 20, yPos + 22);
-        
-        // Card 4: Most Moved Items
-        doc.setFillColor(249, 115, 22); // Orange
-        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
-        doc.setDrawColor(200, 80, 10);
-        doc.setLineWidth(0.5);
-        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text('ITEMS MAS MOVIDOS', 20 + cardWidth + cardSpacing, yPos + 8);
-        doc.setFontSize(22);
-        doc.setFont('helvetica', 'bold');
-        doc.text(mostMovedItems.length > 0 ? mostMovedItems[0].count.toString() : '0', 20 + cardWidth + cardSpacing, yPos + 22);
-        
-        doc.setTextColor(0, 0, 0); // Reset to black
-        yPos += cardHeight + 18;
-
-        // Always add a new page for tables section
-        doc.addPage();
-        yPos = 20;
-
-        // Enhanced Top Items Tables section
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 140, 0);
-        doc.text('DETALLE DE ITEMS DESTACADOS', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 14;
-
-        // Table 1: Most Moved Items
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(249, 115, 22);
-        doc.text('ITEMS MAS MOVIDOS', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 10;
-
-        if (mostMovedItems.length > 0) {
-            const movedTableData = [
-                ['#', 'Nombre del Item', 'Transferencias'],
-                ...mostMovedItems.map((item, idx) => [
-                    (idx + 1).toString(),
-                    (item.name || '').length > 35 ? (item.name || '').substring(0, 35) + '...' : (item.name || ''),
-                    item.count.toString() + ' trans.'
-                ])
-            ];
-
-            doc.autoTable({
-                startY: yPos,
-                head: [movedTableData[0]],
-                body: movedTableData.slice(1),
-                theme: 'striped',
-                headStyles: { 
-                    fillColor: [249, 115, 22],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                bodyStyles: {
-                    fontSize: 9,
-                    cellPadding: 3
-                },
-                alternateRowStyles: {
-                    fillColor: [250, 250, 252]
-                },
-                styles: {
-                    cellPadding: 3,
-                    lineColor: [220, 220, 220],
-                    lineWidth: 0.3
-                },
-                margin: { left: 14, right: 14 }
-            });
-            yPos = doc.lastAutoTable.finalY + 15;
-        } else {
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'italic');
-            doc.setTextColor(140, 140, 140);
-            doc.text('No hay datos disponibles', 20, yPos);
-            doc.setTextColor(0, 0, 0);
-            yPos += 12;
-        }
-
-        // Check if we need a new page
-        if (yPos > doc.internal.pageSize.getHeight() - 50) {
-            doc.addPage();
-            yPos = 20;
-        }
-
-        // Table 2: Most Expensive Items
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(34, 197, 94);
-        doc.text('ITEMS MAS CAROS', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 10;
-
-        if (mostExpensiveItems.length > 0) {
-            const expensiveTableData = [
-                ['#', 'Nombre del Item', 'Valor'],
-                ...mostExpensiveItems.map((item, idx) => [
-                    (idx + 1).toString(),
-                    (item.name || '').length > 35 ? (item.name || '').substring(0, 35) + '...' : (item.name || ''),
-                    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
-                ])
-            ];
-
-            doc.autoTable({
-                startY: yPos,
-                head: [expensiveTableData[0]],
-                body: expensiveTableData.slice(1),
-                theme: 'striped',
-                headStyles: { 
-                    fillColor: [34, 197, 94],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10
-                },
-                bodyStyles: {
-                    fontSize: 9,
-                    cellPadding: 3
-                },
-                alternateRowStyles: {
-                    fillColor: [250, 250, 252]
-                },
-                styles: {
-                    cellPadding: 3,
-                    lineColor: [220, 220, 220],
-                    lineWidth: 0.3
-                },
-                margin: { left: 14, right: 14 }
-            });
-        } else {
-            doc.setFontSize(10);
-            doc.setFont('helvetica', 'italic');
-            doc.setTextColor(140, 140, 140);
-            doc.text('No hay datos disponibles', 20, yPos);
-            doc.setTextColor(0, 0, 0);
-        }
-    } else {
-        // Enhanced Table report for other types
-        const headers = getHeadersForReportType(currentReportType);
-        const tableData = Array.isArray(currentReportData) ? currentReportData.map(item => 
-            headers.map(header => formatValue(getValueForField(item, header.field), header.type, header.field))
-        ) : [];
-
-        // Section title
-        yPos += 10; // Add space before the title
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 140, 0);
-        doc.text('DETALLE DE REGISTROS', 14, yPos);
-        doc.setTextColor(0, 0, 0);
-        yPos += 12;
-
-        if (tableData.length > 0) {
-            doc.autoTable({
-                startY: yPos,
-                head: [headers.map(h => h.label)],
-                body: tableData,
-                theme: 'striped',
-                headStyles: { 
-                    fillColor: [0, 140, 0],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold',
-                    fontSize: 10,
-                    cellPadding: 5,
-                    halign: 'center'
-                },
-                bodyStyles: {
-                    fontSize: 9,
-                    cellPadding: 4,
-                    halign: 'left'
-                },
-                alternateRowStyles: {
-                    fillColor: [250, 250, 252]
-                },
-                styles: { 
-                    fontSize: 9,
-                    cellPadding: 3,
-                    lineColor: [220, 220, 220],
-                    lineWidth: 0.3
-                },
-                margin: { left: 14, right: 14 },
-                overflow: 'linebreak'
-            });
-        }
+        showReportSuccessToast('Éxito', 'Reporte exportado a PDF correctamente');
+    } catch (error) {
+        console.error('Error exporting to PDF:', error);
+        showReportErrorToast('Error', 'Error al exportar el PDF: ' + (error.message || 'Error desconocido'));
     }
-
-    // Enhanced Footer on each page
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        const pageHeight = doc.internal.pageSize.getHeight();
-        
-        // Footer background
-        doc.setFillColor(245, 247, 250);
-        doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
-        
-        // Footer top line
-        doc.setDrawColor(0, 140, 0);
-        doc.setLineWidth(0.5);
-        doc.line(0, pageHeight - 20, pageWidth, pageHeight - 20);
-        
-        // Footer text
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.setFont('helvetica', 'normal');
-        doc.text(
-            `Página ${i} de ${pageCount}`,
-            pageWidth / 2,
-            pageHeight - 12,
-            { align: 'center' }
-        );
-        
-        doc.setFontSize(7);
-        doc.setTextColor(150, 150, 150);
-        doc.text(
-            'SGDIS - Sistema de Gestión de Inventario SENA',
-            pageWidth / 2,
-            pageHeight - 6,
-            { align: 'center' }
-        );
-    }
-
-    // Save PDF
-    const fileName = `${reportTypeNames[currentReportType] || 'Reporte'}_${new Date().toISOString().split('T')[0]}.pdf`;
-    doc.save(fileName);
-    
-    showReportSuccessToast('Éxito', 'Reporte exportado a PDF correctamente');
 }
 
 

@@ -143,6 +143,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   rewriteAdminInstitutionSidebarLinks();
+  rewriteAdminRegionalSidebarLinks();
 
   // Initialize dashboard if we're on a dashboard page
   if (
@@ -174,6 +175,29 @@ function rewriteAdminInstitutionSidebarLinks() {
       link.setAttribute(
         "onclick",
         onclickValue.replace(/'\/superadmin/g, "'/admininstitution")
+      );
+    }
+  });
+}
+
+function rewriteAdminRegionalSidebarLinks() {
+  const path = window.location.pathname || "";
+  if (!path.includes("/admin_regional")) {
+    return;
+  }
+
+  const links = document.querySelectorAll("a.sidebar-item");
+  links.forEach((link) => {
+    const href = link.getAttribute("href");
+    if (href && href.startsWith("/superadmin")) {
+      link.setAttribute("href", href.replace("/superadmin", "/admin_regional"));
+    }
+
+    const onclickValue = link.getAttribute("onclick");
+    if (onclickValue && onclickValue.includes("'/superadmin")) {
+      link.setAttribute(
+        "onclick",
+        onclickValue.replace(/'\/superadmin/g, "'/admin_regional")
       );
     }
   });
@@ -1146,6 +1170,12 @@ async function loadAdminDashboardData() {
     loadAdminCharts(),
     loadAdminMonthlyActivity(),
   ]);
+  
+  // Load inventories if on admin_regional dashboard
+  const path = window.location.pathname;
+  if (path.includes("/admin_regional")) {
+    loadRegionalInventories();
+  }
 }
 
 async function loadUserDashboardData() {
@@ -1609,3 +1639,269 @@ sidebarItems.forEach((item) => {
     }
   });
 });
+
+// Regional Admin Inventories Functions
+let regionalInventoriesData = {
+  allInventories: [],
+  filteredInventories: [],
+  institutions: [],
+  selectedInstitutionId: null
+};
+
+// Load regional inventories when on admin_regional dashboard
+async function loadRegionalInventories() {
+  const path = window.location.pathname;
+  if (!path.includes("/admin_regional")) {
+    return;
+  }
+
+  showInventoriesLoading();
+  try {
+    // Ensure user info is loaded (it should already be loaded by loadAdminDashboardData)
+    if (!dashboardData.user) {
+      await loadUserInfo();
+    }
+
+    if (!dashboardData.user) {
+      throw new Error("User info not available");
+    }
+
+    // Get user's institution and regional
+    const token = localStorage.getItem("jwt");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    // Get user's institution details to find regional
+    const institutionsResponse = await fetch("/api/v1/institutions", {
+      method: "GET",
+      headers,
+    });
+
+    if (!institutionsResponse.ok) {
+      throw new Error("Failed to load institutions");
+    }
+
+    const allInstitutions = await institutionsResponse.json();
+    const userInstitution = allInstitutions.find(
+      (inst) => inst.name === dashboardData.user.institution
+    );
+
+    if (!userInstitution || !userInstitution.regionalId) {
+      throw new Error("User institution or regional not found");
+    }
+
+    const regionalId = userInstitution.regionalId;
+
+    // Load institutions for this regional
+    await loadRegionalInstitutions(regionalId);
+
+    // Load inventories
+    const inventoriesResponse = await fetch(
+      `/api/v1/inventory/regionalAdminInventories?page=0&size=10000`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (inventoriesResponse.ok) {
+      const pageData = await inventoriesResponse.json();
+      regionalInventoriesData.allInventories = pageData.content || [];
+      regionalInventoriesData.filteredInventories = [...regionalInventoriesData.allInventories];
+      renderInventories();
+    } else {
+      throw new Error("Failed to load inventories");
+    }
+  } catch (error) {
+    console.error("Error loading regional inventories:", error);
+    showInventoriesError();
+  }
+}
+
+// Load institutions for a regional
+async function loadRegionalInstitutions(regionalId) {
+  try {
+    const token = localStorage.getItem("jwt");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch(
+      `/api/v1/institutions/institutionsByRegionalId/${regionalId}`,
+      {
+        method: "GET",
+        headers,
+      }
+    );
+
+    if (response.ok) {
+      regionalInventoriesData.institutions = await response.json();
+      populateInstitutionFilter();
+    } else {
+      throw new Error("Failed to load institutions");
+    }
+  } catch (error) {
+    console.error("Error loading regional institutions:", error);
+    regionalInventoriesData.institutions = [];
+  }
+}
+
+// Populate institution filter select
+function populateInstitutionFilter() {
+  const select = document.getElementById("institutionFilterSelect");
+  if (!select) return;
+
+  // Clear existing options except the first one
+  while (select.options.length > 1) {
+    select.remove(1);
+  }
+
+  // Add institutions
+  if (regionalInventoriesData.institutions && regionalInventoriesData.institutions.length > 0) {
+    regionalInventoriesData.institutions.forEach((institution) => {
+      const option = document.createElement("option");
+      option.value = institution.id.toString();
+      option.textContent = institution.name || `Institución ${institution.id}`;
+      select.appendChild(option);
+    });
+  }
+
+  // Add change event listener
+  select.addEventListener("change", handleInstitutionFilterChange);
+}
+
+// Handle institution filter change
+function handleInstitutionFilterChange(event) {
+  const selectedId = event.target.value;
+  regionalInventoriesData.selectedInstitutionId = selectedId || null;
+
+  if (!selectedId) {
+    // Show all inventories
+    regionalInventoriesData.filteredInventories = [...regionalInventoriesData.allInventories];
+  } else {
+    // Filter by institution
+    regionalInventoriesData.filteredInventories = regionalInventoriesData.allInventories.filter(
+      (inventory) => {
+        // Check if inventory has institutionId property
+        if (inventory.institutionId) {
+          return inventory.institutionId.toString() === selectedId;
+        }
+        return false;
+      }
+    );
+  }
+
+  renderInventories();
+}
+
+// Render inventories list
+function renderInventories() {
+  const listContainer = document.getElementById("inventoriesList");
+  const emptyState = document.getElementById("inventoriesEmptyState");
+  const loadingState = document.getElementById("inventoriesLoadingState");
+  const errorState = document.getElementById("inventoriesErrorState");
+
+  if (!listContainer || !emptyState || !loadingState || !errorState) return;
+
+  hideInventoriesLoading();
+  hideInventoriesError();
+
+  if (regionalInventoriesData.filteredInventories.length === 0) {
+    listContainer.classList.add("hidden");
+    emptyState.classList.remove("hidden");
+    return;
+  }
+
+  emptyState.classList.add("hidden");
+  listContainer.classList.remove("hidden");
+
+  const inventoriesHtml = regionalInventoriesData.filteredInventories
+    .map((inventory) => {
+      const institutionName = inventory.institutionName || "Sin institución";
+      const inventoryName = inventory.name || `Inventario #${inventory.id}`;
+      const location = inventory.location || "Ubicación no especificada";
+      const quantityItems = inventory.quantityItems || 0;
+      const status = inventory.status ? "Activo" : "Inactivo";
+      const statusColor = inventory.status ? "text-green-600" : "text-gray-600";
+
+      return `
+        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h3 class="text-lg font-semibold text-gray-800 mb-2">${inventoryName}</h3>
+              <div class="flex flex-wrap gap-4 text-sm text-gray-600 mb-2">
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-building text-gray-400"></i>
+                  <span>${institutionName}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-map-marker-alt text-gray-400"></i>
+                  <span>${location}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-boxes text-gray-400"></i>
+                  <span>${quantityItems} items</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-circle ${statusColor} text-xs"></i>
+                  <span class="${statusColor}">${status}</span>
+                </div>
+                ${inventory.id ? `
+                <div class="flex items-center gap-2">
+                  <i class="fas fa-hashtag text-gray-400"></i>
+                  <span>ID: ${inventory.id}</span>
+                </div>
+                ` : ""}
+              </div>
+            </div>
+            <div class="flex items-center gap-2 ml-4">
+              <a href="/admin_regional/inventory" 
+                 class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                <i class="fas fa-eye mr-2"></i>Ver Detalles
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  listContainer.innerHTML = inventoriesHtml;
+}
+
+// Show/hide loading state
+function showInventoriesLoading() {
+  const loadingState = document.getElementById("inventoriesLoadingState");
+  const listContainer = document.getElementById("inventoriesList");
+  const emptyState = document.getElementById("inventoriesEmptyState");
+  const errorState = document.getElementById("inventoriesErrorState");
+
+  if (loadingState) loadingState.classList.remove("hidden");
+  if (listContainer) listContainer.classList.add("hidden");
+  if (emptyState) emptyState.classList.add("hidden");
+  if (errorState) errorState.classList.add("hidden");
+}
+
+function hideInventoriesLoading() {
+  const loadingState = document.getElementById("inventoriesLoadingState");
+  if (loadingState) loadingState.classList.add("hidden");
+}
+
+function showInventoriesError() {
+  const errorState = document.getElementById("inventoriesErrorState");
+  const loadingState = document.getElementById("inventoriesLoadingState");
+  const listContainer = document.getElementById("inventoriesList");
+  const emptyState = document.getElementById("inventoriesEmptyState");
+
+  if (errorState) errorState.classList.remove("hidden");
+  if (loadingState) loadingState.classList.add("hidden");
+  if (listContainer) listContainer.classList.add("hidden");
+  if (emptyState) emptyState.classList.add("hidden");
+}
+
+function hideInventoriesError() {
+  const errorState = document.getElementById("inventoriesErrorState");
+  if (errorState) errorState.classList.add("hidden");
+}
+
+// Make loadRegionalInventories available globally
+window.loadRegionalInventories = loadRegionalInventories;

@@ -472,5 +472,32 @@ public class VerificationController {
         
         return ResponseEntity.ok(responsePage);
     }
+
+    @Operation(
+            summary = "Get verifications by regional",
+            description = "Retrieves all verifications from inventories belonging to institutions in the specified regional with pagination"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Verifications retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @ApiResponse(responseCode = "404", description = "Regional not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/regional/{regionalId}")
+    public ResponseEntity<Page<VerificationResponse>> getVerificationsByRegional(
+            @Parameter(description = "Regional ID", required = true)
+            @PathVariable Long regionalId,
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<VerificationEntity> verificationPage = verificationRepository.findAllByRegionalId(regionalId, pageable);
+        Page<VerificationResponse> responsePage = verificationPage.map(VerificationMapper::toDto);
+        return ResponseEntity.ok(responsePage);
+    }
 }
 

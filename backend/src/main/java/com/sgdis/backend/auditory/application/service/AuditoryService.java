@@ -61,6 +61,25 @@ public class AuditoryService implements RecordActionUseCase, ListAuditoryUseCase
                 .build();
     }
 
+    public PagedAuditoryResponse listAuditoriesByRegional(Long regionalId, Pageable pageable) {
+        Page<AuditoryEntity> auditoryPage = springDataAuditoryRepository.findAllByRegionalIdOrderByDateDesc(regionalId, pageable);
+        
+        List<AuditoryResponse> auditoryResponses = auditoryPage.getContent()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+
+        return PagedAuditoryResponse.builder()
+                .auditories(auditoryResponses)
+                .currentPage(auditoryPage.getNumber())
+                .totalPages(auditoryPage.getTotalPages())
+                .totalAuditories(auditoryPage.getTotalElements())
+                .pageSize(auditoryPage.getSize())
+                .first(auditoryPage.isFirst())
+                .last(auditoryPage.isLast())
+                .build();
+    }
+
     private AuditoryResponse toResponse(AuditoryEntity entity) {
         return AuditoryResponse.builder()
                 .id(entity.getId())

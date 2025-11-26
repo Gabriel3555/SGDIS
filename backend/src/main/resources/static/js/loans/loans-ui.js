@@ -126,6 +126,7 @@ function updateLoansTable() {
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Préstamo</th>
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Devolución</th>
                         <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</th>
+                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -151,6 +152,16 @@ function updateLoansTable() {
         const statusText = getLoanStatusText(loan.returned);
         const statusColor = getLoanStatusColor(loan.returned);
 
+        const returnButton = !loan.returned ? `
+            <button onclick="handleReturnItemClick(${loan.id})" 
+                class="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-medium transition-colors flex items-center gap-1">
+                <i class="fas fa-undo"></i>
+                <span>Devolver</span>
+            </button>
+        ` : `
+            <span class="text-xs text-gray-500 dark:text-gray-400">Devuelto</span>
+        `;
+
         tableHtml += `
             <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                 <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">${loan.id || 'N/A'}</td>
@@ -163,6 +174,9 @@ function updateLoansTable() {
                     <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColor}">
                         ${statusText}
                     </span>
+                </td>
+                <td class="py-3 px-4 text-center">
+                    ${returnButton}
                 </td>
             </tr>
         `;
