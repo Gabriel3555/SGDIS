@@ -69,7 +69,15 @@ public class InventoryService
                 List<InventoryEntity> existingInventories = inventoryRepository
                                 .findInventoryEntitiesByOwnerId(owner.getId());
                 if (existingInventories != null && !existingInventories.isEmpty()) {
-                        throw new DomainConflictException("Este propietario ya tiene un inventario asignado");
+                        InventoryEntity existingInventory = existingInventories.get(0);
+                        String inventoryName = existingInventory.getName() != null ? existingInventory.getName() : "sin nombre";
+                        throw new DomainConflictException(
+                                String.format("El usuario '%s' (ID: %d) ya tiene un inventario asignado como propietario: '%s' (ID: %d). Un usuario solo puede ser propietario de un inventario a la vez.",
+                                        owner.getFullName() != null ? owner.getFullName() : owner.getEmail(),
+                                        owner.getId(),
+                                        inventoryName,
+                                        existingInventory.getId())
+                        );
                 }
 
                 // Validar que institutionId no sea null
