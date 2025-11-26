@@ -666,37 +666,139 @@ async function fetchUsersReport(regionalId, institutionId, startDate, endDate) {
 
 // Fetch loans report
 async function fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate) {
-    // If no specific inventory, get loans from all inventories of the institution
     const token = localStorage.getItem('jwt');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    let endpoint = '/api/v1/loans?page=0&size=10000';
+    // Build endpoint with filters
+    const params = new URLSearchParams();
+    if (institutionId) {
+        params.append('institutionId', institutionId.toString());
+    }
+    if (inventoryId) {
+        params.append('inventoryId', inventoryId.toString());
+    }
+
+    let endpoint = '/api/v1/loan/filter';
+    const paramsString = params.toString();
+    if (paramsString) {
+        endpoint += `?${paramsString}`;
+    }
+
+    console.log('Fetching loans from:', endpoint);
+
     const response = await fetch(endpoint, {
         method: 'GET',
         headers: headers
     });
 
-    if (response.ok) {
-        const data = await response.json();
-        let loans = data.content || data || [];
-        
-        // Filter by date if provided
-        if (startDate || endDate) {
-            loans = loans.filter(loan => {
-                const loanDate = loan.createdAt || loan.loanDate;
-                if (!loanDate) return false;
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        console.error('Error fetching loans:', response.status, errorText);
+        throw new Error(`Error al cargar préstamos: ${response.status} - ${errorText}`);
+    }
+
+    let loans = await response.json();
+    if (!Array.isArray(loans)) {
+        console.warn('Loans response is not an array:', loans);
+        loans = [];
+    }
+
+    console.log(`Loaded ${loans.length} loans from API`);
+    
+    // Filter by date if provided
+    if (startDate || endDate) {
+        loans = loans.filter(loan => {
+            const loanDate = loan.lendAt;
+            if (!loanDate) return false;
+            try {
                 const date = new Date(loanDate);
-                if (startDate && date < new Date(startDate)) return false;
-                if (endDate && date > new Date(endDate)) return false;
+                if (isNaN(date.getTime())) return false;
+                
+                if (startDate) {
+                    const startDateObj = new Date(startDate);
+                    startDateObj.setHours(0, 0, 0, 0);
+                    if (date < startDateObj) return false;
+                }
+                if (endDate) {
+                    const endDateObj = new Date(endDate);
+                    endDateObj.setHours(23, 59, 59, 999);
+                    if (date > endDateObj) return false;
+                }
                 return true;
+            } catch (e) {
+                console.warn('Error parsing loan date:', loanDate, e);
+                return false;
+            }
+        });
+        console.log(`Filtered to ${loans.length} loans by date range`);
+    }
+    
+    // Fetch item names for all unique item IDs
+    const uniqueItemIds = [...new Set(loans.map(loan => loan.itemId).filter(id => id != null))];
+    const itemNamesMap = await fetchItemNames(uniqueItemIds, headers);
+    
+    // Map loan data to expected format for display
+    return loans.map(loan => {
+        const itemId = loan.itemId;
+        const itemName = itemNamesMap[itemId] || `Item #${itemId || 'N/A'}`;
+        
+        return {
+            id: loan.id,
+            userName: loan.responsibleName || 'N/A',
+            itemName: itemName,
+            loanDate: loan.lendAt,
+            returnDate: loan.returnAt || null,
+            status: (loan.returned === true || loan.returned === 'true') ? 'Devuelto' : 'Prestado',
+            responsibleName: loan.responsibleName || 'N/A',
+            lenderName: loan.lenderName || 'N/A',
+            itemId: loan.itemId,
+            detailsLend: loan.detailsLend,
+            detailsReturn: loan.detailsReturn,
+            returned: (loan.returned === true || loan.returned === 'true')
+        };
+    });
+}
+
+// Fetch item names for given item IDs
+async function fetchItemNames(itemIds, headers) {
+    if (!itemIds || itemIds.length === 0) {
+        return {};
+    }
+
+    const itemNamesMap = {};
+    
+    // Initialize with item IDs as fallback
+    itemIds.forEach(id => {
+        itemNamesMap[id] = `Item #${id}`;
+    });
+    
+    // Try to get all items for the institution
+    try {
+        const allItemsResponse = await fetch(`/api/v1/items?page=0&size=10000`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (allItemsResponse.ok) {
+            const itemsData = await allItemsResponse.json();
+            const items = Array.isArray(itemsData) ? itemsData : (itemsData.content || []);
+            
+            items.forEach(item => {
+                if (item.id && itemIds.includes(item.id)) {
+                    const name = item.productName || item.name || item.licencePlateNumber;
+                    if (name) {
+                        itemNamesMap[item.id] = name;
+                    }
+                }
             });
         }
-        
-        return loans;
-    } else {
-        throw new Error('Error al cargar préstamos');
+    } catch (error) {
+        console.warn('Error fetching item names:', error);
+        // Continue with item IDs as fallback
     }
+
+    return itemNamesMap;
 }
 
 // Fetch verifications report
