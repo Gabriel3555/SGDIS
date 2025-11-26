@@ -567,37 +567,100 @@ async function fetchUsersReport(regionalId, institutionId, startDate, endDate) {
 
 // Fetch loans report
 async function fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate) {
-    // If no specific inventory, get loans from all inventories of the institution
     const token = localStorage.getItem('jwt');
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (!token) {
+        throw new Error('No se encontró el token de autenticación');
+    }
+    
+    const headers = { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
 
-    let endpoint = '/api/v1/loans?page=0&size=10000';
+    // Build endpoint with filters using /api/v1/loan/filter
+    const params = new URLSearchParams();
+    if (regionalId) {
+        params.append('regionalId', regionalId.toString());
+    }
+    if (institutionId) {
+        params.append('institutionId', institutionId.toString());
+    }
+    if (inventoryId) {
+        params.append('inventoryId', inventoryId.toString());
+    }
+
+    let endpoint = '/api/v1/loan/filter';
+    const paramsString = params.toString();
+    if (paramsString) {
+        endpoint += `?${paramsString}`;
+    }
+
+    console.log('Fetching loans from:', endpoint);
+
     const response = await fetch(endpoint, {
         method: 'GET',
         headers: headers
     });
 
-    if (response.ok) {
-        const data = await response.json();
-        let loans = data.content || data || [];
-        
-        // Filter by date if provided
-        if (startDate || endDate) {
-            loans = loans.filter(loan => {
-                const loanDate = loan.createdAt || loan.loanDate;
-                if (!loanDate) return false;
-                const date = new Date(loanDate);
-                if (startDate && date < new Date(startDate)) return false;
-                if (endDate && date > new Date(endDate)) return false;
-                return true;
-            });
-        }
-        
-        return loans;
-    } else {
-        throw new Error('Error al cargar préstamos');
+    if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Error desconocido');
+        console.error('Error fetching loans:', response.status, errorText);
+        throw new Error(`Error al cargar préstamos: ${response.status} - ${errorText}`);
     }
+
+    let loans = await response.json();
+    if (!Array.isArray(loans)) {
+        console.warn('Loans response is not an array:', loans);
+        loans = [];
+    }
+
+    console.log(`Loaded ${loans.length} loans from API`);
+    
+    // Filter by date if provided
+    if (startDate || endDate) {
+        loans = loans.filter(loan => {
+            const loanDate = loan.lendAt || loan.createdAt || loan.loanDate;
+            if (!loanDate) return false;
+            try {
+                const date = new Date(loanDate);
+                if (isNaN(date.getTime())) return false;
+                
+                if (startDate) {
+                    const startDateObj = new Date(startDate);
+                    startDateObj.setHours(0, 0, 0, 0);
+                    if (date < startDateObj) return false;
+                }
+                if (endDate) {
+                    const endDateObj = new Date(endDate);
+                    endDateObj.setHours(23, 59, 59, 999);
+                    if (date > endDateObj) return false;
+                }
+                return true;
+            } catch (e) {
+                console.warn('Error parsing loan date:', loanDate, e);
+                return false;
+            }
+        });
+        console.log(`Filtered to ${loans.length} loans by date range`);
+    }
+    
+    // Map loan data to expected format for display
+    return loans.map(loan => {
+        return {
+            id: loan.id,
+            userName: loan.responsibleName || 'N/A',
+            itemName: `Item #${loan.itemId || 'N/A'}`,
+            loanDate: loan.lendAt,
+            returnDate: loan.returnAt || null,
+            status: (loan.returned === true || loan.returned === 'true') ? 'Devuelto' : 'Prestado',
+            responsibleName: loan.responsibleName,
+            lenderName: loan.lenderName,
+            itemId: loan.itemId,
+            detailsLend: loan.detailsLend,
+            detailsReturn: loan.detailsReturn,
+            returned: (loan.returned === true || loan.returned === 'true')
+        };
+    });
 }
 
 // Fetch verifications report
@@ -1896,68 +1959,70 @@ async function exportToPDF() {
     };
 
     // Load logo (optional - continue even if it fails)
-    // Logo is loaded in memory only, not displayed on page
+    // Skip logo for loans reports as per user request
     let logoImageData = null;
-    try {
-        const logoUrl = window.location.origin + '/svg/box.png';
-        const img = new Image();
-        
-        await new Promise((resolve) => {
-            let resolved = false;
-            const timeout = setTimeout(() => {
-                if (!resolved) {
+    if (currentReportType !== 'loans') {
+        try {
+            const logoUrl = window.location.origin + '/svg/box.png';
+            const img = new Image();
+            
+            await new Promise((resolve) => {
+                let resolved = false;
+                const timeout = setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        resolve();
+                    }
+                }, 1500);
+                
+                img.onload = () => {
+                    if (resolved) return;
+                    clearTimeout(timeout);
+                    try {
+                        // Create a hidden canvas to convert the image (never added to DOM)
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width || 100;
+                        canvas.height = img.height || 100;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        logoImageData = canvas.toDataURL('image/png');
+                        
+                        // Clean up canvas immediately (remove reference)
+                        canvas.width = 0;
+                        canvas.height = 0;
+                        canvas = null;
+                        resolved = true;
+                        resolve();
+                    } catch (e) {
+                        console.warn('Error processing logo for PDF:', e);
+                        resolved = true;
+                        resolve();
+                    }
+                };
+                
+                img.onerror = () => {
+                    if (resolved) return;
+                    clearTimeout(timeout);
                     resolved = true;
                     resolve();
-                }
-            }, 1500);
+                };
+                
+                // Try to load the image
+                img.src = logoUrl;
+                img.crossOrigin = 'anonymous';
+            });
             
-            img.onload = () => {
-                if (resolved) return;
-                clearTimeout(timeout);
+            // Add logo to PDF if loaded successfully
+            if (logoImageData) {
                 try {
-                    // Create a hidden canvas to convert the image (never added to DOM)
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width || 100;
-                    canvas.height = img.height || 100;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    logoImageData = canvas.toDataURL('image/png');
-                    
-                    // Clean up canvas immediately (remove reference)
-                    canvas.width = 0;
-                    canvas.height = 0;
-                    canvas = null;
-                    resolved = true;
-                    resolve();
+                    doc.addImage(logoImageData, 'PNG', doc.internal.pageSize.getWidth() - 32, 8, 22, 22);
                 } catch (e) {
-                    console.warn('Error processing logo for PDF:', e);
-                    resolved = true;
-                    resolve();
+                    console.warn('Could not add logo to PDF page:', e);
                 }
-            };
-            
-            img.onerror = () => {
-                if (resolved) return;
-                clearTimeout(timeout);
-                resolved = true;
-                resolve();
-            };
-            
-            // Try to load the image
-            img.src = logoUrl;
-            img.crossOrigin = 'anonymous';
-        });
-        
-        // Add logo to PDF if loaded successfully
-        if (logoImageData) {
-            try {
-                doc.addImage(logoImageData, 'PNG', doc.internal.pageSize.getWidth() - 32, 8, 22, 22);
-            } catch (e) {
-                console.warn('Could not add logo to PDF page:', e);
             }
+        } catch (error) {
+            // Silently continue without logo
         }
-    } catch (error) {
-        // Silently continue without logo
     }
 
     // Enhanced Header with gradient effect
@@ -1972,8 +2037,8 @@ async function exportToPDF() {
     doc.setFillColor(0, 175, 0); // Brighter green
     doc.rect(0, headerHeight - 5, pageWidth, 5, 'F');
     
-    // Logo positioning (if available)
-    if (logoImageData) {
+    // Logo positioning (if available) - Skip for loans reports
+    if (logoImageData && currentReportType !== 'loans') {
         try {
             doc.addImage(logoImageData, 'PNG', pageWidth - 50, 10, 40, 40);
         } catch (e) {
