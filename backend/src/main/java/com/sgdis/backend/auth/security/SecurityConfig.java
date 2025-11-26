@@ -58,8 +58,8 @@ public class SecurityConfig  {
                             response.setStatus(403);
                             response.getWriter().write("{\"error\":\"Access denied\"}");
                         } else {
-                            // For page requests, show error page
-                            response.sendRedirect("/error.html");
+                            // For page requests, redirect to home page
+                            response.sendRedirect("/");
                         }
                     })
                 )

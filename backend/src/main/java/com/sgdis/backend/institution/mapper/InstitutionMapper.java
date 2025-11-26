@@ -19,7 +19,9 @@ public final class InstitutionMapper {
                 entity.getName(),
                 entity.getCodeInstitution(),
                 entity.getRegional() != null ? entity.getRegional().getId() : null,
-                entity.getCity() != null ? entity.getCity().getId() : null
+                entity.getRegional() != null ? entity.getRegional().getName() : null,
+                entity.getCity() != null ? entity.getCity().getId() : null,
+                entity.getCity() != null ? entity.getCity().getCity() : null
         );
     }
 

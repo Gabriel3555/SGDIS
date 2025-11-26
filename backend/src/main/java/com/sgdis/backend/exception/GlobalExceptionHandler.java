@@ -1,12 +1,16 @@
 package com.sgdis.backend.exception;
 
 import com.sgdis.backend.exception.userExceptions.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -153,8 +157,38 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
+    @ExceptionHandler(AccessDeniedException.class)
+    public void handleAccessDeniedException(
+            AccessDeniedException ex,
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        // For API requests, return JSON error
+        if (request.getRequestURI().startsWith("/api/")) {
+            response.setContentType("application/json");
+            response.setStatus(HttpStatus.FORBIDDEN.value());
+            response.getWriter().write("{\"error\":\"Access denied\"}");
+        } else {
+            // For page requests, redirect to home page
+            response.sendRedirect("/");
+        }
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
+    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex, HttpServletRequest request) {
+        // Check if it's an Access Denied exception that wasn't caught by the specific handler
+        if (ex instanceof AccessDeniedException || 
+            (ex.getMessage() != null && ex.getMessage().contains("Access Denied"))) {
+            // This should have been caught by the AccessDeniedException handler above
+            // But if it reaches here, we'll handle it
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("timestamp", LocalDateTime.now().toString());
+            errorResponse.put("status", HttpStatus.FORBIDDEN.value());
+            errorResponse.put("error", "Access Denied");
+            errorResponse.put("message", "Acceso denegado");
+            errorResponse.put("detail", "Access Denied");
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        }
+        
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("timestamp", LocalDateTime.now().toString());
         errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());

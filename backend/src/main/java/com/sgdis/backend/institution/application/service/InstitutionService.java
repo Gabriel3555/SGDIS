@@ -30,7 +30,7 @@ public class InstitutionService implements
 
     @Override
     public List<GetAllInstitutionResponse> getAllInstitution() {
-        return institutionRepository.findAll()
+        return institutionRepository.findAllWithRelations()
                 .stream()
                 .map(InstitutionMapper::toGetAllResponse)
                 .collect(Collectors.toList());
