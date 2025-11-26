@@ -59,8 +59,8 @@ async function loadCurrentUserInfo() {
             window.currentUserRole = userData.role;
             updateUserInfoDisplay(userData);
             
-            // If super admin, trigger filter update to show regional/institution filters
-            if (userData.role && userData.role.toUpperCase() === 'SUPERADMIN') {
+            // If super admin or admin_regional, trigger filter update to show filters
+            if (userData.role && (userData.role.toUpperCase() === 'SUPERADMIN' || userData.role.toUpperCase() === 'ADMIN_REGIONAL')) {
                 // Small delay to ensure UI is ready
                 setTimeout(() => {
                     if (typeof updateSearchAndFilters === 'function') {
@@ -103,6 +103,38 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
             size: size.toString()
         });
         return `/api/v1/inventory/institutionAdminInventories?${params.toString()}`;
+    }
+    
+    // Check if we're admin_regional
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    
+    if (isAdminRegional) {
+        // Use window.inventoryData to ensure we get the latest values
+        // Safely get inventoryData - check if we're in items page context
+        const data = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : {});
+        const selectedInstitution = data.selectedInstitution;
+        
+        // Get the regional ID from the current user
+        const currentUser = window.currentUserData || {};
+        const userRegionalId = currentUser.institution?.regional?.id || currentUser.regional?.id;
+        
+        if (selectedInstitution && userRegionalId) {
+            // Filter by both regional and institution
+            const params = new URLSearchParams({
+                page: page.toString(),
+                size: size.toString()
+            });
+            const endpoint = `/api/v1/inventory/regional/${userRegionalId}/institution/${selectedInstitution}?${params.toString()}`;
+            return endpoint;
+        } else {
+            // Use the regional admin inventories endpoint (all inventories of the regional)
+            const params = new URLSearchParams({
+                page: page.toString(),
+                size: size.toString()
+            });
+            return `/api/v1/inventory/regionalAdminInventories?${params.toString()}`;
+        }
     }
     
     // Check if we have regional/institution filters for super admin
@@ -152,6 +184,8 @@ function updateInventoryScopeMessage(scope = 'global') {
 
     if (scope === 'institution') {
         welcomeMessage.textContent = 'Inventarios asociados a tu institución.';
+    } else if (scope === 'regional') {
+        welcomeMessage.textContent = 'Administración y control de inventarios de la regional';
     } else {
         welcomeMessage.textContent = 'Administración y control de inventarios del sistema';
     }
@@ -169,6 +203,8 @@ async function loadInventories(options = {}) {
         const page = typeof options.page === 'number' ? options.page : 0;
         const size = typeof options.size === 'number' ? options.size : (inventoryData?.serverPageSize || DEFAULT_INSTITUTION_PAGE_SIZE);
         const useInstitutionScope = shouldUseInstitutionInventories();
+        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
         const endpoint = buildInventoryEndpoint(page, size);
 
         if (inventoryData) {
@@ -188,7 +224,7 @@ async function loadInventories(options = {}) {
                 inventories = payload;
                 if (inventoryData) {
                     inventoryData.serverPagination = null;
-                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : 'global';
+                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : (isAdminRegional ? 'regional' : 'global');
                 }
             } else if (payload && Array.isArray(payload.content)) {
                 inventories = payload.content;
@@ -199,13 +235,13 @@ async function loadInventories(options = {}) {
                         totalPages: payload.totalPages ?? 1,
                         totalElements: payload.totalElements ?? payload.content.length
                     };
-                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : 'global';
+                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : (isAdminRegional ? 'regional' : 'global');
                 }
             } else {
                 inventories = [];
                 if (inventoryData) {
                     inventoryData.serverPagination = null;
-                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : 'global';
+                    inventoryData.inventoryScope = useInstitutionScope ? 'institution' : (isAdminRegional ? 'regional' : 'global');
                 }
             }
 
@@ -870,8 +906,12 @@ async function loadInstitutionsForFilter(regionalId) {
                 const currentInstitution = inventoryDataRef?.selectedInstitution || '';
                 
                 if (institutions && Array.isArray(institutions) && institutions.length > 0) {
+                    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+                    const defaultLabel = isAdminRegional ? 'Todos los centros' : 'Todas las instituciones';
+                    
                     const options = [
-                        { value: '', label: 'Todas las instituciones' },
+                        { value: '', label: defaultLabel },
                         ...institutions.map(institution => ({
                             value: institution.id.toString(),
                             label: institution.name || `Institución ${institution.id}`
@@ -894,8 +934,12 @@ async function loadInstitutionsForFilter(regionalId) {
                         }, 50);
                     }
                 } else {
+                    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+                    const noInstitutionsLabel = isAdminRegional ? 'No hay centros disponibles' : 'No hay instituciones disponibles';
+                    
                     window.inventoryInstitutionFilterSelect.setOptions([
-                        { value: '', label: 'No hay instituciones disponibles', disabled: true }
+                        { value: '', label: noInstitutionsLabel, disabled: true }
                     ]);
                     // Disable if no institutions
                     if (typeof window.inventoryInstitutionFilterSelect.setDisabled === 'function') {
@@ -927,9 +971,13 @@ async function loadInstitutionsForFilter(regionalId) {
                         });
                         return true;
                     } else {
+                        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+                        const noInstitutionsLabel = isAdminRegional ? 'No hay centros disponibles' : 'No hay instituciones disponibles';
+                        
                         const option = document.createElement('option');
                         option.value = '';
-                        option.textContent = 'No hay instituciones disponibles';
+                        option.textContent = noInstitutionsLabel;
                         option.disabled = true;
                         selectElement.appendChild(option);
                         return true;
