@@ -9,23 +9,23 @@
     --dark-bg-primary: #0F172A;        /* slate-900 - fondo principal */
     --dark-bg-secondary: #1E293B;     /* slate-800 - contenedores */
     --dark-bg-tertiary: #334155;      /* slate-700 - elementos elevados */
-    
+
     /* Colores de texto */
     --dark-text-primary: #F1F5F9;     /* slate-100 - texto principal */
     --dark-text-secondary: #CBD5E1;   /* slate-300 - texto secundario */
     --dark-text-muted: #94A3B8;       /* slate-400 - texto deshabilitado */
-    
+
     /* Verde SENA adaptado para modo oscuro - basado en #00AF00 */
     --dark-sena-verde: #00AF00;       /* verde brillante para modo oscuro */
     --dark-sena-verde-hover: #00AF00;  /* color base SENA */
     --dark-sena-verde-dark: #00AF00;  /* verde oscuro */
     --dark-sena-verde-light: #00AF00; /* verde claro */
     --dark-sena-verde-bg: rgba(0, 175, 0, 0.1); /* fondo verde suave */
-    
+
     /* Colores de borde */
     --dark-border: #334155;           /* slate-700 */
     --dark-border-light: #475569;     /* slate-600 */
-    
+
     /* Efectos de vidrio para modo oscuro */
     --dark-glass: rgba(30, 41, 59, 0.95); /* slate-800 con opacidad */
     --dark-glass-border: rgba(148, 163, 184, 0.2); /* slate-400 con opacidad */
@@ -489,6 +489,20 @@ html.dark button {
     color: var(--dark-sena-verde) !important;
 }
 
+/* Iconos del sidebar en modo oscuro - blancos */
+.dark .sidebar-item i,
+.dark aside.sidebar nav .sidebar-item i,
+.dark .sidebar nav .sidebar-item i {
+    color: #ffffff !important;
+}
+
+/* Iconos del sidebar activo en modo oscuro - mantener color verde */
+.dark .sidebar-item.active i,
+.dark aside.sidebar nav .sidebar-item.active i,
+.dark .sidebar nav .sidebar-item.active i {
+    color: var(--dark-sena-verde) !important;
+}
+
 /* Header en modo oscuro */
 .dark header {
     background-color: var(--dark-bg-secondary) !important;
@@ -653,6 +667,23 @@ html.dark button {
 .dark .search-input:focus {
     border-color: var(--dark-sena-verde) !important;
     box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+}
+
+/* Search input en modo claro */
+html:not(.dark) .search-input {
+    background-color: #ffffff !important;
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) .search-input::placeholder {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+html:not(.dark) .search-input:focus {
+    border-color: #00AF00 !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1) !important;
+    background-color: #ffffff !important;
 }
 
 /* Estilos para sección de propietario en modal de inventario */
@@ -1155,10 +1186,7 @@ html:not(.dark) .stat-card .status-badge-inactive.text-red-600 {
 }
 
 /* Asegurar que los colores no se sobrescriban por estilos generales */
-html:not(.dark) .status-badge-active,
-html:not(.dark) .status-badge-inactive {
-    /* Prevenir que estilos generales de texto gris afecten los badges */
-}
+/* Los estilos de status-badge-active e inactive están definidos arriba */
 
 html:not(.dark) #inventoryTableContainer .status-badge-active {
     background-color: rgba(0, 175, 0, 0.2) !important;
@@ -2177,3 +2205,1502 @@ html:not(.dark) #viewItemModal button.border-gray-300:hover {
     color: #1F2937 !important; /* gray-800 */
 }
 
+/* ============================================
+   TRANSFERS MODALS - DARK MODE
+   ============================================ */
+
+/* Modales de transferencias en modo oscuro */
+.dark #newTransferModal > div.bg-white,
+.dark #viewTransferModal > div.bg-white,
+.dark #approveTransferModal > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark #newTransferModal h2,
+.dark #viewTransferModal h2,
+.dark #approveTransferModal h2 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #newTransferModal label,
+.dark #viewTransferModal label,
+.dark #approveTransferModal label {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #newTransferModal input[type="text"],
+.dark #newTransferModal input[type="number"],
+.dark #newTransferModal textarea,
+.dark #approveTransferModal textarea {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #newTransferModal input[type="text"]::placeholder,
+.dark #newTransferModal input[type="number"]::placeholder,
+.dark #newTransferModal textarea::placeholder,
+.dark #approveTransferModal textarea::placeholder {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #newTransferModal input[type="text"]:focus,
+.dark #newTransferModal input[type="number"]:focus,
+.dark #newTransferModal textarea:focus,
+.dark #approveTransferModal textarea:focus {
+    border-color: var(--dark-sena-verde) !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #newTransferModal button.text-gray-400,
+.dark #viewTransferModal button.text-gray-400,
+.dark #approveTransferModal button.text-gray-400 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #newTransferModal button.text-gray-400:hover,
+.dark #viewTransferModal button.text-gray-400:hover,
+.dark #approveTransferModal button.text-gray-400:hover {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #newTransferModal button.border-gray-300,
+.dark #viewTransferModal button.border-gray-300,
+.dark #approveTransferModal button.border-gray-300 {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #newTransferModal button.border-gray-300:hover,
+.dark #viewTransferModal button.border-gray-300:hover,
+.dark #approveTransferModal button.border-gray-300:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #viewTransferModal p,
+.dark #viewTransferModal span {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #viewTransferModal .text-gray-900 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #viewTransferModal .bg-gray-50 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* ============================================
+   TRANSFERS MODALS - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que en modo claro los modales de transferencias usen colores correctos */
+html:not(.dark) #newTransferModal > div.bg-white,
+html:not(.dark) #viewTransferModal > div.bg-white,
+html:not(.dark) #approveTransferModal > div.bg-white {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #newTransferModal h2,
+html:not(.dark) #viewTransferModal h2,
+html:not(.dark) #approveTransferModal h2 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #newTransferModal label,
+html:not(.dark) #viewTransferModal label,
+html:not(.dark) #approveTransferModal label {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #newTransferModal input[type="text"],
+html:not(.dark) #newTransferModal input[type="number"],
+html:not(.dark) #newTransferModal textarea,
+html:not(.dark) #approveTransferModal textarea {
+    background-color: #ffffff !important;
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #newTransferModal button.border-gray-300,
+html:not(.dark) #viewTransferModal button.border-gray-300,
+html:not(.dark) #approveTransferModal button.border-gray-300 {
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #newTransferModal button.border-gray-300:hover,
+html:not(.dark) #viewTransferModal button.border-gray-300:hover,
+html:not(.dark) #approveTransferModal button.border-gray-300:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #viewTransferModal p,
+html:not(.dark) #viewTransferModal span {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #viewTransferModal .text-gray-900 {
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #viewTransferModal .bg-gray-50 {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+/* ============================================
+   TRANSFERS TABLE - DARK MODE
+   ============================================ */
+
+/* Estilos para la tabla de transferencias - solo en modo oscuro */
+.dark #transferTableContainer table {
+    background-color: transparent !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #transferTableContainer table thead {
+    background-color: transparent !important;
+}
+
+.dark #transferTableContainer table thead th {
+    color: var(--dark-text-primary) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.dark #transferTableContainer table tbody tr {
+    border-color: var(--dark-border) !important;
+}
+
+.dark #transferTableContainer table tbody tr:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #transferTableContainer table tbody td {
+    color: var(--dark-text-secondary) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.dark #transferTableContainer .bg-gray-100 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #transferTableContainer .text-gray-700 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #transferTableContainer .text-gray-500 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #transferTableContainer .text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #transferTableContainer .text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #transferTableContainer .text-gray-900 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #transferTableContainer .border-gray-100 {
+    border-color: var(--dark-border) !important;
+}
+
+.dark #transferTableContainer .border-gray-200 {
+    border-color: var(--dark-border) !important;
+}
+
+/* Cards de transferencias en modo oscuro */
+.dark #transferTableContainer .bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #transferTableContainer .bg-white:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* ============================================
+   TRANSFERS TABLE - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que en modo claro los colores se mantengan correctamente */
+html:not(.dark) #transferTableContainer table {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+html:not(.dark) #transferTableContainer table thead {
+    background-color: transparent !important;
+}
+
+html:not(.dark) #transferTableContainer table thead th {
+    color: #374151 !important; /* gray-700 */
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #transferTableContainer table tbody tr {
+    border-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #transferTableContainer table tbody tr:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+html:not(.dark) #transferTableContainer table tbody td {
+    color: inherit !important;
+    border-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #transferTableContainer .text-gray-700:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #transferTableContainer .text-gray-500:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) #transferTableContainer .text-gray-800:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #transferTableContainer .text-gray-600:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #transferTableContainer .text-gray-900:not(.status-badge-active):not(.status-badge-inactive) {
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #transferTableContainer .bg-gray-100 {
+    background-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #transferTableContainer .border-gray-100 {
+    border-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #transferTableContainer .border-gray-200 {
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* Cards de transferencias en modo claro */
+html:not(.dark) #transferTableContainer .bg-white {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #transferTableContainer .bg-white:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+/* ============================================
+   TRANSFERS FILTERS AND SEARCH - DARK MODE
+   ============================================ */
+
+.dark #searchFilterContainer input[type="text"],
+.dark #searchFilterContainer select {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #searchFilterContainer input[type="text"]::placeholder {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #searchFilterContainer input[type="text"]:focus,
+.dark #searchFilterContainer select:focus {
+    border-color: var(--dark-sena-verde) !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #searchFilterContainer label {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* ============================================
+   TRANSFERS FILTERS AND SEARCH - LIGHT MODE
+   ============================================ */
+
+html:not(.dark) #searchFilterContainer input[type="text"],
+html:not(.dark) #searchFilterContainer select {
+    background-color: #ffffff !important;
+    border-color: #E5E7EB !important; /* gray-200 */
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #searchFilterContainer input[type="text"]::placeholder {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+html:not(.dark) #searchFilterContainer input[type="text"]:focus,
+html:not(.dark) #searchFilterContainer select:focus {
+    border-color: #00AF00 !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1) !important;
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #searchFilterContainer label {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+/* ============================================
+   TRANSFERS STATS CARDS - DARK MODE
+   ============================================ */
+
+.dark #transferStatsContainer .stat-card {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #transferStatsContainer .stat-card h3,
+.dark #transferStatsContainer .stat-card p {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #transferStatsContainer .stat-card .text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #transferStatsContainer .stat-card .text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+/* ============================================
+   TRANSFERS STATS CARDS - LIGHT MODE
+   ============================================ */
+
+html:not(.dark) #transferStatsContainer .stat-card {
+    background-color: #ffffff !important;
+    border-color: #E5E7EB !important; /* gray-200 */
+    color: inherit !important;
+}
+
+html:not(.dark) #transferStatsContainer .stat-card h3,
+html:not(.dark) #transferStatsContainer .stat-card p {
+    color: inherit !important;
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-gray-600 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-gray-800 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+/* Iconos y fondos de colores en stats cards - modo claro */
+html:not(.dark) #transferStatsContainer .stat-card .bg-yellow-100 {
+    background-color: #FEF3C7 !important; /* yellow-100 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .bg-yellow-100.dark\:bg-yellow-900\/30 {
+    background-color: #FEF3C7 !important; /* yellow-100 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-yellow-600 {
+    color: #D97706 !important; /* yellow-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-yellow-600.dark\:text-yellow-400 {
+    color: #D97706 !important; /* yellow-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .bg-green-100 {
+    background-color: #D1FAE5 !important; /* green-100 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .bg-green-100.dark\:bg-green-900\/30 {
+    background-color: #D1FAE5 !important; /* green-100 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-green-600 {
+    color: #059669 !important; /* green-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-green-600.dark\:text-green-400 {
+    color: #059669 !important; /* green-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .bg-blue-100 {
+    background-color: #DBEAFE !important; /* blue-100 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .bg-blue-100.dark\:bg-blue-900\/30 {
+    background-color: #DBEAFE !important; /* blue-100 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-blue-600 {
+    color: #2563EB !important; /* blue-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-blue-600.dark\:text-blue-400 {
+    color: #2563EB !important; /* blue-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .bg-red-100 {
+    background-color: #FEE2E2 !important; /* red-100 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .bg-red-100.dark\:bg-red-900\/30 {
+    background-color: #FEE2E2 !important; /* red-100 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-red-600 {
+    color: #DC2626 !important; /* red-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-red-600.dark\:text-red-400 {
+    color: #DC2626 !important; /* red-600 */
+}
+
+/* Textos con dark: en modo claro */
+html:not(.dark) #transferStatsContainer .stat-card .text-gray-600.dark\:text-gray-400 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card .text-gray-800.dark\:text-gray-100 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card h3.text-gray-800 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #transferStatsContainer .stat-card h3.text-gray-800.dark\:text-gray-100 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+/* ============================================
+   TRANSFERS PAGINATION - DARK MODE
+   ============================================ */
+
+.dark #paginationContainer button {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #paginationContainer button:hover:not(:disabled) {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #paginationContainer button:disabled {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-muted) !important;
+    cursor: not-allowed !important;
+}
+
+.dark #paginationContainer button.bg-\[#00AF00\] {
+    background-color: var(--dark-sena-verde) !important;
+    color: #ffffff !important;
+}
+
+.dark #paginationContainer .text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* ============================================
+   TRANSFERS PAGINATION - LIGHT MODE
+   ============================================ */
+
+html:not(.dark) #paginationContainer button {
+    background-color: #ffffff !important;
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #paginationContainer button:hover:not(:disabled) {
+    background-color: #F9FAFB !important; /* gray-50 */
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #paginationContainer button:disabled {
+    background-color: #F3F4F6 !important; /* gray-100 */
+    color: #9CA3AF !important; /* gray-400 */
+    cursor: not-allowed !important;
+}
+
+html:not(.dark) #paginationContainer button.bg-\[#00AF00\] {
+    background-color: #00AF00 !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) #paginationContainer .text-gray-600 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+/* ============================================
+   TRANSFERS VIEW MODE BUTTONS - DARK MODE
+   ============================================ */
+
+.dark #viewModeButtonsContainer button {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #viewModeButtonsContainer button.bg-\[#00AF00\] {
+    background-color: var(--dark-sena-verde) !important;
+    color: #ffffff !important;
+}
+
+.dark #viewModeButtonsContainer button.bg-gray-100 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #viewModeButtonsContainer button.bg-gray-100:hover {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+/* ============================================
+   TRANSFERS VIEW MODE BUTTONS - LIGHT MODE
+   ============================================ */
+
+html:not(.dark) #viewModeButtonsContainer button {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #viewModeButtonsContainer button.bg-\[#00AF00\] {
+    background-color: #00AF00 !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) #viewModeButtonsContainer button.bg-gray-100 {
+    background-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #viewModeButtonsContainer button.bg-gray-100:hover {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* ============================================
+   TRANSFERS ACTION BUTTONS - DARK MODE
+   ============================================ */
+
+.dark #transferTableContainer button.p-2.text-blue-600 {
+    color: #60A5FA !important; /* blue-400 */
+}
+
+.dark #transferTableContainer button.p-2.text-blue-600:hover {
+    background-color: rgba(96, 165, 250, 0.15) !important;
+    color: #BFDBFE !important; /* blue-200 */
+}
+
+.dark #transferTableContainer button.p-2.text-green-600 {
+    color: #4ADE80 !important; /* green-400 */
+}
+
+.dark #transferTableContainer button.p-2.text-green-600:hover {
+    background-color: rgba(74, 222, 128, 0.15) !important;
+    color: #86EFAC !important; /* green-200 */
+}
+
+.dark #transferTableContainer button.bg-blue-500 {
+    background-color: #3B82F6 !important; /* blue-500 */
+    color: #ffffff !important;
+}
+
+.dark #transferTableContainer button.bg-blue-500:hover {
+    background-color: #2563EB !important; /* blue-600 */
+}
+
+.dark #transferTableContainer button.bg-green-500 {
+    background-color: var(--dark-sena-verde) !important;
+    color: #ffffff !important;
+}
+
+.dark #transferTableContainer button.bg-green-500:hover {
+    background-color: #008800 !important;
+}
+
+/* ============================================
+   TRANSFERS ACTION BUTTONS - LIGHT MODE
+   ============================================ */
+
+html:not(.dark) #transferTableContainer button.p-2.text-blue-600:hover,
+html:not(.dark) #transferTableContainer button.p-2.hover\:bg-blue-50:hover {
+    background-color: #DBEAFE !important; /* blue-100 */
+    color: #1E40AF !important; /* blue-800 */
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+html:not(.dark) #transferTableContainer button.p-2.text-green-600:hover,
+html:not(.dark) #transferTableContainer button.p-2.hover\:bg-green-50:hover {
+    background-color: #D1FAE5 !important; /* green-100 */
+    color: #065F46 !important; /* green-800 */
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 175, 0, 0.2);
+}
+
+html:not(.dark) #transferTableContainer button.bg-blue-500 {
+    background-color: #3B82F6 !important; /* blue-500 */
+    color: #ffffff !important;
+}
+
+html:not(.dark) #transferTableContainer button.bg-blue-500:hover {
+    background-color: #2563EB !important; /* blue-600 */
+}
+
+html:not(.dark) #transferTableContainer button.bg-green-500 {
+    background-color: #00AF00 !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) #transferTableContainer button.bg-green-500:hover {
+    background-color: #008800 !important;
+}
+
+/* Transición suave para botones de acciones */
+html:not(.dark) #transferTableContainer button.p-2,
+html:not(.dark) #transferTableContainer button.bg-blue-500,
+html:not(.dark) #transferTableContainer button.bg-green-500 {
+    transition: all 0.2s ease-in-out !important;
+}
+
+/* ============================================
+   TRANSFERS HEADER - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que el header tenga fondo blanco en modo claro */
+html:not(.dark) header.bg-white {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) header.bg-white.dark\:bg-gray-800 {
+    background-color: #ffffff !important;
+}
+
+/* Sidebar header (logotipado) en modo claro */
+html:not(.dark) .sidebar .p-6.border-b.border-gray-200 {
+    border-bottom-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) .sidebar .text-gray-800 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) .sidebar .bg-white {
+    background-color: #ffffff !important;
+}
+
+/* Header search input específico para transfers */
+html:not(.dark) #transferSearch.search-input {
+    background-color: #ffffff !important;
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #transferSearch.search-input::placeholder {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+html:not(.dark) #transferSearch.search-input:focus {
+    border-color: #00AF00 !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1) !important;
+    background-color: #ffffff !important;
+}
+
+/* Icono de búsqueda en el header en modo claro */
+html:not(.dark) header .text-gray-400 {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+html:not(.dark) header .text-gray-400.dark\:text-gray-500 {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+/* Botón de menú toggle en modo claro */
+html:not(.dark) .sidebar-toggle.text-gray-600 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) .sidebar-toggle.text-gray-600.dark\:text-gray-300 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) .sidebar-toggle.text-gray-600:hover {
+    color: #00AF00 !important;
+}
+
+/* User info en header en modo claro */
+html:not(.dark) #headerUserName.text-gray-800 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #headerUserName.text-gray-800.dark\:text-gray-100 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #headerUserRole.text-gray-500 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) #headerUserRole.text-gray-500.dark\:text-gray-400 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+/* Avatar container en modo claro */
+html:not(.dark) .user-avatar .bg-gray-200 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) .user-avatar .text-gray-400 {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+/* Notification bell en modo claro */
+html:not(.dark) .notification-bell .text-gray-600 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) .notification-bell .text-gray-600.dark\:text-gray-300 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) .notification-bell .text-gray-600:hover {
+    color: #00AF00 !important;
+}
+
+html:not(.dark) .notification-dropdown {
+    background-color: #ffffff !important;
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) .notification-header h3.text-gray-800 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) .notification-header h3.text-gray-800.dark\:text-white {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) .notification-list .text-gray-500 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) .notification-list .text-gray-500.dark\:text-gray-400 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+/* ============================================
+   TRANSFERS MAIN CONTENT - LIGHT MODE
+   ============================================ */
+
+/* Main content en modo claro */
+html:not(.dark) .main-content {
+    background-color: transparent !important;
+}
+
+html:not(.dark) .main-content.min-h-screen {
+    background-color: transparent !important;
+}
+
+/* Títulos en modo claro */
+html:not(.dark) main h1.text-gray-800 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) main h1.text-gray-800.dark\:text-gray-100 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) main p.text-gray-600 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) main p.text-gray-600.dark\:text-gray-400 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+/* Botón de actualizar en modo claro */
+html:not(.dark) .btn-update {
+    background-color: #00AF00 !important;
+    color: #ffffff !important;
+}
+
+html:not(.dark) .btn-update:hover {
+    background-color: #008800 !important;
+}
+
+/* Empty states en modo claro */
+html:not(.dark) .text-center .text-gray-500 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) .text-center .text-gray-500.dark\:text-gray-400 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) .text-center .text-gray-300 {
+    color: #D1D5DB !important; /* gray-300 */
+}
+
+html:not(.dark) .text-center .text-gray-300.dark\:text-gray-600 {
+    color: #D1D5DB !important; /* gray-300 */
+}
+
+/* ============================================
+   LOADING STATES (ANIMATE-PULSE) - LIGHT MODE
+   ============================================ */
+
+/* Elementos de carga con animate-pulse en modo claro */
+html:not(.dark) .animate-pulse .bg-gray-200 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) .animate-pulse .bg-gray-200.dark\:bg-gray-700 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* Específico para stats cards loading */
+html:not(.dark) #transferStatsContainer .animate-pulse .bg-gray-200 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #transferStatsContainer .animate-pulse .bg-gray-200.dark\:bg-gray-700 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* Específico para paginación loading */
+html:not(.dark) #paginationContainer .animate-pulse .bg-gray-200 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #paginationContainer .animate-pulse .bg-gray-200.dark\:bg-gray-700 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* Específico para cualquier contenedor con loading states */
+html:not(.dark) .animate-pulse div.bg-gray-200 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) .animate-pulse div.bg-gray-200.dark\:bg-gray-700 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* Asegurar que los elementos de skeleton loading usen gris claro */
+html:not(.dark) [class*="bg-gray-200"].dark\:bg-gray-700 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) .h-4.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .h-8.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .h-10.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .h-12.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .h-3.bg-gray-200.dark\:bg-gray-700 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) .w-10.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .w-12.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .w-16.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .w-20.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .w-24.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .w-28.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .w-32.bg-gray-200.dark\:bg-gray-700 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) .rounded.bg-gray-200.dark\:bg-gray-700,
+html:not(.dark) .rounded-full.bg-gray-200.dark\:bg-gray-700 {
+    background-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* ============================================
+   LOANS STATS CARDS - DARK MODE
+   ============================================ */
+
+.dark #loansStatsContainer .stat-card {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #loansStatsContainer .stat-card h3,
+.dark #loansStatsContainer .stat-card p {
+    color: var(--dark-text-primary) !important;
+}
+
+/* ============================================
+   LOANS STATS CARDS - LIGHT MODE
+   ============================================ */
+
+/* Stat cards base en modo claro */
+html:not(.dark) #loansStatsContainer .stat-card {
+    background-color: #ffffff !important;
+    border-color: #E5E7EB !important; /* gray-200 */
+    color: inherit !important;
+}
+
+/* Gradientes de fondo para stat cards - modo claro */
+html:not(.dark) #loansStatsContainer .stat-card.bg-gradient-to-br.from-blue-50 {
+    background: linear-gradient(to bottom right, #DBEAFE, #BFDBFE) !important; /* blue-50 to blue-100 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.bg-gradient-to-br.from-blue-50.dark\:from-blue-900\/20 {
+    background: linear-gradient(to bottom right, #DBEAFE, #BFDBFE) !important;
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.bg-gradient-to-br.from-yellow-50 {
+    background: linear-gradient(to bottom right, #FEF3C7, #FDE68A) !important; /* yellow-50 to yellow-100 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.bg-gradient-to-br.from-yellow-50.dark\:from-yellow-900\/20 {
+    background: linear-gradient(to bottom right, #FEF3C7, #FDE68A) !important;
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.bg-gradient-to-br.from-green-50 {
+    background: linear-gradient(to bottom right, #D1FAE5, #A7F3D0) !important; /* green-50 to green-100 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.bg-gradient-to-br.from-green-50.dark\:from-green-900\/20 {
+    background: linear-gradient(to bottom right, #D1FAE5, #A7F3D0) !important;
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.bg-gradient-to-br.from-purple-50 {
+    background: linear-gradient(to bottom right, #F3E8FF, #E9D5FF) !important; /* purple-50 to purple-100 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.bg-gradient-to-br.from-purple-50.dark\:from-purple-900\/20 {
+    background: linear-gradient(to bottom right, #F3E8FF, #E9D5FF) !important;
+}
+
+/* Bordes de stat cards - modo claro */
+html:not(.dark) #loansStatsContainer .stat-card.border-blue-200 {
+    border-color: #BFDBFE !important; /* blue-200 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.border-blue-200.dark\:border-blue-800 {
+    border-color: #BFDBFE !important; /* blue-200 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.border-yellow-200 {
+    border-color: #FDE68A !important; /* yellow-200 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.border-yellow-200.dark\:border-yellow-800 {
+    border-color: #FDE68A !important; /* yellow-200 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.border-green-200 {
+    border-color: #A7F3D0 !important; /* green-200 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.border-green-200.dark\:border-green-800 {
+    border-color: #A7F3D0 !important; /* green-200 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.border-purple-200 {
+    border-color: #E9D5FF !important; /* purple-200 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card.border-purple-200.dark\:border-purple-800 {
+    border-color: #E9D5FF !important; /* purple-200 */
+}
+
+/* Textos de colores en stat cards - modo claro */
+html:not(.dark) #loansStatsContainer .stat-card .text-blue-600 {
+    color: #2563EB !important; /* blue-600 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-blue-600.dark\:text-blue-400 {
+    color: #2563EB !important; /* blue-600 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-blue-800 {
+    color: #1E40AF !important; /* blue-800 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-blue-800.dark\:text-blue-300 {
+    color: #1E40AF !important; /* blue-800 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-yellow-600 {
+    color: #D97706 !important; /* yellow-600 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-yellow-600.dark\:text-yellow-400 {
+    color: #D97706 !important; /* yellow-600 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-yellow-800 {
+    color: #92400E !important; /* yellow-800 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-yellow-800.dark\:text-yellow-300 {
+    color: #92400E !important; /* yellow-800 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-green-600 {
+    color: #059669 !important; /* green-600 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-green-600.dark\:text-green-400 {
+    color: #059669 !important; /* green-600 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-green-800 {
+    color: #065F46 !important; /* green-800 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-green-800.dark\:text-green-300 {
+    color: #065F46 !important; /* green-800 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-purple-600 {
+    color: #9333EA !important; /* purple-600 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-purple-600.dark\:text-purple-400 {
+    color: #9333EA !important; /* purple-600 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-purple-800 {
+    color: #6B21A8 !important; /* purple-800 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .text-purple-800.dark\:text-purple-300 {
+    color: #6B21A8 !important; /* purple-800 */
+}
+
+/* Iconos con fondos redondeados - modo claro */
+html:not(.dark) #loansStatsContainer .stat-card .bg-blue-500 {
+    background-color: #3B82F6 !important; /* blue-500 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .bg-blue-500.dark\:bg-blue-600 {
+    background-color: #3B82F6 !important; /* blue-500 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .bg-yellow-500 {
+    background-color: #EAB308 !important; /* yellow-500 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .bg-yellow-500.dark\:bg-yellow-600 {
+    background-color: #EAB308 !important; /* yellow-500 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .bg-green-500 {
+    background-color: #22C55E !important; /* green-500 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .bg-green-500.dark\:bg-green-600 {
+    background-color: #22C55E !important; /* green-500 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .bg-purple-500 {
+    background-color: #A855F7 !important; /* purple-500 */
+}
+
+html:not(.dark) #loansStatsContainer .stat-card .bg-purple-500.dark\:bg-purple-600 {
+    background-color: #A855F7 !important; /* purple-500 */
+}
+
+/* ============================================
+   LOANS TABLE AND BADGES - LIGHT MODE
+   ============================================ */
+
+/* Tabla de préstamos en modo claro */
+html:not(.dark) #loansTableContainer table {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+html:not(.dark) #loansTableContainer table thead th {
+    color: #374151 !important; /* gray-700 */
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #loansTableContainer table tbody tr {
+    border-color: #F3F4F6 !important; /* gray-100 */
+}
+
+html:not(.dark) #loansTableContainer table tbody tr:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+html:not(.dark) #loansTableContainer table tbody td {
+    color: inherit !important;
+    border-color: #F3F4F6 !important; /* gray-100 */
+}
+
+/* Badges de estado en modo claro */
+html:not(.dark) #loansTableContainer .badge,
+html:not(.dark) #loansTableContainer [class*="badge"] {
+    color: inherit !important;
+}
+
+html:not(.dark) #loansTableContainer .bg-yellow-100 {
+    background-color: #FEF3C7 !important; /* yellow-100 */
+}
+
+html:not(.dark) #loansTableContainer .bg-yellow-100.dark\:bg-yellow-900\/30 {
+    background-color: #FEF3C7 !important; /* yellow-100 */
+}
+
+html:not(.dark) #loansTableContainer .text-yellow-800 {
+    color: #92400E !important; /* yellow-800 */
+}
+
+html:not(.dark) #loansTableContainer .text-yellow-800.dark\:text-yellow-300 {
+    color: #92400E !important; /* yellow-800 */
+}
+
+html:not(.dark) #loansTableContainer .bg-green-100 {
+    background-color: #D1FAE5 !important; /* green-100 */
+}
+
+html:not(.dark) #loansTableContainer .bg-green-100.dark\:bg-green-900\/30 {
+    background-color: #D1FAE5 !important; /* green-100 */
+}
+
+html:not(.dark) #loansTableContainer .text-green-800 {
+    color: #065F46 !important; /* green-800 */
+}
+
+html:not(.dark) #loansTableContainer .text-green-800.dark\:text-green-300 {
+    color: #065F46 !important; /* green-800 */
+}
+
+html:not(.dark) #loansTableContainer .bg-red-100 {
+    background-color: #FEE2E2 !important; /* red-100 */
+}
+
+html:not(.dark) #loansTableContainer .bg-red-100.dark\:bg-red-900\/30 {
+    background-color: #FEE2E2 !important; /* red-100 */
+}
+
+html:not(.dark) #loansTableContainer .text-red-800 {
+    color: #991B1B !important; /* red-800 */
+}
+
+html:not(.dark) #loansTableContainer .text-red-800.dark\:text-red-300 {
+    color: #991B1B !important; /* red-800 */
+}
+
+html:not(.dark) #loansTableContainer .bg-blue-100 {
+    background-color: #DBEAFE !important; /* blue-100 */
+}
+
+html:not(.dark) #loansTableContainer .bg-blue-100.dark\:bg-blue-900\/30 {
+    background-color: #DBEAFE !important; /* blue-100 */
+}
+
+html:not(.dark) #loansTableContainer .text-blue-800 {
+    color: #1E40AF !important; /* blue-800 */
+}
+
+html:not(.dark) #loansTableContainer .text-blue-800.dark\:text-blue-300 {
+    color: #1E40AF !important; /* blue-800 */
+}
+
+/* Textos generales en modo claro */
+html:not(.dark) #loansTableContainer .text-gray-600 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #loansTableContainer .text-gray-600.dark\:text-gray-400 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) #loansTableContainer .text-gray-500 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) #loansTableContainer .text-gray-500.dark\:text-gray-500 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) #loansTableContainer .text-gray-400 {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+html:not(.dark) #loansTableContainer .text-gray-400.dark\:text-gray-500 {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+/* ============================================
+   LOANS MODALS - DARK MODE
+   ============================================ */
+
+.dark #lendItemModal > div.bg-white,
+.dark #returnItemModal > div.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark #lendItemModal .sticky.bg-white,
+.dark #returnItemModal .sticky.bg-white {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #lendItemModal h2,
+.dark #returnItemModal h2 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #lendItemModal label,
+.dark #returnItemModal label {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #lendItemModal textarea,
+.dark #returnItemModal textarea {
+    background-color: var(--dark-bg-tertiary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #lendItemModal textarea::placeholder,
+.dark #returnItemModal textarea::placeholder {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #lendItemModal textarea:focus,
+.dark #returnItemModal textarea:focus {
+    border-color: var(--dark-sena-verde) !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #lendItemModal button.text-gray-500,
+.dark #returnItemModal button.text-gray-500 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark #lendItemModal button.text-gray-500:hover,
+.dark #returnItemModal button.text-gray-500:hover {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #lendItemModal button.border-gray-300,
+.dark #returnItemModal button.border-gray-300 {
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark #lendItemModal button.border-gray-300:hover,
+.dark #returnItemModal button.border-gray-300:hover {
+    background-color: var(--dark-bg-tertiary) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #lendItemModal .border-gray-200,
+.dark #returnItemModal .border-gray-200 {
+    border-color: var(--dark-border) !important;
+}
+
+/* ============================================
+   LOANS MODALS - LIGHT MODE
+   ============================================ */
+
+/* Contenedor principal del modal */
+html:not(.dark) #lendItemModal > div.bg-white,
+html:not(.dark) #returnItemModal > div.bg-white {
+    background-color: #ffffff !important;
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #lendItemModal > div.bg-white.dark\:bg-gray-800,
+html:not(.dark) #returnItemModal > div.bg-white.dark\:bg-gray-800 {
+    background-color: #ffffff !important;
+}
+
+/* Header sticky del modal */
+html:not(.dark) #lendItemModal .sticky.bg-white,
+html:not(.dark) #returnItemModal .sticky.bg-white {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #lendItemModal .sticky.bg-white.dark\:bg-gray-800,
+html:not(.dark) #returnItemModal .sticky.bg-white.dark\:bg-gray-800 {
+    background-color: #ffffff !important;
+}
+
+/* Bordes del header */
+html:not(.dark) #lendItemModal .border-gray-200,
+html:not(.dark) #returnItemModal .border-gray-200 {
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #lendItemModal .border-gray-200.dark\:border-gray-700,
+html:not(.dark) #returnItemModal .border-gray-200.dark\:border-gray-700 {
+    border-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #lendItemModal .border-t.border-gray-200,
+html:not(.dark) #returnItemModal .border-t.border-gray-200 {
+    border-top-color: #E5E7EB !important; /* gray-200 */
+}
+
+html:not(.dark) #lendItemModal .border-t.border-gray-200.dark\:border-gray-700,
+html:not(.dark) #returnItemModal .border-t.border-gray-200.dark\:border-gray-700 {
+    border-top-color: #E5E7EB !important; /* gray-200 */
+}
+
+/* Títulos */
+html:not(.dark) #lendItemModal h2,
+html:not(.dark) #returnItemModal h2 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #lendItemModal h2.text-gray-800,
+html:not(.dark) #returnItemModal h2.text-gray-800 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #lendItemModal h2.text-gray-800.dark\:text-white,
+html:not(.dark) #returnItemModal h2.text-gray-800.dark\:text-white {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+/* Labels */
+html:not(.dark) #lendItemModal label,
+html:not(.dark) #returnItemModal label {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #lendItemModal label.text-gray-700,
+html:not(.dark) #returnItemModal label.text-gray-700 {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #lendItemModal label.text-gray-700.dark\:text-gray-300,
+html:not(.dark) #returnItemModal label.text-gray-700.dark\:text-gray-300 {
+    color: #374151 !important; /* gray-700 */
+}
+
+/* Textareas */
+html:not(.dark) #lendItemModal textarea,
+html:not(.dark) #returnItemModal textarea {
+    background-color: #ffffff !important;
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #lendItemModal textarea.border-gray-300,
+html:not(.dark) #returnItemModal textarea.border-gray-300 {
+    border-color: #D1D5DB !important; /* gray-300 */
+}
+
+html:not(.dark) #lendItemModal textarea.border-gray-300.dark\:border-gray-600,
+html:not(.dark) #returnItemModal textarea.border-gray-300.dark\:border-gray-600 {
+    border-color: #D1D5DB !important; /* gray-300 */
+}
+
+html:not(.dark) #lendItemModal textarea.dark\:bg-gray-700,
+html:not(.dark) #returnItemModal textarea.dark\:bg-gray-700 {
+    background-color: #ffffff !important;
+}
+
+html:not(.dark) #lendItemModal textarea.dark\:text-white,
+html:not(.dark) #returnItemModal textarea.dark\:text-white {
+    color: #111827 !important; /* gray-900 */
+}
+
+html:not(.dark) #lendItemModal textarea::placeholder,
+html:not(.dark) #returnItemModal textarea::placeholder {
+    color: #9CA3AF !important; /* gray-400 */
+}
+
+html:not(.dark) #lendItemModal textarea:focus,
+html:not(.dark) #returnItemModal textarea:focus {
+    border-color: #00AF00 !important;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1) !important;
+    background-color: #ffffff !important;
+}
+
+/* Botón de cerrar */
+html:not(.dark) #lendItemModal button.text-gray-500,
+html:not(.dark) #returnItemModal button.text-gray-500 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) #lendItemModal button.text-gray-500.dark\:text-gray-400,
+html:not(.dark) #returnItemModal button.text-gray-500.dark\:text-gray-400 {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) #lendItemModal button.text-gray-500:hover,
+html:not(.dark) #returnItemModal button.text-gray-500:hover {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #lendItemModal button.text-gray-500:hover.dark\:hover\:text-gray-200,
+html:not(.dark) #returnItemModal button.text-gray-500:hover.dark\:hover\:text-gray-200 {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #lendItemModal button.hover\:text-gray-700:hover,
+html:not(.dark) #returnItemModal button.hover\:text-gray-700:hover {
+    color: #374151 !important; /* gray-700 */
+}
+
+/* Botones de acción (Cancelar) */
+html:not(.dark) #lendItemModal button.border-gray-300,
+html:not(.dark) #returnItemModal button.border-gray-300 {
+    border-color: #D1D5DB !important; /* gray-300 */
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #lendItemModal button.border-gray-300.dark\:border-gray-600,
+html:not(.dark) #returnItemModal button.border-gray-300.dark\:border-gray-600 {
+    border-color: #D1D5DB !important; /* gray-300 */
+}
+
+html:not(.dark) #lendItemModal button.text-gray-700,
+html:not(.dark) #returnItemModal button.text-gray-700 {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #lendItemModal button.text-gray-700.dark\:text-gray-300,
+html:not(.dark) #returnItemModal button.text-gray-700.dark\:text-gray-300 {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #lendItemModal button.border-gray-300:hover,
+html:not(.dark) #returnItemModal button.border-gray-300:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #lendItemModal button.hover\:bg-gray-50:hover,
+html:not(.dark) #returnItemModal button.hover\:bg-gray-50:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+html:not(.dark) #lendItemModal button.hover\:bg-gray-50.dark\:hover\:bg-gray-700:hover,
+html:not(.dark) #returnItemModal button.hover\:bg-gray-50.dark\:hover\:bg-gray-700:hover {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+/* ============================================
+   LOANS FILTERS - LIGHT MODE
+   ============================================ */
+
+html:not(.dark) #loansStatsContainer ~ .stat-card label {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #loansStatsContainer ~ .stat-card label.dark\:text-gray-300 {
+    color: #374151 !important; /* gray-700 */
+}
+
+html:not(.dark) #loansStatsContainer ~ .stat-card h2 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) #loansStatsContainer ~ .stat-card h2.dark\:text-white {
+    color: #1F2937 !important; /* gray-800 */
+}
