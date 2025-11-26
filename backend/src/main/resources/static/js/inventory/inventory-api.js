@@ -297,7 +297,8 @@ async function createInventory(inventoryDataToCreate) {
             throw new Error('No tienes permisos para crear inventarios.');
         } else if (response.status === 409) {
             const errorData = await response.json();
-            throw new Error(errorData.detail || errorData.message || 'Este propietario ya tiene un inventario asignado');
+            const errorMessage = errorData.detail || errorData.message || 'Este propietario ya tiene un inventario asignado';
+            throw new Error(errorMessage);
         } else {
             let errorMessage = 'Error al crear el inventario';
             try {
