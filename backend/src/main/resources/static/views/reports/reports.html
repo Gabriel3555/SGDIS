@@ -257,18 +257,10 @@
                                 disabled>
                                 <option value="">Primero seleccione un centro...</option>
                             </select>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                <i class="fas fa-info-circle mr-1"></i>Seleccione un inventario específico o deje
-                                "Todos" para incluir todos los inventarios del centro
-                            </p>
                             <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                                 <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
                             </div>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-1">
-                            <i class="fas fa-info-circle mr-1"></i>Deje "Todos" para incluir todos los inventarios del
-                            centro
-                        </p>
                     </div>
                 </div>
 
@@ -332,11 +324,6 @@
                                 <i class="fas fa-file-pdf"></i>
                                 <span>PDF</span>
                             </button>
-                            <button id="exportExcelBtn"
-                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
-                                <i class="fas fa-file-excel"></i>
-                                <span>Excel</span>
-                            </button>
                         </div>
                     </div>
 
@@ -367,7 +354,7 @@
                     <!-- Report Table -->
                     <div
                         class="border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden max-h-[600px] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-800">
-                        <table id="reportTable" class="w-full text-sm">
+                        <table id="reportTable" class="w-full text-sm" style="border-collapse: collapse; border-spacing: 0;">
                             <thead
                                 class="bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-purple-900/30 dark:to-purple-800/20 sticky top-0 z-10">
                                 <tr id="reportTableHeader"></tr>
@@ -490,13 +477,31 @@
         }
 
         /* Table Styles */
+        #reportTable {
+            table-layout: fixed;
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+
         #reportTable thead th {
-            padding: 12px 16px;
+            padding: 8px 12px !important;
+            margin: 0 !important;
             font-weight: 600;
             text-transform: uppercase;
             font-size: 11px;
             letter-spacing: 0.5px;
             color: #374151;
+            border: none;
+            box-sizing: border-box;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        #reportTable thead th:first-child {
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
         }
 
         .dark #reportTable thead th {
@@ -504,7 +509,21 @@
         }
 
         #reportTable tbody td {
-            padding: 10px 16px;
+            padding: 6px 12px !important;
+            margin: 0 !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            border: none;
+            box-sizing: border-box;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        #reportTable tbody td:first-child {
+            width: 120px;
+            min-width: 120px;
+            max-width: 120px;
         }
 
         .dark #reportTable tbody td {

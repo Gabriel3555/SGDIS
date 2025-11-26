@@ -8,6 +8,8 @@ async function loadInventoryData() {
 
     try {
         await loadCurrentUserInfo();
+        // Load statistics for SUPERADMIN
+        await loadInventoryStatistics();
         await loadInventories();
         updateInventoryUI();
 
@@ -1132,8 +1134,48 @@ async function handleInstitutionFilterChange(institutionId) {
     }
 }
 
+// Function to load inventory statistics (only for SUPERADMIN)
+async function loadInventoryStatistics() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Check if current user is SUPERADMIN
+        const currentRole = window.currentUserRole || '';
+        if (currentRole !== 'SUPERADMIN') {
+            // For non-SUPERADMIN users, return null to use local calculation
+            return null;
+        }
+
+        const response = await fetch('/api/v1/inventory/statistics', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const statistics = await response.json();
+            // Store statistics in inventoryData
+            if (window.inventoryData) {
+                window.inventoryData.statistics = statistics;
+            }
+            if (inventoryData && inventoryData !== window.inventoryData) {
+                inventoryData.statistics = statistics;
+            }
+            return statistics;
+        } else {
+            console.warn('Failed to load inventory statistics, falling back to local calculation');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error loading inventory statistics:', error);
+        return null;
+    }
+}
+
 // Export functions
 window.loadRegionalsForFilter = loadRegionalsForFilter;
 window.loadInstitutionsForFilter = loadInstitutionsForFilter;
 window.handleRegionalFilterChange = handleRegionalFilterChange;
 window.handleInstitutionFilterChange = handleInstitutionFilterChange;
+window.loadInventoryStatistics = loadInventoryStatistics;

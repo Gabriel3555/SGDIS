@@ -17,6 +17,7 @@ import com.sgdis.backend.verification.application.port.in.GetLatestInventoryVeri
 import com.sgdis.backend.verification.application.port.in.GetVerificationsByItemUseCase;
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import com.sgdis.backend.verification.infrastructure.repository.SpringDataVerificationRepository;
+import com.sgdis.backend.verification.mapper.VerificationMapper;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -33,7 +34,11 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -423,6 +428,49 @@ public class VerificationController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error deleting file: " + e.getMessage());
         }
+    }
+
+    @Operation(
+            summary = "Get all verifications with filters",
+            description = "Retrieves paginated verifications with optional filters by regional, institution, or inventory (Superadmin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Verifications retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "403", description = "Access denied - SUPERADMIN role required")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping
+    public ResponseEntity<Page<VerificationResponse>> getAllVerifications(
+            @Parameter(description = "Regional ID (optional)")
+            @RequestParam(required = false) Long regionalId,
+            @Parameter(description = "Institution ID (optional)")
+            @RequestParam(required = false) Long institutionId,
+            @Parameter(description = "Inventory ID (optional)")
+            @RequestParam(required = false) Long inventoryId,
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "10000") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<VerificationEntity> verificationPage;
+        
+        if (inventoryId != null) {
+            verificationPage = verificationRepository.findAllByInventoryId(inventoryId, pageable);
+        } else if (institutionId != null) {
+            verificationPage = verificationRepository.findAllByInstitutionId(institutionId, pageable);
+        } else if (regionalId != null) {
+            verificationPage = verificationRepository.findAllByRegionalId(regionalId, pageable);
+        } else {
+            // Get all verifications
+            verificationPage = verificationRepository.findAll(pageable);
+        }
+        
+        Page<VerificationResponse> responsePage = verificationPage.map(VerificationMapper::toDto);
+        
+        return ResponseEntity.ok(responsePage);
     }
 }
 
