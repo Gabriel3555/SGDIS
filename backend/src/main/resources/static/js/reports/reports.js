@@ -1413,57 +1413,124 @@ async function exportToPDF() {
         // Silently continue without logo
     }
 
-    // Header with gradient background effect (simulated with rectangles)
-    doc.setFillColor(0, 175, 0); // SENA green
-    doc.rect(0, 0, doc.internal.pageSize.getWidth(), 45, 'F');
+    // Enhanced Header with gradient effect
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const headerHeight = 60;
     
-    // Add white text on green background
+    // Main header background with gradient effect (dark green)
+    doc.setFillColor(0, 140, 0); // Darker SENA green
+    doc.rect(0, 0, pageWidth, headerHeight, 'F');
+    
+    // Accent bar at bottom of header
+    doc.setFillColor(0, 175, 0); // Brighter green
+    doc.rect(0, headerHeight - 5, pageWidth, 5, 'F');
+    
+    // Logo positioning (if available)
+    if (logoImageData) {
+        try {
+            doc.addImage(logoImageData, 'PNG', pageWidth - 50, 10, 40, 40);
+        } catch (e) {
+            console.warn('Could not add logo to PDF page:', e);
+        }
+    }
+    
+    // Header text with better styling
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
+    doc.setFontSize(28);
     doc.setFont('helvetica', 'bold');
-    doc.text('SGDIS', 14, 20);
+    doc.text('SGDIS', 20, 28);
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Sistema de Gestión de Inventario SENA', 20, 38);
     
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Sistema de Gestión de Inventario SENA', 14, 28);
+    doc.setFont('helvetica', 'italic');
+    doc.text(reportTypeNames[currentReportType] || 'Reporte', 20, 48);
     
-    doc.setFontSize(10);
-    doc.text(reportTypeNames[currentReportType] || 'Reporte', 14, 36);
+    // Decorative line
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.8);
+    doc.line(20, 52, pageWidth - 20, 52);
 
-    // Reset text color to black
+    // Reset text color
     doc.setTextColor(0, 0, 0);
     
-    // Subtitle section
-    let yPos = 55;
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Filtros Aplicados:', 14, yPos);
-    yPos += 7;
+    // Enhanced Filters section with box
+    let yPos = headerHeight + 18;
     
+    // Background box for filters
+    doc.setFillColor(248, 250, 252); // Light gray background
+    doc.roundedRect(14, yPos - 10, pageWidth - 28, 58, 4, 4, 'F');
+    
+    // Border for filters box
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.8);
+    doc.roundedRect(14, yPos - 10, pageWidth - 28, 58, 4, 4);
+    
+    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 140, 0); // Green for title
+    doc.text('INFORMACION DEL REPORTE', 20, yPos);
+    
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(40, 40, 40);
+    
     const regionalName = document.getElementById('regionalSelect').selectedOptions[0]?.text || 'Todas las regionales';
     const institutionName = document.getElementById('institutionSelect').selectedOptions[0]?.text || 'Todos los centros';
     const startDate = document.getElementById('startDate').value || 'No especificada';
     const endDate = document.getElementById('endDate').value || 'No especificada';
-    
-    doc.setFontSize(10);
-    doc.text(`Regional: ${regionalName}`, 14, yPos);
-    yPos += 6;
-    doc.text(`Centro: ${institutionName}`, 14, yPos);
-    yPos += 6;
-    doc.text(`Fecha inicio: ${startDate || 'No especificada'}`, 14, yPos);
-    yPos += 6;
-    doc.text(`Fecha fin: ${endDate || 'No especificada'}`, 14, yPos);
-    yPos += 6;
-    doc.text(`Generado el: ${new Date().toLocaleDateString('es-ES', { 
+    const generatedDate = new Date().toLocaleDateString('es-ES', { 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
-    })}`, 14, yPos);
+    });
     
-    yPos += 10;
+    // Two column layout for filters
+    yPos += 7;
+    doc.text('Regional:', 20, yPos);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text(regionalName.length > 35 ? regionalName.substring(0, 35) + '...' : regionalName, 20 + 45, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(40, 40, 40);
+    
+    yPos += 7;
+    doc.text('Centro:', 20, yPos);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text(institutionName.length > 35 ? institutionName.substring(0, 35) + '...' : institutionName, 20 + 45, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(40, 40, 40);
+    
+    yPos += 7;
+    doc.text('Fecha inicio:', 20, yPos);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text(startDate || 'No especificada', 20 + 45, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(40, 40, 40);
+    
+    yPos += 7;
+    doc.text('Fecha fin:', 20, yPos);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text(endDate || 'No especificada', 20 + 45, yPos);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(40, 40, 40);
+    
+    yPos += 7;
+    doc.text('Generado el:', 20, yPos);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(60, 60, 60);
+    doc.text(generatedDate, 20 + 45, yPos);
+    doc.setFont('helvetica', 'normal');
+    
+    doc.setTextColor(0, 0, 0); // Reset to black
+    yPos += 18;
 
     if (currentReportType === 'general') {
         // General report with statistics and charts
@@ -1528,82 +1595,189 @@ async function exportToPDF() {
             .sort((a, b) => b.count - a.count)
             .slice(0, 5);
 
-        // Statistics section
-        doc.setFontSize(14);
+        // Enhanced Statistics section with cards
+        yPos += 10; // Bajar 10px más
+        doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
-        doc.text('Estadísticas Generales', 14, yPos);
-        yPos += 10;
+        doc.setTextColor(0, 140, 0);
+        doc.text('ESTADISTICAS GENERALES', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 14;
 
+        // Statistics cards in 2x2 grid
+        const cardWidth = (pageWidth - 42) / 2;
+        const cardHeight = 32;
+        const cardSpacing = 10;
+        
+        // Card 1: Total Items
+        doc.setFillColor(59, 130, 246); // Blue
+        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+        doc.setDrawColor(40, 100, 200);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+        doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Total de Items: ${items.length}`, 14, yPos);
-        yPos += 6;
-        doc.text(`Valor Total: ${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue)}`, 14, yPos);
-        yPos += 6;
-        doc.text(`Total Transferencias: ${transfers.length}`, 14, yPos);
-        yPos += 6;
-        doc.text(`Total Verificaciones: ${verifications.length}`, 14, yPos);
-        yPos += 10;
+        doc.text('TOTAL DE ITEMS', 20, yPos + 8);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(items.length.toString(), 20, yPos + 22);
+        
+        // Card 2: Total Value
+        doc.setFillColor(34, 197, 94); // Green
+        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+        doc.setDrawColor(20, 150, 70);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('VALOR TOTAL', 20 + cardWidth + cardSpacing, yPos + 8);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        const valueText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue);
+        // Split value text if too long
+        if (valueText.length > 28) {
+            const mid = Math.floor(valueText.length / 2);
+            doc.text(valueText.substring(0, mid), 20 + cardWidth + cardSpacing, yPos + 20);
+            doc.text(valueText.substring(mid), 20 + cardWidth + cardSpacing, yPos + 26);
+        } else {
+            doc.text(valueText, 20 + cardWidth + cardSpacing, yPos + 22);
+        }
+        
+        yPos += cardHeight + cardSpacing;
+        
+        // Card 3: Total Transfers
+        doc.setFillColor(147, 51, 234); // Purple
+        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+        doc.setDrawColor(100, 30, 180);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('TOTAL TRANSFERENCIAS', 20, yPos + 8);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(transfers.length.toString(), 20, yPos + 22);
+        
+        // Card 4: Total Verifications
+        doc.setFillColor(249, 115, 22); // Orange
+        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+        doc.setDrawColor(200, 80, 10);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('TOTAL VERIFICACIONES', 20 + cardWidth + cardSpacing, yPos + 8);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(verifications.length.toString(), 20 + cardWidth + cardSpacing, yPos + 22);
+        
+        doc.setTextColor(0, 0, 0); // Reset to black
+        yPos += cardHeight + 18;
 
-        // Export charts as images
-        const chartWidth = 85;
-        const chartHeight = 50;
+        // Enhanced Charts section - Nueva página
+        // Check if we need a new page for charts section
+        if (yPos > doc.internal.pageSize.getHeight() - 100) {
+            doc.addPage();
+            yPos = 20;
+        } else {
+            // Si hay espacio pero poco, también crear nueva página para mejor presentación
+            doc.addPage();
+            yPos = 20;
+        }
+        
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 140, 0);
+        doc.text('ANALISIS VISUAL', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 16;
 
-        // Chart 1: Most Moved Items
+        // Charts with more width and centered
+        const chartWidth = (pageWidth - 50) / 2; // Más ancho (reducir márgenes)
+        const chartHeight = 60; // Más alto para mejor visualización
+        const chartSpacing = 12;
+        const chartStartX = (pageWidth - (chartWidth * 2 + chartSpacing)) / 2; // Centrado
+
+        // Chart 1: Most Moved Items (left side)
         if (chartInstances.mostMoved && mostMovedItems.length > 0) {
             try {
-                const chartImage = chartInstances.mostMoved.toBase64Image('image/png', 1);
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Items Más Movidos', 14, yPos);
-                yPos += 7;
+                // Chart box with border
+                doc.setFillColor(250, 250, 252);
+                doc.roundedRect(chartStartX, yPos - 5, chartWidth, chartHeight + 25, 4, 4, 'F');
+                doc.setDrawColor(220, 220, 220);
+                doc.setLineWidth(0.8);
+                doc.roundedRect(chartStartX, yPos - 5, chartWidth, chartHeight + 25, 4, 4);
                 
-                doc.addImage(chartImage, 'PNG', 14, yPos, chartWidth, chartHeight);
-                yPos += chartHeight + 10;
-
-                // Check if we need a new page
-                if (yPos > doc.internal.pageSize.getHeight() - 30) {
-                    doc.addPage();
-                    yPos = 20;
-                }
+                const chartImage = chartInstances.mostMoved.toBase64Image('image/png', 1);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(147, 51, 234);
+                doc.text('ITEMS MAS MOVIDOS', chartStartX + 8, yPos);
+                doc.setTextColor(0, 0, 0);
+                
+                doc.addImage(chartImage, 'PNG', chartStartX + 8, yPos + 6, chartWidth - 16, chartHeight);
             } catch (e) {
                 console.warn('Error exporting most moved chart:', e);
             }
         }
 
-        // Chart 2: Most Expensive Items
+        // Chart 2: Most Expensive Items (right side)
         if (chartInstances.mostExpensive && mostExpensiveItems.length > 0) {
             try {
-                const chartImage = chartInstances.mostExpensive.toBase64Image('image/png', 1);
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Items Más Caros', 14, yPos);
-                yPos += 7;
+                // Chart box with border
+                doc.setFillColor(250, 250, 252);
+                doc.roundedRect(chartStartX + chartWidth + chartSpacing, yPos - 5, chartWidth, chartHeight + 25, 4, 4, 'F');
+                doc.setDrawColor(220, 220, 220);
+                doc.setLineWidth(0.8);
+                doc.roundedRect(chartStartX + chartWidth + chartSpacing, yPos - 5, chartWidth, chartHeight + 25, 4, 4);
                 
-                doc.addImage(chartImage, 'PNG', 14, yPos, chartWidth, chartHeight);
-                yPos += chartHeight + 10;
-
-                // Check if we need a new page
-                if (yPos > doc.internal.pageSize.getHeight() - 30) {
-                    doc.addPage();
-                    yPos = 20;
-                }
+                const chartImage = chartInstances.mostExpensive.toBase64Image('image/png', 1);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(34, 197, 94);
+                doc.text('ITEMS MAS CAROS', chartStartX + chartWidth + chartSpacing + 8, yPos);
+                doc.setTextColor(0, 0, 0);
+                
+                doc.addImage(chartImage, 'PNG', chartStartX + chartWidth + chartSpacing + 8, yPos + 6, chartWidth - 16, chartHeight);
             } catch (e) {
                 console.warn('Error exporting most expensive chart:', e);
             }
         }
 
-        // Chart 3: Most Verified Items
+        yPos += chartHeight + 40;
+
+        // Chart 3: Most Verified Items (full width, centered)
         if (chartInstances.mostVerified && mostVerifiedItems.length > 0) {
             try {
-                const chartImage = chartInstances.mostVerified.toBase64Image('image/png', 1);
-                doc.setFontSize(12);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Items con Más Verificaciones', 14, yPos);
-                yPos += 7;
+                // Check if we need a new page
+                if (yPos > doc.internal.pageSize.getHeight() - 90) {
+                    doc.addPage();
+                    yPos = 20;
+                }
                 
-                doc.addImage(chartImage, 'PNG', 14, yPos, chartWidth, chartHeight * 1.2);
-                yPos += chartHeight * 1.2 + 10;
+                // Chart box with border (full width but with margins for centering)
+                const fullChartWidth = pageWidth - 30; // Más ancho, menos márgenes
+                const fullChartStartX = (pageWidth - fullChartWidth) / 2; // Centrado
+                
+                doc.setFillColor(250, 250, 252);
+                doc.roundedRect(fullChartStartX, yPos - 5, fullChartWidth, chartHeight + 25, 4, 4, 'F');
+                doc.setDrawColor(220, 220, 220);
+                doc.setLineWidth(0.8);
+                doc.roundedRect(fullChartStartX, yPos - 5, fullChartWidth, chartHeight + 25, 4, 4);
+                
+                const chartImage = chartInstances.mostVerified.toBase64Image('image/png', 1);
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(249, 115, 22);
+                doc.text('ITEMS CON MAS VERIFICACIONES', fullChartStartX + 10, yPos);
+                doc.setTextColor(0, 0, 0);
+                
+                doc.addImage(chartImage, 'PNG', fullChartStartX + 10, yPos + 6, fullChartWidth - 20, chartHeight);
+                yPos += chartHeight + 35;
             } catch (e) {
                 console.warn('Error exporting most verified chart:', e);
             }
@@ -1615,19 +1789,29 @@ async function exportToPDF() {
             yPos = 20;
         }
 
-        // Top items tables
+        // Enhanced Top Items Tables section
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 140, 0);
+        doc.text('DETALLE DE ITEMS DESTACADOS', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 14;
+
+        // Table 1: Most Moved Items
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text('Items Más Movidos', 14, yPos);
-        yPos += 8;
+        doc.setTextColor(147, 51, 234);
+        doc.text('ITEMS MAS MOVIDOS', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 10;
 
         if (mostMovedItems.length > 0) {
             const movedTableData = [
                 ['#', 'Nombre del Item', 'Transferencias'],
                 ...mostMovedItems.map((item, idx) => [
                     (idx + 1).toString(),
-                    item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name,
-                    item.count.toString()
+                    item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
+                    item.count.toString() + ' trans.'
                 ])
             ];
 
@@ -1639,39 +1823,54 @@ async function exportToPDF() {
                 headStyles: { 
                     fillColor: [147, 51, 234],
                     textColor: [255, 255, 255],
-                    fontStyle: 'bold'
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                bodyStyles: {
+                    fontSize: 9,
+                    cellPadding: 3
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 250, 252]
                 },
                 styles: {
-                    fontSize: 9,
-                    cellPadding: 2
+                    cellPadding: 3,
+                    lineColor: [220, 220, 220],
+                    lineWidth: 0.3
                 },
                 margin: { left: 14, right: 14 }
             });
-            yPos = doc.lastAutoTable.finalY + 10;
+            yPos = doc.lastAutoTable.finalY + 15;
         } else {
+            // Message when no data
             doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text('No hay datos disponibles', 14, yPos);
-            yPos += 10;
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(140, 140, 140);
+            doc.text('No hay datos disponibles', 20, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 12;
         }
 
         // Check if we need a new page
-        if (yPos > doc.internal.pageSize.getHeight() - 40) {
+        if (yPos > doc.internal.pageSize.getHeight() - 50) {
             doc.addPage();
             yPos = 20;
         }
 
+        // Table 2: Most Expensive Items
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text('Items Más Caros', 14, yPos);
-        yPos += 8;
+        doc.setTextColor(34, 197, 94);
+        doc.text('ITEMS MAS CAROS', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 10;
 
         if (mostExpensiveItems.length > 0) {
             const expensiveTableData = [
                 ['#', 'Nombre del Item', 'Valor'],
                 ...mostExpensiveItems.map((item, idx) => [
                     (idx + 1).toString(),
-                    item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name,
+                    item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
                     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
                 ])
             ];
@@ -1684,40 +1883,55 @@ async function exportToPDF() {
                 headStyles: { 
                     fillColor: [34, 197, 94],
                     textColor: [255, 255, 255],
-                    fontStyle: 'bold'
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                bodyStyles: {
+                    fontSize: 9,
+                    cellPadding: 3
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 250, 252]
                 },
                 styles: {
-                    fontSize: 9,
-                    cellPadding: 2
+                    cellPadding: 3,
+                    lineColor: [220, 220, 220],
+                    lineWidth: 0.3
                 },
                 margin: { left: 14, right: 14 }
             });
-            yPos = doc.lastAutoTable.finalY + 10;
+            yPos = doc.lastAutoTable.finalY + 15;
         } else {
+            // Message when no data
             doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text('No hay datos disponibles', 14, yPos);
-            yPos += 10;
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(140, 140, 140);
+            doc.text('No hay datos disponibles', 20, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 12;
         }
 
         // Check if we need a new page
-        if (yPos > doc.internal.pageSize.getHeight() - 40) {
+        if (yPos > doc.internal.pageSize.getHeight() - 50) {
             doc.addPage();
             yPos = 20;
         }
 
+        // Table 3: Most Verified Items
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.text('Items con Más Verificaciones', 14, yPos);
-        yPos += 8;
+        doc.setTextColor(249, 115, 22);
+        doc.text('ITEMS CON MAS VERIFICACIONES', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 10;
 
         if (mostVerifiedItems.length > 0) {
             const verifiedTableData = [
                 ['#', 'Nombre del Item', 'Verificaciones'],
                 ...mostVerifiedItems.map((item, idx) => [
                     (idx + 1).toString(),
-                    item.name.length > 30 ? item.name.substring(0, 30) + '...' : item.name,
-                    item.count.toString()
+                    item.name.length > 35 ? item.name.substring(0, 35) + '...' : item.name,
+                    item.count.toString() + ' verif.'
                 ])
             ];
 
@@ -1729,25 +1943,45 @@ async function exportToPDF() {
                 headStyles: { 
                     fillColor: [249, 115, 22],
                     textColor: [255, 255, 255],
-                    fontStyle: 'bold'
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                bodyStyles: {
+                    fontSize: 9,
+                    cellPadding: 3
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 250, 252]
                 },
                 styles: {
-                    fontSize: 9,
-                    cellPadding: 2
+                    cellPadding: 3,
+                    lineColor: [220, 220, 220],
+                    lineWidth: 0.3
                 },
                 margin: { left: 14, right: 14 }
             });
         } else {
+            // Message when no data
             doc.setFontSize(10);
-            doc.setFont('helvetica', 'normal');
-            doc.text('No hay datos disponibles', 14, yPos);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(140, 140, 140);
+            doc.text('No hay datos disponibles', 20, yPos);
+            doc.setTextColor(0, 0, 0);
         }
     } else {
-        // Table report
+        // Enhanced Table report
         const headers = getHeadersForReportType(currentReportType);
         const tableData = currentReportData.map(item => 
             headers.map(header => formatValue(getValueForField(item, header.field), header.type))
         );
+
+        // Section title
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 140, 0);
+        doc.text('DETALLE DE REGISTROS', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 12;
 
         doc.autoTable({
             startY: yPos,
@@ -1755,39 +1989,66 @@ async function exportToPDF() {
             body: tableData,
             theme: 'striped',
             headStyles: { 
-                fillColor: [0, 175, 0],
+                fillColor: [0, 140, 0],
                 textColor: [255, 255, 255],
-                fontStyle: 'bold'
+                fontStyle: 'bold',
+                fontSize: 10,
+                cellPadding: 5,
+                halign: 'center'
+            },
+            bodyStyles: {
+                fontSize: 9,
+                cellPadding: 4,
+                halign: 'left'
             },
             alternateRowStyles: {
-                fillColor: [245, 247, 250]
+                fillColor: [250, 250, 252]
             },
             styles: { 
-                fontSize: 8,
-                cellPadding: 2
+                fontSize: 9,
+                cellPadding: 3,
+                lineColor: [220, 220, 220],
+                lineWidth: 0.3
             },
             margin: { left: 14, right: 14 },
             overflow: 'linebreak'
         });
     }
 
-    // Footer on each page
+    // Enhanced Footer on each page
     const pageCount = doc.internal.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
+        const pageHeight = doc.internal.pageSize.getHeight();
+        
+        // Footer background
+        doc.setFillColor(245, 247, 250);
+        doc.rect(0, pageHeight - 20, pageWidth, 20, 'F');
+        
+        // Footer top line
+        doc.setDrawColor(0, 140, 0);
+        doc.setLineWidth(0.5);
+        doc.line(0, pageHeight - 20, pageWidth, pageHeight - 20);
+        
+        // Footer text
         doc.setFontSize(8);
-        doc.setTextColor(128, 128, 128);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont('helvetica', 'normal');
         doc.text(
-            `Página ${i} de ${pageCount} - SGDIS Sistema de Gestión de Inventario SENA`,
-            doc.internal.pageSize.getWidth() / 2,
-            doc.internal.pageSize.getHeight() - 10,
+            `Página ${i} de ${pageCount}`,
+            pageWidth / 2,
+            pageHeight - 12,
             { align: 'center' }
         );
         
-        // Footer line
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.5);
-        doc.line(14, doc.internal.pageSize.getHeight() - 15, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 15);
+        doc.setFontSize(7);
+        doc.setTextColor(150, 150, 150);
+        doc.text(
+            'SGDIS - Sistema de Gestión de Inventario SENA',
+            pageWidth / 2,
+            pageHeight - 6,
+            { align: 'center' }
+        );
     }
 
     // Save PDF
