@@ -489,6 +489,20 @@ html.dark button {
     color: var(--dark-sena-verde) !important;
 }
 
+/* Iconos del sidebar en modo oscuro - blancos */
+.dark .sidebar-item i,
+.dark aside.sidebar nav .sidebar-item i,
+.dark .sidebar nav .sidebar-item i {
+    color: #ffffff !important;
+}
+
+/* Iconos del sidebar activo en modo oscuro - mantener color verde */
+.dark .sidebar-item.active i,
+.dark aside.sidebar nav .sidebar-item.active i,
+.dark .sidebar nav .sidebar-item.active i {
+    color: var(--dark-sena-verde) !important;
+}
+
 /* Header en modo oscuro */
 .dark header {
     background-color: var(--dark-bg-secondary) !important;
