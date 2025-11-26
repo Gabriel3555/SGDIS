@@ -399,7 +399,15 @@ async function generateReport() {
         
         switch (reportType) {
             case 'items':
-                data = await fetchItemsReport(regionalId, institutionId, inventoryId, startDate, endDate);
+                // For items report, we need items, loans, and transfers
+                const items = await fetchItemsReport(regionalId, institutionId, inventoryId, startDate, endDate);
+                const loans = await fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []);
+                const transfers = await fetchTransfersReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []);
+                data = {
+                    items: items || [],
+                    loans: loans || [],
+                    transfers: transfers || []
+                };
                 break;
             case 'users':
                 data = await fetchUsersReport(regionalId, institutionId, startDate, endDate);
@@ -837,6 +845,12 @@ function displayReport(data) {
 
 // Display table report
 function displayTableReport(data) {
+    // Special handling for items report - show statistics instead of full table
+    if (currentReportType === 'items') {
+        displayItemsReport(data);
+        return;
+    }
+
     if (!Array.isArray(data) || data.length === 0) {
         document.getElementById('reportEmptyState').classList.remove('hidden');
         document.getElementById('reportResultsSection').classList.add('hidden');
@@ -883,6 +897,153 @@ function displayTableReport(data) {
 
     // Update row count
     document.getElementById('reportRowCount').textContent = `${data.length} ${data.length === 1 ? 'registro' : 'registros'}`;
+}
+
+// Display items report with statistics
+async function displayItemsReport(data) {
+    const items = data.items || [];
+    const loans = data.loans || [];
+    const transfers = data.transfers || [];
+
+    if (items.length === 0) {
+        document.getElementById('reportEmptyState').classList.remove('hidden');
+        document.getElementById('reportResultsSection').classList.add('hidden');
+        return;
+    }
+
+    // Calculate statistics
+    const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+    const totalItems = items.length;
+
+    // Calculate items on loan (items with active loans - not returned)
+    const itemsOnLoan = new Set();
+    loans.forEach(loan => {
+        if (!loan.returned && loan.itemId) {
+            itemsOnLoan.add(loan.itemId);
+        }
+    });
+    const totalItemsOnLoan = itemsOnLoan.size;
+
+    // Calculate items with most transfers (most moved)
+    const itemTransferCounts = {};
+    transfers.forEach(transfer => {
+        const itemId = transfer.itemId || transfer.item?.id;
+        if (itemId) {
+            itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
+        }
+    });
+
+    // Get top 5 most moved items
+    const mostMovedItems = Object.entries(itemTransferCounts)
+        .map(([itemId, count]) => {
+            const item = items.find(i => i.id === parseInt(itemId));
+            return {
+                id: itemId,
+                name: item?.name || item?.licencePlateNumber || item?.productName || `Item ${itemId}`,
+                count: count
+            };
+        })
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    // Get top 5 most expensive items
+    const mostExpensiveItems = items
+        .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
+        .map(item => ({
+            id: item.id,
+            name: item.name || item.licencePlateNumber || item.productName || `Item ${item.id}`,
+            value: item.acquisitionValue
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+    // Generate statistics cards
+    const statsContainer = document.getElementById('reportStats');
+    statsContainer.innerHTML = `
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Cantidad Total de Items</span>
+                <i class="fas fa-box text-blue-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${totalItems}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Valor Total de Items</span>
+                <i class="fas fa-dollar-sign text-green-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue)}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Items en Préstamo</span>
+                <i class="fas fa-hand-holding text-purple-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${totalItemsOnLoan}</div>
+        </div>
+        <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Items Más Movidos</span>
+                <i class="fas fa-exchange-alt text-orange-500"></i>
+            </div>
+            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${mostMovedItems.length > 0 ? mostMovedItems[0].count : 0}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Máximo de transferencias</div>
+        </div>
+    `;
+
+    // Display summary tables
+    const tableHeader = document.getElementById('reportTableHeader');
+    const tableBody = document.getElementById('reportTableBody');
+    
+    // Create header
+    tableHeader.innerHTML = '<tr><th class="px-4 py-3 text-left">#</th><th class="px-4 py-3 text-left">Nombre</th><th class="px-4 py-3 text-left">Información</th></tr>';
+    
+    // Create tables for top items
+    const summaryHTML = `
+        <tr>
+            <td colspan="3" class="px-4 py-3 font-bold text-gray-800 dark:text-gray-100 bg-orange-50 dark:bg-orange-900/20">
+                Items Más Movidos (por transferencias)
+            </td>
+        </tr>
+        ${mostMovedItems.length > 0 ? mostMovedItems.map((item, idx) => `
+            <tr class="${idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}">
+                <td class="px-4 py-3">${idx + 1}</td>
+                <td class="px-4 py-3">${(item.name || '').length > 40 ? (item.name || '').substring(0, 40) + '...' : (item.name || '')}</td>
+                <td class="px-4 py-3 font-semibold text-orange-600 dark:text-orange-400">${item.count} transferencia${item.count !== 1 ? 's' : ''}</td>
+            </tr>
+        `).join('') : '<tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">No hay datos disponibles</td></tr>'}
+        
+        <tr>
+            <td colspan="3" class="px-4 py-3 font-bold text-gray-800 dark:text-gray-100 bg-green-50 dark:bg-green-900/20 mt-4">
+                Items Más Caros
+            </td>
+        </tr>
+        ${mostExpensiveItems.length > 0 ? mostExpensiveItems.map((item, idx) => `
+            <tr class="${idx % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700/50'}">
+                <td class="px-4 py-3">${idx + 1}</td>
+                <td class="px-4 py-3">${(item.name || '').length > 40 ? (item.name || '').substring(0, 40) + '...' : (item.name || '')}</td>
+                <td class="px-4 py-3 font-semibold text-green-600 dark:text-green-400">${new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)}</td>
+            </tr>
+        `).join('') : '<tr><td colspan="3" class="px-4 py-3 text-center text-gray-500">No hay datos disponibles</td></tr>'}
+    `;
+    
+    tableBody.innerHTML = summaryHTML;
+    
+    document.getElementById('reportRowCount').textContent = `Total: ${totalItems} items`;
+    
+    // Store data for PDF export
+    currentReportData = {
+        items: items,
+        loans: loans,
+        transfers: transfers,
+        stats: {
+            totalItems,
+            totalValue,
+            totalItemsOnLoan,
+            mostMovedItems,
+            mostExpensiveItems
+        }
+    };
 }
 
 // Display general report
@@ -1330,9 +1491,24 @@ function generateStatistics(data) {
 
 // Export to PDF
 async function exportToPDF() {
-    if (!currentReportData || (Array.isArray(currentReportData) && currentReportData.length === 0)) {
+    if (!currentReportData) {
         showReportErrorToast('Error', 'No hay datos para exportar');
         return;
+    }
+    
+    // Check if it's an empty array
+    if (Array.isArray(currentReportData) && currentReportData.length === 0) {
+        showReportErrorToast('Error', 'No hay datos para exportar');
+        return;
+    }
+    
+    // Check if it's an items report object with empty items
+    if (currentReportType === 'items' && typeof currentReportData === 'object' && !Array.isArray(currentReportData)) {
+        const items = currentReportData.items || [];
+        if (items.length === 0) {
+            showReportErrorToast('Error', 'No hay datos para exportar');
+            return;
+        }
     }
 
     const { jsPDF } = window.jspdf;
@@ -1968,12 +2144,267 @@ async function exportToPDF() {
             doc.text('No hay datos disponibles', 20, yPos);
             doc.setTextColor(0, 0, 0);
         }
+    } else if (currentReportType === 'items') {
+        // Items report with statistics
+        const data = currentReportData;
+        const items = data.items || [];
+        const loans = data.loans || [];
+        const transfers = data.transfers || [];
+        
+        // Calculate statistics
+        const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+        const totalItems = items.length;
+        
+        // Calculate items on loan
+        const itemsOnLoan = new Set();
+        loans.forEach(loan => {
+            if (!loan.returned && loan.itemId) {
+                itemsOnLoan.add(loan.itemId);
+            }
+        });
+        const totalItemsOnLoan = itemsOnLoan.size;
+        
+        // Calculate items with most transfers
+        const itemTransferCounts = {};
+        transfers.forEach(transfer => {
+            const itemId = transfer.itemId || transfer.item?.id;
+            if (itemId) {
+                itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
+            }
+        });
+        
+        const mostMovedItems = Object.entries(itemTransferCounts)
+            .map(([itemId, count]) => {
+                const item = items.find(i => i.id === parseInt(itemId));
+                return {
+                    id: itemId,
+                    name: item?.name || item?.licencePlateNumber || item?.productName || `Item ${itemId}`,
+                    count: count
+                };
+            })
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+        
+        // Get top 5 most expensive items
+        const mostExpensiveItems = items
+            .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
+            .map(item => ({
+                id: item.id,
+                name: item.name || item.licencePlateNumber || item.productName || `Item ${item.id}`,
+                value: item.acquisitionValue
+            }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+        
+        // Enhanced Statistics section with cards
+        yPos += 10;
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 140, 0);
+        doc.text('ESTADISTICAS DE ITEMS', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 14;
+
+        // Statistics cards in 2x2 grid
+        const cardWidth = (pageWidth - 42) / 2;
+        const cardHeight = 32;
+        const cardSpacing = 10;
+        
+        // Card 1: Total Items
+        doc.setFillColor(59, 130, 246); // Blue
+        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+        doc.setDrawColor(40, 100, 200);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('CANTIDAD TOTAL DE ITEMS', 20, yPos + 8);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(totalItems.toString(), 20, yPos + 22);
+        
+        // Card 2: Total Value
+        doc.setFillColor(34, 197, 94); // Green
+        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+        doc.setDrawColor(20, 150, 70);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('VALOR TOTAL DE ITEMS', 20 + cardWidth + cardSpacing, yPos + 8);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        const valueText = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue);
+        if (valueText.length > 28) {
+            const mid = Math.floor(valueText.length / 2);
+            doc.text(valueText.substring(0, mid), 20 + cardWidth + cardSpacing, yPos + 20);
+            doc.text(valueText.substring(mid), 20 + cardWidth + cardSpacing, yPos + 26);
+        } else {
+            doc.text(valueText, 20 + cardWidth + cardSpacing, yPos + 22);
+        }
+        
+        yPos += cardHeight + cardSpacing;
+        
+        // Card 3: Items on Loan
+        doc.setFillColor(147, 51, 234); // Purple
+        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+        doc.setDrawColor(100, 30, 180);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('TOTAL ITEMS EN PRESTAMO', 20, yPos + 8);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(totalItemsOnLoan.toString(), 20, yPos + 22);
+        
+        // Card 4: Most Moved Items
+        doc.setFillColor(249, 115, 22); // Orange
+        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+        doc.setDrawColor(200, 80, 10);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('ITEMS MAS MOVIDOS', 20 + cardWidth + cardSpacing, yPos + 8);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(mostMovedItems.length > 0 ? mostMovedItems[0].count.toString() : '0', 20 + cardWidth + cardSpacing, yPos + 22);
+        
+        doc.setTextColor(0, 0, 0); // Reset to black
+        yPos += cardHeight + 18;
+
+        // Always add a new page for tables section
+        doc.addPage();
+        yPos = 20;
+
+        // Enhanced Top Items Tables section
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 140, 0);
+        doc.text('DETALLE DE ITEMS DESTACADOS', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 14;
+
+        // Table 1: Most Moved Items
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(249, 115, 22);
+        doc.text('ITEMS MAS MOVIDOS', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 10;
+
+        if (mostMovedItems.length > 0) {
+            const movedTableData = [
+                ['#', 'Nombre del Item', 'Transferencias'],
+                ...mostMovedItems.map((item, idx) => [
+                    (idx + 1).toString(),
+                    (item.name || '').length > 35 ? (item.name || '').substring(0, 35) + '...' : (item.name || ''),
+                    item.count.toString() + ' trans.'
+                ])
+            ];
+
+            doc.autoTable({
+                startY: yPos,
+                head: [movedTableData[0]],
+                body: movedTableData.slice(1),
+                theme: 'striped',
+                headStyles: { 
+                    fillColor: [249, 115, 22],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                bodyStyles: {
+                    fontSize: 9,
+                    cellPadding: 3
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 250, 252]
+                },
+                styles: {
+                    cellPadding: 3,
+                    lineColor: [220, 220, 220],
+                    lineWidth: 0.3
+                },
+                margin: { left: 14, right: 14 }
+            });
+            yPos = doc.lastAutoTable.finalY + 15;
+        } else {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(140, 140, 140);
+            doc.text('No hay datos disponibles', 20, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 12;
+        }
+
+        // Check if we need a new page
+        if (yPos > doc.internal.pageSize.getHeight() - 50) {
+            doc.addPage();
+            yPos = 20;
+        }
+
+        // Table 2: Most Expensive Items
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(34, 197, 94);
+        doc.text('ITEMS MAS CAROS', 14, yPos);
+        doc.setTextColor(0, 0, 0);
+        yPos += 10;
+
+        if (mostExpensiveItems.length > 0) {
+            const expensiveTableData = [
+                ['#', 'Nombre del Item', 'Valor'],
+                ...mostExpensiveItems.map((item, idx) => [
+                    (idx + 1).toString(),
+                    (item.name || '').length > 35 ? (item.name || '').substring(0, 35) + '...' : (item.name || ''),
+                    new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
+                ])
+            ];
+
+            doc.autoTable({
+                startY: yPos,
+                head: [expensiveTableData[0]],
+                body: expensiveTableData.slice(1),
+                theme: 'striped',
+                headStyles: { 
+                    fillColor: [34, 197, 94],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10
+                },
+                bodyStyles: {
+                    fontSize: 9,
+                    cellPadding: 3
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 250, 252]
+                },
+                styles: {
+                    cellPadding: 3,
+                    lineColor: [220, 220, 220],
+                    lineWidth: 0.3
+                },
+                margin: { left: 14, right: 14 }
+            });
+        } else {
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(140, 140, 140);
+            doc.text('No hay datos disponibles', 20, yPos);
+            doc.setTextColor(0, 0, 0);
+        }
     } else {
-        // Enhanced Table report
+        // Enhanced Table report for other types
         const headers = getHeadersForReportType(currentReportType);
-        const tableData = currentReportData.map(item => 
+        const tableData = Array.isArray(currentReportData) ? currentReportData.map(item => 
             headers.map(header => formatValue(getValueForField(item, header.field), header.type))
-        );
+        ) : [];
 
         // Section title
         doc.setFontSize(16);
@@ -1983,36 +2414,38 @@ async function exportToPDF() {
         doc.setTextColor(0, 0, 0);
         yPos += 12;
 
-        doc.autoTable({
-            startY: yPos,
-            head: [headers.map(h => h.label)],
-            body: tableData,
-            theme: 'striped',
-            headStyles: { 
-                fillColor: [0, 140, 0],
-                textColor: [255, 255, 255],
-                fontStyle: 'bold',
-                fontSize: 10,
-                cellPadding: 5,
-                halign: 'center'
-            },
-            bodyStyles: {
-                fontSize: 9,
-                cellPadding: 4,
-                halign: 'left'
-            },
-            alternateRowStyles: {
-                fillColor: [250, 250, 252]
-            },
-            styles: { 
-                fontSize: 9,
-                cellPadding: 3,
-                lineColor: [220, 220, 220],
-                lineWidth: 0.3
-            },
-            margin: { left: 14, right: 14 },
-            overflow: 'linebreak'
-        });
+        if (tableData.length > 0) {
+            doc.autoTable({
+                startY: yPos,
+                head: [headers.map(h => h.label)],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { 
+                    fillColor: [0, 140, 0],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    fontSize: 10,
+                    cellPadding: 5,
+                    halign: 'center'
+                },
+                bodyStyles: {
+                    fontSize: 9,
+                    cellPadding: 4,
+                    halign: 'left'
+                },
+                alternateRowStyles: {
+                    fillColor: [250, 250, 252]
+                },
+                styles: { 
+                    fontSize: 9,
+                    cellPadding: 3,
+                    lineColor: [220, 220, 220],
+                    lineWidth: 0.3
+                },
+                margin: { left: 14, right: 14 },
+                overflow: 'linebreak'
+            });
+        }
     }
 
     // Enhanced Footer on each page
@@ -2060,9 +2493,24 @@ async function exportToPDF() {
 
 // Export to Excel
 function exportToExcel() {
-    if (!currentReportData || (Array.isArray(currentReportData) && currentReportData.length === 0)) {
+    if (!currentReportData) {
         showReportErrorToast('Error', 'No hay datos para exportar');
         return;
+    }
+    
+    // Check if it's an empty array
+    if (Array.isArray(currentReportData) && currentReportData.length === 0) {
+        showReportErrorToast('Error', 'No hay datos para exportar');
+        return;
+    }
+    
+    // Check if it's an items report object with empty items
+    if (currentReportType === 'items' && typeof currentReportData === 'object' && !Array.isArray(currentReportData)) {
+        const items = currentReportData.items || [];
+        if (items.length === 0) {
+            showReportErrorToast('Error', 'No hay datos para exportar');
+            return;
+        }
     }
 
     const reportTypeNames = {
@@ -2129,12 +2577,92 @@ function exportToExcel() {
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             XLSX.utils.book_append_sheet(wb, ws, 'Inventarios');
         }
+    } else if (currentReportType === 'items') {
+        // Items report - statistics and top items
+        const data = currentReportData;
+        const items = data.items || [];
+        const loans = data.loans || [];
+        const transfers = data.transfers || [];
+        
+        // Calculate statistics
+        const totalValue = items.reduce((sum, item) => sum + (item.acquisitionValue || 0), 0);
+        const totalItems = items.length;
+        
+        // Calculate items on loan
+        const itemsOnLoan = new Set();
+        loans.forEach(loan => {
+            if (!loan.returned && loan.itemId) {
+                itemsOnLoan.add(loan.itemId);
+            }
+        });
+        const totalItemsOnLoan = itemsOnLoan.size;
+        
+        // Calculate items with most transfers
+        const itemTransferCounts = {};
+        transfers.forEach(transfer => {
+            const itemId = transfer.itemId || transfer.item?.id;
+            if (itemId) {
+                itemTransferCounts[itemId] = (itemTransferCounts[itemId] || 0) + 1;
+            }
+        });
+        
+        const mostMovedItems = Object.entries(itemTransferCounts)
+            .map(([itemId, count]) => {
+                const item = items.find(i => i.id === parseInt(itemId));
+                return {
+                    id: itemId,
+                    name: item?.name || item?.licencePlateNumber || item?.productName || `Item ${itemId}`,
+                    count: count
+                };
+            })
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+        
+        // Get top 5 most expensive items
+        const mostExpensiveItems = items
+            .filter(item => item.acquisitionValue && item.acquisitionValue > 0)
+            .map(item => ({
+                id: item.id,
+                name: item.name || item.licencePlateNumber || item.productName || `Item ${item.id}`,
+                value: item.acquisitionValue
+            }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 5);
+        
+        // Statistics sheet
+        const statsData = [
+            ['ESTADISTICAS DE ITEMS'],
+            [],
+            ['Cantidad Total de Items', totalItems],
+            ['Valor Total de Items', new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(totalValue)],
+            ['Total Items en Préstamo', totalItemsOnLoan],
+            ['Items Más Movidos (máximo)', mostMovedItems.length > 0 ? mostMovedItems[0].count : 0],
+            [],
+            ['ITEMS MAS MOVIDOS'],
+            ['#', 'Nombre del Item', 'Transferencias'],
+            ...mostMovedItems.map((item, idx) => [
+                idx + 1,
+                item.name || '',
+                item.count
+            ]),
+            [],
+            ['ITEMS MAS CAROS'],
+            ['#', 'Nombre del Item', 'Valor'],
+            ...mostExpensiveItems.map((item, idx) => [
+                idx + 1,
+                item.name || '',
+                new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(item.value)
+            ])
+        ];
+        
+        const ws = XLSX.utils.aoa_to_sheet(statsData);
+        XLSX.utils.book_append_sheet(wb, ws, 'Estadísticas Items');
     } else {
         // Single sheet report
         const headers = getHeadersForReportType(currentReportType);
         const wsData = [
             headers.map(h => h.label),
-            ...currentReportData.map(item => headers.map(header => formatValue(getValueForField(item, header.field), header.type)))
+            ...(Array.isArray(currentReportData) ? currentReportData : []).map(item => headers.map(header => formatValue(getValueForField(item, header.field), header.type)))
         ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         XLSX.utils.book_append_sheet(wb, ws, reportTypeNames[currentReportType] || 'Reporte');
