@@ -123,8 +123,6 @@ async function loadUserInventories() {
         
         if (verificationData.inventories.length === 0) {
             showWarningToast('Sin inventarios', 'No tienes inventarios asignados. No podrás realizar verificaciones hasta que te asignen un inventario.');
-        } else {
-            showInfoToast('Inventarios cargados', `Se cargaron ${verificationData.inventories.length} inventario(s) para verificaciones`);
         }
     } catch (error) {
         showErrorToast('Error al cargar inventarios', 'No se pudieron cargar tus inventarios. Intenta recargar la página.');

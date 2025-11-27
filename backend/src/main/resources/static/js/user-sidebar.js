@@ -32,6 +32,7 @@ let isUserRole = false;
                        path.includes('/dashboard/user') || 
                        (path === '/info-me' && !isAdminRoute)
                        );
+    const skipSidebarHide = path.includes('/user/my-inventories') || path.includes('/user/notifications') || path.includes('/user/verification') || path.includes('/user/transfers');
     
     // Don't process if it's an admin route
     if (isAdminRoute) {
@@ -44,55 +45,59 @@ let isUserRole = false;
     }
     
     if (isUserRoute) {
-        // Hide sidebar immediately to prevent flash of admin options
-        function addHideStyle() {
-            if (document.head) {
-                // Check if style already exists (might have been added by inline script)
-                if (!document.getElementById('user-sidebar-hide-style') && !document.getElementById('hide-sidebar-immediate')) {
-                    const style = document.createElement('style');
-                    style.id = 'user-sidebar-hide-style';
-                    style.textContent = `
-                        nav.flex-1.px-4.py-4.overflow-y-auto {
-                            visibility: hidden !important;
-                            opacity: 0 !important;
-                            transition: opacity 0.2s ease-in-out;
-                        }
-                        nav.flex-1.px-4.py-4.overflow-y-auto.user-sidebar-ready {
-                            visibility: visible !important;
-                            opacity: 1 !important;
-                        }
-                    `;
-                    document.head.appendChild(style);
+        const shouldHideSidebar = !skipSidebarHide;
+
+        if (shouldHideSidebar) {
+            // Hide sidebar immediately to prevent flash of admin options
+            function addHideStyle() {
+                if (document.head) {
+                    // Check if style already exists (might have been added by inline script)
+                    if (!document.getElementById('user-sidebar-hide-style') && !document.getElementById('hide-sidebar-immediate')) {
+                        const style = document.createElement('style');
+                        style.id = 'user-sidebar-hide-style';
+                        style.textContent = `
+                            nav.flex-1.px-4.py-4.overflow-y-auto {
+                                visibility: hidden !important;
+                                opacity: 0 !important;
+                                transition: opacity 0.2s ease-in-out;
+                            }
+                            nav.flex-1.px-4.py-4.overflow-y-auto.user-sidebar-ready {
+                                visibility: visible !important;
+                                opacity: 1 !important;
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                } else {
+                    // Retry if head not ready
+                    setTimeout(addHideStyle, 0);
                 }
-            } else {
-                // Retry if head not ready
-                setTimeout(addHideStyle, 0);
             }
-        }
-        
-        // Try to add style immediately
-        addHideStyle();
-        
-        // Also hide sidebar nav directly if it exists - use multiple attempts
-        function hideSidebarNav(attempts = 0) {
-            const sidebarNav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
-            if (sidebarNav) {
-                sidebarNav.style.visibility = 'hidden';
-                sidebarNav.style.opacity = '0';
-                sidebarNav.style.display = 'none';
-                // Re-show it but keep it hidden via visibility
-                setTimeout(() => {
-                    sidebarNav.style.display = '';
-                }, 0);
-            } else if (attempts < 50) {
-                // Retry more aggressively
-                setTimeout(() => hideSidebarNav(attempts + 1), 0);
+            
+            // Try to add style immediately
+            addHideStyle();
+            
+            // Also hide sidebar nav directly if it exists - use multiple attempts
+            function hideSidebarNav(attempts = 0) {
+                const sidebarNav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
+                if (sidebarNav) {
+                    sidebarNav.style.visibility = 'hidden';
+                    sidebarNav.style.opacity = '0';
+                    sidebarNav.style.display = 'none';
+                    // Re-show it but keep it hidden via visibility
+                    setTimeout(() => {
+                        sidebarNav.style.display = '';
+                    }, 0);
+                } else if (attempts < 50) {
+                    // Retry more aggressively
+                    setTimeout(() => hideSidebarNav(attempts + 1), 0);
+                }
             }
+            // Try multiple times immediately
+            hideSidebarNav();
+            setTimeout(() => hideSidebarNav(), 0);
+            setTimeout(() => hideSidebarNav(), 1);
         }
-        // Try multiple times immediately
-        hideSidebarNav();
-        setTimeout(() => hideSidebarNav(), 0);
-        setTimeout(() => hideSidebarNav(), 1);
         
         // Start checking immediately
         checkAndUpdateSidebar();
@@ -330,6 +335,7 @@ async function updateSidebarForUser(userData) {
 
     // Get current page path to set active item
     const currentPath = window.location.pathname;
+    const shouldForceUserNav = currentPath.startsWith('/user/my-inventories') || currentPath.startsWith('/user/notifications') || currentPath.startsWith('/user/verification') || currentPath.startsWith('/user/transfers');
     
     // Check if user is owner or signatory
     let isOwner = false;
@@ -388,8 +394,8 @@ async function updateSidebarForUser(userData) {
             <span class="font-medium">Notificaciones</span>
         </a>`;
 
-    // Show loans if user is owner or signatory
-    if (isOwner || isSignatory) {
+    // Show loans if user is owner/signatory or forced on specific pages
+    if (shouldForceUserNav || isOwner || isSignatory) {
         sidebarHTML += `
         <a href="/user/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/loans' ? 'active' : ''}"
             onclick="handleSidebarClick(event, '/user/loans')">
@@ -405,8 +411,8 @@ async function updateSidebarForUser(userData) {
             <span class="font-medium">Verificación</span>
         </a>`;
 
-    // Show transfers only if user is owner
-    if (isOwner) {
+    // Show transfers if user is owner or forced on specific pages
+    if (shouldForceUserNav || isOwner) {
         sidebarHTML += `
         <a href="/user/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/transfers' ? 'active' : ''}"
             onclick="handleSidebarClick(event, '/user/transfers')">

@@ -38,81 +38,6 @@
 </head>
 
 <body>
-    <script>
-        // Replace sidebar with user sidebar immediately if user route
-        (function() {
-            const path = window.location.pathname;
-            const isUserRoute = path.includes('/user/') || 
-                               path.includes('/dashboard/user') || 
-                               path === '/info-me' ||
-                               path.includes('/info-me');
-            
-            if (isUserRoute) {
-                function buildUserSidebarHTML(currentPath) {
-                    return `
-                        <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/dashboard' || currentPath === '/dashboard/user' ? 'active' : ''}"
-                            onclick="handleSidebarClick(event, '/user/dashboard')">
-                            <i class="fas fa-chart-line text-lg"></i>
-                            <span class="font-medium">Dashboard</span>
-                        </a>
-                        <a href="/user/my-inventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/my-inventories' ? 'active' : ''}"
-                            onclick="handleSidebarClick(event, '/user/my-inventories')">
-                            <i class="fas fa-boxes text-lg"></i>
-                            <span class="font-medium">Mis Inventarios</span>
-                        </a>
-                        <a href="/user/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/notifications' ? 'active' : ''}"
-                            onclick="handleSidebarClick(event, '/user/notifications')">
-                            <i class="fas fa-bell text-lg"></i>
-                            <span class="font-medium">Notificaciones</span>
-                        </a>
-                        <a href="/user/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/loans' ? 'active' : ''}"
-                            onclick="handleSidebarClick(event, '/user/loans')">
-                            <i class="fas fa-hand-holding text-lg"></i>
-                            <span class="font-medium">Préstamos</span>
-                        </a>
-                        <a href="/user/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/verification' ? 'active' : ''}"
-                            onclick="handleSidebarClick(event, '/user/verification')">
-                            <i class="fas fa-clipboard-check text-lg"></i>
-                            <span class="font-medium">Verificación</span>
-                        </a>
-                        <a href="/user/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/transfers' ? 'active' : ''}"
-                            onclick="handleSidebarClick(event, '/user/transfers')">
-                            <i class="fas fa-exchange-alt text-lg"></i>
-                            <span class="font-medium">Transferencias</span>
-                        </a>
-                        <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/info-me' ? 'active' : ''}"
-                            onclick="handleSidebarClick(event, '/info-me')">
-                            <i class="fas fa-user-circle text-lg"></i>
-                            <span class="font-medium">Mi Perfil</span>
-                        </a>`;
-                }
-                
-                function replaceSidebarWithUser() {
-                    const nav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
-                    if (nav) {
-                        nav.innerHTML = buildUserSidebarHTML(window.location.pathname);
-                        return true;
-                    }
-                    return false;
-                }
-                
-                if (!replaceSidebarWithUser()) {
-                    const observer = new MutationObserver(function(mutations, obs) {
-                        if (replaceSidebarWithUser()) {
-                            obs.disconnect();
-                        }
-                    });
-                    observer.observe(document.body, {
-                        childList: true,
-                        subtree: true
-                    });
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', replaceSidebarWithUser);
-                    }
-                }
-            }
-        })();
-    </script>
     <!-- Overlay for mobile -->
     <div class="overlay" id="overlay"
         style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
@@ -136,67 +61,37 @@
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+            <a href="/user/dashboard" id="navDashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/inventory')">
+            <a href="/user/my-inventories" id="navMyInventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/my-inventories')">
                 <i class="fas fa-boxes text-lg"></i>
-                <span class="font-medium">Inventario</span>
+                <span class="font-medium">Mis Inventarios</span>
             </a>
-            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/users')">
-                <i class="fas fa-users text-lg"></i>
-                <span class="font-medium">Usuarios</span>
-            </a>
-            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/centers')">
-                <i class="fas fa-building text-lg"></i>
-                <span class="font-medium">Centros</span>
-            </a>
-            <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
-                onclick="handleSidebarClick(event, '/superadmin/transfers')">
-                <i class="fas fa-exchange-alt text-lg"></i>
-                <span class="font-medium">Transferencias</span>
-            </a>
-            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/verification')">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </a>
-            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/loans')">
-                <i class="fas fa-hand-holding text-lg"></i>
-                <span class="font-medium">Préstamos</span>
-            </a>
-            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/reports')">
-                <i class="fas fa-chart-bar text-lg"></i>
-                <span class="font-medium">Reportes</span>
-            </a>
-            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/auditory')">
-                <i class="fas fa-clipboard-list text-lg"></i>
-                <span class="font-medium">Auditoría</span>
-            </a>
-            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/notifications')">
+            <a href="/user/notifications" id="navNotifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/notifications')">
                 <i class="fas fa-bell text-lg"></i>
                 <span class="font-medium">Notificaciones</span>
             </a>
-            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-file-import text-lg"></i>
-                <span class="font-medium">Importar/Exportar</span>
+            <a href="/user/loans" id="navLoans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" style="display: none;"
+                onclick="handleSidebarClick(event, '/user/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
             </a>
-            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/settings')">
-                <i class="fas fa-sliders-h text-lg"></i>
-                <span class="font-medium">Configuración</span>
+            <a href="/user/verification" id="navVerification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
             </a>
-            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+            <a href="/user/transfers" id="navTransfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/user/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
+            <a href="/info-me" id="navInfoMe" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
@@ -345,7 +240,6 @@
 
     <script src="../../js/user-sidebar.js"></script>
     <script src="../../js/dashboard.js"></script>
-    <script src="../../js/user-sidebar.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
     <!-- Transfers Module Scripts -->
     <script src="../../js/transfers/transfers-data.js"></script>
@@ -356,7 +250,6 @@
     <script src="../../js/transfers/transfers-forms.js"></script>
     <script src="../../js/transfers/transfers.js"></script>
     <script src="../../js/notifications-bell.js"></script>
-    <script src="../../js/user-sidebar.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
@@ -470,6 +363,9 @@
 
         // Initialize transfers page
         document.addEventListener('DOMContentLoaded', function() {
+            setupMobileMenuToggle();
+            loadUserSidebarPermissions();
+            
             // Get inventory ID from URL if available
             const urlParams = new URLSearchParams(window.location.search);
             const inventoryId = urlParams.get('inventoryId');
@@ -483,6 +379,42 @@
                 window.loadTransfersData();
             }
         });
+
+        async function loadUserSidebarPermissions() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) return;
+
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+
+                const [ownerResponse, signatoryResponse] = await Promise.all([
+                    fetch('/api/v1/users/me/inventories/owner', { method: 'GET', headers }),
+                    fetch('/api/v1/users/me/inventories/signatory', { method: 'GET', headers })
+                ]);
+
+                const ownedInventories = ownerResponse.ok ? await ownerResponse.json() : [];
+                const signatoryInventories = signatoryResponse.ok ? await signatoryResponse.json() : [];
+
+                const isOwner = Array.isArray(ownedInventories) && ownedInventories.length > 0;
+                const isSignatory = Array.isArray(signatoryInventories) && signatoryInventories.length > 0;
+
+                const navLoans = document.getElementById('navLoans');
+                const navTransfers = document.getElementById('navTransfers');
+
+                if (navLoans) {
+                    navLoans.style.display = (isOwner || isSignatory) ? 'flex' : 'none';
+                }
+                // Transferencias siempre visible en esta página
+                if (navTransfers) {
+                    navTransfers.style.display = 'flex';
+                }
+            } catch (error) {
+                // Silently fail - sidebar will work without permissions check
+            }
+        }
     </script>
 
     <!-- Logout Confirmation Modal -->

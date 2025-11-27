@@ -277,7 +277,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseBody
     public ResponseEntity<Resource> superadminVerificationManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/verification/verification.html");
+        Resource resource = new ClassPathResource("static/views/verification/verification-superadmin.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -333,7 +333,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseBody
     public ResponseEntity<Resource> superadminNotifications() throws IOException {
-        Resource resource = new ClassPathResource("static/views/notifications/notifications.html");
+        Resource resource = new ClassPathResource("static/views/notifications/notifications-superadmin.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -750,6 +750,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/warehouse/notifications")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseNotifications() throws IOException {
+        Resource resource = new ClassPathResource("static/views/notifications/notifications-warehouse.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/user/loans")
     @PreAuthorize("hasRole('USER')")
     @ResponseBody
@@ -768,7 +782,21 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('USER')")
     @ResponseBody
     public ResponseEntity<Resource> userVerification() throws IOException {
-        Resource resource = new ClassPathResource("static/views/verification/verification-user.html");
+        Resource resource = new ClassPathResource("static/views/verification/verification.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/warehouse/verification")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseVerification() throws IOException {
+        Resource resource = new ClassPathResource("static/views/verification/verification-warehouse.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

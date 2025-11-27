@@ -10,19 +10,37 @@ let batchVerificationState = {
 };
 
 // Show Batch Verification Modal
-function showBatchVerificationModal() {
+async function showBatchVerificationModal() {
     const modal = document.getElementById('batchVerificationModal');
-    if (modal) {
-        // Validate that user has inventories
+    if (!modal) {
+        showErrorToast('Error', 'No se pudo abrir el modal de verificación por lotes');
+        return;
+    }
+
+    // Ensure inventories are loaded
+    if (!verificationData.inventories || verificationData.inventories.length === 0) {
+        // Try to load inventories first
+        if (typeof loadUserInventories === 'function') {
+            try {
+                await loadUserInventories();
+            } catch (error) {
+                // If loading fails, show error and return
+                showErrorToast('Error', 'No se pudieron cargar los inventarios. Intenta recargar la página.');
+                return;
+            }
+        }
+        
+        // Validate again after loading
         if (!verificationData.inventories || verificationData.inventories.length === 0) {
             showErrorToast('Sin inventarios', 'No tienes inventarios asignados. No puedes realizar verificaciones.');
             return;
         }
-        
-        modal.classList.remove('hidden');
-        resetBatchVerificationState();
-        updateScannedItemsList();
     }
+    
+    // Open modal if validation passes
+    modal.classList.remove('hidden');
+    resetBatchVerificationState();
+    updateScannedItemsList();
 }
 
 // Close Batch Verification Modal
@@ -630,6 +648,10 @@ window.addManualPlate = addManualPlate;
 window.startBatchScanner = startBatchScanner;
 window.stopBatchScanner = stopBatchScanner;
 window.captureBatchPhoto = captureBatchPhoto;
+window.handleNewVerificationFileChange = handleNewVerificationFileChange;
+window.clearNewVerificationEvidence = clearNewVerificationEvidence;
+window.captureNewVerificationPhoto = captureNewVerificationPhoto;
+window.openNewVerificationCamera = openNewVerificationCamera;
 window.removeScannedItem = removeScannedItem;
 window.handleEvidenceChange = handleEvidenceChange;
 window.removeEvidence = removeEvidence;
