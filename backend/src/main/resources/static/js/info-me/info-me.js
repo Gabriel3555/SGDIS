@@ -256,6 +256,7 @@ function loadSidebarNavigation(role) {
     const navNotifications = document.getElementById('navNotifications');
     const navImportExport = document.getElementById('navImportExport');
     const navSettings = document.getElementById('navSettings');
+    const navInfoMe = document.getElementById('navInfoMe');
 
     // Set Dashboard link
     if (navDashboard) {
@@ -303,6 +304,18 @@ function loadSidebarNavigation(role) {
             navSettings.onclick = (e) => handleSidebarClick(e, `${basePath}/settings`);
         }
     }
+    
+    // Update info-me link based on role
+    if (navInfoMe) {
+        if (role === 'ADMIN_INSTITUTION' || role === 'ADMIN_REGIONAL') {
+            navInfoMe.href = `${basePath}/info-me`;
+            navInfoMe.setAttribute('onclick', `handleSidebarClick(event, '${basePath}/info-me')`);
+        } else {
+            navInfoMe.href = '/info-me';
+            navInfoMe.setAttribute('onclick', 'handleSidebarClick(event, \'/info-me\')');
+        }
+    }
+    
     // Regular users (including WAREHOUSE) only see basic menu items (Dashboard, Inventory, Profile)
     // Admin menu items are already hidden by default in HTML
 }
@@ -341,6 +354,23 @@ function rewriteAdminInstitutionSidebarLinks(userRole) {
         
         if (!nav) {
             return false;
+        }
+
+        // Check if sidebar already has admin_institution links - if so, don't replace it
+        const firstLink = nav.querySelector('a.sidebar-item');
+        if (firstLink && (firstLink.href.includes('/admin_institution') || firstLink.href.includes('/admininstitution'))) {
+            // Sidebar already has correct links, just update the info-me link
+            const infoMeLink = nav.querySelector('a[href="/info-me"], a[href*="/info-me"], a#navInfoMe');
+            if (infoMeLink) {
+                const adminInfoMePath = `${basePath}/info-me`;
+                infoMeLink.href = adminInfoMePath;
+                infoMeLink.setAttribute('onclick', `handleSidebarClick(event, '${adminInfoMePath}')`);
+                // Also update onclick if it exists as a property
+                if (infoMeLink.onclick) {
+                    infoMeLink.onclick = (e) => handleSidebarClick(e, adminInfoMePath);
+                }
+            }
+            return true;
         }
 
         // Build complete admin_institution sidebar HTML
@@ -403,8 +433,8 @@ function rewriteAdminInstitutionSidebarLinks(userRole) {
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>
-            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/info-me' ? 'active' : ''}"
-                onclick="handleSidebarClick(event, '/info-me')">
+            <a href="${basePath}/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/info-me` || currentPath === '/info-me' ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
             </a>`;
