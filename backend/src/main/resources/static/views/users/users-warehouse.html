@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Warehouse - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <title>Gestión de Usuarios - Warehouse - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
-        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function () {
             const saved = localStorage.getItem('sgdis-dark-mode');
             if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -14,32 +13,33 @@
             }
         })();
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'sena-verde': '#00AF00',
-                        'sena-verde-oscuro': '#008800'
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
                     }
                 }
             }
         }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
-    <img src="" alt="" class="icon">
+    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="../../../css/dashboard.css">
-    <link rel="stylesheet" href="../../../css/dark-mode.css">
-    <link rel="stylesheet" href="../../../css/notifications-bell.css">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/users-toast.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
 </head>
 
 <body>
-
     <!-- Overlay for mobile -->
     <div class="overlay" id="overlay"
         style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
@@ -52,7 +52,7 @@
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
-                    <img src="../../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                    <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
                 </div>
                 <div class="text-gray-800">
                     <div class="font-bold text-lg">SGDIS</div>
@@ -63,7 +63,7 @@
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/warehouse/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
@@ -73,7 +73,7 @@
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
             </a>
-            <a href="/warehouse/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+            <a href="/warehouse/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
                 onclick="handleSidebarClick(event, '/warehouse/users')">
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
@@ -83,7 +83,8 @@
                 <i class="fas fa-exchange-alt text-lg"></i>
                 <span class="font-medium">Transferencias</span>
             </a>
-            <a href="/warehouse/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+            <a href="/warehouse/verification"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/warehouse/verification')">
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
@@ -118,7 +119,7 @@
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>
-            <a href="/warehouse/info-me" id="navInfoMe" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+            <a href="/warehouse/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/warehouse/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
@@ -135,53 +136,44 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
     <div class="main-content min-h-screen">
-        <!-- Header -->
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-4 flex-1">
                     <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
-                    <div class="relative flex-1 max-w-xl">
-                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" placeholder="Buscar inventarios, items..." class="search-input">
-                    </div>
                 </div>
-
                 <div class="flex items-center gap-4">
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/warehouse/info-me'">
-                        <div class="user-avatar" id="headerUserAvatar">W</div>
+                        <div class="user-avatar" id="headerUserAvatar"></div>
                         <div class="hidden sm:block">
-                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName">Admin Warehouse</div>
-                            <div class="text-xs text-gray-500" id="headerUserRole">WAREHOUSE</div>
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500" id="headerUserRole"></div>
                         </div>
                     </div>
-
                 </div>
             </div>
         </header>
 
-        <!-- Dashboard Content -->
         <main class="p-6">
-            <!-- Welcome Section -->
+            <!-- Header Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-1" id="dashboardTitle">Dashboard Almacén</h1>
-                    <p class="text-gray-600" id="welcomeMessage">Cargando información del usuario...</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Gestión de Usuarios - Almacén</h1>
+                    <p class="text-gray-600" id="usersWelcomeMessage">Administración de usuarios del sistema</p>
                 </div>
-                <button onclick="loadDashboardData()"
-                    class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                <button onclick="loadUsersData()"
+                    class="btn-update flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
                     <i class="fas fa-sync-alt" id="refreshIcon"></i>
                     <span id="refreshText">Actualizar</span>
                 </button>
             </div>
 
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="statsContainer">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="userStatsContainer">
                 <!-- Loading State -->
                 <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
@@ -201,221 +193,100 @@
                         </div>
                         <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <div class="h-2 bg-gray-200 rounded w-full"></div>
+                    <div class="h-3 bg-gray-200 rounded w-28"></div>
                 </div>
                 <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <div class="h-4 bg-gray-200 rounded w-28 mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded w-16 mb-2"></div>
                             <div class="h-8 bg-gray-200 rounded w-12"></div>
                         </div>
                         <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-36"></div>
+                    <div class="h-3 bg-gray-200 rounded w-20"></div>
                 </div>
                 <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+                            <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
                         </div>
                         <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-32"></div>
+                    <div class="h-3 bg-gray-200 rounded w-24"></div>
                 </div>
             </div>
 
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6" id="chartsContainer">
-                <!-- Loading State - Categorías de Items -->
-                <div class="stat-card animate-pulse">
+            <!-- Search and Filter Section -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-6" id="searchFilterContainer">
+                <!-- Loading State -->
+                <div class="flex-1 animate-pulse">
+                    <div class="h-12 bg-gray-200 rounded-xl w-full"></div>
+                </div>
+                <div class="flex gap-2 animate-pulse">
+                    <div class="h-12 bg-gray-200 rounded-xl w-32"></div>
+                    <div class="h-12 bg-gray-200 rounded-xl w-32"></div>
+                </div>
+            </div>
+
+            <!-- View Mode Buttons -->
+            <div id="viewModeButtonsContainer">
+                <!-- Dynamic content loaded by JavaScript -->
+            </div>
+
+            <!-- Users Content -->
+            <div class="stat-card" id="usersTableContainer">
+                <!-- Loading State -->
+                <div class="animate-pulse">
                     <div class="flex items-center gap-2 mb-4">
                         <div class="w-5 h-5 bg-gray-200 rounded"></div>
                         <div class="h-6 bg-gray-200 rounded w-32"></div>
                     </div>
-                    <div class="h-4 bg-gray-200 rounded w-48 mb-4"></div>
                     <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-32"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-36"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-24"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-16"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Loading State - Estado de Mantenimiento -->
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="w-5 h-5 bg-gray-200 rounded"></div>
-                        <div class="h-6 bg-gray-200 rounded w-40"></div>
-                    </div>
-                    <div class="h-4 bg-gray-200 rounded w-44 mb-4"></div>
-                    <div class="h-2 bg-gray-200 rounded w-full mb-4"></div>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-24"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-28"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-32"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
-                        </div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Estadísticas Mensuales -->
-            <div class="stat-card mb-6" id="monthlyStatsContainer">
-                <div class="flex items-center gap-2 mb-4">
-                    <i class="fas fa-calendar-alt text-green-600 text-xl"></i>
-                    <h2 class="text-xl font-bold text-gray-800">Actividad Mensual</h2>
-                </div>
-                <p class="text-gray-600 text-sm mb-6">Movimientos de inventario por mes</p>
-
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6" id="paginationContainer">
                 <!-- Loading State -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-16 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-12 mx-auto mt-2"></div>
-                    </div>
+                <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-32"></div>
                 </div>
-            </div>
-
-            <!-- Acciones Rápidas -->
-            <div class="stat-card">
-                <div class="flex items-center gap-2 mb-4">
-                    <i class="fas fa-bolt text-green-600 text-xl"></i>
-                    <h2 class="text-xl font-bold text-gray-800">Acciones de Almacén</h2>
-                </div>
-                <p class="text-gray-600 text-sm mb-6">Accesos directos a funciones de almacén</p>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="action-card cursor-pointer hover:shadow-lg transition-all duration-200" onclick="window.location.href='/warehouse/inventory'">
-                        <div class="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                            <i class="fas fa-boxes text-blue-600 text-2xl"></i>
-                        </div>
-                        <h3 class="font-bold text-gray-800 text-lg mb-2">Gestionar Inventario</h3>
-                        <p class="text-gray-600 text-sm">Administrar items del almacén</p>
-                    </div>
-
-                    <div class="action-card cursor-pointer hover:shadow-lg transition-all duration-200" onclick="window.location.href='/warehouse/import-export'">
-                        <div class="w-14 h-14 bg-purple-100 rounded-full flex items-center justify-center mb-4">
-                            <i class="fas fa-exchange-alt text-purple-600 text-2xl"></i>
-                        </div>
-                        <h3 class="font-bold text-gray-800 text-lg mb-2">Importar/Exportar</h3>
-                        <p class="text-gray-600 text-sm">Importar y exportar items desde Excel</p>
-                    </div>
-
-                    <div class="action-card cursor-pointer hover:shadow-lg transition-all duration-200" onclick="window.location.href='/warehouse/info-me'">
-                        <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                            <i class="fas fa-user-circle text-green-600 text-2xl"></i>
-                        </div>
-                        <h3 class="font-bold text-gray-800 text-lg mb-2">Mi Perfil</h3>
-                        <p class="text-gray-600 text-sm">Ver y editar mi información</p>
-                    </div>
+                <div class="flex gap-2 animate-pulse">
+                    <div class="h-10 bg-gray-200 rounded w-10"></div>
+                    <div class="h-10 bg-gray-200 rounded w-10"></div>
+                    <div class="h-10 bg-gray-200 rounded w-10"></div>
+                    <div class="h-10 bg-gray-200 rounded w-10"></div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- WebSocket Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-    
-    <!-- Application Scripts -->
-    <script src="../../../js/dashboard.js"></script>
-    <script src="../../../js/inactivity-monitor.js"></script>
-    <script src="../../../js/websocket-client.js"></script>
-    <script src="../../../js/notifications-bell.js"></script>
-
     <style>
-        /* Adjust main content margin to account for fixed sidebar */
         .main-content {
             margin-left: 280px;
             transition: margin-left 0.3s ease;
         }
-
-        /* Responsive adjustments */
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
             }
-
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
             }
-
             .sidebar.active {
                 transform: translateX(0);
             }
-
             .overlay {
                 display: none;
             }
-
             .overlay.active {
                 display: block;
             }
@@ -423,124 +294,26 @@
     </style>
 
     <script>
-        // Handle sidebar click with debounce
         function handleSidebarClick(event, link) {
             if (link === '#') {
                 event.preventDefault();
                 return;
             }
-
-            // Prevent default to avoid immediate navigation
             event.preventDefault();
-
-            // Close sidebar on mobile after click
             if (window.innerWidth <= 1024) {
                 const sidebar = document.getElementById('sidebar');
                 const overlay = document.getElementById('overlay');
                 if (sidebar) sidebar.classList.remove('active');
                 if (overlay) overlay.classList.remove('active');
             }
-
-            // Navigate to the link with debounce
             if (link.startsWith('/')) {
                 if (typeof debouncedNavigate === 'function') {
                     debouncedNavigate(link);
                 } else {
-                    // Fallback if debouncedNavigate is not available
                     window.location.href = link;
                 }
             }
         }
-
-
-        // Setup mobile menu toggle
-        function setupMobileMenuToggle() {
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-
-            if (menuToggle && sidebar && overlay) {
-                menuToggle.addEventListener('click', function () {
-                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
-
-                    if (isHidden) {
-                        sidebar.style.transform = 'translateX(0)';
-                        overlay.style.display = 'block';
-                    } else {
-                        sidebar.style.transform = 'translateX(-100%)';
-                        overlay.style.display = 'none';
-                    }
-                });
-            }
-        }
-
-        // Load current user information for header
-        async function loadCurrentUserInfo() {
-            try {
-                const token = localStorage.getItem('jwt');
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
-
-                const response = await fetch('/api/v1/users/me', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    const userData = await response.json();
-                    updateHeaderUserInfo(userData);
-                } else {
-                    throw new Error('Failed to load user info');
-                }
-            } catch (error) {
-                console.error('Error loading current user info:', error);
-                // Set default values for warehouse
-                updateHeaderUserInfo({
-                    fullName: 'Admin Warehouse',
-                    role: 'WAREHOUSE',
-                    email: 'warehouse@sena.edu.co'
-                });
-            }
-        }
-
-        // Update user info display in header
-        function updateHeaderUserInfo(userData) {
-            const headerUserName = document.getElementById('headerUserName');
-            const headerUserRole = document.getElementById('headerUserRole');
-            const headerUserAvatar = document.getElementById('headerUserAvatar');
-
-            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Warehouse';
-            if (headerUserRole) headerUserRole.textContent = userData.role || 'WAREHOUSE';
-            
-            if (headerUserAvatar) {
-                if (userData.imgUrl) {
-                    const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
-                    headerUserAvatar.innerHTML = `
-                        <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
-                            <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
-                                <div class="image-loading-spinner"></div>
-                            </div>
-                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Warehouse'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
-                                 id="img-${uniqueId}"
-                                 onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
-                                 onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
-                        </div>
-                    `;
-                } else {
-                    headerUserAvatar.textContent = (userData.fullName || 'Admin Warehouse').charAt(0).toUpperCase();
-                }
-            }
-        }
-
-        // Initialize mobile menu toggle when DOM is ready
-        document.addEventListener('DOMContentLoaded', function () {
-            setupMobileMenuToggle();
-            loadCurrentUserInfo(); // Load user info for header
-        });
 
         // Logout function - shows confirmation modal
         function logout() {
@@ -563,28 +336,123 @@
             localStorage.removeItem('jwt');
             window.location.href = '/';
         }
+
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+                    if (isHidden) {
+                        sidebar.style.transform = 'translateX(0)';
+                        overlay.style.display = 'block';
+                    } else {
+                        sidebar.style.transform = 'translateX(-100%)';
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) throw new Error('No authentication token found');
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                updateHeaderUserInfo({
+                    fullName: 'Admin Warehouse',
+                    role: 'ADMIN_INSTITUTION',
+                    email: 'admin@sena.edu.co'
+                });
+            }
+        }
+
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Warehouse';
+            if (headerUserRole) {
+                const role = userData.role || 'ADMIN_INSTITUTION';
+                headerUserRole.textContent = role === 'WAREHOUSE' ? 'WAREHOUSE' : role;
+            }
+            if (headerUserAvatar) {
+                if (userData.imgUrl) {
+                    const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
+                    headerUserAvatar.innerHTML = `
+                        <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
+                            <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
+                                <div class="image-loading-spinner"></div>
+                            </div>
+                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Warehouse'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                                 id="img-${uniqueId}"
+                                 onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
+                                 onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
+                        </div>
+                    `;
+                } else {
+                    headerUserAvatar.textContent = (userData.fullName || 'Admin Warehouse').charAt(0).toUpperCase();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setupMobileMenuToggle();
+            loadCurrentUserInfo();
+        });
     </script>
+
+    <!-- Application Scripts -->
+    <script src="../../js/dashboard.js"></script>
+    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/users/users-data.js"></script>
+    <script src="../../js/users/users-api.js"></script>
+    <script src="../../js/users/users-filters.js"></script>
+    <script src="../../js/users/users-forms.js"></script>
+    <script src="../../js/users/users-modals.js"></script>
+    <script src="../../js/users/users-pagination.js"></script>
+    <script src="../../js/users/users-toast.js"></script>
+    <script src="../../js/users/users-ui.js"></script>
+    <script src="../../js/users/users-images.js"></script>
+    <script src="../../js/users/users.js"></script>
+    <script src="../../js/websocket-client.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
 
     <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
         style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
-                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
 
             <div class="text-center mb-6">
-                <i class="fas fa-sign-out-alt text-green-600 text-5xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
-                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
+                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600 dark:text-gray-400">Será redirigido a la página de inicio de sesión.</p>
             </div>
 
             <div class="flex gap-3">
                 <button onclick="closeLogoutModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cancelar
                 </button>
                 <button onclick="confirmLogout()"
@@ -594,7 +462,7 @@
             </div>
         </div>
     </div>
-
 </body>
 
 </html>
+

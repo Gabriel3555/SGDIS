@@ -665,6 +665,34 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/warehouse/users")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseUsers() throws IOException {
+        Resource resource = new ClassPathResource("static/views/users/users-warehouse.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/warehouse/auditory")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseAuditory() throws IOException {
+        Resource resource = new ClassPathResource("static/views/auditory/auditory-warehouse.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/user/settings")
     @PreAuthorize("hasRole('USER')")
     @ResponseBody
