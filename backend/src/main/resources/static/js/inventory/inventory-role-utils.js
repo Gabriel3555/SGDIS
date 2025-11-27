@@ -55,6 +55,15 @@
         const links = document.querySelectorAll('a.sidebar-item');
         links.forEach((link) => {
             const href = link.getAttribute('href');
+            const linkText = link.textContent.trim().toLowerCase();
+            
+            // Hide "Centros" link for admin_institution
+            if ((basePath === 'admin_institution' || basePath === 'admininstitution') && 
+                ((href && href.includes('/centers')) || linkText === 'centros')) {
+                link.style.display = 'none';
+                return;
+            }
+            
             if (!href) {
                 return;
             }

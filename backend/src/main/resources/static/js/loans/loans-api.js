@@ -12,8 +12,8 @@ async function loadLoansData() {
     try {
         await loadCurrentUserInfo();
         
-        // For USER role, skip regionals and institutions filters
-        if (loansData.userRole !== 'USER') {
+        // For USER role and ADMIN_INSTITUTION, skip regionals and institutions filters
+        if (loansData.userRole !== 'USER' && loansData.userRole !== 'ADMIN_INSTITUTION') {
             await loadRegionals();
         }
         
@@ -21,7 +21,7 @@ async function loadLoansData() {
         await loadLoans();
         
         // Update UI for user role after loading everything
-        if (loansData.userRole === 'USER') {
+        if (loansData.userRole === 'USER' || loansData.userRole === 'ADMIN_INSTITUTION') {
             updateLoansUIForUserRole();
         }
         
@@ -32,8 +32,8 @@ async function loadLoansData() {
                 console.log('Fallback: calling updateLoansUI');
                 updateLoansUI();
             }
-            // Also update UI for user role
-            if (loansData.userRole === 'USER') {
+            // Also update UI for user role and admin_institution
+            if (loansData.userRole === 'USER' || loansData.userRole === 'ADMIN_INSTITUTION') {
                 updateLoansUIForUserRole();
             }
         }, 200);
@@ -82,7 +82,9 @@ async function loadCurrentUserInfo() {
             
             // Update UI immediately after loading user info
             setTimeout(() => {
-                updateLoansUIForUserRole();
+                if (loansData.userRole === 'USER' || loansData.userRole === 'ADMIN_INSTITUTION') {
+                    updateLoansUIForUserRole();
+                }
             }, 100);
         } else {
             throw new Error('Failed to load user info');
@@ -172,13 +174,16 @@ function updateLoansUIForUserRole() {
         existingBanner.remove();
     }
 
-    // Hide/show filters for USER role
+    // Hide/show filters for USER role and ADMIN_INSTITUTION
     const regionalFilter = document.getElementById('regionalFilterContainer');
     const institutionFilter = document.getElementById('institutionFilterContainer');
     const filtersContainer = document.getElementById('filtersContainer');
     const filtersSection = document.getElementById('filtersSection');
     
-    if (loansData.userRole === 'USER') {
+    const isAdminInstitution = loansData.userRole === 'ADMIN_INSTITUTION';
+    const isUserRole = loansData.userRole === 'USER';
+    
+    if (isUserRole) {
         // Hide regional and institution filters for USER role
         if (regionalFilter) {
             regionalFilter.style.display = 'none';
@@ -194,6 +199,23 @@ function updateLoansUIForUserRole() {
         // Hide filters section entirely for USER role
         if (filtersSection) {
             filtersSection.style.display = 'none';
+        }
+    } else if (isAdminInstitution) {
+        // Hide regional and institution filters for ADMIN_INSTITUTION role
+        if (regionalFilter) {
+            regionalFilter.style.display = 'none';
+            regionalFilter.classList.add('hidden');
+        }
+        if (institutionFilter) {
+            institutionFilter.style.display = 'none';
+            institutionFilter.classList.add('hidden');
+        }
+        if (filtersContainer) {
+            filtersContainer.className = 'grid grid-cols-1 gap-4';
+        }
+        // Show filters section but only with inventory filter
+        if (filtersSection) {
+            filtersSection.style.display = 'block';
         }
     } else {
         // Show all filters for other roles
@@ -296,16 +318,19 @@ async function loadInventories(regionalId, institutionId) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Check if current user is USER role - if so, only load inventories where user is owner or signatory
+        // Check if current user is USER role or ADMIN_INSTITUTION - if so, only load inventories accordingly
         // Use stored role if available, otherwise fetch
         let userInfo = null;
         let isUserRole = false;
+        let isAdminInstitution = false;
         
         if (loansData.userRole) {
             isUserRole = loansData.userRole === 'USER';
+            isAdminInstitution = loansData.userRole === 'ADMIN_INSTITUTION';
         } else {
             userInfo = await getCurrentUserInfo();
             isUserRole = userInfo && userInfo.role === 'USER';
+            isAdminInstitution = userInfo && userInfo.role === 'ADMIN_INSTITUTION';
             if (userInfo) {
                 loansData.userRole = userInfo.role;
             }
@@ -339,6 +364,24 @@ async function loadInventories(regionalId, institutionId) {
             loansData.inventories = Array.from(inventoryMap.values());
             loansData.userInventoriesWithPermission = loansData.inventories.map(inv => inv.id);
             populateInventorySelect();
+            return;
+        }
+        
+        if (isAdminInstitution) {
+            // For ADMIN_INSTITUTION role, load only inventories from their institution
+            const response = await fetch('/api/v1/inventory/institution?page=0&size=1000', {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                loansData.inventories = data.content || data || [];
+                populateInventorySelect();
+            } else {
+                console.error('Failed to load inventories for institution');
+                loansData.inventories = [];
+            }
             return;
         }
 
@@ -403,9 +446,11 @@ async function loadLoans() {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Check if current user is USER role
+        // Check if current user is USER role or ADMIN_INSTITUTION
         const userInfo = await getCurrentUserInfo();
         const isUserRole = userInfo && userInfo.role === 'USER';
+        const isAdminInstitution = (userInfo && userInfo.role === 'ADMIN_INSTITUTION') || 
+                                   (loansData.userRole === 'ADMIN_INSTITUTION');
 
         // For USER role, load only their loans (both received and made)
         if (isUserRole) {
@@ -479,12 +524,22 @@ async function loadLoans() {
 
         // For other roles, use the filter endpoint
         const params = new URLSearchParams();
-        if (loansData.selectedRegional && loansData.selectedRegional !== 'all') {
-            params.append('regionalId', loansData.selectedRegional);
+        
+        // For ADMIN_INSTITUTION, automatically filter by their institution
+        if (isAdminInstitution && userInfo && userInfo.institution && userInfo.institution.id) {
+            params.append('institutionId', userInfo.institution.id);
+            console.log('ADMIN_INSTITUTION: filtering loans by institution ID:', userInfo.institution.id);
+        } else {
+            // For other roles, use the selected filters
+            if (loansData.selectedRegional && loansData.selectedRegional !== 'all') {
+                params.append('regionalId', loansData.selectedRegional);
+            }
+            if (loansData.selectedInstitution && loansData.selectedInstitution !== 'all') {
+                params.append('institutionId', loansData.selectedInstitution);
+            }
         }
-        if (loansData.selectedInstitution && loansData.selectedInstitution !== 'all') {
-            params.append('institutionId', loansData.selectedInstitution);
-        }
+        
+        // Add inventory filter if selected (but don't override institution filter for admin_institution)
         if (loansData.selectedInventory && loansData.selectedInventory !== 'all') {
             params.append('inventoryId', loansData.selectedInventory);
         }

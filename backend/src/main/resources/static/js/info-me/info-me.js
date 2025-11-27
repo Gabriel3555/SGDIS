@@ -27,6 +27,7 @@ async function loadUserProfile() {
             }
             loadSidebarNavigation(userData.role);
             rewriteAdminRegionalSidebarLinks(userData.role);
+            rewriteAdminInstitutionSidebarLinks(userData.role);
             hideLoadingState();
         } else if (response.status === 401) {
             // Token expired or invalid
@@ -326,6 +327,110 @@ function rewriteAdminRegionalSidebarLinks(userRole) {
             }
         }
     });
+}
+
+// Rewrite sidebar links for admin_institution if needed
+function rewriteAdminInstitutionSidebarLinks(userRole) {
+    if (userRole !== 'ADMIN_INSTITUTION') {
+        return;
+    }
+
+    function replaceSidebarForAdminInstitution() {
+        const basePath = resolveAdminInstitutionBasePath();
+        const nav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
+        
+        if (!nav) {
+            return false;
+        }
+
+        // Build complete admin_institution sidebar HTML
+        const currentPath = window.location.pathname;
+        const sidebarHTML = `
+            <a href="${basePath}/dashboard"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/dashboard` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/dashboard')">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="${basePath}/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/inventory` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/inventory')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="${basePath}/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/users` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>
+            <a href="${basePath}/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/transfers` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
+            <a href="${basePath}/verification"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/verification` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="${basePath}/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/loans` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="${basePath}/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/reports` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="${basePath}/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/auditory` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
+            </a>
+            <a href="${basePath}/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/notifications` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="${basePath}/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/import-export` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/import-export')">
+                <i class="fas fa-file-import text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="${basePath}/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/settings` ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '${basePath}/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/info-me' ? 'active' : ''}"
+                onclick="handleSidebarClick(event, '/info-me')">
+                <i class="fas fa-user-circle text-lg"></i>
+                <span class="font-medium">Mi Perfil</span>
+            </a>`;
+
+        nav.innerHTML = sidebarHTML;
+        return true;
+    }
+
+    // Try to replace immediately
+    if (!replaceSidebarForAdminInstitution()) {
+        // If nav doesn't exist yet, wait for it
+        const observer = new MutationObserver(function(mutations, obs) {
+            if (replaceSidebarForAdminInstitution()) {
+                obs.disconnect();
+            }
+        });
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+        
+        // Also try on DOMContentLoaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', replaceSidebarForAdminInstitution);
+        }
+    }
 }
 
 // Get dashboard path based on role

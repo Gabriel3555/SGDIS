@@ -80,6 +80,34 @@ public class AuditoryService implements RecordActionUseCase, ListAuditoryUseCase
                 .build();
     }
 
+    public PagedAuditoryResponse listAuditoriesByInstitution(Long institutionId, Pageable pageable) {
+        Page<AuditoryEntity> auditoryPage = springDataAuditoryRepository.findAllByInstitutionIdOrderByDateDesc(institutionId, pageable);
+        
+        List<AuditoryResponse> auditoryResponses = auditoryPage.getContent()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+
+        return PagedAuditoryResponse.builder()
+                .auditories(auditoryResponses)
+                .currentPage(auditoryPage.getNumber())
+                .totalPages(auditoryPage.getTotalPages())
+                .totalAuditories(auditoryPage.getTotalElements())
+                .pageSize(auditoryPage.getSize())
+                .first(auditoryPage.isFirst())
+                .last(auditoryPage.isLast())
+                .build();
+    }
+
+    public PagedAuditoryResponse listAuditoriesByInstitution(Pageable pageable) {
+        UserEntity currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new RuntimeException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        return listAuditoriesByInstitution(institutionId, pageable);
+    }
+
     private AuditoryResponse toResponse(AuditoryEntity entity) {
         return AuditoryResponse.builder()
                 .id(entity.getId())

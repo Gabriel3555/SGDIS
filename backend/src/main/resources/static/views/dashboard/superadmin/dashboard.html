@@ -36,6 +36,102 @@
     <link rel="stylesheet" href="../../../css/dashboard.css">
     <link rel="stylesheet" href="../../../css/dark-mode.css">
     <link rel="stylesheet" href="../../../css/notifications-bell.css">
+    <style>
+        /* Hide Centros menu item for admin_institution role - CSS approach */
+        body.admin-institution-page a.sidebar-item[href*="/centers"],
+        body.admin-institution-page a.sidebar-item[href*="centers"] {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            opacity: 0 !important;
+            overflow: hidden !important;
+        }
+    </style>
+    <script>
+        // Immediately hide Centros for admin_institution - execute before DOM is ready
+        (function() {
+            const path = window.location.pathname || "";
+            if (path.includes("/admininstitution") || path.includes("/admin_institution")) {
+                // Add class to body for CSS targeting
+                document.body.classList.add('admin-institution-page');
+                
+                // Add CSS to hide immediately
+                const style = document.createElement('style');
+                style.id = 'hide-centers-style';
+                style.textContent = `
+                    a.sidebar-item[href*="/centers"],
+                    a.sidebar-item[href*="centers"],
+                    a.sidebar-item:has(span.font-medium:contains("Centros")),
+                    nav a.sidebar-item:nth-child(4) {
+                        display: none !important;
+                        visibility: hidden !important;
+                        height: 0 !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        opacity: 0 !important;
+                        overflow: hidden !important;
+                    }
+                `;
+                if (!document.getElementById('hide-centers-style')) {
+                    document.head.appendChild(style);
+                }
+                
+                // Function to hide centers aggressively
+                function hideCenters() {
+                    // Find sidebar nav element
+                    const sidebarNav = document.querySelector('nav.flex-1.px-4.py-4, nav:has(.sidebar-item)');
+                    if (!sidebarNav) return;
+                    
+                    const links = sidebarNav.querySelectorAll('a.sidebar-item');
+                    links.forEach((link, index) => {
+                        const href = link.getAttribute('href') || '';
+                        const text = link.textContent.trim().toLowerCase();
+                        const span = link.querySelector('span.font-medium');
+                        const spanText = span ? span.textContent.trim().toLowerCase() : '';
+                        
+                        // Check if it's the Centros link (usually 4th item)
+                        const isCentros = href.includes('/centers') || 
+                                         href.includes('centers') ||
+                                         text.includes('centros') || 
+                                         spanText.includes('centros') ||
+                                         (index === 3 && text.includes('centro')); // 4th item (0-indexed)
+                        
+                        if (isCentros) {
+                            link.style.cssText = 'display: none !important; visibility: hidden !important; height: 0 !important; margin: 0 !important; padding: 0 !important; opacity: 0 !important; overflow: hidden !important;';
+                            link.removeAttribute('href');
+                            link.onclick = function(e) { e.preventDefault(); return false; };
+                            try { link.remove(); } catch(e) {}
+                        }
+                    });
+                }
+                
+                // Execute multiple times at different intervals
+                hideCenters();
+                setTimeout(hideCenters, 0);
+                setTimeout(hideCenters, 10);
+                setTimeout(hideCenters, 50);
+                setTimeout(hideCenters, 100);
+                setTimeout(hideCenters, 200);
+                setTimeout(hideCenters, 300);
+                setTimeout(hideCenters, 500);
+                setTimeout(hideCenters, 1000);
+                setTimeout(hideCenters, 2000);
+                
+                // Watch for DOM changes
+                if (typeof MutationObserver !== 'undefined') {
+                    const observer = new MutationObserver(function() {
+                        hideCenters();
+                    });
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            }
+        })();
+    </script>
 </head>
 
 <body>
@@ -522,6 +618,44 @@
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
             loadCurrentUserInfo(); // Load user info for header
+            
+            // Hide Centros for admin_institution - execute after DOM is ready
+            const path = window.location.pathname || "";
+            if (path.includes("/admininstitution") || path.includes("/admin_institution")) {
+                function forceHideCenters() {
+                    // Find and hide all Centros links
+                    const links = document.querySelectorAll('a.sidebar-item');
+                    links.forEach(link => {
+                        const href = link.getAttribute('href') || '';
+                        const text = link.textContent.trim().toLowerCase();
+                        const span = link.querySelector('span.font-medium');
+                        const spanText = span ? span.textContent.trim().toLowerCase() : '';
+                        
+                        if (href.includes('/centers') || 
+                            text.includes('centros') || 
+                            spanText.includes('centros') ||
+                            (href.includes('centers') && (text.includes('centro') || spanText.includes('centro')))) {
+                            link.style.display = 'none';
+                            link.style.visibility = 'hidden';
+                            link.style.height = '0';
+                            link.style.margin = '0';
+                            link.style.padding = '0';
+                            link.style.overflow = 'hidden';
+                            link.removeAttribute('href');
+                            link.onclick = function(e) { e.preventDefault(); return false; };
+                        }
+                    });
+                }
+                
+                // Execute immediately and on intervals
+                forceHideCenters();
+                setTimeout(forceHideCenters, 100);
+                setTimeout(forceHideCenters, 500);
+                setTimeout(forceHideCenters, 1000);
+                
+                // Also watch for changes
+                setInterval(forceHideCenters, 2000);
+            }
         });
     </script>
 
