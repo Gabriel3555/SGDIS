@@ -265,9 +265,563 @@
         </main>
     </div>
 
-    <!-- Modals will be dynamically created by inventory-modals.js -->
-    <!-- The modals (newInventoryModal, editInventoryModal, deleteInventoryModal, etc.) 
-         are created dynamically by the JavaScript modules -->
+    <!-- Delete Inventory Modal (Multi-function) -->
+    <div id="deleteInventoryModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 my-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-red-600">Gestión de Eliminación</h2>
+                <button onclick="closeDeleteInventoryModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-600">
+                    Inventario: <span class="font-semibold" id="deleteInventoryName">-</span>
+                </p>
+                <p class="text-sm text-gray-600">
+                    ID: <span class="font-semibold" id="deleteInventoryIdDisplay">-</span>
+                </p>
+            </div>
+
+            <!-- Section: Delete Role Assignment -->
+            <div class="mb-6 pb-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <i class="fas fa-user-times text-red-500 mr-2"></i>
+                    Eliminar Asignación de Rol
+                </h3>
+
+                <!-- Role Selection Buttons -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Tipo de Rol</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" id="deleteManagerRoleBtn" onclick="selectDeleteRole('manager')"
+                            class="delete-role-selector-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-user-tie text-2xl"></i>
+                            <span class="font-semibold">Manejador</span>
+                        </button>
+                        <button type="button" id="deleteSignatoryRoleBtn" onclick="selectDeleteRole('signatory')"
+                            class="delete-role-selector-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-red-500 hover:bg-red-50 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-signature text-2xl"></i>
+                            <span class="font-semibold">Firmante</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- User Selection -->
+                <div id="deleteRoleUserSection" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Usuario a Eliminar</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="deleteRoleUserIdSelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Seleccionar usuario...</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
+                                <div class="custom-select-options" id="deleteRoleUserIdOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="deleteRoleUserId" name="userId">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1" id="deleteRoleDescription">Selecciona el usuario al que se le
+                        eliminará el rol</p>
+
+                    <!-- Delete Role Button -->
+                    <button type="button" onclick="confirmDeleteRole()"
+                        class="w-full mt-3 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <i class="fas fa-user-times"></i>
+                        <span>Eliminar Rol</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section: Delete Inventory -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                    <i class="fas fa-trash-alt text-red-600 mr-2"></i>
+                    Eliminar Inventario Completo
+                </h3>
+                <div class="text-center mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-3"></i>
+                    <p class="text-gray-600 text-sm" id="deleteInventoryMessage">Esta acción eliminará permanentemente
+                        el inventario y no se puede deshacer.</p>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeDeleteInventoryModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="confirmDeleteInventory()"
+                        class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Eliminar Inventario</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Inventory Modal -->
+    <div id="viewInventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 10004;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Detalles del Inventario</h2>
+                <button onclick="closeViewInventoryModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Horizontal Layout con Flecha -->
+                <div class="flex flex-col lg:flex-row items-stretch gap-6">
+                    <!-- Inventory Basic Information -->
+                    <div
+                        class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 relative border-2 border-green-200 dark:border-green-700 flex flex-col">
+                        <div class="flex flex-col lg:flex-row gap-6 flex-1">
+                            <!-- Left Side: Information -->
+                            <div class="flex-1 flex flex-col">
+                                <h3
+                                    class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
+                                    <i class="fas fa-box text-[#00AF00] mr-2"></i>
+                                    Información del Inventario
+                                </h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+                                    <div>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+                                        <span class="px-3 py-1 rounded-full text-xs font-medium"
+                                            id="viewInventoryStatus">-</span>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre
+                                            del Inventario</label>
+                                        <p class="text-gray-900 dark:text-gray-100 font-bold text-xl"
+                                            id="viewInventoryName">-</p>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Ubicación</label>
+                                        <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2"
+                                            id="viewInventoryLocation">
+                                            <i class="fas fa-map-marker-alt text-[#00AF00]"></i>
+                                            <span>-</span>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
+                                        <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2"
+                                            id="viewInventoryInstitution">
+                                            <i class="fas fa-building text-[#00AF00]"></i>
+                                            <span>-</span>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cantidad
+                                            de Items</label>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-cubes text-[#00AF00] text-xl"></i>
+                                            <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl"
+                                                id="viewInventoryQuantityItems">0</p>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor
+                                            Total</label>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fas fa-dollar-sign text-[#00AF00] text-xl"></i>
+                                            <p class="text-gray-900 dark:text-gray-100 font-bold text-2xl"
+                                                id="viewInventoryTotalPrice">$0</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Ver Items Button -->
+                                <button onclick="navigateToItems()"
+                                    class="mt-4 w-full bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center justify-center gap-2">
+                                    <i class="fas fa-eye"></i>
+                                    Ver Items
+                                </button>
+                            </div>
+
+                            <!-- Right Side: Image -->
+                            <div class="flex-shrink-0 flex items-start justify-end">
+                                <button onclick="showInventoryImageModal(); return false;"
+                                    class="cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0 flex items-center justify-center"
+                                    id="viewInventoryImageButton" style="display: none;">
+                                    <div class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                                        id="viewInventoryImage">
+                                        <i class="fas fa-box"></i>
+                                    </div>
+                                </button>
+                                <div id="viewInventoryImagePlaceholder"
+                                    class="w-40 h-40 lg:w-44 lg:h-44 bg-gray-200 dark:bg-gray-700 rounded-xl flex items-center justify-center text-gray-500 dark:text-gray-400 text-4xl">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flecha Indicadora -->
+                    <div class="flex items-center justify-center">
+                        <div class="hidden lg:flex flex-col items-center gap-2">
+                            <i class="fas fa-arrow-right text-[#00AF00] text-4xl"></i>
+                            <p
+                                class="text-xs font-medium text-gray-600 dark:text-gray-400 text-center whitespace-nowrap">
+                                Pertenece a</p>
+                        </div>
+                        <div class="flex lg:hidden flex-row items-center gap-2">
+                            <i class="fas fa-arrow-down text-[#00AF00] text-3xl"></i>
+                            <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Pertenece a</p>
+                        </div>
+                    </div>
+
+                    <!-- Owner Information -->
+                    <div
+                        class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 flex flex-col">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
+                            <i class="fas fa-user-shield text-[#00AF00] mr-2"></i>
+                            Información del Propietario
+                        </h3>
+                        <div class="grid grid-cols-1 gap-4 flex-1">
+                            <div
+                                class="flex items-center space-x-4 pb-4 border-b border-green-200 dark:border-green-700">
+                                <div class="w-20 h-20 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-full flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0"
+                                    id="viewInventoryOwnerAvatar">
+                                    <span class="text-white font-bold text-2xl">U</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <label
+                                        class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Nombre
+                                        Completo</label>
+                                    <p class="text-gray-900 dark:text-gray-100 font-bold text-lg truncate"
+                                        id="viewInventoryOwnerName">-</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                <p class="text-gray-900 dark:text-gray-100 text-sm break-all flex items-center gap-2"
+                                    id="viewInventoryOwnerEmail">
+                                    <i class="fas fa-envelope text-[#00AF00]"></i>
+                                    <span>-</span>
+                                </p>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rol</label>
+                                <span
+                                    class="inline-flex items-center px-3 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-semibold text-sm"
+                                    id="viewInventoryOwnerRole">-</span>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Estado</label>
+                                <span class="px-3 py-1 rounded-full text-xs font-medium inline-block"
+                                    id="viewInventoryOwnerStatus">-</span>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cargo</label>
+                                <p class="text-gray-900 dark:text-gray-100 font-medium" id="viewInventoryOwnerJobTitle">
+                                    -</p>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Departamento
+                                    Laboral</label>
+                                <p class="text-gray-900 dark:text-gray-100" id="viewInventoryOwnerDepartment">-</p>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Institución</label>
+                                <p class="text-gray-900 dark:text-gray-100 flex items-center gap-2"
+                                    id="viewInventoryOwnerInstitution">
+                                    <i class="fas fa-building text-[#00AF00]"></i>
+                                    <span>-</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeViewInventoryModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Image Modal (Full Size) -->
+    <div id="inventoryImageModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center hidden"
+        style="z-index: 10005;">
+        <div class="relative max-w-5xl w-full mx-4 flex items-center justify-center">
+            <button onclick="closeInventoryImageModal()"
+                class="absolute top-4 right-4 z-20 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-full w-12 h-12 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-lg">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl w-full flex items-center justify-center">
+                <img id="inventoryImageFullSize" src="" alt="Imagen del inventario"
+                    class="max-w-full max-h-[90vh] w-auto h-auto rounded-xl object-contain mx-auto">
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Inventory Modal -->
+    <div id="editInventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Editar Inventario</h2>
+                <button onclick="closeEditInventoryModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">ID del Inventario: <span class="font-semibold"
+                        id="editInventoryId">-</span></p>
+            </div>
+
+            <form id="editInventoryForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre del
+                        Inventario</label>
+                    <input type="text" id="editInventoryName"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                        placeholder="Ej: Oficina Principal" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ubicación</label>
+                    <input type="text" id="editInventoryLocation"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                        placeholder="Ej: Bloque A, Piso 1" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado del
+                        Inventario</label>
+                    <div
+                        class="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-200 dark:border-gray-600">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-power-off text-[#00AF00] text-xl"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">Estado del Inventario
+                                </p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400" id="editInventoryStatusLabel">Activo
+                                </p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="editInventoryStatus" class="sr-only peer" checked>
+                            <div
+                                class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-[#00AF00]">
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeEditInventoryModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Actualizar Inventario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Inventory Modal -->
+    <div id="assignInventoryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Asignar Inventario</h2>
+                <button onclick="closeAssignInventoryModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-600">
+                    Inventario: <span class="font-semibold" id="assignInventoryName">-</span>
+                </p>
+                <p class="text-sm text-gray-600">
+                    ID: <span class="font-semibold" id="assignInventoryId">-</span>
+                </p>
+            </div>
+
+            <form id="assignInventoryForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Usuario</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="assignUserIdSelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Seleccionar usuario...</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
+                                <div class="custom-select-options" id="assignUserIdOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="assignUserId" name="userId" required>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">El inventario será asignado al usuario seleccionado</p>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeAssignInventoryModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Asignar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Role Modal -->
+    <div id="assignManagerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Asignar Rol</h2>
+                <button onclick="closeAssignManagerModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-600">
+                    Inventario: <span class="font-semibold" id="assignManagerInventoryName">-</span>
+                </p>
+                <p class="text-sm text-gray-600">
+                    ID: <span class="font-semibold" id="assignManagerInventoryId">-</span>
+                </p>
+            </div>
+
+            <form id="assignManagerForm" class="space-y-4">
+                <!-- Usuario Selector -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Usuario</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="roleUserIdSelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Seleccionar usuario...</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
+                                <div class="custom-select-options" id="roleUserIdOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="roleUserId" name="userId">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Selecciona el usuario al que se le asignará el rol</p>
+                </div>
+
+                <!-- Role Selection Buttons -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">Seleccionar Rol a Asignar</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" id="managerRoleBtn" onclick="selectRole('manager')"
+                            class="role-selector-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-[#00AF00] hover:bg-green-50 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-user-tie text-2xl"></i>
+                            <span class="font-semibold">Manejador</span>
+                        </button>
+                        <button type="button" id="signatoryRoleBtn" onclick="selectRole('signatory')"
+                            class="role-selector-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-[#00AF00] hover:bg-green-50 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-signature text-2xl"></i>
+                            <span class="font-semibold">Firmante</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="selectedRole" name="role">
+                    <p class="text-xs text-gray-500 mt-2" id="roleDescription">Selecciona un rol para continuar</p>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeAssignManagerModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Asignar Rol
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inventory Tree Hierarchy Modal -->
+    <div id="inventoryTreeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 10003;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-sitemap text-[#00AF00] text-3xl"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Jerarquía del Inventario</h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400" id="inventoryTreeName">Cargando...</p>
+                    </div>
+                </div>
+                <button onclick="closeInventoryTreeModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="inventoryTreeLoading" class="flex flex-col items-center justify-center p-12">
+                <div class="relative w-16 h-16 mb-4">
+                    <div
+                        class="absolute inset-0 border-4 border-[#00AF00] border-t-transparent rounded-full animate-spin">
+                    </div>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">Cargando jerarquía...</p>
+            </div>
+
+            <!-- Tree Container -->
+            <div id="inventoryTreeContainer"
+                class="w-full h-[600px] border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900"
+                style="min-height: 600px;">
+                <!-- Tree will be rendered here -->
+            </div>
+
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeInventoryTreeModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
@@ -469,9 +1023,85 @@
     <script src="../../js/inventory/items/items-forms.js"></script>
     <script src="../../js/inventory/inventory-tree.js"></script>
     <script src="../../js/notification-sound.js"></script>
-    <script src="../../js/inactivity-monitor.js"></script>
     <script src="../../js/websocket-client.js"></script>
     <script src="../../js/notifications-bell.js"></script>
+
+    <script>
+        // Ensure all inventory action functions are available globally
+        // This ensures functions are available when buttons are clicked
+        (function() {
+            function ensureFunctionsAvailable() {
+                // Verify all required functions are available
+                const requiredFunctions = [
+                    'viewInventory',
+                    'editInventory',
+                    'showInventoryManagerAssignment',
+                    'showInventoryTreeModal',
+                    'showDeleteInventoryModal'
+                ];
+                
+                requiredFunctions.forEach(funcName => {
+                    if (typeof window[funcName] !== 'function') {
+                        // Function not available, try to get it from the module
+                        if (funcName === 'viewInventory' && typeof viewInventory === 'function') {
+                            window.viewInventory = viewInventory;
+                        } else if (funcName === 'editInventory' && typeof editInventory === 'function') {
+                            window.editInventory = editInventory;
+                        } else if (funcName === 'showInventoryManagerAssignment' && typeof showInventoryManagerAssignment === 'function') {
+                            window.showInventoryManagerAssignment = showInventoryManagerAssignment;
+                        } else if (funcName === 'showInventoryTreeModal' && typeof showInventoryTreeModal === 'function') {
+                            window.showInventoryTreeModal = showInventoryTreeModal;
+                        } else if (funcName === 'showDeleteInventoryModal' && typeof showDeleteInventoryModal === 'function') {
+                            window.showDeleteInventoryModal = showDeleteInventoryModal;
+                        }
+                    }
+                });
+            }
+            
+            // Try immediately
+            ensureFunctionsAvailable();
+            
+            // Also try when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', ensureFunctionsAvailable);
+            } else {
+                // DOM already loaded
+                ensureFunctionsAvailable();
+            }
+            
+            // Also try after a short delay to ensure all scripts are loaded
+            setTimeout(ensureFunctionsAvailable, 500);
+            setTimeout(ensureFunctionsAvailable, 1000);
+            setTimeout(ensureFunctionsAvailable, 2000);
+        })();
+        
+        // Also ensure functions are available when table is updated
+        const originalUpdateInventoryTable = window.updateInventoryTable;
+        if (originalUpdateInventoryTable) {
+            window.updateInventoryTable = function() {
+                const result = originalUpdateInventoryTable.apply(this, arguments);
+                // After table update, ensure functions are available
+                setTimeout(function() {
+                    if (typeof window.viewInventory !== 'function' && typeof viewInventory === 'function') {
+                        window.viewInventory = viewInventory;
+                    }
+                    if (typeof window.editInventory !== 'function' && typeof editInventory === 'function') {
+                        window.editInventory = editInventory;
+                    }
+                    if (typeof window.showInventoryManagerAssignment !== 'function' && typeof showInventoryManagerAssignment === 'function') {
+                        window.showInventoryManagerAssignment = showInventoryManagerAssignment;
+                    }
+                    if (typeof window.showInventoryTreeModal !== 'function' && typeof showInventoryTreeModal === 'function') {
+                        window.showInventoryTreeModal = showInventoryTreeModal;
+                    }
+                    if (typeof window.showDeleteInventoryModal !== 'function' && typeof showDeleteInventoryModal === 'function') {
+                        window.showDeleteInventoryModal = showDeleteInventoryModal;
+                    }
+                }, 100);
+                return result;
+            };
+        }
+    </script>
 
 </body>
 
