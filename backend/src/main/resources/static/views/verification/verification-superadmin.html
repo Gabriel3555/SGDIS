@@ -39,73 +39,7 @@
 </head>
 
 <body>
-    <script>
-        // Replace sidebar with user sidebar immediately
-        (function() {
-            function buildUserSidebarHTML(currentPath) {
-                return `
-                    <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/dashboard' || currentPath === '/dashboard/user' ? 'active' : ''}"
-                        onclick="handleSidebarClick(event, '/user/dashboard')">
-                        <i class="fas fa-chart-line text-lg"></i>
-                        <span class="font-medium">Dashboard</span>
-                    </a>
-                    <a href="/user/my-inventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/my-inventories' ? 'active' : ''}"
-                        onclick="handleSidebarClick(event, '/user/my-inventories')">
-                        <i class="fas fa-boxes text-lg"></i>
-                        <span class="font-medium">Mis Inventarios</span>
-                    </a>
-                    <a href="/user/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/notifications' ? 'active' : ''}"
-                        onclick="handleSidebarClick(event, '/user/notifications')">
-                        <i class="fas fa-bell text-lg"></i>
-                        <span class="font-medium">Notificaciones</span>
-                    </a>
-                    <a href="/user/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/loans' ? 'active' : ''}"
-                        onclick="handleSidebarClick(event, '/user/loans')">
-                        <i class="fas fa-hand-holding text-lg"></i>
-                        <span class="font-medium">Préstamos</span>
-                    </a>
-                    <a href="/user/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/verification' ? 'active' : ''}"
-                        onclick="handleSidebarClick(event, '/user/verification')">
-                        <i class="fas fa-clipboard-check text-lg"></i>
-                        <span class="font-medium">Verificación</span>
-                    </a>
-                    <a href="/user/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/transfers' ? 'active' : ''}"
-                        onclick="handleSidebarClick(event, '/user/transfers')">
-                        <i class="fas fa-exchange-alt text-lg"></i>
-                        <span class="font-medium">Transferencias</span>
-                    </a>
-                    <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/info-me' ? 'active' : ''}"
-                        onclick="handleSidebarClick(event, '/info-me')">
-                        <i class="fas fa-user-circle text-lg"></i>
-                        <span class="font-medium">Mi Perfil</span>
-                    </a>`;
-            }
-            
-            function replaceSidebarWithUser() {
-                const nav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
-                if (nav) {
-                    nav.innerHTML = buildUserSidebarHTML(window.location.pathname);
-                    return true;
-                }
-                return false;
-            }
-            
-            if (!replaceSidebarWithUser()) {
-                const observer = new MutationObserver(function(mutations, obs) {
-                    if (replaceSidebarWithUser()) {
-                        obs.disconnect();
-                    }
-                });
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', replaceSidebarWithUser);
-                }
-            }
-        })();
-    </script>
+    
     <!-- Overlay for mobile -->
     <div class="overlay" id="overlay"
         style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
@@ -129,7 +63,72 @@
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <!-- User sidebar items will be inserted here by script -->
+            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/inventory')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>
+            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/centers')">
+                <i class="fas fa-building text-lg"></i>
+                <span class="font-medium">Centros</span>
+            </a>
+            <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
+            <a href="/superadmin/verification"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/superadmin/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
+            </a>
+            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/import-export')">
+                <i class="fas fa-file-import text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/info-me')">
+                <i class="fas fa-user-circle text-lg"></i>
+                <span class="font-medium">Mi Perfil</span>
+            </a>
         </nav>
 
         <!-- Logout button -->
@@ -212,8 +211,9 @@
             <!-- Header Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Verificación de Mis Inventarios</h1>
-                    <p class="text-gray-600" id="verificationWelcomeMessage">Verifica ítems de tus inventarios</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Gestión de Verificaciones</h1>
+                    <p class="text-gray-600" id="verificationWelcomeMessage">Control y administración de verificaciones
+                        de inventarios</p>
                 </div>
                 <button onclick="loadVerificationData()"
                     class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
@@ -498,6 +498,37 @@
         </div>
     </div>
 
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeLogoutModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmLogout()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Batch Verification Modal -->
     <div id="batchVerificationModal"
         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
@@ -624,54 +655,26 @@
         </div>
     </div>
 
-    <!-- Logout Confirmation Modal -->
-    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
-        style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
-                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-
-            <div class="text-center mb-6">
-                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
-                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
-            </div>
-
-            <div class="flex gap-3">
-                <button onclick="closeLogoutModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
-                    Cancelar
-                </button>
-                <button onclick="confirmLogout()"
-                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                    Cerrar Sesión
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Include html5-qrcode library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <script src="../../js/user-sidebar.js"></script>
     <script src="../../js/dashboard.js"></script>
+    <script src="../../js/user-sidebar.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
-    <!-- Verification Module Scripts for USER -->
+    <!-- Verification Module Scripts -->
     <script src="../../js/verification/verification-data.js"></script>
-    <script src="../../js/verification/verification-user-api.js"></script>
+    <script src="../../js/verification/verification-api.js"></script>
     <script src="../../js/verification/verification-filters.js"></script>
-    <script src="../../js/verification/verification-user-forms.js"></script>
+    <script src="../../js/verification/verification-forms.js"></script>
     <script src="../../js/verification/verification-modals.js"></script>
     <script src="../../js/verification/verification-pagination.js"></script>
     <script src="../../js/verification/verification-toast.js"></script>
     <script src="../../js/verification/verification-ui.js"></script>
-    <script src="../../js/verification/verification-user.js"></script>
-    <script src="../../js/verification/verification-user-batch.js"></script>
+    <script src="../../js/verification/verification.js"></script>
+    <script src="../../js/verification/verification-batch.js"></script>
     <script src="../../js/notifications-bell.js"></script>
+    <script src="../../js/user-sidebar.js"></script>
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
@@ -827,4 +830,3 @@
 </body>
 
 </html>
-

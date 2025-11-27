@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notificaciones - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <title>Verificación - Admin Institución - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
-        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function () {
             const saved = localStorage.getItem('sgdis-dark-mode');
             if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -14,31 +13,33 @@
             }
         })();
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'sena-verde': '#00AF00',
-                        'sena-verde-oscuro': '#008800'
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
                     }
                 }
             }
         }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/jpeg" href="../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/users-toast.css">
     <link rel="stylesheet" href="../../css/dark-mode.css">
     <link rel="stylesheet" href="../../css/notifications-bell.css">
 </head>
 
 <body>
-    
     <!-- Overlay for mobile -->
     <div class="overlay" id="overlay"
         style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
@@ -55,45 +56,71 @@
                 </div>
                 <div class="text-gray-800">
                     <div class="font-bold text-lg">SGDIS</div>
-                    <div class="text-xs opacity-70">Notificaciones</div>
+                    <div class="text-xs opacity-70">Dashboard</div>
                 </div>
             </div>
         </div>
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/user/dashboard" id="navDashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/user/dashboard')">
+            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="/user/my-inventories" id="navMyInventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/user/my-inventories')">
+            <a href="/warehouse/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/inventory')">
                 <i class="fas fa-boxes text-lg"></i>
-                <span class="font-medium">Mis Inventarios</span>
+                <span class="font-medium">Inventario</span>
             </a>
-            <a href="/user/notifications" id="navNotifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
-                onclick="handleSidebarClick(event, '/user/notifications')">
-                <i class="fas fa-bell text-lg"></i>
-                <span class="font-medium">Notificaciones</span>
+            <a href="/warehouse/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
             </a>
-            <a href="/user/loans" id="navLoans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" style="display: none;"
-                onclick="handleSidebarClick(event, '/user/loans')">
-                <i class="fas fa-hand-holding text-lg"></i>
-                <span class="font-medium">Préstamos</span>
-            </a>
-            <a href="/user/verification" id="navVerification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/user/verification')">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </a>
-            <a href="/user/transfers" id="navTransfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" style="display: none;"
-                onclick="handleSidebarClick(event, '/user/transfers')">
+            <a href="/warehouse/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/transfers')">
                 <i class="fas fa-exchange-alt text-lg"></i>
                 <span class="font-medium">Transferencias</span>
             </a>
-            <a href="/info-me" id="navInfoMe" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/info-me')">
+            <a href="/warehouse/verification"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/warehouse/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/warehouse/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/warehouse/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/warehouse/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
+            </a>
+            <a href="/warehouse/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/warehouse/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/import-export')">
+                <i class="fas fa-file-import text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="/warehouse/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/warehouse/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
             </a>
@@ -109,9 +136,7 @@
         </div>
     </aside>
 
-    <!-- Main Content -->
     <div class="main-content min-h-screen">
-        <!-- Header -->
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-4 flex-1">
@@ -119,11 +144,10 @@
                         <i class="fas fa-bars text-xl"></i>
                     </button>
                 </div>
-
                 <div class="flex items-center gap-4">
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-                        onclick="window.location.href='/info-me'">
+                        onclick="window.location.href='/warehouse/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
                         <div class="hidden sm:block">
                             <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
@@ -134,140 +158,96 @@
             </div>
         </header>
 
-        <!-- Notifications Content -->
         <main class="p-6">
-            <!-- Header Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">Notificaciones</h1>
-                    <p class="text-gray-600 dark:text-gray-400">Gestiona todas tus notificaciones del sistema</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Verificación - Admin Institución</h1>
+                    <p class="text-gray-600" id="verificationWelcomeMessage">Administración de verificaciones de la institución</p>
                 </div>
-                <div class="flex gap-2">
-                    <button onclick="toggleNotificationSound()" id="soundToggleBtn"
-                        class="btn-update flex items-center gap-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-all duration-200">
-                        <i class="fas fa-volume-up" id="soundIcon"></i>
-                        <span id="soundText">Sonido: ON</span>
-                    </button>
-                    <button onclick="markAllAsRead()"
-                        class="btn-update flex items-center gap-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-xl transition-all duration-200">
-                        <i class="fas fa-check-double"></i>
-                        <span>Marcar todas como leídas</span>
-                    </button>
-                    <button onclick="loadNotifications()"
-                        class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                        <i class="fas fa-sync-alt" id="refreshIcon"></i>
-                        <span id="refreshText">Actualizar</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="mb-6 flex flex-wrap gap-4">
-                <button onclick="filterNotifications('all')" id="filterAll"
-                    class="px-4 py-2 rounded-xl font-medium transition-colors bg-sena-verde text-white">
-                    Todas
-                </button>
-                <button onclick="filterNotifications('unread')" id="filterUnread"
-                    class="px-4 py-2 rounded-xl font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
-                    No leídas
-                </button>
-                <button onclick="filterNotifications('read')" id="filterRead"
-                    class="px-4 py-2 rounded-xl font-medium transition-colors bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
-                    Leídas
+                <button onclick="loadVerificationData()"
+                    class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                    <span id="refreshText">Actualizar</span>
                 </button>
             </div>
 
-            <!-- Notifications List -->
-            <div class="stat-card">
-                <div id="notificationsContainer">
-                    <!-- Loading State -->
-                    <div class="text-center py-12">
-                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-sena-verde"></div>
-                        <p class="mt-4 text-gray-600 dark:text-gray-400">Cargando notificaciones...</p>
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="verificationStatsContainer">
+                <!-- Loading State -->
+                <div class="stat-card animate-pulse">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    </div>
+                    <div class="h-3 bg-gray-200 rounded w-32"></div>
+                </div>
+            </div>
+
+            <!-- Search and Filter Section -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-6" id="searchFilterContainer">
+                <!-- Dynamic content loaded by JavaScript -->
+            </div>
+
+            <!-- Verification Content -->
+            <div class="stat-card" id="verificationTableContainer">
+                <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-full mb-4"></div>
+                    <div class="space-y-3">
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Pagination -->
-                <div id="paginationContainer" class="mt-6 flex justify-center items-center gap-2 hidden">
-                    <button onclick="previousPage()" id="prevBtn"
-                        class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span id="pageInfo" class="px-4 py-2 text-gray-700 dark:text-gray-300"></span>
-                    <button onclick="nextPage()" id="nextBtn"
-                        class="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6" id="paginationContainer">
+                <!-- Dynamic content loaded by JavaScript -->
             </div>
         </main>
     </div>
 
-    <!-- Application Scripts -->
-    <script src="../../js/user-sidebar.js"></script>
-    <script src="../../js/dashboard.js"></script>
-    <script src="../../js/inactivity-monitor.js"></script>
-    <script src="../../js/notification-sound.js"></script>
-    <script src="../../js/notifications-bell.js"></script>
-    <script src="../../js/notifications/notifications.js"></script>
-
     <style>
-        /* Adjust main content margin to account for fixed sidebar */
         .main-content {
             margin-left: 280px;
             transition: margin-left 0.3s ease;
         }
-
-        /* Responsive adjustments */
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
             }
-
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
             }
-
             .sidebar.active {
                 transform: translateX(0);
             }
-
             .overlay {
                 display: none;
             }
-
             .overlay.active {
                 display: block;
             }
         }
-
-        .notification-item {
-            transition: all 0.2s;
-        }
-
-        .notification-item:hover {
-            transform: translateX(4px);
-        }
     </style>
 
     <script>
-        // Handle sidebar click with debounce
         function handleSidebarClick(event, link) {
             if (link === '#') {
                 event.preventDefault();
                 return;
             }
-
             event.preventDefault();
-
             if (window.innerWidth <= 1024) {
                 const sidebar = document.getElementById('sidebar');
                 const overlay = document.getElementById('overlay');
                 if (sidebar) sidebar.classList.remove('active');
                 if (overlay) overlay.classList.remove('active');
             }
-
             if (link.startsWith('/')) {
                 if (typeof debouncedNavigate === 'function') {
                     debouncedNavigate(link);
@@ -277,24 +257,18 @@
             }
         }
 
-        // Logout function
         function logout() {
-            const modal = document.getElementById('logoutModal');
-            if (modal) {
-                modal.classList.remove('hidden');
-            }
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
         }
 
-        // Setup mobile menu toggle
         function setupMobileMenuToggle() {
             const menuToggle = document.getElementById('menuToggle');
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('overlay');
-
             if (menuToggle && sidebar && overlay) {
                 menuToggle.addEventListener('click', function () {
                     const isHidden = sidebar.style.transform === 'translateX(-100%)';
-
                     if (isHidden) {
                         sidebar.style.transform = 'translateX(0)';
                         overlay.style.display = 'block';
@@ -306,14 +280,10 @@
             }
         }
 
-        // Load current user information for header
         async function loadCurrentUserInfo() {
             try {
                 const token = localStorage.getItem('jwt');
-                if (!token) {
-                    throw new Error('No authentication token found');
-                }
-
+                if (!token) throw new Error('No authentication token found');
                 const response = await fetch('/api/v1/users/me', {
                     method: 'GET',
                     headers: {
@@ -321,7 +291,6 @@
                         'Content-Type': 'application/json'
                     }
                 });
-
                 if (response.ok) {
                     const userData = await response.json();
                     updateHeaderUserInfo(userData);
@@ -330,18 +299,23 @@
                 }
             } catch (error) {
                 console.error('Error loading current user info:', error);
+                updateHeaderUserInfo({
+                    fullName: 'Admin Institución',
+                    role: 'warehouse',
+                    email: 'admin@sena.edu.co'
+                });
             }
         }
 
-        // Update user info display in header
         function updateHeaderUserInfo(userData) {
             const headerUserName = document.getElementById('headerUserName');
             const headerUserRole = document.getElementById('headerUserRole');
             const headerUserAvatar = document.getElementById('headerUserAvatar');
-
-            if (headerUserName) headerUserName.textContent = userData.fullName || 'Usuario';
-            if (headerUserRole) headerUserRole.textContent = userData.role || 'USER';
-            
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Institución';
+            if (headerUserRole) {
+                const role = userData.role || 'warehouse';
+                headerUserRole.textContent = role === 'warehouse' ? 'ADMIN INSTITUCIÓN' : role;
+            }
             if (headerUserAvatar) {
                 if (userData.imgUrl) {
                     const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
@@ -350,60 +324,38 @@
                             <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
                                 <div class="image-loading-spinner"></div>
                             </div>
-                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Usuario'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Institución'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
                                  id="img-${uniqueId}"
                                  onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
                                  onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
                         </div>
                     `;
                 } else {
-                    headerUserAvatar.textContent = (userData.fullName || 'U').charAt(0).toUpperCase();
+                    headerUserAvatar.textContent = (userData.fullName || 'Admin Institución').charAt(0).toUpperCase();
                 }
             }
         }
 
-        // Toggle notification sound
-        function toggleNotificationSound() {
-            if (window.NotificationSound) {
-                const isEnabled = window.NotificationSound.toggle();
-                updateSoundButton(isEnabled);
-                
-                // Reproducir sonido de prueba si se activó
-                if (isEnabled) {
-                    window.NotificationSound.play();
-                }
-            }
-        }
-
-        // Update sound button state
-        function updateSoundButton(isEnabled) {
-            const soundIcon = document.getElementById('soundIcon');
-            const soundText = document.getElementById('soundText');
-            
-            if (soundIcon && soundText) {
-                if (isEnabled) {
-                    soundIcon.className = 'fas fa-volume-up';
-                    soundText.textContent = 'Sonido: ON';
-                } else {
-                    soundIcon.className = 'fas fa-volume-mute';
-                    soundText.textContent = 'Sonido: OFF';
-                }
-            }
-        }
-
-        // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
             loadCurrentUserInfo();
-            
-            // Actualizar estado del botón de sonido
-            if (window.NotificationSound) {
-                const isEnabled = window.NotificationSound.isEnabled();
-                updateSoundButton(isEnabled);
-            }
         });
     </script>
 
+    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/websocket-client.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
+    <!-- Verification Module Scripts -->
+    <script src="../../js/verification/verification-data.js"></script>
+    <script src="../../js/verification/verification-api.js"></script>
+    <script src="../../js/verification/verification-filters.js"></script>
+    <script src="../../js/verification/verification-ui.js"></script>
+    <script src="../../js/verification/verification-modals.js"></script>
+    <script src="../../js/verification/verification-forms.js"></script>
+    <script src="../../js/verification/verification-pagination.js"></script>
+    <script src="../../js/verification/verification-toast.js"></script>
+    <script src="../../js/verification/verification.js"></script>
 </body>
 
 </html>
+
