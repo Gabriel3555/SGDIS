@@ -185,12 +185,50 @@
                 </button>
             </div>
 
+            <!-- Filters Section (Superadmin only) -->
+            <div id="filtersSection" class="stat-card mb-6" style="display: none;">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Regional Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Regional
+                        </label>
+                        <select id="filterRegional" onchange="onRegionalChange()"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#00AF00] focus:border-transparent">
+                            <option value="">Todas las regionales</option>
+                        </select>
+                    </div>
+
+                    <!-- Institution Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Centro
+                        </label>
+                        <select id="filterInstitution" onchange="onInstitutionChange()"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#00AF00] focus:border-transparent">
+                            <option value="">Todos los centros</option>
+                        </select>
+                    </div>
+
+                    <!-- User Filter -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Usuario
+                        </label>
+                        <select id="filterUser" onchange="applyFilters()"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#00AF00] focus:border-transparent">
+                            <option value="">Todos los usuarios</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Auditoría Table -->
             <div class="stat-card">
                 <div class="overflow-x-auto">
                     <table class="w-full" id="auditoryTable">
                         <thead>
-                            <tr class="border-b border-gray-200">
+                            <tr class="border-b border-gray-200" id="auditoryTableHeader">
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Fecha/Hora</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Usuario</th>
                                 <th class="text-left py-3 px-4 font-semibold text-gray-700">Acción</th>
