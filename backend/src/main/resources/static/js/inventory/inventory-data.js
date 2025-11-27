@@ -69,8 +69,15 @@ async function changePage(page) {
         }
         
         try {
+            // Determine correct page size - use 6 for admin regional and superadmin, otherwise use server size or default
+            const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                                   (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+            const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                                (window.location.pathname && window.location.pathname.includes('/superadmin'));
+            const pageSize = (isAdminRegional || isSuperAdmin) ? 6 : (serverPagination.size || data.serverPageSize || 50);
+            
             // Load inventories for the requested page
-            await loadInventories({ page: apiPage, size: serverPagination.size || data.serverPageSize || 50 });
+            await loadInventories({ page: apiPage, size: pageSize });
             
             // Update UI
             if (typeof updateInventoryUI === 'function') {

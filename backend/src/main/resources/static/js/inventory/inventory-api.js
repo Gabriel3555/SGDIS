@@ -1,4 +1,5 @@
 const DEFAULT_INSTITUTION_PAGE_SIZE = 10;
+const DEFAULT_ADMIN_REGIONAL_PAGE_SIZE = 6;
 
 async function loadInventoryData() {
     if (inventoryData.isLoading) return;
@@ -123,11 +124,14 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
         const currentUser = window.currentUserData || {};
         const userRegionalId = currentUser.institution?.regional?.id || currentUser.regional?.id;
         
+        // Use default size of 6 for admin regional if size is not explicitly provided
+        const pageSize = size === DEFAULT_INSTITUTION_PAGE_SIZE ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : size;
+        
         if (selectedInstitution && userRegionalId) {
             // Filter by both regional and institution
             const params = new URLSearchParams({
                 page: page.toString(),
-                size: size.toString()
+                size: pageSize.toString()
             });
             const endpoint = `/api/v1/inventory/regional/${userRegionalId}/institution/${selectedInstitution}?${params.toString()}`;
             return endpoint;
@@ -135,7 +139,7 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
             // Use the regional admin inventories endpoint (all inventories of the regional)
             const params = new URLSearchParams({
                 page: page.toString(),
-                size: size.toString()
+                size: pageSize.toString()
             });
             return `/api/v1/inventory/regionalAdminInventories?${params.toString()}`;
         }
@@ -152,11 +156,14 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
         const selectedRegional = data.selectedRegional;
         const selectedInstitution = data.selectedInstitution;
         
+        // Use default size of 6 for superadmin if size is not explicitly provided
+        const pageSize = size === DEFAULT_INSTITUTION_PAGE_SIZE ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : size;
+        
         if (selectedRegional && selectedInstitution) {
             // Filter by both regional and institution
             const params = new URLSearchParams({
                 page: page.toString(),
-                size: size.toString()
+                size: pageSize.toString()
             });
             const endpoint = `/api/v1/inventory/regional/${selectedRegional}/institution/${selectedInstitution}?${params.toString()}`;
             return endpoint;
@@ -164,17 +171,20 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
             // Filter by regional only
             const params = new URLSearchParams({
                 page: page.toString(),
-                size: size.toString()
+                size: pageSize.toString()
             });
             const endpoint = `/api/v1/inventory/regionalAdminInventories/${selectedRegional}?${params.toString()}`;
             return endpoint;
         }
     }
     
-    // Default endpoint with pagination
+    // Default endpoint with pagination - use 6 for superadmin
+    const isSuperAdminDefault = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                                (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const defaultPageSize = isSuperAdminDefault ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : size;
     const params = new URLSearchParams({
         page: page.toString(),
-        size: size.toString()
+        size: defaultPageSize.toString()
     });
     const endpoint = `/api/v1/inventory?${params.toString()}`;
     return endpoint;
@@ -205,14 +215,31 @@ async function loadInventories(options = {}) {
         }
 
         const page = typeof options.page === 'number' ? options.page : 0;
-        const size = typeof options.size === 'number' ? options.size : (inventoryData?.serverPageSize || DEFAULT_INSTITUTION_PAGE_SIZE);
-        const useInstitutionScope = shouldUseInstitutionInventories();
         const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
                                (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                            (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        // Use default size of 6 for admin regional and superadmin, otherwise use the configured size or default
+        const defaultSize = (isAdminRegional || isSuperAdmin) ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : DEFAULT_INSTITUTION_PAGE_SIZE;
+        
+        // For admin regional and superadmin, always use 6 unless explicitly overridden
+        let size;
+        if (isAdminRegional || isSuperAdmin) {
+            size = typeof options.size === 'number' ? options.size : DEFAULT_ADMIN_REGIONAL_PAGE_SIZE;
+        } else {
+            size = typeof options.size === 'number' ? options.size : (inventoryData?.serverPageSize || defaultSize);
+        }
+        
+        const useInstitutionScope = shouldUseInstitutionInventories();
         const endpoint = buildInventoryEndpoint(page, size);
 
         if (inventoryData) {
-            inventoryData.serverPageSize = size;
+            // For admin regional and superadmin, ensure serverPageSize is 6
+            if (isAdminRegional || isSuperAdmin) {
+                inventoryData.serverPageSize = DEFAULT_ADMIN_REGIONAL_PAGE_SIZE;
+            } else {
+                inventoryData.serverPageSize = size;
+            }
         }
 
         const response = await fetch(endpoint, {
