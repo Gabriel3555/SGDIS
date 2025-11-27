@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Importar/Exportar - Admin Institución - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/users-toast.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
+</head>
+
+<body>
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar"
+        style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                    <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                </div>
+                <div class="text-gray-800">
+                    <div class="font-bold text-lg">SGDIS</div>
+                    <div class="text-xs opacity-70">Importar/Exportar</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/admin_institution/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/dashboard')">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/admin_institution/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/inventory')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="/admin_institution/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>        
+            <a href="/admin_institution/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
+            <a href="/admin_institution/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/admin_institution/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/admin_institution/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/admin_institution/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
+            </a>
+            <a href="/admin_institution/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/admin_institution/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/admin_institution/import-export')">
+                <i class="fas fa-file-import text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="/admin_institution/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/info-me')">
+                <i class="fas fa-user-circle text-lg"></i>
+                <span class="font-medium">Mi Perfil</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()"
+                class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <div class="main-content min-h-screen">
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 flex-1">
+                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        onclick="window.location.href='/info-me'">
+                        <div class="user-avatar" id="headerUserAvatar"></div>
+                        <div class="hidden sm:block">
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500" id="headerUserRole"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6">
+            <!-- Welcome Section -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">Importar/Exportar - Admin Institución</h1>
+                    <p class="text-gray-600 dark:text-gray-400" id="importExportWelcomeMessage">Gestione la importación y exportación de items desde archivos Excel de la institución</p>
+                </div>
+            </div>
+
+            <!-- Mode Toggle Switch -->
+            <div class="flex justify-center mb-8">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-1.5 shadow-lg inline-flex items-center gap-1">
+                    <button id="importModeBtn"
+                        class="mode-toggle-btn active px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2.5 relative">
+                        <i class="fas fa-file-upload text-sm"></i>
+                        <span>Importar</span>
+                    </button>
+                    <button id="exportModeBtn"
+                        class="mode-toggle-btn px-8 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2.5 relative">
+                        <i class="fas fa-file-download text-sm"></i>
+                        <span>Exportar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Import/Export Section -->
+            <div id="mainContentContainer" class="flex gap-6">
+                <!-- Main Content Area -->
+                <div class="flex-1 stat-card shadow-lg border border-gray-100 dark:border-gray-700">
+                    <!-- Import Section -->
+                    <div id="importSection" class="mode-section">
+                        <div class="flex items-center gap-4 mb-8 pb-6 border-b border-gray-200 dark:border-gray-600">
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-2xl flex items-center justify-center shadow-sm">
+                                <i class="fas fa-file-upload text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">Importar Items</h2>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Cargue items desde un archivo Excel</p>
+                            </div>
+                        </div>
+
+                        <!-- Dropdowns and File Upload Layout -->
+                        <div class="flex gap-6 mb-6">
+                            <!-- Dropdowns Section (Left) -->
+                            <div class="flex-1 space-y-4">
+                                <!-- Institution Dropdown (Regional removed) -->
+                                <div class="form-group">
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                        <i class="fas fa-building text-green-500 dark:text-green-400 mr-2 text-xs"></i>Centro
+                                    </label>
+                                    <div class="relative">
+                                        <select id="importInstitutionSelect"
+                                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-pointer">
+                                            <option value="">Cargando centros...</option>
+                                        </select>
+                                        <div
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Inventory Dropdown -->
+                                <div class="form-group">
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                        <i class="fas fa-boxes text-green-500 dark:text-green-400 mr-2 text-xs"></i>Inventario
+                                    </label>
+                                    <div class="relative">
+                                        <select id="importInventorySelect"
+                                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-not-allowed"
+                                            disabled>
+                                            <option value="">Primero seleccione un centro...</option>
+                                        </select>
+                                        <div
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- File Upload Section (Right) -->
+                            <div class="w-72 flex-shrink-0">
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                    <i
+                                        class="fas fa-file-excel text-green-500 dark:text-green-400 mr-2 text-xs"></i>Archivo
+                                    Excel
+                                </label>
+                                <div id="fileUploadArea"
+                                    class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-4 text-center hover:border-green-400 dark:hover:border-green-500 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition-all duration-300 group cursor-pointer min-h-[140px] flex flex-col justify-center items-center">
+                                    <input type="file" id="importFileInput" accept=".xls,.xlsx" class="hidden">
+                                    <label for="importFileInput"
+                                        class="cursor-pointer w-full flex flex-col items-center">
+                                        <div class="mb-2">
+                                            <i
+                                                class="fas fa-cloud-upload-alt text-3xl text-gray-400 dark:text-gray-500 group-hover:text-green-500 dark:group-hover:text-green-400 transition-colors duration-300"></i>
+                                        </div>
+                                        <p
+                                            class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 group-hover:text-green-700 dark:group-hover:text-green-400 transition-colors">
+                                            Clic para seleccionar</p>
+                                        <p class="text-[10px] text-gray-500 dark:text-gray-400 mb-2">o arrastre aquí</p>
+                                        <div class="mt-2 w-full">
+                                            <p class="text-[11px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md inline-block max-w-full truncate"
+                                                id="importFileName" title="Ningún archivo seleccionado">Ningún archivo
+                                                seleccionado</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Import Button -->
+                        <button id="importButton"
+                            class="w-auto max-w-xs bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 dark:from-green-500 dark:to-green-600 dark:hover:from-green-600 dark:hover:to-green-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-md hover:shadow-lg disabled:shadow-none flex items-center justify-center gap-2 text-sm"
+                            disabled>
+                            <i class="fas fa-upload text-sm"></i>
+                            <span>Importar Items</span>
+                        </button>
+
+                        <!-- Import Progress -->
+                        <div id="importProgress" class="hidden mt-4">
+                            <div class="mb-2 flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300" id="importProgressText">Procesando
+                                    archivo...</span>
+                                <span class="text-sm text-gray-600 dark:text-gray-400" id="importProgressPercent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div id="importProgressBar"
+                                    class="bg-green-600 h-2.5 rounded-full transition-all duration-300"
+                                    style="width: 0%"></div>
+                            </div>
+                            <div class="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600"></div>
+                                <span id="importProgressStatus">Iniciando importación...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Section -->
+                    <div id="exportSection" class="mode-section hidden">
+                        <div class="flex items-center gap-4 mb-8 pb-6 border-b border-gray-200 dark:border-gray-600">
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/30 dark:to-blue-800/20 rounded-2xl flex items-center justify-center shadow-sm">
+                                <i class="fas fa-file-download text-blue-600 dark:text-blue-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">Exportar Items</h2>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Descargue items a un archivo Excel</p>
+                            </div>
+                        </div>
+
+                        <!-- Dropdowns and Preview Layout -->
+                        <div class="flex gap-6 mb-6">
+                            <!-- Dropdowns Section (Left) -->
+                            <div class="flex-1 space-y-4">
+                                <!-- Institution Dropdown (Regional removed) -->
+                                <div class="form-group">
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                        <i class="fas fa-building text-blue-500 dark:text-blue-400 mr-2 text-xs"></i>Centro
+                                    </label>
+                                    <div class="relative">
+                                        <select id="exportInstitutionSelect"
+                                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-pointer">
+                                            <option value="">Cargando centros...</option>
+                                        </select>
+                                        <div
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Inventory Dropdown -->
+                                <div class="form-group">
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                        <i class="fas fa-boxes text-blue-500 dark:text-blue-400 mr-2 text-xs"></i>Inventario
+                                    </label>
+                                    <div class="relative">
+                                        <select id="exportInventorySelect"
+                                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-not-allowed"
+                                            disabled>
+                                            <option value="">Primero seleccione un centro...</option>
+                                        </select>
+                                        <div
+                                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                            <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Export Preview Section (Right) -->
+                            <div id="exportPreviewSection" class="w-80 flex-shrink-0">
+                                <label
+                                    class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                                    <i class="fas fa-eye text-blue-500 dark:text-blue-400 mr-2 text-xs"></i>Vista Previa
+                                </label>
+                                <div
+                                    class="border-2 border-gray-200 dark:border-gray-600 rounded-2xl p-4 bg-gradient-to-br from-blue-50/50 to-white dark:from-gray-800 dark:to-gray-700 h-full flex flex-col shadow-sm">
+                                    <div class="flex-1 overflow-y-auto max-h-[140px] custom-scrollbar">
+                                        <div id="exportPreviewContent" class="text-sm text-gray-600 dark:text-gray-300">
+                                            <div class="text-center py-6">
+                                                <div
+                                                    class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-2">
+                                                    <i
+                                                        class="fas fa-boxes text-blue-500 dark:text-blue-400 text-lg"></i>
+                                                </div>
+                                                <p class="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                                    Seleccione un inventario</p>
+                                                <p class="text-[10px] text-gray-500 dark:text-gray-500">para ver los
+                                                    items</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-800/50 rounded-lg px-2 py-1.5">
+                                        <p class="text-xs font-semibold text-gray-600 dark:text-gray-300 text-center"
+                                            id="exportPreviewCount">0 items</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Export Button -->
+                        <button id="exportButton"
+                            class="w-auto max-w-xs bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 dark:from-blue-500 dark:to-blue-600 dark:hover:from-blue-600 dark:hover:to-blue-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 shadow-md hover:shadow-lg disabled:shadow-none flex items-center justify-center gap-2 text-sm mb-6"
+                            disabled>
+                            <i class="fas fa-download text-sm"></i>
+                            <span>Exportar Items</span>
+                        </button>
+
+                        <!-- Export Progress -->
+                        <div id="exportProgress" class="hidden mt-4">
+                            <div class="mb-2 flex items-center justify-between">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300" id="exportProgressText">Generando
+                                    archivo...</span>
+                                <span class="text-sm text-gray-600 dark:text-gray-400" id="exportProgressPercent">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                <div id="exportProgressBar"
+                                    class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                                    style="width: 0%"></div>
+                            </div>
+                            <div class="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                                <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                <span id="exportProgressStatus">Preparando exportación...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Section (Right Side) -->
+                <div id="previewSection"
+                    class="hidden w-[45%] stat-card shadow-lg border border-gray-100 dark:border-gray-700">
+                    <div
+                        class="flex items-center justify-between mb-3 pb-3 border-b border-gray-200 dark:border-gray-600">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                            <i class="fas fa-eye text-green-600 dark:text-green-400 mr-2 text-sm"></i>Vista Previa
+                        </label>
+                        <button onclick="closePreview()"
+                            class="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg p-1.5 transition-all duration-200">
+                            <i class="fas fa-times text-base"></i>
+                        </button>
+                    </div>
+                    <div
+                        class="border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden max-h-[calc(100vh-350px)] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-800">
+                        <table id="previewTable" class="w-full text-xs">
+                            <thead
+                                class="bg-gradient-to-r from-green-50 to-green-100/50 dark:from-green-900/30 dark:to-green-800/20 sticky top-0 z-10">
+                                <tr id="previewTableHeader"></tr>
+                            </thead>
+                            <tbody id="previewTableBody"
+                                class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                        <p class="text-[11px] font-medium text-gray-600 dark:text-gray-400 text-center"
+                            id="previewRowCount"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Success Modal -->
+            <div id="importSuccessModal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl">
+                    <div class="text-center mb-6">
+                        <div class="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-check text-green-600 dark:text-green-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2" id="importSuccessTitle">Importación Exitosa
+                        </h3>
+                        <p class="text-gray-600 dark:text-gray-400" id="importSuccessMessage"></p>
+                    </div>
+                    <div id="importSuccessDetails" class="mb-6 text-sm text-gray-700 dark:text-gray-300"></div>
+                    <div class="flex gap-3">
+                        <button onclick="closeImportSuccessModal()"
+                            class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors">
+                            Aceptar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .overlay {
+                display: none;
+            }
+            .overlay.active {
+                display: block;
+            }
+        }
+
+        /* Mode Toggle Styles */
+        .mode-toggle-btn {
+            color: #6b7280;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            position: relative;
+        }
+
+        #importModeBtn.active {
+            background: linear-gradient(135deg, #00AF00 0%, #008800 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 175, 0, 0.25);
+            transform: translateY(0);
+        }
+
+        #exportModeBtn.active {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transform: translateY(0);
+        }
+
+        .mode-toggle-btn:not(.active):hover {
+            background: #f3f4f6;
+            color: #374151;
+            transform: translateY(-1px);
+        }
+
+        .dark .mode-toggle-btn:not(.active):hover {
+            background: #374151;
+            color: #f3f4f6;
+        }
+
+        /* Form Group Styles */
+        .form-group select:not(:disabled) {
+            background: white;
+        }
+
+        .dark .form-group select:not(:disabled) {
+            background: #1e293b;
+        }
+
+        .form-group select:disabled {
+            background: #f9fafb;
+            cursor: not-allowed;
+        }
+
+        .dark .form-group select:disabled {
+            background: #334155;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-track {
+            background: #334155;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Drag and drop styles */
+        #fileUploadArea.drag-over {
+            border-color: #00AF00;
+            background-color: #f0fdf4;
+        }
+
+        .dark #fileUploadArea.drag-over {
+            background-color: #1a2e1a;
+        }
+
+        #fileUploadArea.has-file {
+            border-color: #00AF00;
+        }
+    </style>
+
+    <script>
+        function handleSidebarClick(event, link) {
+            if (link === '#') {
+                event.preventDefault();
+                return;
+            }
+            event.preventDefault();
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+            if (link.startsWith('/')) {
+                if (typeof debouncedNavigate === 'function') {
+                    debouncedNavigate(link);
+                } else {
+                    window.location.href = link;
+                }
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
+        }
+
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+                    if (isHidden) {
+                        sidebar.style.transform = 'translateX(0)';
+                        overlay.style.display = 'block';
+                    } else {
+                        sidebar.style.transform = 'translateX(-100%)';
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) throw new Error('No authentication token found');
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                updateHeaderUserInfo({
+                    fullName: 'Admin Institución',
+                    role: 'ADMIN_INSTITUTION',
+                    email: 'admin@sena.edu.co'
+                });
+            }
+        }
+
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Institución';
+            if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN_INSTITUTION';
+            if (headerUserAvatar) {
+                if (userData.imgUrl) {
+                    const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
+                    headerUserAvatar.innerHTML = `
+                        <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
+                            <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
+                                <div class="image-loading-spinner"></div>
+                            </div>
+                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Institución'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                                 id="img-${uniqueId}"
+                                 onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
+                                 onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
+                        </div>
+                    `;
+                } else {
+                    headerUserAvatar.textContent = (userData.fullName || 'Admin Institución').charAt(0).toUpperCase();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setupMobileMenuToggle();
+            loadCurrentUserInfo();
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../../js/inventory/inventory-toast.js"></script>
+    <script src="../../js/import-export/import-export.js"></script>
+    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/websocket-client.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
+    <!-- Admin Institution specific import-export functionality -->
+    <script src="../../js/import-export/import-export-admin-institution.js"></script>
+</body>
+
+</html>
+

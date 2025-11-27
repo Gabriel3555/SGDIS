@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auditoría - Admin Institución - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/users-toast.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
+</head>
+
+<body>
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar"
+        style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                    <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                </div>
+                <div class="text-gray-800">
+                    <div class="font-bold text-lg">SGDIS</div>
+                    <div class="text-xs opacity-70">Auditoría</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/admin_institution/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/dashboard')">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/admin_institution/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/inventory')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="/admin_institution/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>
+            <a href="/admin_institution/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
+            <a href="/admin_institution/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/admin_institution/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/admin_institution/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/admin_institution/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/admin_institution/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
+            </a>
+            <a href="/admin_institution/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/admin_institution/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/import-export')">
+                <i class="fas fa-file-import text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="/admin_institution/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/admin_institution/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/info-me')">
+                <i class="fas fa-user-circle text-lg"></i>
+                <span class="font-medium">Mi Perfil</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()"
+                class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <div class="main-content min-h-screen">
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 flex-1">
+                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        onclick="window.location.href='/info-me'">
+                        <div class="user-avatar" id="headerUserAvatar"></div>
+                        <div class="hidden sm:block">
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500" id="headerUserRole"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6">
+            <!-- Header Section -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">Auditoría - Admin Institución</h1>
+                    <p class="text-gray-600 dark:text-gray-400" id="auditoryWelcomeMessage">Historial de acciones realizadas en la institución</p>
+                </div>
+                <button onclick="loadAuditories()"
+                    class="btn-update flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                    <span id="refreshText">Actualizar</span>
+                </button>
+            </div>
+
+            <!-- Auditoría Table -->
+            <div class="stat-card">
+                <div class="overflow-x-auto">
+                    <table class="w-full" id="auditoryTable">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-gray-700">
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Fecha/Hora</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Usuario</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Acción</th>
+                                <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Institución</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditoryTableBody">
+                            <!-- Loading State -->
+                            <tr>
+                                <td colspan="4" class="py-8 text-center">
+                                    <div class="flex flex-col items-center gap-2">
+                                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                                        <span class="text-gray-500 dark:text-gray-400">Cargando registros...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700" id="paginationContainer">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                        <span id="paginationInfo">Cargando...</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="previousPage()" id="prevBtn"
+                            class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </button>
+                        <button onclick="nextPage()" id="nextBtn"
+                            class="px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <style>
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .overlay {
+                display: none;
+            }
+            .overlay.active {
+                display: block;
+            }
+        }
+    </style>
+
+    <script>
+        function handleSidebarClick(event, link) {
+            if (link === '#') {
+                event.preventDefault();
+                return;
+            }
+            event.preventDefault();
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+            if (link.startsWith('/')) {
+                if (typeof debouncedNavigate === 'function') {
+                    debouncedNavigate(link);
+                } else {
+                    window.location.href = link;
+                }
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
+        }
+
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+                    if (isHidden) {
+                        sidebar.style.transform = 'translateX(0)';
+                        overlay.style.display = 'block';
+                    } else {
+                        sidebar.style.transform = 'translateX(-100%)';
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) throw new Error('No authentication token found');
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                updateHeaderUserInfo({
+                    fullName: 'Admin Institución',
+                    role: 'ADMIN_INSTITUTION',
+                    email: 'admin@sena.edu.co'
+                });
+            }
+        }
+
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Institución';
+            if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN_INSTITUTION';
+            if (headerUserAvatar) {
+                if (userData.imgUrl) {
+                    const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
+                    headerUserAvatar.innerHTML = `
+                        <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
+                            <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
+                                <div class="image-loading-spinner"></div>
+                            </div>
+                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Institución'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                                 id="img-${uniqueId}"
+                                 onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
+                                 onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
+                        </div>
+                    `;
+                } else {
+                    headerUserAvatar.textContent = (userData.fullName || 'Admin Institución').charAt(0).toUpperCase();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setupMobileMenuToggle();
+            loadCurrentUserInfo();
+        });
+    </script>
+
+    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/websocket-client.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
+    <script src="../../js/auditory/auditory.js"></script>
+</body>
+
+</html>
+

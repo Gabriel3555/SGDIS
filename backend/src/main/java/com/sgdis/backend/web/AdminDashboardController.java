@@ -171,6 +171,34 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/admin_regional/info-me")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalInfoMe() throws IOException {
+        Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/info-me", "/admininstitution/info-me"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionInfoMe() throws IOException {
+        Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-institution.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/superadmin/items")
     @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseBody
@@ -315,7 +343,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionTransfers() throws IOException {
-        Resource resource = new ClassPathResource("static/views/transfers/transfers.html");
+        Resource resource = new ClassPathResource("static/views/transfers/transfers-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -343,7 +371,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionAuditory() throws IOException {
-        Resource resource = new ClassPathResource("static/views/auditory/auditory.html");
+        Resource resource = new ClassPathResource("static/views/auditory/auditory-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -357,7 +385,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionNotifications() throws IOException {
-        Resource resource = new ClassPathResource("static/views/notifications/notifications.html");
+        Resource resource = new ClassPathResource("static/views/notifications/notifications-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -371,7 +399,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionImportExport() throws IOException {
-        Resource resource = new ClassPathResource("static/views/import-export/import-export.html");
+        Resource resource = new ClassPathResource("static/views/import-export/imports-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -525,7 +553,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionConfiguration() throws IOException {
-        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        Resource resource = new ClassPathResource("static/views/configuration/configuration-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
