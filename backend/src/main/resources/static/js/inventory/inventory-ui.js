@@ -808,13 +808,25 @@ function updateInventoryTable() {
     window.inventoryData.filteredInventories = window.inventoryData.inventories ? [...window.inventoryData.inventories] : [];
   }
 
-  const startIndex =
-    (window.inventoryData.currentPage - 1) * window.inventoryData.itemsPerPage;
-  const endIndex = startIndex + window.inventoryData.itemsPerPage;
-  const paginatedInventories = window.inventoryData.filteredInventories.slice(
-    startIndex,
-    endIndex
-  );
+  // Check if we're using server-side pagination
+  const useServerPagination = window.inventoryData.serverPagination !== null && 
+                               window.inventoryData.serverPagination !== undefined;
+  
+  let paginatedInventories;
+  
+  if (useServerPagination) {
+    // For server-side pagination, use all inventories (they're already paginated from server)
+    paginatedInventories = window.inventoryData.filteredInventories || [];
+  } else {
+    // For client-side pagination, slice the array
+    const startIndex =
+      (window.inventoryData.currentPage - 1) * window.inventoryData.itemsPerPage;
+    const endIndex = startIndex + window.inventoryData.itemsPerPage;
+    paginatedInventories = window.inventoryData.filteredInventories.slice(
+      startIndex,
+      endIndex
+    );
+  }
   
   let inventoryTableHtml = ``;
 
@@ -1031,13 +1043,25 @@ function updateInventoryCards() {
     window.inventoryData.filteredInventories = window.inventoryData.inventories ? [...window.inventoryData.inventories] : [];
   }
 
-  const startIndex =
-    (window.inventoryData.currentPage - 1) * window.inventoryData.itemsPerPage;
-  const endIndex = startIndex + window.inventoryData.itemsPerPage;
-  const paginatedInventories = window.inventoryData.filteredInventories.slice(
-    startIndex,
-    endIndex
-  );
+  // Check if we're using server-side pagination
+  const useServerPagination = window.inventoryData.serverPagination !== null && 
+                               window.inventoryData.serverPagination !== undefined;
+  
+  let paginatedInventories;
+  
+  if (useServerPagination) {
+    // For server-side pagination, use all inventories (they're already paginated from server)
+    paginatedInventories = window.inventoryData.filteredInventories || [];
+  } else {
+    // For client-side pagination, slice the array
+    const startIndex =
+      (window.inventoryData.currentPage - 1) * window.inventoryData.itemsPerPage;
+    const endIndex = startIndex + window.inventoryData.itemsPerPage;
+    paginatedInventories = window.inventoryData.filteredInventories.slice(
+      startIndex,
+      endIndex
+    );
+  }
   
   let cardsHtml = ``;
 

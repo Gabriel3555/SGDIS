@@ -44,11 +44,80 @@ function applySearchFilter() {
     filterInventories();
 }
 
-function changePage(page) {
-    if (page >= 1 && page <= Math.ceil(inventoryData.filteredInventories.length / inventoryData.itemsPerPage)) {
-        inventoryData.currentPage = page;
-        updateInventoryCards();
-        updatePagination();
+async function changePage(page) {
+    const data = window.inventoryData || inventoryData;
+    if (!data) return;
+
+    // Check if we're using server-side pagination
+    const useServerPagination = data.serverPagination !== null && data.serverPagination !== undefined;
+    
+    if (useServerPagination) {
+        // Server-side pagination: load data from server
+        const serverPagination = data.serverPagination;
+        const totalPages = serverPagination.totalPages || 1;
+        
+        if (page < 1 || page > totalPages) {
+            return; // Invalid page
+        }
+        
+        // Convert from 1-based (UI) to 0-based (API)
+        const apiPage = page - 1;
+        
+        // Show loading state
+        if (typeof showLoadingState === 'function') {
+            showLoadingState();
+        }
+        
+        try {
+            // Load inventories for the requested page
+            await loadInventories({ page: apiPage, size: serverPagination.size || data.serverPageSize || 50 });
+            
+            // Update UI
+            if (typeof updateInventoryUI === 'function') {
+                updateInventoryUI();
+            } else {
+                // Fallback to individual updates
+                const viewMode = data.viewMode || 'table';
+                if (viewMode === 'table' && typeof updateInventoryTable === 'function') {
+                    updateInventoryTable();
+                } else if (viewMode === 'cards' && typeof updateInventoryCards === 'function') {
+                    updateInventoryCards();
+                }
+                if (typeof updatePagination === 'function') {
+                    updatePagination();
+                }
+            }
+        } catch (error) {
+            console.error('Error loading page:', error);
+            if (typeof showErrorToast === 'function') {
+                showErrorToast('Error', 'No se pudo cargar la página solicitada.');
+            }
+        } finally {
+            // Hide loading state
+            if (typeof hideLoadingState === 'function') {
+                hideLoadingState();
+            }
+        }
+    } else {
+        // Client-side pagination: use local data
+        const totalPages = Math.ceil((data.filteredInventories?.length || 0) / (data.itemsPerPage || 6));
+        if (page >= 1 && page <= totalPages) {
+            data.currentPage = page;
+            // Also update local inventoryData reference if different
+            if (inventoryData && inventoryData !== data) {
+                inventoryData.currentPage = page;
+            }
+            
+            const viewMode = data.viewMode || 'table';
+            if (viewMode === 'table' && typeof updateInventoryTable === 'function') {
+                updateInventoryTable();
+            } else if (viewMode === 'cards' && typeof updateInventoryCards === 'function') {
+                updateInventoryCards();
+            }
+            if (typeof updatePagination === 'function') {
+                updatePagination();
+            }
+        }
     }
 }
 

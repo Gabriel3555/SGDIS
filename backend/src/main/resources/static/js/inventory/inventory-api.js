@@ -1,4 +1,4 @@
-const DEFAULT_INSTITUTION_PAGE_SIZE = 50;
+const DEFAULT_INSTITUTION_PAGE_SIZE = 10;
 
 async function loadInventoryData() {
     if (inventoryData.isLoading) return;
@@ -240,12 +240,15 @@ async function loadInventories(options = {}) {
                         totalElements: payload.totalElements ?? payload.content.length
                     };
                     inventoryData.inventoryScope = useInstitutionScope ? 'institution' : (isAdminRegional ? 'regional' : 'global');
+                    // Update currentPage to match server page (convert from 0-based to 1-based)
+                    inventoryData.currentPage = (payload.number ?? page) + 1;
                 }
             } else {
                 inventories = [];
                 if (inventoryData) {
                     inventoryData.serverPagination = null;
                     inventoryData.inventoryScope = useInstitutionScope ? 'institution' : (isAdminRegional ? 'regional' : 'global');
+                    inventoryData.currentPage = 1;
                 }
             }
 
@@ -263,6 +266,9 @@ async function loadInventories(options = {}) {
             if (inventoryData && inventoryData !== data) {
                 inventoryData.inventories = data.inventories;
                 inventoryData.filteredInventories = data.filteredInventories;
+                if (inventoryData.serverPagination) {
+                    inventoryData.currentPage = (inventoryData.serverPagination.page || 0) + 1;
+                }
             }
             
             // If super admin, ensure filters are updated after loading inventories
