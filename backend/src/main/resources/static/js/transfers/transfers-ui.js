@@ -168,36 +168,62 @@ function updateTransfersSearchAndFilters() {
         filterDropdowns = `
             <div class="relative" style="min-width: 180px; flex-shrink: 0;">
                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Regional</label>
-                <select id="transferRegionalFilter" 
-                    onchange="handleTransferRegionalFilterChange(this.value)" 
-                    class="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all" 
-                    style="height: 56px; font-size: 0.9375rem;">
-                    <option value="">Todas las regionales</option>
-                </select>
+                <div class="custom-select-container">
+                    <div class="custom-select" id="transferRegionalSelect">
+                        <div class="custom-select-trigger">
+                            <span class="custom-select-text">Todas las regionales</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-select-dropdown">
+                            <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                            <div class="custom-select-options" id="transferRegionalOptions">
+                                <div class="custom-select-option" data-value="">Todas las regionales</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="transferRegionalFilter" value="">
+                </div>
             </div>
             <div class="relative" style="min-width: 180px; flex-shrink: 0;">
                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Institución</label>
-                <select id="transferInstitutionFilter" 
-                    onchange="handleTransferInstitutionFilterChange(this.value)" 
-                    class="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all ${!selectedRegional ? 'opacity-50 cursor-not-allowed' : ''}" 
-                    style="height: 56px; font-size: 0.9375rem;"
-                    ${!selectedRegional ? 'disabled' : ''}>
-                    <option value="">Todas las instituciones</option>
-                </select>
+                <div class="custom-select-container">
+                    <div class="custom-select ${!selectedRegional ? 'custom-select-disabled' : ''}" id="transferInstitutionSelect">
+                        <div class="custom-select-trigger">
+                            <span class="custom-select-text">Todas las instituciones</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-select-dropdown">
+                            <input type="text" class="custom-select-search" placeholder="Buscar institución...">
+                            <div class="custom-select-options" id="transferInstitutionOptions">
+                                <div class="custom-select-option" data-value="">Todas las instituciones</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="transferInstitutionFilter" value="">
+                </div>
             </div>
         `;
     }
     
     // Inventory selector (for all users)
     filterDropdowns += `
-        <div class="relative flex-1" style="min-width: 200px;">
+        <div class="relative" style="min-width: 180px; flex-shrink: 0;">
             <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Inventario</label>
-            <select id="transferInventoryFilter" 
-                onchange="handleTransferInventorySelectionChange(this.value)" 
-                class="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all" 
-                style="height: 56px; font-size: 0.9375rem;">
-                <option value="">Seleccionar inventario...</option>
-            </select>
+            <div class="custom-select-container">
+                <div class="custom-select" id="transferInventorySelect">
+                    <div class="custom-select-trigger">
+                        <span class="custom-select-text">Seleccionar inventario...</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-select-dropdown">
+                        <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
+                        <div class="custom-select-options" id="transferInventoryOptions">
+                            <div class="custom-select-option" data-value="">Seleccionar inventario...</div>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="transferInventoryFilter" value="">
+            </div>
         </div>
     `;
     
@@ -220,34 +246,87 @@ function updateTransfersSearchAndFilters() {
             ${filterDropdowns}
             <div class="relative" style="min-width: 180px; flex-shrink: 0;">
                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Estado</label>
-                <select id="transferStatusFilter" 
-                    class="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" 
-                    style="height: 56px; font-size: 0.9375rem;"
-                    onchange="handleTransferStatusFilterChange(event)">
-                    <option value="all" ${currentStatusFilter === 'all' ? 'selected' : ''}>Todos los estados</option>
-                    <option value="PENDING" ${currentStatusFilter === 'PENDING' ? 'selected' : ''}>Pendiente</option>
-                    <option value="APPROVED" ${currentStatusFilter === 'APPROVED' ? 'selected' : ''}>Aprobada</option>
-                    <option value="REJECTED" ${currentStatusFilter === 'REJECTED' ? 'selected' : ''}>Rechazada</option>
-                </select>
+                <div class="custom-select-container">
+                    <div class="custom-select" id="transferStatusSelect">
+                        <div class="custom-select-trigger">
+                            <span class="custom-select-text">${currentStatusFilter === 'all' ? 'Todos los estados' : currentStatusFilter === 'PENDING' ? 'Pendiente' : currentStatusFilter === 'APPROVED' ? 'Aprobada' : currentStatusFilter === 'REJECTED' ? 'Rechazada' : 'Todos los estados'}</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-select-dropdown">
+                            <input type="text" class="custom-select-search" placeholder="Buscar estado...">
+                            <div class="custom-select-options" id="transferStatusOptions">
+                                <div class="custom-select-option ${currentStatusFilter === 'all' ? 'selected' : ''}" data-value="all">Todos los estados</div>
+                                <div class="custom-select-option ${currentStatusFilter === 'PENDING' ? 'selected' : ''}" data-value="PENDING">Pendiente</div>
+                                <div class="custom-select-option ${currentStatusFilter === 'APPROVED' ? 'selected' : ''}" data-value="APPROVED">Aprobada</div>
+                                <div class="custom-select-option ${currentStatusFilter === 'REJECTED' ? 'selected' : ''}" data-value="REJECTED">Rechazada</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="transferStatusFilter" value="${currentStatusFilter}">
+                </div>
             </div>
         </div>
     `;
     
-    // Load filters data
-    if (isSuperAdmin) {
-        // Load regionals and institutions
-        if (window.loadRegionalsForTransferFilter) {
-            window.loadRegionalsForTransferFilter();
+    // Initialize CustomSelect components
+    setTimeout(() => {
+        if (isSuperAdmin) {
+            // Initialize regional select
+            if (typeof CustomSelect !== 'undefined' && document.getElementById('transferRegionalSelect')) {
+                window.transferRegionalSelect = new CustomSelect('transferRegionalSelect', {
+                    onSelect: (value) => {
+                        handleTransferRegionalFilterChange(value);
+                    }
+                });
+            }
+            
+            // Initialize institution select
+            if (typeof CustomSelect !== 'undefined' && document.getElementById('transferInstitutionSelect')) {
+                window.transferInstitutionSelect = new CustomSelect('transferInstitutionSelect', {
+                    onSelect: (value) => {
+                        handleTransferInstitutionFilterChange(value);
+                    }
+                });
+                if (!selectedRegional) {
+                    window.transferInstitutionSelect.disable();
+                }
+            }
         }
-        if (selectedRegional && window.loadInstitutionsForTransferFilter) {
-            window.loadInstitutionsForTransferFilter(selectedRegional);
+        
+        // Initialize inventory select
+        if (typeof CustomSelect !== 'undefined' && document.getElementById('transferInventorySelect')) {
+            window.transferInventorySelect = new CustomSelect('transferInventorySelect', {
+                onSelect: (value) => {
+                    handleTransferInventorySelectionChange(value);
+                }
+            });
         }
-    }
-    
-    // Load inventories for selector
-    if (window.loadInventoriesForTransferFilter) {
-        window.loadInventoriesForTransferFilter();
-    }
+        
+        // Initialize status select
+        if (typeof CustomSelect !== 'undefined' && document.getElementById('transferStatusSelect')) {
+            window.transferStatusSelect = new CustomSelect('transferStatusSelect', {
+                onSelect: (value) => {
+                    handleTransferStatusFilterChange(value);
+                }
+            });
+        }
+        
+        // Load filters data
+        if (isSuperAdmin) {
+            // Load regionals and institutions
+            if (window.loadRegionalsForTransferFilter) {
+                window.loadRegionalsForTransferFilter();
+            }
+            if (selectedRegional && window.loadInstitutionsForTransferFilter) {
+                window.loadInstitutionsForTransferFilter(selectedRegional);
+            }
+        }
+        
+        // Load inventories for selector
+        if (window.loadInventoriesForTransferFilter) {
+            window.loadInventoriesForTransferFilter();
+        }
+    }, 100);
 }
 
 function updateTransfersViewModeButtons() {
@@ -462,65 +541,65 @@ function updateTransfersPagination() {
     const container = document.getElementById('paginationContainer');
     if (!container || !window.transfersData) return;
     
-    const { currentPage, totalPages } = window.transfersData;
+    const { currentPage, totalPages, totalElements, pageSize } = window.transfersData;
     
-    if (totalPages <= 1) {
-        container.innerHTML = '';
-        return;
-    }
+    // Calculate start and end items (currentPage is 0-indexed)
+    const startItem = totalElements > 0 ? (currentPage * pageSize) + 1 : 0;
+    const endItem = Math.min((currentPage + 1) * pageSize, totalElements);
     
     let paginationHtml = `
-        <div class="text-sm text-gray-600 dark:text-gray-400">
-            Página ${currentPage + 1} de ${totalPages}
+        <div class="text-sm text-gray-600">
+            Mostrando ${startItem}-${endItem} de ${totalElements} transferencia${totalElements !== 1 ? 's' : ''}
         </div>
-        <div class="flex gap-2">
+        <div class="flex items-center gap-2 ml-auto">
     `;
     
-    // Previous button
-    paginationHtml += `
-        <button onclick="changeTransfersPage(${currentPage - 1})" 
-            ${currentPage === 0 ? 'disabled' : ''}
-            class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 ${
-                currentPage === 0 
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }">
-            <i class="fas fa-chevron-left"></i>
-        </button>
-    `;
-    
-    // Page numbers
-    for (let i = 0; i < totalPages; i++) {
-        if (i === 0 || i === totalPages - 1 || (i >= currentPage - 1 && i <= currentPage + 1)) {
+    if (window.transfersData && totalPages > 0) {
+        // Previous button (convert to 1-indexed for display, but use 0-indexed for function)
+        paginationHtml += `
+            <button onclick="changeTransfersPage(${currentPage - 1})" ${
+            currentPage === 0 ? 'disabled' : ''
+        } class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        `;
+        
+        // Page numbers - show up to 5 pages (1-indexed for display)
+        const maxVisiblePages = 5;
+        // Convert to 1-indexed for calculation
+        const currentPage1Indexed = currentPage + 1;
+        let startPage = Math.max(1, currentPage1Indexed - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+        
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        // Show page numbers (convert back to 0-indexed for function call)
+        for (let i = startPage; i <= endPage; i++) {
+            const pageIndex = i - 1; // Convert to 0-indexed
             paginationHtml += `
-                <button onclick="changeTransfersPage(${i})" 
-                    class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 ${
-                        i === currentPage
-                            ? 'bg-[#00AF00] text-white border-[#00AF00]'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }">
-                    ${i + 1}
+                <button onclick="changeTransfersPage(${pageIndex})" class="px-3 py-2 border ${
+                currentPage === pageIndex
+                    ? 'bg-[#00AF00] text-white border-[#00AF00]'
+                    : 'border-gray-300 text-gray-700'
+            } rounded-lg hover:bg-gray-50 transition-colors">
+                    ${i}
                 </button>
             `;
-        } else if (i === currentPage - 2 || i === currentPage + 2) {
-            paginationHtml += `<span class="px-3 py-2 text-gray-500">...</span>`;
         }
+        
+        // Next button
+        paginationHtml += `
+            <button onclick="changeTransfersPage(${currentPage + 1})" ${
+            currentPage >= totalPages - 1 ? 'disabled' : ''
+        } class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
     }
     
-    // Next button
-    paginationHtml += `
-        <button onclick="changeTransfersPage(${currentPage + 1})" 
-            ${currentPage >= totalPages - 1 ? 'disabled' : ''}
-            class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 ${
-                currentPage >= totalPages - 1 
-                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }">
-            <i class="fas fa-chevron-right"></i>
-        </button>
-    `;
-    
-    paginationHtml += '</div>';
+    paginationHtml += `</div>`;
     container.innerHTML = paginationHtml;
 }
 
@@ -587,7 +666,9 @@ async function handleTransferSearchButton() {
 async function handleTransferStatusFilterChange(event) {
     if (window.transfersData) {
         window.transfersData.filters = window.transfersData.filters || {};
-        window.transfersData.filters.status = event.target.value;
+        // Support both event object and direct value
+        const statusValue = event?.target?.value || event?.value || event;
+        window.transfersData.filters.status = statusValue;
         window.transfersData.currentPage = 0; // Reset to first page
         
         // Reload transfers if we have a selected inventory
@@ -601,6 +682,7 @@ async function handleTransferStatusFilterChange(event) {
 
 // Export functions globally
 window.updateTransfersUI = updateTransfersUI;
+window.updateTransfersPagination = updateTransfersPagination;
 window.handleTransferSearch = handleTransferSearch;
 window.handleTransferSearchButton = handleTransferSearchButton;
 window.handleTransferStatusFilterChange = handleTransferStatusFilterChange;

@@ -21,13 +21,33 @@ public interface SpringDataVerificationRepository extends JpaRepository<Verifica
     @Query("SELECT v FROM VerificationEntity v WHERE v.item.inventory.id = :inventoryId ORDER BY v.createdAt DESC")
     List<VerificationEntity> findLatestByInventory(@Param("inventoryId") Long inventoryId, Pageable pageable);
     
-    @Query("SELECT v FROM VerificationEntity v WHERE v.item.inventory.id = :inventoryId ORDER BY v.createdAt DESC")
+    @Query("SELECT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory WHERE i.inventory.id = :inventoryId ORDER BY v.id DESC")
     Page<VerificationEntity> findAllByInventoryId(@Param("inventoryId") Long inventoryId, Pageable pageable);
     
-    @Query("SELECT v FROM VerificationEntity v WHERE v.item.inventory.institution.id = :institutionId ORDER BY v.createdAt DESC")
+    @Query("SELECT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory inv WHERE inv.institution.id = :institutionId ORDER BY v.id DESC")
     Page<VerificationEntity> findAllByInstitutionId(@Param("institutionId") Long institutionId, Pageable pageable);
     
-    @Query("SELECT v FROM VerificationEntity v WHERE v.item.inventory.institution.regional.id = :regionalId ORDER BY v.createdAt DESC")
+    @Query("SELECT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory inv JOIN FETCH inv.institution inst WHERE inst.regional.id = :regionalId ORDER BY v.id DESC")
     Page<VerificationEntity> findAllByRegionalId(@Param("regionalId") Long regionalId, Pageable pageable);
+    
+    // Query for counting total verifications (without JOIN FETCH for pagination count)
+    @Query("SELECT COUNT(v) FROM VerificationEntity v")
+    long countAll();
+    
+    // Query for counting verifications by inventory
+    @Query("SELECT COUNT(v) FROM VerificationEntity v WHERE v.item.inventory.id = :inventoryId")
+    long countByInventoryId(@Param("inventoryId") Long inventoryId);
+    
+    // Query for counting verifications by institution
+    @Query("SELECT COUNT(v) FROM VerificationEntity v WHERE v.item.inventory.institution.id = :institutionId")
+    long countByInstitutionId(@Param("institutionId") Long institutionId);
+    
+    // Query for counting verifications by regional
+    @Query("SELECT COUNT(v) FROM VerificationEntity v WHERE v.item.inventory.institution.regional.id = :regionalId")
+    long countByRegionalId(@Param("regionalId") Long regionalId);
+    
+    // Query to get all verifications with JOIN FETCH for loading relationships
+    @Query("SELECT DISTINCT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory ORDER BY v.id DESC")
+    List<VerificationEntity> findAllWithJoins();
 }
 

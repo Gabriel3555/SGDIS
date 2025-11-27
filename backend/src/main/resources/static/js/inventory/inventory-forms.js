@@ -272,22 +272,71 @@ async function handleEditInventorySubmit(e) {
 function viewInventory(inventoryId) {
   const numericInventoryId =
     typeof inventoryId === "string" ? parseInt(inventoryId, 10) : inventoryId;
-  const inventory = inventoryData.inventories.find(
-    (i) => i && i.id === numericInventoryId
-  );
-
-  if (inventory) {
-    showViewInventoryModal(inventoryId);
-  } else {
-    showErrorToast(
-      "Inventario no encontrado",
-      "El inventario ya no existe en la lista. Puede que ya haya sido eliminado."
+  
+  // Get inventoryData from window if available
+  const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
+  
+  if (inventoryDataRef && inventoryDataRef.inventories) {
+    const inventory = inventoryDataRef.inventories.find(
+      (i) => i && i.id === numericInventoryId
     );
+
+    if (inventory) {
+      if (typeof window.showViewInventoryModal === 'function') {
+        window.showViewInventoryModal(inventoryId);
+      } else if (typeof showViewInventoryModal === 'function') {
+        showViewInventoryModal(inventoryId);
+      } else {
+        if (typeof window.showErrorToast === 'function') {
+          window.showErrorToast(
+            "Error",
+            "La función de visualización no está disponible. Por favor, recarga la página."
+          );
+        }
+      }
+    } else {
+      if (typeof window.showErrorToast === 'function') {
+        window.showErrorToast(
+          "Inventario no encontrado",
+          "El inventario ya no existe en la lista. Puede que ya haya sido eliminado."
+        );
+      }
+    }
+  } else {
+    // If inventoryData is not available, try to show modal directly
+    if (typeof window.showViewInventoryModal === 'function') {
+      window.showViewInventoryModal(inventoryId);
+    } else if (typeof showViewInventoryModal === 'function') {
+      showViewInventoryModal(inventoryId);
+    } else {
+      if (typeof window.showErrorToast === 'function') {
+        window.showErrorToast(
+          "Error",
+          "La función de visualización no está disponible. Por favor, recarga la página."
+        );
+      }
+    }
   }
 }
 
 function editInventory(inventoryId) {
-  showEditInventoryModal(inventoryId);
+  if (typeof window.showEditInventoryModal === 'function') {
+    window.showEditInventoryModal(inventoryId);
+  } else if (typeof showEditInventoryModal === 'function') {
+    showEditInventoryModal(inventoryId);
+  } else {
+    if (typeof window.showErrorToast === 'function') {
+      window.showErrorToast(
+        "Error",
+        "La función de edición no está disponible. Por favor, recarga la página."
+      );
+    } else if (typeof showErrorToast === 'function') {
+      showErrorToast(
+        "Error",
+        "La función de edición no está disponible. Por favor, recarga la página."
+      );
+    }
+  }
 }
 
 async function confirmDeleteInventory() {
@@ -346,7 +395,16 @@ function showInventoryAssignment(inventoryId) {
   );
 
   if (inventory) {
-    showAssignInventoryModal(inventoryId);
+    if (typeof window.showAssignInventoryModal === 'function') {
+      window.showAssignInventoryModal(inventoryId);
+    } else if (typeof showAssignInventoryModal === 'function') {
+      showAssignInventoryModal(inventoryId);
+    } else {
+      showErrorToast(
+        "Error",
+        "La función de asignación no está disponible. Por favor, recarga la página."
+      );
+    }
   } else {
     showErrorToast("Inventario no encontrado", "Inventario no encontrado");
   }
@@ -355,14 +413,47 @@ function showInventoryAssignment(inventoryId) {
 function showInventoryManagerAssignment(inventoryId) {
   const numericInventoryId =
     typeof inventoryId === "string" ? parseInt(inventoryId, 10) : inventoryId;
-  const inventory = inventoryData.inventories.find(
-    (i) => i && i.id === numericInventoryId
-  );
+  
+  // Get inventoryData from window if available
+  const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
+  
+  if (inventoryDataRef && inventoryDataRef.inventories) {
+    const inventory = inventoryDataRef.inventories.find(
+      (i) => i && i.id === numericInventoryId
+    );
 
-  if (inventory) {
-    showAssignManagerModal(inventoryId);
+    if (inventory) {
+      if (typeof window.showAssignManagerModal === 'function') {
+        window.showAssignManagerModal(inventoryId);
+      } else if (typeof showAssignManagerModal === 'function') {
+        showAssignManagerModal(inventoryId);
+      } else {
+        if (typeof window.showErrorToast === 'function') {
+          window.showErrorToast(
+            "Error",
+            "La función de asignación de rol no está disponible. Por favor, recarga la página."
+          );
+        }
+      }
+    } else {
+      if (typeof window.showErrorToast === 'function') {
+        window.showErrorToast("Inventario no encontrado", "Inventario no encontrado");
+      }
+    }
   } else {
-    showErrorToast("Inventario no encontrado", "Inventario no encontrado");
+    // If inventoryData is not available, try to show modal directly
+    if (typeof window.showAssignManagerModal === 'function') {
+      window.showAssignManagerModal(inventoryId);
+    } else if (typeof showAssignManagerModal === 'function') {
+      showAssignManagerModal(inventoryId);
+    } else {
+      if (typeof window.showErrorToast === 'function') {
+        window.showErrorToast(
+          "Error",
+          "La función de asignación de rol no está disponible. Por favor, recarga la página."
+        );
+      }
+    }
   }
 }
 
@@ -603,9 +694,23 @@ async function handleAssignManagerSubmit(e) {
 }
 
 // Export functions to make them available globally
-window.handleNewInventorySubmit = handleNewInventorySubmit;
-window.editInventory = editInventory;
-window.viewInventory = viewInventory;
-window.showInventoryAssignment = showInventoryAssignment;
-window.showInventoryManagerAssignment = showInventoryManagerAssignment;
-window.confirmDeleteInventory = confirmDeleteInventory;
+// Ensure functions are available immediately for onclick handlers
+if (typeof window !== 'undefined') {
+    window.handleNewInventorySubmit = handleNewInventorySubmit;
+    window.editInventory = editInventory;
+    window.viewInventory = viewInventory;
+    window.showInventoryAssignment = showInventoryAssignment;
+    window.showInventoryManagerAssignment = showInventoryManagerAssignment;
+    window.confirmDeleteInventory = confirmDeleteInventory;
+    
+    // Also make sure they're available as direct references
+    if (typeof window.viewInventory !== 'function') {
+        window.viewInventory = viewInventory;
+    }
+    if (typeof window.editInventory !== 'function') {
+        window.editInventory = editInventory;
+    }
+    if (typeof window.showInventoryManagerAssignment !== 'function') {
+        window.showInventoryManagerAssignment = showInventoryManagerAssignment;
+    }
+}

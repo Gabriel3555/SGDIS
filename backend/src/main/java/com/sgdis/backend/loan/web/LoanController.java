@@ -250,7 +250,7 @@ public class LoanController {
         } else if (inventoryId != null) {
             loans = loanRepository.findAllByInventoryId(inventoryId);
         } else {
-            loans = loanRepository.findAll();
+            loans = loanRepository.findAllWithJoins();
         }
 
         List<LoanResponse> loanResponses = loans.stream()

@@ -145,16 +145,29 @@ function updateVerificationTable() {
         return;
     }
 
-    const startIndex = (verificationData.currentPage - 1) * verificationData.itemsPerPage;
-    const endIndex = startIndex + verificationData.itemsPerPage;
-    const currentVerifications = verificationData.filteredVerifications.slice(startIndex, endIndex);
+    // If using backend pagination, use verifications directly (already paginated and sorted by backend)
+    // Otherwise, slice the filtered verifications for client-side pagination
+    let currentVerifications = verificationData.useBackendPagination
+        ? verificationData.verifications // Backend already sorts by ID descending
+        : verificationData.filteredVerifications.slice(
+            (verificationData.currentPage - 1) * verificationData.itemsPerPage,
+            verificationData.currentPage * verificationData.itemsPerPage
+          );
 
-    const tableRows = currentVerifications.map(verification => {
+    // Sort by ID descending (highest ID first) only for client-side pagination
+    if (!verificationData.useBackendPagination) {
+        currentVerifications = [...currentVerifications].sort((a, b) => {
+            const aId = a.id || 0;
+            const bId = b.id || 0;
+            return bId - aId; // Descending order
+        });
+    }
+
+    const sortedVerifications = currentVerifications;
+
+    const tableRows = sortedVerifications.map(verification => {
         return `
             <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4">
-                    <div class="font-semibold text-gray-800">${verification.id || '-'}</div>
-                </td>
                 <td class="px-6 py-4">
                     <div class="text-gray-800">${verification.licensePlate || verification.serialNumber || '-'}</div>
                     <div class="text-xs text-gray-500">${verification.licensePlate ? 'Placa' : (verification.serialNumber ? 'Serie' : '-')}</div>
@@ -204,7 +217,6 @@ function updateVerificationTable() {
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-200">
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Identificador</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventario</th>

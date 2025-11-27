@@ -1,7 +1,7 @@
 // Auditoría data state
 let auditoryData = {
     currentPage: 0,
-    pageSize: 10,
+    pageSize: 6,
     totalPages: 0,
     totalAuditories: 0,
     isLoading: false,
@@ -250,37 +250,91 @@ function displayAuditories(auditories) {
 
 // Update pagination controls
 function updatePagination() {
-    const paginationInfo = document.getElementById('paginationInfo');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    
-    if (paginationInfo) {
-        const start = (auditoryData.currentPage * auditoryData.pageSize) + 1;
-        const end = Math.min((auditoryData.currentPage + 1) * auditoryData.pageSize, auditoryData.totalAuditories);
-        paginationInfo.textContent = `Mostrando ${start}-${end} de ${auditoryData.totalAuditories} registros`;
+    const container = document.getElementById('paginationContainer');
+    if (!container) return;
+
+    const totalPages = auditoryData.totalPages || 0;
+    const currentPage = auditoryData.currentPage;
+    const totalElements = auditoryData.totalAuditories || 0;
+
+    // Calculate start and end items (convert to 1-indexed for display)
+    const currentPage1Indexed = currentPage + 1;
+    const startItem = totalElements > 0 ? (currentPage * auditoryData.pageSize) + 1 : 0;
+    const endItem = Math.min((currentPage + 1) * auditoryData.pageSize, totalElements);
+
+    let paginationHtml = `
+        <div class="text-sm text-gray-600">
+            Mostrando ${startItem}-${endItem} de ${totalElements} registro${totalElements !== 1 ? 's' : ''}
+        </div>
+        <div class="flex items-center gap-2 ml-auto">
+    `;
+
+    if (auditoryData && totalPages > 0) {
+        // Previous button
+        paginationHtml += `
+            <button onclick="changePage(${currentPage})" ${
+            currentPage === 0 ? 'disabled' : ''
+        } class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        `;
+
+        // Page numbers - show up to 5 pages (1-indexed for display)
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage1Indexed - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        // Show page numbers
+        for (let i = startPage; i <= endPage; i++) {
+            const pageIndex = i - 1; // Convert to 0-indexed for function call
+            paginationHtml += `
+                <button onclick="changePage(${pageIndex})" class="px-3 py-2 border ${
+                currentPage === pageIndex
+                    ? 'bg-[#00AF00] text-white border-[#00AF00]'
+                    : 'border-gray-300 text-gray-700'
+            } rounded-lg hover:bg-gray-50 transition-colors">
+                    ${i}
+                </button>
+            `;
+        }
+
+        // Next button
+        paginationHtml += `
+            <button onclick="changePage(${currentPage + 1})" ${
+            currentPage >= totalPages - 1 ? 'disabled' : ''
+        } class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
     }
-    
-    if (prevBtn) {
-        prevBtn.disabled = auditoryData.currentPage === 0;
-    }
-    
-    if (nextBtn) {
-        nextBtn.disabled = auditoryData.currentPage >= auditoryData.totalPages - 1;
+
+    paginationHtml += `</div>`;
+
+    container.innerHTML = paginationHtml;
+}
+
+// Navigation function
+function changePage(page) {
+    if (page >= 0 && page < auditoryData.totalPages) {
+        auditoryData.currentPage = page;
+        loadAuditories(page);
     }
 }
 
-// Navigation functions
+// Navigation functions (keep for backward compatibility)
 function previousPage() {
     if (auditoryData.currentPage > 0) {
-        auditoryData.currentPage--;
-        loadAuditories(auditoryData.currentPage);
+        changePage(auditoryData.currentPage - 1);
     }
 }
 
 function nextPage() {
     if (auditoryData.currentPage < auditoryData.totalPages - 1) {
-        auditoryData.currentPage++;
-        loadAuditories(auditoryData.currentPage);
+        changePage(auditoryData.currentPage + 1);
     }
 }
 
@@ -589,6 +643,15 @@ function applyFilters() {
     auditoryData.currentPage = 0;
     loadAuditories(0);
 }
+
+// Export functions globally
+window.changePage = changePage;
+window.previousPage = previousPage;
+window.nextPage = nextPage;
+window.loadAuditories = loadAuditories;
+window.applyFilters = applyFilters;
+window.onRegionalChange = onRegionalChange;
+window.onInstitutionChange = onInstitutionChange;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {

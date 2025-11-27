@@ -4,6 +4,7 @@
 let currentUserRegionalIdForLoans = null;
 let loansDataAdminRegional = {
     loans: [],
+    allLoans: [], // Store all loans from API before filtering and pagination
     filteredLoans: [],
     currentPage: 0,
     pageSize: 10,
@@ -154,8 +155,8 @@ async function loadLoansForAdminRegional(page = 0) {
             `;
         }
 
-        // Load loans from the regional
-        const response = await fetch(`/api/v1/loan/regional/${currentUserRegionalIdForLoans}?page=${page}&size=${loansDataAdminRegional.pageSize}`, {
+        // Load loans from the regional using the filter endpoint
+        const response = await fetch(`/api/v1/loan/filter?regionalId=${currentUserRegionalIdForLoans}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -164,16 +165,29 @@ async function loadLoansForAdminRegional(page = 0) {
         });
 
         if (response.ok) {
-            const data = await response.json();
+            const loans = await response.json();
             
-            // Update loans data
-            loansDataAdminRegional.loans = Array.isArray(data.content) ? data.content : [];
-            loansDataAdminRegional.totalElements = data.totalElements || 0;
-            loansDataAdminRegional.totalPages = data.totalPages || 0;
-            loansDataAdminRegional.currentPage = data.number || 0;
+            // The filter endpoint returns a simple list, not paginated
+            // Store all loans first
+            const allLoans = Array.isArray(loans) ? loans : [];
             
-            // Apply filters
+            // Store all loans in the data structure (before filtering)
+            loansDataAdminRegional.allLoans = allLoans;
+            
+            // Apply filters first (this will update filteredLoans)
+            loansDataAdminRegional.loans = allLoans;
             filterLoansForAdminRegional();
+            
+            // Now apply pagination to the filtered results
+            const filteredLoans = loansDataAdminRegional.filteredLoans || loansDataAdminRegional.loans;
+            loansDataAdminRegional.totalElements = filteredLoans.length;
+            loansDataAdminRegional.totalPages = Math.ceil(filteredLoans.length / loansDataAdminRegional.pageSize);
+            loansDataAdminRegional.currentPage = page;
+            
+            // Apply pagination manually to filtered results
+            const startIndex = page * loansDataAdminRegional.pageSize;
+            const endIndex = startIndex + loansDataAdminRegional.pageSize;
+            loansDataAdminRegional.loans = filteredLoans.slice(startIndex, endIndex);
             
             // Update window.loansData for compatibility with existing UI functions
             if (!window.loansData) {
@@ -221,7 +235,11 @@ async function loadLoansForAdminRegional(page = 0) {
  * Filter loans for admin regional
  */
 function filterLoansForAdminRegional() {
-    let filtered = [...loansDataAdminRegional.loans];
+    // Use allLoans if available, otherwise use loans
+    const sourceLoans = loansDataAdminRegional.allLoans.length > 0 
+        ? loansDataAdminRegional.allLoans 
+        : loansDataAdminRegional.loans;
+    let filtered = [...sourceLoans];
     
     // Filter by status
     const statusFilter = loansDataAdminRegional.filters.status;
@@ -258,9 +276,21 @@ function filterLoansForAdminRegional() {
     // Update filtered loans
     loansDataAdminRegional.filteredLoans = filtered;
     
-    // Update pagination
+    // Update pagination based on filtered results
+    loansDataAdminRegional.totalElements = filtered.length;
     loansDataAdminRegional.totalPages = Math.ceil(filtered.length / loansDataAdminRegional.pageSize);
-    loansDataAdminRegional.currentPage = 0; // Reset to first page after filtering
+    
+    // Apply pagination to filtered results
+    const currentPage = loansDataAdminRegional.currentPage;
+    const startIndex = currentPage * loansDataAdminRegional.pageSize;
+    const endIndex = startIndex + loansDataAdminRegional.pageSize;
+    loansDataAdminRegional.loans = filtered.slice(startIndex, endIndex);
+    
+    // If current page is beyond available pages, reset to first page
+    if (currentPage >= loansDataAdminRegional.totalPages && loansDataAdminRegional.totalPages > 0) {
+        loansDataAdminRegional.currentPage = 0;
+        loansDataAdminRegional.loans = filtered.slice(0, loansDataAdminRegional.pageSize);
+    }
 }
 
 /**

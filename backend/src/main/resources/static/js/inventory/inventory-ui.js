@@ -157,19 +157,6 @@ async function updateInventoryStats() {
             <p class="text-emerald-600 text-sm font-medium">Inventarios activos</p>
         </div>
 
-        ${isSuperAdmin ? `<div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Inactivos</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${inactiveInventories}</h3>
-                </div>
-                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-red-600 text-sm font-medium">Inventarios inactivos</p>
-        </div>` : ''}
-
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
@@ -357,9 +344,7 @@ function initializeInventoryFilterSelects() {
 async function loadRegionalInstitutionsForAdminRegional() {
   try {
     const currentUser = window.currentUserData || {};
-    console.log('Current user data:', currentUser);
     const institutionName = currentUser.institution;
-    console.log('Institution name from user data:', institutionName);
     
     if (!institutionName) {
       console.error('No institution name found in user data. Waiting for user data to load...');
@@ -427,18 +412,10 @@ async function loadRegionalInstitutionsForAdminRegional() {
     }
 
     // Small delay to ensure select element is created in DOM
-    console.log('loadRegionalInstitutionsForAdminRegional: About to call loadInstitutionsForFilter');
-    console.log('userRegionalId:', userRegionalId);
-    console.log('loadInstitutionsForFilter exists?', typeof window.loadInstitutionsForFilter);
-    
     setTimeout(() => {
-      console.log('loadRegionalInstitutionsForAdminRegional: Inside setTimeout');
       const selectCheck = document.getElementById("inventoryInstitutionFilterSelect");
-      console.log('Checking if select exists:', selectCheck);
-      console.log('Select tagName:', selectCheck ? selectCheck.tagName : 'null');
       
       if (window.loadInstitutionsForFilter) {
-        console.log('Calling loadInstitutionsForFilter with regionalId:', userRegionalId);
         window.loadInstitutionsForFilter(userRegionalId);
         
         // Add click listener to print regional and centers in console after dropdown is loaded
@@ -450,9 +427,6 @@ async function loadRegionalInstitutionsForAdminRegional() {
               institutionSelect.addEventListener("click", (event) => {
                 // Print regional in console
                 if (window.currentUserRegional) {
-                  console.log('Tu Regional:', window.currentUserRegional);
-                } else {
-                  console.log('Regional ID:', userRegionalId);
                 }
                 
                 // Print centers (institutions) in console
@@ -463,9 +437,7 @@ async function loadRegionalInstitutionsForAdminRegional() {
                   const options = Array.from(institutionSelect.options).filter(opt => opt.value !== '');
                   if (options.length > 0) {
                     const centers = options.map(opt => ({ label: opt.textContent, value: opt.value }));
-                    console.log('Tus Centros:', centers);
                   } else {
-                    console.log('No se encontraron centros cargados');
                   }
                 }
               }, true);
@@ -475,10 +447,8 @@ async function loadRegionalInstitutionsForAdminRegional() {
               if (trigger) {
                 trigger.addEventListener("click", (event) => {
                   if (window.currentUserRegional) {
-                    console.log('Tu Regional:', window.currentUserRegional);
                   }
                   if (window.currentUserInstitutions) {
-                    console.log('Tus Centros:', window.currentUserInstitutions);
                   }
                 }, true);
               }
@@ -982,22 +952,28 @@ function updateInventoryTable() {
                     </td>
                     <td class="py-3 px-4">
                         <div class="flex items-center justify-center gap-2">
-                            <button onclick="viewInventory('${
+                            <button onclick="if(typeof window.viewInventory === 'function') { window.viewInventory('${
                               inventory.id
-                            }')" class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Ver detalles">
+                            }'); } else if(typeof viewInventory === 'function') { viewInventory('${
+                              inventory.id
+                            }'); }" class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" title="Ver detalles">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button onclick="editInventory('${
+                            <button onclick="if(typeof window.editInventory === 'function') { window.editInventory('${
                               inventory.id
-                            }')" class="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg transition-colors" title="Editar inventario">
+                            }'); } else if(typeof editInventory === 'function') { editInventory('${
+                              inventory.id
+                            }'); }" class="p-2 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/30 rounded-lg transition-colors" title="Editar inventario">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="showInventoryManagerAssignment('${
+                            <button onclick="if(typeof window.showInventoryManagerAssignment === 'function') { window.showInventoryManagerAssignment('${
                               inventory.id
-                            }')" class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="Asignar Rol">
+                            }'); } else if(typeof showInventoryManagerAssignment === 'function') { showInventoryManagerAssignment('${
+                              inventory.id
+                            }'); }" class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="Asignar Rol">
                                 <i class="fas fa-user-tie"></i>
                             </button>
-                            <button onclick="showInventoryTreeModal('${
+                            <button onclick="if(typeof window.showInventoryTreeModal === 'function') { window.showInventoryTreeModal('${
                               inventory.id
                             }', '${(inventory.name || "").replace(
         /'/g,
@@ -1005,12 +981,22 @@ function updateInventoryTable() {
       )}', '${(inventory.imgUrl || "").replace(
         /'/g,
         "\\'"
-      )}')" class="p-2 text-[#00AF00] hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="Ver jerarquía">
+      )}'); } else if(typeof showInventoryTreeModal === 'function') { showInventoryTreeModal('${
+                              inventory.id
+                            }', '${(inventory.name || "").replace(
+        /'/g,
+        "\\'"
+      )}', '${(inventory.imgUrl || "").replace(
+        /'/g,
+        "\\'"
+      )}'); }" class="p-2 text-[#00AF00] hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" title="Ver jerarquía">
                                 <i class="fas fa-sitemap text-[#00AF00]"></i>
                             </button>
-                            <button onclick="showDeleteInventoryModal('${
+                            <button onclick="if(typeof window.showDeleteInventoryModal === 'function') { window.showDeleteInventoryModal('${
                               inventory.id
-                            }')" class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Eliminar inventario">
+                            }'); } else if(typeof showDeleteInventoryModal === 'function') { showDeleteInventoryModal('${
+                              inventory.id
+                            }'); }" class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" title="Eliminar inventario">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -1227,22 +1213,28 @@ function updateInventoryCards() {
                     <div class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
                         <small class="text-gray-500 dark:text-gray-400">Inventario registrado</small>
                         <div class="flex gap-2">
-                            <button onclick="viewInventory('${
+                            <button onclick="if(typeof window.viewInventory === 'function') { window.viewInventory('${
                               inventory.id
-                            }')" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors" title="Ver detalles">
+                            }'); } else if(typeof viewInventory === 'function') { viewInventory('${
+                              inventory.id
+                            }'); }" class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors" title="Ver detalles">
                                 <i class="fas fa-eye text-lg"></i>
                             </button>
-                            <button onclick="editInventory('${
+                            <button onclick="if(typeof window.editInventory === 'function') { window.editInventory('${
                               inventory.id
-                            }')" class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 transition-colors" title="Editar inventario">
+                            }'); } else if(typeof editInventory === 'function') { editInventory('${
+                              inventory.id
+                            }'); }" class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 transition-colors" title="Editar inventario">
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
-                            <button onclick="showInventoryManagerAssignment('${
+                            <button onclick="if(typeof window.showInventoryManagerAssignment === 'function') { window.showInventoryManagerAssignment('${
                               inventory.id
-                            }')" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors" title="Asignar Rol">
+                            }'); } else if(typeof showInventoryManagerAssignment === 'function') { showInventoryManagerAssignment('${
+                              inventory.id
+                            }'); }" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors" title="Asignar Rol">
                                 <i class="fas fa-user-tie text-lg"></i>
                            </button>
-                           <button onclick="showInventoryTreeModal('${
+                           <button onclick="if(typeof window.showInventoryTreeModal === 'function') { window.showInventoryTreeModal('${
                              inventory.id
                             }', '${(inventory.name || "").replace(
         /'/g,
@@ -1250,12 +1242,22 @@ function updateInventoryCards() {
       )}', '${(inventory.imgUrl || "").replace(
         /'/g,
         "\\'"
-      )}')" class="text-[#00AF00] hover:text-green-800 dark:hover:text-green-600 transition-colors" title="Ver jerarquía">
+      )}'); } else if(typeof showInventoryTreeModal === 'function') { showInventoryTreeModal('${
+                             inventory.id
+                            }', '${(inventory.name || "").replace(
+        /'/g,
+        "\\'"
+      )}', '${(inventory.imgUrl || "").replace(
+        /'/g,
+        "\\'"
+      )}'); }" class="text-[#00AF00] hover:text-green-800 dark:hover:text-green-600 transition-colors" title="Ver jerarquía">
                                 <i class="fas fa-sitemap text-lg text-[#00AF00]"></i>
                            </button>
-                           <button onclick="showDeleteInventoryModal('${
+                           <button onclick="if(typeof window.showDeleteInventoryModal === 'function') { window.showDeleteInventoryModal('${
                              inventory.id
-                           }')" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors" title="Eliminar inventario">
+                           }'); } else if(typeof showDeleteInventoryModal === 'function') { showDeleteInventoryModal('${
+                             inventory.id
+                           }'); }" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors" title="Eliminar inventario">
                                <i class="fas fa-trash text-lg"></i>
                             </button>
                         </div>
