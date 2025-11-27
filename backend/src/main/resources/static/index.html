@@ -1221,9 +1221,6 @@
                         if (entry.isIntersecting) {
                             // Agregar clase de animación
                             entry.target.classList.add('animate-in');
-
-                            // Log para debugging (puedes remover esto después)
-                            console.log('Animando elemento:', entry.target.className);
                         }
                     });
                 };
@@ -1235,8 +1232,6 @@
                 const animatedElements = document.querySelectorAll(
                     '.scroll-animate, .scroll-animate-stagger, .scroll-fade-left, .scroll-fade-right'
                 );
-
-                console.log('Elementos encontrados para animar:', animatedElements.length);
 
                 animatedElements.forEach(element => {
                     observer.observe(element);

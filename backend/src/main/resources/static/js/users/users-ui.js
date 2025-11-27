@@ -54,6 +54,8 @@ function updateUserStats() {
   const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
   const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
                          (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+  const isWarehouse = currentRole === 'WAREHOUSE' ||
+                     (window.location.pathname && window.location.pathname.includes('/warehouse'));
   const isSuperAdmin = currentRole === 'SUPERADMIN';
 
   // Use statistics from endpoint if available (for SUPERADMIN), otherwise calculate from current page
@@ -93,7 +95,7 @@ function updateUserStats() {
   
   container.innerHTML = `
 
-        ${!isAdminInstitution ? `<div class="stat-card">
+        ${!isAdminInstitution && !isWarehouse ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Admin Institución</p>
@@ -106,7 +108,7 @@ function updateUserStats() {
             <p class="text-purple-600 text-sm font-medium">Administradores de institución</p>
         </div>` : ''}
 
-        ${!isAdminInstitution ? `<div class="stat-card">
+        ${!isAdminInstitution && !isWarehouse ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Admin Regional</p>
@@ -523,18 +525,25 @@ function updateUsersTable() {
     window.usersData.selectedRole !== "all" ||
     window.usersData.selectedStatus !== "all";
 
-  // Get current user role and ID to filter out current user for SUPERADMIN and ADMIN_INSTITUTION
+  // Get current user role and ID to filter out current user for SUPERADMIN, ADMIN_INSTITUTION, and WAREHOUSE
   const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
   const currentUserId = window.usersData ? window.usersData.currentLoggedInUserId : null;
   const isSuperAdmin = (currentRole === 'SUPERADMIN') || 
                       (window.location.pathname && window.location.pathname.includes('/superadmin'));
-  const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION') && currentUserId;
+  const isWarehouse = (currentRole === 'WAREHOUSE') ||
+                     (window.location.pathname && window.location.pathname.includes('/warehouse'));
+  const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION' || currentRole === 'WAREHOUSE') && currentUserId;
 
   // Filter out current user and SUPERADMIN users if needed
   let usersToDisplay = window.usersData.filteredUsers;
   
   // For superadmin, exclude all SUPERADMIN users
   if (isSuperAdmin) {
+    usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+  }
+  
+  // For warehouse, exclude all SUPERADMIN users (only in warehouse/users view)
+  if (isWarehouse) {
     usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
   }
   
@@ -946,7 +955,10 @@ function initializeFilterSelects() {
   if (!window.filterRoleSelect) {
     const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
     const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
-    const isAdminRegional = currentRole === 'ADMIN_REGIONAL';
+    const isAdminRegional = currentRole === 'ADMIN_REGIONAL' ||
+                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    const isWarehouse = currentRole === 'WAREHOUSE' ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
     
     // Build role options based on user role
     let roleOptions = [
@@ -962,6 +974,12 @@ function initializeFilterSelects() {
       );
     } else if (isAdminInstitution) {
       // Admin Institution can see limited roles
+      roleOptions.push(
+        { value: "WAREHOUSE", label: "Almacén" },
+        { value: "USER", label: "Usuario" }
+      );
+    } else if (isWarehouse) {
+      // Warehouse can only see Warehouse and User roles
       roleOptions.push(
         { value: "WAREHOUSE", label: "Almacén" },
         { value: "USER", label: "Usuario" }
@@ -1300,13 +1318,21 @@ function updateUsersCards() {
     window.usersData.selectedRole !== "all" ||
     window.usersData.selectedStatus !== "all";
 
-  // Get current user role and ID to filter out current user for SUPERADMIN and ADMIN_INSTITUTION
+  // Get current user role and ID to filter out current user for SUPERADMIN, ADMIN_INSTITUTION, and WAREHOUSE
   const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
   const currentUserId = window.usersData ? window.usersData.currentLoggedInUserId : null;
-  const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION') && currentUserId;
+  const isWarehouse = (currentRole === 'WAREHOUSE') ||
+                     (window.location.pathname && window.location.pathname.includes('/warehouse'));
+  const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION' || currentRole === 'WAREHOUSE') && currentUserId;
 
-  // Filter out current user if needed
+  // Filter out current user and SUPERADMIN users if needed
   let usersToDisplay = window.usersData.filteredUsers;
+  
+  // For warehouse, exclude all SUPERADMIN users (only in warehouse/users view)
+  if (isWarehouse) {
+    usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+  }
+  
   if (shouldExcludeCurrentUser) {
     usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
     // Limit to itemsPerPage to ensure consistent page size

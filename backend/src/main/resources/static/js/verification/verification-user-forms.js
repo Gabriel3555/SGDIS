@@ -124,13 +124,7 @@ window.handleNewVerificationFileChange = function(event) {
     
     if (!file) return;
     
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
-    if (file.size > maxSize) {
-        showInventoryErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
-        event.target.value = '';
-        return;
-    }
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe (under 5MB limit)
     
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -139,22 +133,142 @@ window.handleNewVerificationFileChange = function(event) {
         return;
     }
     
-    newVerificationEvidenceFile = file;
+    // If file is small enough, use it directly
+    if (file.size <= MAX_FILE_SIZE) {
+        newVerificationEvidenceFile = file;
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('newVerificationEvidencePreview');
+            const image = document.getElementById('newVerificationEvidenceImage');
+            const buttons = document.getElementById('newVerificationEvidenceButtons');
+            
+            if (image) image.src = e.target.result;
+            if (preview) preview.classList.remove('hidden');
+            if (buttons) buttons.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+        
+        showInventorySuccessToast('Imagen seleccionada', file.name);
+        return;
+    }
     
-    // Show preview
+    // File is too large, compress it
     const reader = new FileReader();
     reader.onload = function(e) {
-        const preview = document.getElementById('newVerificationEvidencePreview');
-        const image = document.getElementById('newVerificationEvidenceImage');
-        const buttons = document.getElementById('newVerificationEvidenceButtons');
-        
-        if (image) image.src = e.target.result;
-        if (preview) preview.classList.remove('hidden');
-        if (buttons) buttons.classList.add('hidden');
+        const img = new Image();
+        img.onload = function() {
+            const MAX_WIDTH = 1600;
+            const MAX_HEIGHT = 1600;
+            let currentWidth = img.width;
+            let currentHeight = img.height;
+            
+            // Reduce dimensions immediately if too large
+            if (currentWidth > MAX_WIDTH || currentHeight > MAX_HEIGHT) {
+                if (currentWidth > currentHeight) {
+                    currentHeight = Math.round((currentHeight * MAX_WIDTH) / currentWidth);
+                    currentWidth = MAX_WIDTH;
+                } else {
+                    currentWidth = Math.round((currentWidth * MAX_HEIGHT) / currentHeight);
+                    currentHeight = MAX_HEIGHT;
+                }
+            }
+            
+            // Function to compress with aggressive quality and size reduction
+            const compressImage = function(quality, width, height, attempt = 0) {
+                // Limit attempts to prevent infinite loop
+                if (attempt > 15) {
+                    showInventoryErrorToast('Imagen muy pesada', 'La imagen es demasiado pesada incluso después de comprimir. Por favor, intenta con otra imagen.');
+                    event.target.value = '';
+                    return;
+                }
+                
+                // Create canvas with current dimensions
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                canvas.toBlob(function(blob) {
+                    if (!blob) {
+                        showInventoryErrorToast('Error', 'No se pudo procesar la imagen');
+                        event.target.value = '';
+                        return;
+                    }
+                    
+                    // If file is within limit, use it
+                    if (blob.size <= MAX_FILE_SIZE) {
+                        const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+                        newVerificationEvidenceFile = compressedFile;
+                        
+                        // Show preview
+                        const previewReader = new FileReader();
+                        previewReader.onload = function(e) {
+                            const preview = document.getElementById('newVerificationEvidencePreview');
+                            const image = document.getElementById('newVerificationEvidenceImage');
+                            const buttons = document.getElementById('newVerificationEvidenceButtons');
+                            
+                            if (image) image.src = e.target.result;
+                            if (preview) preview.classList.remove('hidden');
+                            if (buttons) buttons.classList.add('hidden');
+                        };
+                        previewReader.readAsDataURL(compressedFile);
+                        
+                        showInventorySuccessToast('Imagen seleccionada y comprimida', file.name);
+                        return;
+                    }
+                    
+                    // File is still too large, try with lower quality first
+                    if (quality > 0.4) {
+                        // Reduce quality more aggressively
+                        compressImage(Math.max(0.4, quality - 0.15), width, height, attempt + 1);
+                        return;
+                    }
+                    
+                    // Quality is already low, try reducing dimensions
+                    if (width > 800 || height > 800) {
+                        const newWidth = Math.floor(width * 0.7); // Reduce 30% at a time
+                        const newHeight = Math.floor(height * 0.7);
+                        compressImage(0.5, newWidth, newHeight, attempt + 1);
+                        return;
+                    }
+                    
+                    // If still too large at small dimensions, try even lower quality
+                    if (quality > 0.3) {
+                        compressImage(0.3, width, height, attempt + 1);
+                        return;
+                    }
+                    
+                    // Last resort: reduce dimensions even more
+                    if (width > 600 || height > 600) {
+                        const newWidth = Math.floor(width * 0.6);
+                        const newHeight = Math.floor(height * 0.6);
+                        compressImage(0.3, newWidth, newHeight, attempt + 1);
+                        return;
+                    }
+                    
+                    // Can't compress more, show error
+                    showInventoryErrorToast('Imagen muy pesada', 'La imagen es demasiado pesada incluso después de comprimir. Por favor, intenta con otra imagen.');
+                    event.target.value = '';
+                }, 'image/jpeg', quality);
+            };
+            
+            // Start compression with lower initial quality (0.6)
+            compressImage(0.6, currentWidth, currentHeight, 0);
+        };
+        img.onerror = function() {
+            showInventoryErrorToast('Error', 'No se pudo cargar la imagen');
+            event.target.value = '';
+        };
+        img.src = e.target.result;
+    };
+    reader.onerror = function() {
+        showInventoryErrorToast('Error', 'No se pudo leer el archivo');
+        event.target.value = '';
     };
     reader.readAsDataURL(file);
-    
-    showInventorySuccessToast('Imagen seleccionada', file.name);
 };
 
 // Clear evidence
@@ -214,42 +328,113 @@ window.captureNewVerificationPhoto = function() {
     
     if (!video || !canvas) return;
     
-    // Set canvas size to video size
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe (under 5MB limit)
+    const MAX_WIDTH = 1600; // Start with smaller dimensions
+    const MAX_HEIGHT = 1600;
     
-    // Draw video frame to canvas
+    // Calculate initial dimensions (reduce from start)
+    let currentWidth = video.videoWidth;
+    let currentHeight = video.videoHeight;
+    
+    // Reduce dimensions immediately if too large
+    if (currentWidth > MAX_WIDTH || currentHeight > MAX_HEIGHT) {
+        if (currentWidth > currentHeight) {
+            currentHeight = Math.round((currentHeight * MAX_WIDTH) / currentWidth);
+            currentWidth = MAX_WIDTH;
+        } else {
+            currentWidth = Math.round((currentWidth * MAX_HEIGHT) / currentHeight);
+            currentHeight = MAX_HEIGHT;
+        }
+    }
+    
+    // Set canvas size to reduced dimensions
+    canvas.width = currentWidth;
+    canvas.height = currentHeight;
+    
+    // Draw video frame to canvas (already scaled down)
     const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.drawImage(video, 0, 0, currentWidth, currentHeight);
     
-    // Convert canvas to blob
-    canvas.toBlob(function(blob) {
-        if (!blob) {
-            showInventoryErrorToast('Error', 'No se pudo capturar la foto');
+    // Function to compress with aggressive quality reduction
+    const compressImage = function(quality, width, height, attempt = 0) {
+        // Limit attempts to prevent infinite loop
+        if (attempt > 15) {
+            showInventoryErrorToast('Imagen muy pesada', 'La imagen es demasiado pesada incluso después de comprimir. Por favor, intenta con otra foto o reduce la resolución de la cámara.');
+            closeNewVerificationCamera();
             return;
         }
         
-        // Create file from blob
-        const file = new File([blob], `evidencia_${Date.now()}.jpg`, { type: 'image/jpeg' });
-        newVerificationEvidenceFile = file;
+        // Set canvas size
+        canvas.width = width;
+        canvas.height = height;
+        context.drawImage(video, 0, 0, width, height);
         
-        // Show preview
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const preview = document.getElementById('newVerificationEvidencePreview');
-            const image = document.getElementById('newVerificationEvidenceImage');
-            const buttons = document.getElementById('newVerificationEvidenceButtons');
+        canvas.toBlob(function(blob) {
+            if (!blob) {
+                showInventoryErrorToast('Error', 'No se pudo capturar la foto');
+                return;
+            }
             
-            if (image) image.src = e.target.result;
-            if (preview) preview.classList.remove('hidden');
-            if (buttons) buttons.classList.add('hidden');
-        };
-        reader.readAsDataURL(file);
-        
-        closeNewVerificationCamera();
-        showInventorySuccessToast('Foto capturada', 'Foto capturada correctamente');
-        
-    }, 'image/jpeg', 0.9);
+            // If file is within limit, use it
+            if (blob.size <= MAX_FILE_SIZE) {
+                const file = new File([blob], `evidencia_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                newVerificationEvidenceFile = file;
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('newVerificationEvidencePreview');
+                    const image = document.getElementById('newVerificationEvidenceImage');
+                    const buttons = document.getElementById('newVerificationEvidenceButtons');
+                    
+                    if (image) image.src = e.target.result;
+                    if (preview) preview.classList.remove('hidden');
+                    if (buttons) buttons.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+                
+                closeNewVerificationCamera();
+                showInventorySuccessToast('Foto capturada', 'Foto capturada y comprimida correctamente');
+                return;
+            }
+            
+            // File is still too large, try with lower quality first
+            if (quality > 0.4) {
+                // Reduce quality more aggressively
+                compressImage(Math.max(0.4, quality - 0.15), width, height, attempt + 1);
+                return;
+            }
+            
+            // Quality is already low, try reducing dimensions
+            if (width > 800 || height > 800) {
+                const newWidth = Math.floor(width * 0.7); // Reduce 30% at a time
+                const newHeight = Math.floor(height * 0.7);
+                compressImage(0.5, newWidth, newHeight, attempt + 1);
+                return;
+            }
+            
+            // If still too large at small dimensions, try even lower quality
+            if (quality > 0.3) {
+                compressImage(0.3, width, height, attempt + 1);
+                return;
+            }
+            
+            // Last resort: reduce dimensions even more
+            if (width > 600 || height > 600) {
+                const newWidth = Math.floor(width * 0.6);
+                const newHeight = Math.floor(height * 0.6);
+                compressImage(0.3, newWidth, newHeight, attempt + 1);
+                return;
+            }
+            
+            // Can't compress more, show error
+            showInventoryErrorToast('Imagen muy pesada', 'La imagen es demasiado pesada incluso después de comprimir. Por favor, intenta con otra foto o reduce la resolución de la cámara.');
+            closeNewVerificationCamera();
+        }, 'image/jpeg', quality);
+    };
+    
+    // Start compression with lower initial quality (0.6 instead of 0.8)
+    compressImage(0.6, currentWidth, currentHeight, 0);
 };
 
 // Show Upload Evidence Modal
@@ -281,18 +466,123 @@ window.handleEvidenceFileChange = function(event) {
     const file = event.target.files[0];
     const fileNameDisplay = document.getElementById('evidenceFileName');
     
-    if (file) {
-        const fileSize = file.size / 1024 / 1024; // Convert to MB
-        if (fileSize > 5) {
-            showInventoryErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
+    if (!file) {
+        if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+        return;
+    }
+    
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe (under 5MB limit)
+    
+    // For PDF files, just validate size (can't compress PDFs easily)
+    if (file.type === 'application/pdf') {
+        if (file.size > MAX_FILE_SIZE) {
+            showInventoryErrorToast('Archivo muy grande', 'El archivo PDF no debe superar 5MB');
             event.target.value = '';
             if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
             return;
         }
-        
         if (fileNameDisplay) fileNameDisplay.textContent = file.name;
-    } else {
-        if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+        return;
     }
+    
+    // For images, compress if needed
+    if (!file.type.startsWith('image/')) {
+        showInventoryErrorToast('Tipo de archivo inválido', 'Solo se permiten imágenes o PDFs');
+        event.target.value = '';
+        if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+        return;
+    }
+    
+    // If image is small enough, use it directly
+    if (file.size <= MAX_FILE_SIZE) {
+        if (fileNameDisplay) fileNameDisplay.textContent = file.name;
+        return;
+    }
+    
+    // Image is too large, compress it
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            let currentWidth = img.width;
+            let currentHeight = img.height;
+            
+            // Function to compress with progressive quality and size reduction
+            const compressImage = function(quality, width, height, attempt = 0) {
+                // Limit attempts to prevent infinite loop
+                if (attempt > 10) {
+                    showInventoryErrorToast('Imagen muy pesada', 'La imagen es demasiado pesada incluso después de comprimir. Por favor, intenta con otra imagen.');
+                    event.target.value = '';
+                    if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+                    return;
+                }
+                
+                // Create canvas with current dimensions
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                canvas.toBlob(function(blob) {
+                    if (!blob) {
+                        showInventoryErrorToast('Error', 'No se pudo procesar la imagen');
+                        event.target.value = '';
+                        if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+                        return;
+                    }
+                    
+                    // If file is within limit, replace the file input
+                    if (blob.size <= MAX_FILE_SIZE) {
+                        const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+                        
+                        // Create a new FileList with the compressed file
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(compressedFile);
+                        event.target.files = dataTransfer.files;
+                        
+                        if (fileNameDisplay) fileNameDisplay.textContent = file.name + ' (comprimida)';
+                        showInventorySuccessToast('Imagen comprimida', 'La imagen se comprimió automáticamente');
+                        return;
+                    }
+                    
+                    // File is still too large, try with lower quality
+                    if (quality > 0.3) {
+                        // Reduce quality
+                        compressImage(Math.max(0.3, quality - 0.1), width, height, attempt + 1);
+                        return;
+                    }
+                    
+                    // Quality is already at minimum, try reducing dimensions
+                    if (width > 640 || height > 640) {
+                        const newWidth = Math.floor(width * 0.8);
+                        const newHeight = Math.floor(height * 0.8);
+                        compressImage(0.5, newWidth, newHeight, attempt + 1);
+                        return;
+                    }
+                    
+                    // Can't compress more, show error
+                    showInventoryErrorToast('Imagen muy pesada', 'La imagen es demasiado pesada incluso después de comprimir. Por favor, intenta con otra imagen.');
+                    event.target.value = '';
+                    if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+                }, 'image/jpeg', quality);
+            };
+            
+            // Start compression with initial quality of 0.8
+            compressImage(0.8, currentWidth, currentHeight, 0);
+        };
+        img.onerror = function() {
+            showInventoryErrorToast('Error', 'No se pudo cargar la imagen');
+            event.target.value = '';
+            if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+        };
+        img.src = e.target.result;
+    };
+    reader.onerror = function() {
+        showInventoryErrorToast('Error', 'No se pudo leer el archivo');
+        event.target.value = '';
+        if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+    };
+    reader.readAsDataURL(file);
 };
 

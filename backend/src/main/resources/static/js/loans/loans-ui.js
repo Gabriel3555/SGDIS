@@ -85,8 +85,6 @@ function updateLoansTable() {
         return;
     }
 
-    console.log('updateLoansTable called, isLoading:', loansData.isLoading, 'filteredLoans:', loansData.filteredLoans?.length);
-
     if (loansData.isLoading) {
         container.innerHTML = `
             <div class="flex items-center justify-center py-12">
@@ -107,8 +105,6 @@ function updateLoansTable() {
         `;
         return;
     }
-    
-    console.log('Rendering', loansData.filteredLoans.length, 'loans in table');
 
     const startIndex = (loansData.currentPage - 1) * loansData.itemsPerPage;
     const endIndex = startIndex + loansData.itemsPerPage;
@@ -722,7 +718,6 @@ function updatePagination() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOMContentLoaded - Initializing loans page');
     // Initialize custom selects
     initializeCustomSelects();
     
@@ -732,7 +727,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load data after a small delay to ensure all scripts are loaded
     setTimeout(() => {
         if (typeof window.loadLoansData === 'function') {
-            console.log('Calling loadLoansData()');
             window.loadLoansData();
         } else {
             console.error('loadLoansData function not available');

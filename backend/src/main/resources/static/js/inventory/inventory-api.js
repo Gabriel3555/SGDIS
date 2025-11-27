@@ -912,17 +912,12 @@ async function loadRegionalsForFilter() {
 
 // Helper function to populate native select with institutions
 function populateSelectWithInstitutions(selectElement, institutions, currentInstitution) {
-    console.log('populateSelectWithInstitutions called');
-    console.log('Select element:', selectElement);
-    console.log('Institutions to add:', institutions);
-    console.log('Current options count:', selectElement.options.length);
     
     // Clear existing options except the first one (which should be "Todos los centros")
     while (selectElement.options.length > 1) {
         selectElement.remove(1);
     }
     
-    console.log('After clearing, options count:', selectElement.options.length);
     
     // Add institutions as options
     if (institutions && Array.isArray(institutions) && institutions.length > 0) {
@@ -931,11 +926,8 @@ function populateSelectWithInstitutions(selectElement, institutions, currentInst
             option.value = institution.id ? institution.id.toString() : '';
             option.textContent = institution.name || `Institución ${institution.id || index}`;
             selectElement.appendChild(option);
-            console.log(`Added option ${index + 1}:`, option.value, option.textContent);
         });
         
-        console.log(`Total options in select after adding: ${selectElement.options.length}`);
-        console.log(`Successfully added ${institutions.length} institutions to native select`);
     } else {
         console.warn('No institutions to add or institutions array is empty');
     }
@@ -948,13 +940,9 @@ function populateSelectWithInstitutions(selectElement, institutions, currentInst
 
 // Load institutions for filter dropdown based on selected regional (super admin only)
 async function loadInstitutionsForFilter(regionalId) {
-    console.log('=== loadInstitutionsForFilter called ===');
-    console.log('regionalId:', regionalId);
-    
     // Only run on inventory page, not on items page
     const path = window.location.pathname || '';
     if (path.includes('/items')) {
-        console.log('Skipping - on items page');
         return; // Don't run on items page
     }
     
@@ -968,51 +956,33 @@ async function loadInstitutionsForFilter(regionalId) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        console.log('Fetching institutions from API...');
         const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
             method: 'GET',
             headers: headers
         });
 
-        console.log('API response status:', response.status);
-
         if (response.ok) {
             const institutions = await response.json();
-            console.log('Institutions received:', institutions);
-            console.log('Institutions type:', typeof institutions);
-            console.log('Is array?', Array.isArray(institutions));
-            console.log('Institutions length:', institutions ? institutions.length : 0);
             
             // Safely get inventoryData
             const inventoryDataRef = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : null);
             const currentInstitution = inventoryDataRef?.selectedInstitution || '';
             
-            // Store institutions globally for console logging
+            // Store institutions globally
             window.currentUserInstitutions = institutions;
             
-            console.log('About to check if institutions array is valid...');
             if (institutions && Array.isArray(institutions) && institutions.length > 0) {
-                console.log('Institutions array is valid, proceeding...');
                 const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
                                        (window.location.pathname && window.location.pathname.includes('/admin_regional'));
                 
-                console.log('isAdminRegional:', isAdminRegional);
-                
                 // Check if it's a native select (admin_regional) or CustomSelect (superadmin)
                 // IMPORTANT: Check native select FIRST before checking CustomSelect
-                console.log('About to get select element by ID...');
                 let institutionSelect = document.getElementById("inventoryInstitutionFilterSelect");
-                
-                console.log('Looking for select element. Found:', institutionSelect);
-                console.log('Select tagName:', institutionSelect ? institutionSelect.tagName : 'null');
-                console.log('isAdminRegional:', isAdminRegional);
                 
                 // If not found, wait a bit and try again (select might not be created yet)
                 if (!institutionSelect) {
-                    console.log('Select not found, waiting 500ms and retrying...');
                     setTimeout(() => {
                         institutionSelect = document.getElementById("inventoryInstitutionFilterSelect");
-                        console.log('Retry - Select found:', institutionSelect);
                         if (institutionSelect && institutionSelect.tagName === 'SELECT') {
                             populateSelectWithInstitutions(institutionSelect, institutions, currentInstitution);
                         } else {
@@ -1024,7 +994,6 @@ async function loadInstitutionsForFilter(regionalId) {
                 
                 // Check if it's a native select first (for admin_regional)
                 if (institutionSelect && institutionSelect.tagName === 'SELECT') {
-                    console.log('Using native select for admin_regional');
                     populateSelectWithInstitutions(institutionSelect, institutions, currentInstitution);
                 } else if (window.inventoryInstitutionFilterSelect && typeof window.inventoryInstitutionFilterSelect.setOptions === 'function') {
                     // CustomSelect for superadmin
@@ -1037,13 +1006,6 @@ async function loadInstitutionsForFilter(regionalId) {
                             label: institution.name || `Institución ${institution.id}`
                         }))
                     ];
-                    
-                    console.log('Setting options for CustomSelect:', options.length, 'options');
-                    console.log('CustomSelect state before setOptions:', {
-                        hasContainer: !!window.inventoryInstitutionFilterSelect.container,
-                        hasTrigger: !!window.inventoryInstitutionFilterSelect.trigger,
-                        isDisabled: window.inventoryInstitutionFilterSelect.isDisabled
-                    });
                     
                     window.inventoryInstitutionFilterSelect.setOptions(options);
                     
@@ -1106,7 +1068,6 @@ async function loadInstitutionsForFilter(regionalId) {
                     }
                 } else {
                     // Try to initialize CustomSelect if it doesn't exist yet
-                    console.log('CustomSelect not found, attempting to initialize...');
                     const initFunction = window.initializeInventoryFilterSelects || (typeof initializeInventoryFilterSelects !== 'undefined' ? initializeInventoryFilterSelects : null);
                     
                     if (initFunction && typeof initFunction === 'function') {
@@ -1323,7 +1284,6 @@ async function handleRegionalFilterChange(regionalId) {
     if (regionalId) {
         // Ensure the institution CustomSelect is initialized
         if (!window.inventoryInstitutionFilterSelect && typeof initializeInventoryFilterSelects === 'function') {
-            console.log('Initializing institution filter select...');
             initializeInventoryFilterSelects();
             // Wait for initialization
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -1333,7 +1293,6 @@ async function handleRegionalFilterChange(regionalId) {
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Load institutions for the selected regional
-        console.log('Loading institutions for regional:', regionalId);
         await loadInstitutionsForFilter(regionalId);
         
         // Wait a bit more to ensure institutions are added and CustomSelect is updated
@@ -1342,11 +1301,9 @@ async function handleRegionalFilterChange(regionalId) {
         // Verify that institutions were loaded
         if (window.inventoryInstitutionFilterSelect) {
             const options = window.inventoryInstitutionFilterSelect.options || [];
-            console.log('Institutions loaded in CustomSelect:', options.length, 'options');
             
             // If no options were loaded, try one more time
             if (options.length <= 1) {
-                console.log('Retrying to load institutions...');
                 await loadInstitutionsForFilter(regionalId);
             }
         }
@@ -1420,7 +1377,6 @@ async function handleRegionalFilterChange(regionalId) {
                     // Verify the text element shows the correct label
                     const textElement = window.inventoryRegionalFilterSelect.container?.querySelector(".custom-select-text");
                     if (textElement && textElement.textContent !== option.label) {
-                        console.log('Fixing text element:', textElement.textContent, '->', option.label);
                         textElement.textContent = option.label;
                         textElement.classList.remove("custom-select-placeholder");
                         window.inventoryRegionalFilterSelect.selectedText = option.label;
