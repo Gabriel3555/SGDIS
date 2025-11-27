@@ -617,8 +617,6 @@
                 const email = usuarioInput.value;
                 const contrasena = contrasenaInput.value;
 
-                console.log('Attempting login with email:', email);
-
                 try {
                     const response = await fetch('/api/v1/auth/login', {
                         method: 'POST',
@@ -631,20 +629,14 @@
                         })
                     });
 
-                    console.log('Response status:', response.status);
-
                     let data;
                     try {
                         data = await response.json();
-                        console.log('Response data:', data);
                     } catch (parseError) {
-                        console.error('Error parsing response:', parseError);
                         data = null;
                     }
 
                     if (response.ok && data && data.status) {
-                        console.log('Login successful, role:', data.role);
-
                         localStorage.setItem('jwt', data.jwt);
                         localStorage.setItem('refreshToken', data.refreshToken);
 
@@ -653,11 +645,9 @@
                         if (recordarCheckbox.checked) {
                             localStorage.setItem('rememberedEmail', email);
                             localStorage.setItem('rememberedPassword', contrasena);
-                            console.log('Credentials saved for future logins');
                         } else {
                             localStorage.removeItem('rememberedEmail');
                             localStorage.removeItem('rememberedPassword');
-                            console.log('Remember me not checked, credentials cleared');
                         }
 
                         let redirectUrl = '/index.html';
@@ -666,8 +656,6 @@
                         else if (data.role === "SUPERADMIN") redirectUrl = '/dashboard/superadmin';
                         else if (data.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
                         else if (data.role === "USER") redirectUrl = '/dashboard/user';
-
-                        console.log('Redirecting to:', redirectUrl);
 
                         showSenaSpinner();
 
@@ -690,11 +678,9 @@
                             errorMessage = 'Usuario o contraseña incorrectos';
                         }
 
-                        console.error('Error en login:', errorMessage);
                         showErrorToast('Error de autenticación', errorMessage);
                     }
                 } catch (error) {
-                    console.error('Error de conexión:', error);
                     hideSenaSpinner();
                     showErrorToast('Error de conexión', 'Inténtalo de nuevo.');
                 }

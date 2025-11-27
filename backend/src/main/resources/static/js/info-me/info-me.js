@@ -1,6 +1,15 @@
 // Load user profile information
 async function loadUserProfile() {
     showLoadingState();
+    
+    // Safety timeout: if loading takes more than 10 seconds, show error
+    let safetyTimeout = setTimeout(() => {
+        const loadingState = document.getElementById('loadingState');
+        const profileContent = document.getElementById('profileContent');
+        if (loadingState) loadingState.style.display = 'none';
+        if (profileContent) profileContent.style.display = 'block';
+        showErrorState('La carga del perfil está tomando demasiado tiempo. Por favor, recarga la página.');
+    }, 10000);
 
     try {
         const token = localStorage.getItem('jwt');
@@ -8,37 +17,106 @@ async function loadUserProfile() {
             window.location.href = '/';
             return;
         }
-
+        
         const response = await fetch('/api/v1/users/me', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            credentials: 'include' // Include cookies if needed
         });
 
         if (response.ok) {
             const userData = await response.json();
-            populateUserProfile(userData);
-            updateHeaderInfo(userData);
-            // Don't call loadSidebarNavigation for USER role - user-sidebar.js handles it
-            if (userData.role !== 'USER') {
-                loadSidebarNavigation(userData.role);
+            
+            // Check if we're on a role-specific page first
+            const currentPath = window.location.pathname || '';
+            const isRoleSpecificPage = currentPath.includes('/admin_institution/info-me') || 
+                                      currentPath.includes('/warehouse/info-me') || 
+                                      currentPath.includes('/superadmin/info-me') ||
+                                      currentPath.includes('/admin_regional/info-me');
+            
+            // For role-specific pages, don't modify the sidebar - it's already correct in the HTML
+            // Only modify sidebar for generic /info-me page
+            if (!isRoleSpecificPage) {
+                // Don't call loadSidebarNavigation for USER role - user-sidebar.js handles it
+                if (userData.role !== 'USER') {
+                    loadSidebarNavigation(userData.role);
+                }
+                rewriteAdminRegionalSidebarLinks(userData.role);
+                // Only call rewriteAdminInstitutionSidebarLinks for ADMIN_INSTITUTION role
+                if (userData.role === 'ADMIN_INSTITUTION') {
+                    rewriteAdminInstitutionSidebarLinks(userData.role);
+                }
             }
-            loadSidebarNavigation(userData.role);
-            rewriteAdminRegionalSidebarLinks(userData.role);
-            rewriteAdminInstitutionSidebarLinks(userData.role);
-            hideLoadingState();
-        } else if (response.status === 401) {
-            // Token expired or invalid
-            localStorage.removeItem('jwt');
-            window.location.href = '/';
+            
+            // Populate profile data
+            try {
+                populateUserProfile(userData);
+            } catch (error) {
+                // Don't stop execution if there's an error populating profile
+            }
+            
+            // Update header info
+            try {
+                updateHeaderInfo(userData);
+            } catch (error) {
+                // Don't stop execution if there's an error updating header
+            }
+            
+            // Clear safety timeout since we got a successful response
+            clearTimeout(safetyTimeout);
+            
+            // Always hide loading state and show profile content - this MUST execute
+            try {
+                hideLoadingState();
+            } catch (error) {
+                // Try to show profile content anyway - manual fallback
+                const loadingState = document.getElementById('loadingState');
+                const profileContent = document.getElementById('profileContent');
+                const errorState = document.getElementById('errorState');
+                
+                if (loadingState) {
+                    loadingState.style.display = 'none';
+                }
+                if (profileContent) {
+                    profileContent.style.display = 'block';
+                }
+                if (errorState) {
+                    errorState.style.display = 'none';
+                }
+            }
+        } else if (response.status === 401 || response.status === 403) {
+            // Token expired, invalid, or insufficient permissions
+            // For 401 (Unauthorized), logout
+            // For 403 (Forbidden), might be a role mismatch - show error but don't logout immediately
+            if (response.status === 401) {
+                localStorage.removeItem('jwt');
+                window.location.href = '/';
+            } else if (response.status === 403) {
+                // 403 Forbidden - might be role mismatch, show error
+                throw new Error('No tienes permisos para acceder a esta página. Verifica tu rol de usuario.');
+            }
         } else {
-            throw new Error('Error al cargar la información del perfil');
+            // For other errors, show error state but don't logout
+            throw new Error(`Error al cargar la información del perfil: ${response.status}`);
         }
     } catch (error) {
-        console.error('Error loading user profile:', error);
-        showErrorState(error.message);
+        // Clear safety timeout on error
+        clearTimeout(safetyTimeout);
+        
+        // Always hide loading state on error
+        const loadingState = document.getElementById('loadingState');
+        const profileContent = document.getElementById('profileContent');
+        if (loadingState) loadingState.style.display = 'none';
+        if (profileContent) profileContent.style.display = 'block';
+        
+        // Only show error state, don't logout unless it's a 401 error
+        // The 401 error is already handled above
+        if (!error.message || !error.message.includes('401')) {
+            showErrorState(error.message || 'Error al cargar la información del perfil');
+        }
     }
 }
 
@@ -135,7 +213,7 @@ function populateUserProfile(userData) {
                 profileRegionalEl.textContent = regional.name || regionalName;
             }
         }).catch(error => {
-            console.error('Error loading institution/regional info:', error);
+            // Silently handle error
         });
     }
 }
@@ -173,7 +251,6 @@ async function loadInstitutionAndRegionalInfo(institutionName) {
         }
         return { institution: null, regional: null };
     } catch (error) {
-        console.error('Error fetching institution/regional info:', error);
         return { institution: null, regional: null };
     }
 }
@@ -306,13 +383,29 @@ function loadSidebarNavigation(role) {
     }
     
     // Update info-me link based on role
+    // Only update if the link doesn't already have the correct path
     if (navInfoMe) {
-        if (role === 'ADMIN_INSTITUTION' || role === 'ADMIN_REGIONAL') {
-            navInfoMe.href = `${basePath}/info-me`;
-            navInfoMe.setAttribute('onclick', `handleSidebarClick(event, '${basePath}/info-me')`);
-        } else {
-            navInfoMe.href = '/info-me';
-            navInfoMe.setAttribute('onclick', 'handleSidebarClick(event, \'/info-me\')');
+        const currentHref = navInfoMe.getAttribute('href') || navInfoMe.href;
+        const currentPath = window.location.pathname || '';
+        
+        // Check if we're on a dashboard page (not info-me page)
+        const isDashboardPage = currentPath.includes('/dashboard');
+        
+        // Only update if:
+        // 1. The link points to generic /info-me, OR
+        // 2. We're on a dashboard page and the link doesn't match the role's path
+        const needsUpdate = currentHref === '/info-me' || 
+                           (isDashboardPage && !currentHref.includes(`${basePath}/info-me`) && 
+                            (role === 'ADMIN_INSTITUTION' || role === 'ADMIN_REGIONAL' || role === 'WAREHOUSE' || role === 'SUPERADMIN'));
+        
+        if (needsUpdate) {
+            if (role === 'ADMIN_INSTITUTION' || role === 'ADMIN_REGIONAL' || role === 'WAREHOUSE' || role === 'SUPERADMIN') {
+                navInfoMe.href = `${basePath}/info-me`;
+                navInfoMe.setAttribute('onclick', `handleSidebarClick(event, '${basePath}/info-me')`);
+            } else {
+                navInfoMe.href = '/info-me';
+                navInfoMe.setAttribute('onclick', 'handleSidebarClick(event, \'/info-me\')');
+            }
         }
     }
     
@@ -356,84 +449,100 @@ function rewriteAdminInstitutionSidebarLinks(userRole) {
             return false;
         }
 
+        // Check if we're on a role-specific page - if so, don't replace the sidebar
+        const currentPath = window.location.pathname || '';
+        if (currentPath.includes('/admin_institution/info-me') || 
+            currentPath.includes('/warehouse/info-me') ||
+            currentPath.includes('/superadmin/info-me') ||
+            currentPath.includes('/admin_regional/info-me')) {
+            return true; // Don't replace sidebar on role-specific pages
+        }
+        
         // Check if sidebar already has admin_institution links - if so, don't replace it
         const firstLink = nav.querySelector('a.sidebar-item');
         if (firstLink && (firstLink.href.includes('/admin_institution') || firstLink.href.includes('/admininstitution'))) {
-            // Sidebar already has correct links, just update the info-me link
-            const infoMeLink = nav.querySelector('a[href="/info-me"], a[href*="/info-me"], a#navInfoMe');
+            // Sidebar already has correct links, just update the info-me link if needed
+            // Only update if the link points to generic /info-me, not if it already has the correct path
+            const infoMeLink = nav.querySelector('a#navInfoMe, a[href="/info-me"]');
             if (infoMeLink) {
-                const adminInfoMePath = `${basePath}/info-me`;
-                infoMeLink.href = adminInfoMePath;
-                infoMeLink.setAttribute('onclick', `handleSidebarClick(event, '${adminInfoMePath}')`);
-                // Also update onclick if it exists as a property
-                if (infoMeLink.onclick) {
-                    infoMeLink.onclick = (e) => handleSidebarClick(e, adminInfoMePath);
+                // Check if link already has the correct path
+                const currentHref = infoMeLink.getAttribute('href') || infoMeLink.href;
+                const isGenericInfoMe = currentHref === '/info-me' || currentHref.endsWith('/info-me') && !currentHref.includes('/admin_institution/info-me') && !currentHref.includes('/warehouse/info-me') && !currentHref.includes('/superadmin/info-me') && !currentHref.includes('/admin_regional/info-me');
+                
+                if (isGenericInfoMe) {
+                    const adminInfoMePath = `${basePath}/info-me`;
+                    infoMeLink.href = adminInfoMePath;
+                    infoMeLink.setAttribute('onclick', `handleSidebarClick(event, '${adminInfoMePath}')`);
+                    // Also update onclick if it exists as a property
+                    if (infoMeLink.onclick) {
+                        infoMeLink.onclick = (e) => handleSidebarClick(e, adminInfoMePath);
+                    }
                 }
             }
-            return true;
+            return true; // Sidebar already correct, don't replace
         }
 
         // Build complete admin_institution sidebar HTML
-        const currentPath = window.location.pathname;
+        const sidebarCurrentPath = window.location.pathname;
         const sidebarHTML = `
             <a href="${basePath}/dashboard"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/dashboard` ? 'active' : ''}"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/dashboard` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="${basePath}/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/inventory` ? 'active' : ''}"
+            <a href="${basePath}/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/inventory` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/inventory')">
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
             </a>
-            <a href="${basePath}/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/users` ? 'active' : ''}"
+            <a href="${basePath}/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/users` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/users')">
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
             </a>
-            <a href="${basePath}/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/transfers` ? 'active' : ''}"
+            <a href="${basePath}/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/transfers` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/transfers')">
                 <i class="fas fa-exchange-alt text-lg"></i>
                 <span class="font-medium">Transferencias</span>
             </a>
             <a href="${basePath}/verification"
-                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/verification` ? 'active' : ''}"
+                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/verification` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/verification')">
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
-            <a href="${basePath}/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/loans` ? 'active' : ''}"
+            <a href="${basePath}/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/loans` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/loans')">
                 <i class="fas fa-hand-holding text-lg"></i>
                 <span class="font-medium">Préstamos</span>
             </a>
-            <a href="${basePath}/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/reports` ? 'active' : ''}"
+            <a href="${basePath}/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/reports` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
             </a>
-            <a href="${basePath}/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/auditory` ? 'active' : ''}"
+            <a href="${basePath}/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/auditory` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/auditory')">
                 <i class="fas fa-clipboard-list text-lg"></i>
                 <span class="font-medium">Auditoría</span>
             </a>
-            <a href="${basePath}/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/notifications` ? 'active' : ''}"
+            <a href="${basePath}/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/notifications` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/notifications')">
                 <i class="fas fa-bell text-lg"></i>
                 <span class="font-medium">Notificaciones</span>
             </a>
-            <a href="${basePath}/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/import-export` ? 'active' : ''}"
+            <a href="${basePath}/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/import-export` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/import-export')">
                 <i class="fas fa-file-import text-lg"></i>
                 <span class="font-medium">Importar/Exportar</span>
             </a>
-            <a href="${basePath}/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/settings` ? 'active' : ''}"
+            <a href="${basePath}/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/settings` ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/settings')">
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>
-            <a href="${basePath}/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === `${basePath}/info-me` || currentPath === '/info-me' ? 'active' : ''}"
+            <a href="${basePath}/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${sidebarCurrentPath === `${basePath}/info-me` || sidebarCurrentPath === '/info-me' ? 'active' : ''}"
                 onclick="handleSidebarClick(event, '${basePath}/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
@@ -507,28 +616,80 @@ function getRoleColor(role) {
 
 // Show loading state
 function showLoadingState() {
-    document.getElementById('loadingState').style.display = 'block';
-    document.getElementById('profileContent').style.display = 'none';
-    document.getElementById('errorState').style.display = 'none';
+    const loadingState = document.getElementById('loadingState');
+    const profileContent = document.getElementById('profileContent');
+    const errorState = document.getElementById('errorState');
+    
+    if (loadingState) loadingState.style.display = 'block';
+    if (profileContent) profileContent.style.display = 'none';
+    if (errorState) errorState.style.display = 'none';
 }
 
 // Hide loading state
 function hideLoadingState() {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('profileContent').style.display = 'block';
-    document.getElementById('errorState').style.display = 'none';
+    const loadingState = document.getElementById('loadingState');
+    const profileContent = document.getElementById('profileContent');
+    const errorState = document.getElementById('errorState');
+    
+    if (loadingState) loadingState.style.display = 'none';
+    if (profileContent) {
+        profileContent.style.display = 'block';
+    }
+    if (errorState) errorState.style.display = 'none';
 }
 
 // Show error state
 function showErrorState(message) {
-    document.getElementById('loadingState').style.display = 'none';
-    document.getElementById('profileContent').style.display = 'none';
-    document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorMessage').textContent = message || 'Ha ocurrido un error al cargar tu perfil.';
+    const loadingState = document.getElementById('loadingState');
+    const profileContent = document.getElementById('profileContent');
+    const errorState = document.getElementById('errorState');
+    const errorMessage = document.getElementById('errorMessage');
+    
+    if (loadingState) loadingState.style.display = 'none';
+    if (profileContent) profileContent.style.display = 'none';
+    if (errorState) errorState.style.display = 'block';
+    if (errorMessage) {
+        errorMessage.textContent = message || 'Ha ocurrido un error al cargar tu perfil.';
+    }
 }
 
 // Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    loadUserProfile();
-});
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeProfile();
+    });
+} else {
+    // DOM already loaded
+    initializeProfile();
+}
+
+function initializeProfile() {
+    // Add a small delay to ensure all scripts are loaded
+    setTimeout(function() {
+        const loadingState = document.getElementById('loadingState');
+        const profileContent = document.getElementById('profileContent');
+        const errorState = document.getElementById('errorState');
+        
+        if (!loadingState || !profileContent) {
+            if (errorState) {
+                errorState.style.display = 'block';
+                const errorMessage = document.getElementById('errorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = 'Error: Elementos del DOM no encontrados. Por favor, recarga la página.';
+                }
+            }
+            return;
+        }
+        
+        try {
+            loadUserProfile();
+        } catch (error) {
+            // Ensure loading state is hidden even on error
+            if (loadingState) loadingState.style.display = 'none';
+            if (profileContent) profileContent.style.display = 'block';
+            
+            showErrorState('Error al inicializar el perfil: ' + error.message);
+        }
+    }, 100);
+}
 

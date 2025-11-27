@@ -161,35 +161,10 @@ public class AdminDashboardController {
     }
 
     @GetMapping("/info-me")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION', 'WAREHOUSE', 'USER')")
+    @PreAuthorize("hasRole('USER')")
     @ResponseBody
-    public ResponseEntity<Resource> userProfile(Authentication authentication) throws IOException {
-        // Check user role and serve appropriate file
-        if (authentication != null) {
-            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
-            boolean isAdminInstitution = authorities.stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN_INSTITUTION"));
-            boolean isAdminRegional = authorities.stream()
-                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN_REGIONAL"));
-            
-            if (isAdminInstitution) {
-                Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-institution.html");
-                if (resource.exists()) {
-                    return ResponseEntity.ok()
-                            .contentType(MediaType.TEXT_HTML)
-                            .body(resource);
-                }
-            } else if (isAdminRegional) {
-                Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-regional.html");
-                if (resource.exists()) {
-                    return ResponseEntity.ok()
-                            .contentType(MediaType.TEXT_HTML)
-                            .body(resource);
-                }
-            }
-        }
-        
-        // Default to generic info-me.html for other roles
+    public ResponseEntity<Resource> userProfile() throws IOException {
+        // Only for USER role
         Resource resource = new ClassPathResource("static/views/info-me/info-me.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
@@ -215,10 +190,38 @@ public class AdminDashboardController {
     }
 
     @GetMapping({"/admin_institution/info-me", "/admininstitution/info-me"})
-    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @PreAuthorize("hasAuthority('ADMIN_INSTITUTION') or hasAuthority('ROLE_ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionInfoMe() throws IOException {
         Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-institution.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/superadmin/info-me")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminInfoMe() throws IOException {
+        Resource resource = new ClassPathResource("static/views/info-me/info-me-superadmin.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/warehouse/info-me")
+    @PreAuthorize("hasAuthority('WAREHOUSE') or hasAuthority('ROLE_WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseInfoMe() throws IOException {
+        Resource resource = new ClassPathResource("static/views/info-me/info-me-warehouse.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

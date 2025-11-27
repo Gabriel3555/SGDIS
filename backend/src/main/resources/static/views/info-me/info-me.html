@@ -14,20 +14,22 @@
             }
         })();
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'sena-verde': '#00AF00',
-                        'sena-verde-oscuro': '#008800'
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
                     }
                 }
             }
         }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/jpeg" href="../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -199,60 +201,37 @@
 
         <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+            <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/inventory')">
+            <a href="/user/my-inventories" id="navMyInventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/my-inventories')">
                 <i class="fas fa-boxes text-lg"></i>
-                <span class="font-medium">Inventario</span>
+                <span class="font-medium">Mis Inventarios</span>
             </a>
-            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/users')">
-                <i class="fas fa-users text-lg"></i>
-                <span class="font-medium">Usuarios</span>
-            </a>
-            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/centers')">
-                <i class="fas fa-building text-lg"></i>
-                <span class="font-medium">Centros</span>
-            </a>
-            <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/transfers')">
-                <i class="fas fa-exchange-alt text-lg"></i>
-                <span class="font-medium">Transferencias</span>
-            </a>
-            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/verification')">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </a>
-            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/loans')">
-                <i class="fas fa-hand-holding text-lg"></i>
-                <span class="font-medium">Préstamos</span>
-            </a>
-            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/reports')">
-                <i class="fas fa-chart-bar text-lg"></i>
-                <span class="font-medium">Reportes</span>
-            </a>
-            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/notifications')">
+            <a href="/user/notifications" id="navNotifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/notifications')">
                 <i class="fas fa-bell text-lg"></i>
                 <span class="font-medium">Notificaciones</span>
             </a>
-            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-file-import text-lg"></i>
-                <span class="font-medium">Importar/Exportar</span>
+            <a href="/user/loans" id="navLoans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                style="display: none;"
+                onclick="handleSidebarClick(event, '/user/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
             </a>
-            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/settings')">
-                <i class="fas fa-sliders-h text-lg"></i>
-                <span class="font-medium">Configuración</span>
+            <a href="/user/verification" id="navVerification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/user/transfers" id="navTransfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                style="display: none;"
+                onclick="handleSidebarClick(event, '/user/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
             </a>
             <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
                 onclick="handleSidebarClick(event, '/info-me')">
@@ -290,7 +269,7 @@
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/info-me'">
-                        <div class="user-avatar" id="headerUserAvatar"></div>
+                        <div class="user-avatar" id="headerUserAvatar">U</div>
                         <div class="hidden sm:block">
                             <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
                             <div class="text-xs text-gray-500" id="headerUserRole"></div>
@@ -577,9 +556,66 @@
             }
         }
 
+        // Load user permissions to show/hide sidebar items
+        async function loadUserPermissions() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    return;
+                }
+
+                // Check if user is owner of any inventory
+                const ownerResponse = await fetch('/api/v1/users/me/inventories/owner', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                let isOwner = false;
+                if (ownerResponse.ok) {
+                    const ownedInventories = await ownerResponse.json();
+                    isOwner = ownedInventories && ownedInventories.length > 0;
+                }
+
+                // Check if user is signatory of any inventory
+                const signatoryResponse = await fetch('/api/v1/users/me/inventories/signatory', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                let isSignatory = false;
+                if (signatoryResponse.ok) {
+                    const signatoryInventories = await signatoryResponse.json();
+                    isSignatory = signatoryInventories && signatoryInventories.length > 0;
+                }
+
+                // Show/hide sidebar items based on permissions
+                const navLoans = document.getElementById('navLoans');
+                const navTransfers = document.getElementById('navTransfers');
+
+                // Show loans if user is owner or signatory
+                if (navLoans && (isOwner || isSignatory)) {
+                    navLoans.style.display = 'flex';
+                }
+
+                // Show transfers only if user is owner
+                if (navTransfers && isOwner) {
+                    navTransfers.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error loading user permissions:', error);
+            }
+        }
+
         // Initialize mobile menu toggle when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
+            loadUserPermissions(); // Load user permissions for sidebar
         });
 
         // Logout function - shows confirmation modal

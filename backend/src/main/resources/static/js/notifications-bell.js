@@ -26,14 +26,12 @@ const NotificationBell = {
     createBellElement() {
         // Verificar si ya existe la campanita
         if (document.getElementById('notification-bell-container')) {
-            console.log('La campanita ya existe');
             return;
         }
 
         // Buscar el header del dashboard
         const header = document.querySelector('header');
         if (!header) {
-            console.error('No se encontró el header para agregar la campanita');
             return;
         }
 
@@ -41,7 +39,6 @@ const NotificationBell = {
         // Buscar primero el div del usuario usando el ID único del avatar
         const userAvatar = document.getElementById('headerUserAvatar');
         if (!userAvatar) {
-            console.error('No se encontró el avatar del usuario');
             return;
         }
         
@@ -49,14 +46,12 @@ const NotificationBell = {
         const userDiv = userAvatar.closest('.flex.items-center.gap-3.cursor-pointer') || 
                        userAvatar.parentElement;
         if (!userDiv) {
-            console.error('No se encontró el div del usuario');
             return;
         }
         
         // El contenedor padre del usuario es el contenedor del lado derecho
         const headerItemsContainer = userDiv.parentElement;
         if (!headerItemsContainer || !headerItemsContainer.classList.contains('flex')) {
-            console.error('No se encontró el contenedor de items del header');
             return;
         }
 
@@ -93,8 +88,6 @@ const NotificationBell = {
 
         // Insertar la campanita justo antes del div del usuario (como elemento hermano)
         headerItemsContainer.insertBefore(bellContainer, userDiv);
-
-        console.log('Campanita de notificaciones creada exitosamente');
     },
 
     /**
@@ -196,7 +189,7 @@ const NotificationBell = {
                 this.updateBadge(data.count);
             }
         } catch (error) {
-            console.error('Error al cargar contador de notificaciones:', error);
+            // Silently handle error
         }
     },
 
@@ -216,7 +209,7 @@ const NotificationBell = {
                 this.renderNotifications();
             }
         } catch (error) {
-            console.error('Error al cargar notificaciones:', error);
+            // Silently handle error
         }
     },
 
@@ -310,7 +303,6 @@ const NotificationBell = {
     toggleDropdown() {
         const dropdown = document.getElementById('notificationDropdown');
         if (!dropdown) {
-            console.error('No se encontró el dropdown de notificaciones');
             return;
         }
         
@@ -322,13 +314,11 @@ const NotificationBell = {
             dropdown.classList.remove('hidden');
             dropdown.style.display = 'block';
             this.loadNotifications();
-            console.log('Dropdown de notificaciones abierto');
         } else {
             // Ocultar dropdown
             this.isOpen = false;
             dropdown.classList.add('hidden');
             dropdown.style.display = 'none';
-            console.log('Dropdown de notificaciones cerrado');
         }
     },
 
@@ -360,7 +350,7 @@ const NotificationBell = {
                 await this.loadNotifications();
             }
         } catch (error) {
-            console.error('Error al marcar notificación como leída:', error);
+            // Silently handle error
         }
     },
 
@@ -381,7 +371,7 @@ const NotificationBell = {
                 await this.loadNotifications();
             }
         } catch (error) {
-            console.error('Error al marcar todas como leídas:', error);
+            // Silently handle error
         }
     },
 
@@ -403,8 +393,6 @@ const NotificationBell = {
      */
     setupWebSocketListener() {
         window.addEventListener('sgdis-notification', (event) => {
-            console.log('Nueva notificación recibida vía WebSocket:', event.detail);
-            
             // Actualizar contador y lista
             this.loadUnreadCount();
             if (this.isOpen) {
@@ -463,7 +451,6 @@ function initializeNotificationBell() {
 
     const token = localStorage.getItem('jwt');
     if (!token) {
-        console.log('No hay token, no se inicializará la campanita');
         return;
     }
 
@@ -472,7 +459,6 @@ function initializeNotificationBell() {
     const userAvatar = document.getElementById('headerUserAvatar');
     
     if (!header || !userAvatar) {
-        console.log('Header o avatar no encontrado, reintentando...');
         // Reintentar después de un breve delay
         setTimeout(initializeNotificationBell, 200);
         return;
@@ -482,16 +468,14 @@ function initializeNotificationBell() {
     try {
         NotificationBell.init();
         notificationBellInitialized = true;
-        console.log('Campanita de notificaciones inicializada correctamente');
     } catch (error) {
-        console.error('Error al inicializar campanita:', error);
         // Reintentar después de un segundo si falla
         setTimeout(() => {
             try {
                 NotificationBell.init();
                 notificationBellInitialized = true;
             } catch (retryError) {
-                console.error('Error al reintentar inicialización de campanita:', retryError);
+                // Silently handle error
             }
         }, 1000);
     }

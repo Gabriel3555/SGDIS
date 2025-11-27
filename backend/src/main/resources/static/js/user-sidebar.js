@@ -13,11 +13,35 @@ let isUserRole = false;
     'use strict';
     
     // Check if we're on a user route or info-me (which can be accessed by users)
+    // But NOT on admin_institution, warehouse, admin_regional, or superadmin routes
     const path = window.location.pathname;
-    const isUserRoute = path.includes('/user/') || 
+    const isAdminRoute = path.includes('/admin_institution/') || 
+                        path.includes('/admininstitution/') ||
+                        path.includes('/warehouse/') ||
+                        path.includes('/admin_regional/') ||
+                        path.includes('/superadmin/') ||
+                        path.includes('/dashboard/admin_institution') ||
+                        path.includes('/dashboard/admininstitution') ||
+                        path.includes('/dashboard/warehouse') ||
+                        path.includes('/dashboard/admin_regional') ||
+                        path.includes('/dashboard/superadmin');
+    
+    // Only process if it's a user route AND not an admin route
+    const isUserRoute = !isAdminRoute && (
+                       path.includes('/user/') || 
                        path.includes('/dashboard/user') || 
-                       path === '/info-me' ||
-                       path.includes('/info-me');
+                       (path === '/info-me' && !isAdminRoute)
+                       );
+    
+    // Don't process if it's an admin route
+    if (isAdminRoute) {
+        // Show sidebar for admin routes
+        const sidebarNav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
+        if (sidebarNav) {
+            sidebarNav.classList.add('user-sidebar-ready');
+        }
+        return; // Exit early, don't modify sidebar for admin routes
+    }
     
     if (isUserRoute) {
         // Hide sidebar immediately to prevent flash of admin options
