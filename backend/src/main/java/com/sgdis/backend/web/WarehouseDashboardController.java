@@ -86,17 +86,4 @@ public class WarehouseDashboardController {
         }
     }
 
-    @GetMapping("/warehouse/loans")
-    @PreAuthorize("hasRole('WAREHOUSE')")
-    @ResponseBody
-    public ResponseEntity<Resource> warehouseLoans() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/warehouse-loans.html");
-        if (resource.exists()) {
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(resource);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
-    }
 }
