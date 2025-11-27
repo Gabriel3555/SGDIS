@@ -107,5 +107,30 @@ public class AuditoryController {
             (com.sgdis.backend.auditory.application.service.AuditoryService) listAuditoryUseCase;
         return auditoryService.listAuditoriesByInstitution(pageable);
     }
+
+    @Operation(
+            summary = "List auditory records by institution for warehouse",
+            description = "Retrieves all auditory records for the current warehouse user's institution with pagination (Warehouse only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Auditory records retrieved successfully",
+            content = @Content(schema = @Schema(implementation = PagedAuditoryResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @ApiResponse(responseCode = "404", description = "Institution not found")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @GetMapping("/warehouse")
+    public PagedAuditoryResponse listAuditoriesByWarehouse(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "6") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        com.sgdis.backend.auditory.application.service.AuditoryService auditoryService = 
+            (com.sgdis.backend.auditory.application.service.AuditoryService) listAuditoryUseCase;
+        return auditoryService.listAuditoriesByInstitution(pageable);
+    }
 }
 
