@@ -31,7 +31,7 @@ async function loadVerificationData() {
             errorMessage = 'Error interno del servidor. Inténtalo más tarde.';
         }
 
-        showErrorToast('Error al cargar datos', errorMessage);
+        showInventoryErrorToast('Error al cargar datos', errorMessage);
         showErrorState(errorMessage);
         updateVerificationUI();
     } finally {
@@ -122,10 +122,10 @@ async function loadUserInventories() {
         verificationData.inventories = Array.from(allInventoriesMap.values());
         
         if (verificationData.inventories.length === 0) {
-            showWarningToast('Sin inventarios', 'No tienes inventarios asignados. No podrás realizar verificaciones hasta que te asignen un inventario.');
+            showInventoryWarningToast('Sin inventarios', 'No tienes inventarios asignados. No podrás realizar verificaciones hasta que te asignen un inventario.');
         }
     } catch (error) {
-        showErrorToast('Error al cargar inventarios', 'No se pudieron cargar tus inventarios. Intenta recargar la página.');
+        showInventoryErrorToast('Error al cargar inventarios', 'No se pudieron cargar tus inventarios. Intenta recargar la página.');
         verificationData.inventories = [];
     }
 }
@@ -167,6 +167,11 @@ async function loadLatestVerifications() {
         } else {
             verificationData.filteredVerifications = [...verificationData.verifications];
             verificationData.currentPage = 1; // Reset to first page
+        }
+        
+        // Ensure UI is updated after loading
+        if (typeof updateVerificationUI === 'function') {
+            updateVerificationUI();
         }
     } catch (error) {
         console.error('Error loading verifications:', error);
@@ -323,29 +328,29 @@ async function createVerificationBySerial(serialNumber) {
 
         if (response.ok) {
             const verification = await response.json();
-            showSuccessToast('Verificación creada', 'La verificación se creó exitosamente por número de serie');
+            showInventorySuccessToast('Verificación creada', 'La verificación se creó exitosamente por número de serie');
             return verification;
         } else if (response.status === 404) {
-            showErrorToast('Item no encontrado', 'No se encontró un item con ese número de serie en el sistema');
+            showInventoryErrorToast('Item no encontrado', 'No se encontró un item con ese número de serie en el sistema');
             throw new Error('No se encontró un item con ese número de serie');
         } else if (response.status === 403) {
             const errorData = await response.json().catch(() => ({}));
             // Backend validates authorization - if 403, item doesn't belong to user's inventories
-            const errorMsg = errorData.message || 'No tienes permisos para verificar este ítem. El ítem no pertenece a ninguno de tus inventarios.';
-            showErrorToast('Item no pertenece a tus inventarios', errorMsg);
+            const errorMsg = 'Ese item no está en mi inventario. Solo puedes verificar items de los cuales eres owner, manager o signatory.';
+            showInventoryErrorToast('Item no está en tu inventario', errorMsg);
             throw new Error(errorMsg);
         } else if (response.status === 400) {
             const errorData = await response.json().catch(() => ({}));
-            showErrorToast('Datos inválidos', errorData.message || 'Los datos de verificación son inválidos. Verifica la información.');
+            showInventoryErrorToast('Datos inválidos', errorData.message || 'Los datos de verificación son inválidos. Verifica la información.');
             throw new Error(errorData.message || 'Datos de verificación inválidos');
         } else {
             const errorData = await response.json().catch(() => ({}));
-            showErrorToast('Error al crear verificación', errorData.message || 'No se pudo crear la verificación. Intenta nuevamente.');
+            showInventoryErrorToast('Error al crear verificación', errorData.message || 'No se pudo crear la verificación. Intenta nuevamente.');
             throw new Error(errorData.message || 'Error al crear la verificación');
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {
-            showErrorToast('Error de conexión', 'Verifica tu conexión a internet e intenta nuevamente.');
+            showInventoryErrorToast('Error de conexión', 'Verifica tu conexión a internet e intenta nuevamente.');
             throw new Error('Error de conexión. Verifica tu conexión a internet.');
         }
         throw error;
@@ -366,29 +371,29 @@ async function createVerificationByPlate(licensePlate) {
 
         if (response.ok) {
             const verification = await response.json();
-            showSuccessToast('Verificación creada', 'La verificación se creó exitosamente por placa');
+            showInventorySuccessToast('Verificación creada', 'La verificación se creó exitosamente por placa');
             return verification;
         } else if (response.status === 404) {
-            showErrorToast('Item no encontrado', 'No se encontró un item con esa placa en el sistema');
+            showInventoryErrorToast('Item no encontrado', 'No se encontró un item con esa placa en el sistema');
             throw new Error('No se encontró un item con esa placa');
         } else if (response.status === 403) {
             const errorData = await response.json().catch(() => ({}));
             // Backend validates authorization - if 403, item doesn't belong to user's inventories
-            const errorMsg = errorData.message || 'No tienes permisos para verificar este ítem. El ítem no pertenece a ninguno de tus inventarios.';
-            showErrorToast('Item no pertenece a tus inventarios', errorMsg);
+            const errorMsg = 'Ese item no está en mi inventario. Solo puedes verificar items de los cuales eres owner, manager o signatory.';
+            showInventoryErrorToast('Item no está en tu inventario', errorMsg);
             throw new Error(errorMsg);
         } else if (response.status === 400) {
             const errorData = await response.json().catch(() => ({}));
-            showErrorToast('Datos inválidos', errorData.message || 'Los datos de verificación son inválidos. Verifica la información.');
+            showInventoryErrorToast('Datos inválidos', errorData.message || 'Los datos de verificación son inválidos. Verifica la información.');
             throw new Error(errorData.message || 'Datos de verificación inválidos');
         } else {
             const errorData = await response.json().catch(() => ({}));
-            showErrorToast('Error al crear verificación', errorData.message || 'No se pudo crear la verificación. Intenta nuevamente.');
+            showInventoryErrorToast('Error al crear verificación', errorData.message || 'No se pudo crear la verificación. Intenta nuevamente.');
             throw new Error(errorData.message || 'Error al crear la verificación');
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {
-            showErrorToast('Error de conexión', 'Verifica tu conexión a internet e intenta nuevamente.');
+            showInventoryErrorToast('Error de conexión', 'Verifica tu conexión a internet e intenta nuevamente.');
             throw new Error('Error de conexión. Verifica tu conexión a internet.');
         }
         throw error;
@@ -412,16 +417,16 @@ async function uploadEvidence(verificationId, file) {
 
         if (response.ok) {
             const result = await response.json();
-            showSuccessToast('Evidencia subida', 'La evidencia se subió correctamente');
+            showInventorySuccessToast('Evidencia subida', 'La evidencia se subió correctamente');
             return result;
         } else if (response.status === 404) {
-            showErrorToast('Verificación no encontrada', 'La verificación especificada no existe');
+            showInventoryErrorToast('Verificación no encontrada', 'La verificación especificada no existe');
             throw new Error('Verificación no encontrada');
         } else if (response.status === 400) {
-            showErrorToast('Archivo inválido', 'El archivo es inválido o demasiado grande. Máximo 5MB');
+            showInventoryErrorToast('Archivo inválido', 'El archivo es inválido o demasiado grande. Máximo 5MB');
             throw new Error('Archivo inválido o demasiado grande');
         } else {
-            showErrorToast('Error al subir evidencia', 'No se pudo subir la evidencia. Intenta nuevamente.');
+            showInventoryErrorToast('Error al subir evidencia', 'No se pudo subir la evidencia. Intenta nuevamente.');
             throw new Error('Error al subir la evidencia');
         }
     } catch (error) {
@@ -448,7 +453,7 @@ async function downloadEvidence(verificationId) {
             
             // Verificar que el blob tenga contenido
             if (blob.size === 0) {
-                showErrorToast('Error', 'El archivo de evidencia está vacío');
+                showInventoryErrorToast('Error', 'El archivo de evidencia está vacío');
                 return false;
             }
 
@@ -490,23 +495,23 @@ async function downloadEvidence(verificationId) {
                 document.body.removeChild(a);
             }, 100);
             
-            showSuccessToast('Descarga iniciada', 'La evidencia se está descargando');
+            showInventorySuccessToast('Descarga iniciada', 'La evidencia se está descargando');
             return true;
         } else if (response.status === 404) {
-            showErrorToast('Evidencia no encontrada', 'Esta verificación no tiene evidencia asociada');
+            showInventoryErrorToast('Evidencia no encontrada', 'Esta verificación no tiene evidencia asociada');
             return false;
         } else {
             const errorText = await response.text().catch(() => '');
             console.error('Error downloading evidence:', response.status, errorText);
-            showErrorToast('Error', `Error al descargar la evidencia (${response.status})`);
+            showInventoryErrorToast('Error', `Error al descargar la evidencia (${response.status})`);
             return false;
         }
     } catch (error) {
         console.error('Error downloading evidence:', error);
         if (error.message && error.message.includes('Failed to fetch')) {
-            showErrorToast('Error de conexión', 'Verifica tu conexión a internet');
+            showInventoryErrorToast('Error de conexión', 'Verifica tu conexión a internet');
         } else {
-            showErrorToast('Error', error.message || 'Error al descargar la evidencia');
+            showInventoryErrorToast('Error', error.message || 'Error al descargar la evidencia');
         }
         return false;
     }

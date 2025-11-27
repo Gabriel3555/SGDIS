@@ -13,7 +13,7 @@ let batchVerificationState = {
 async function showBatchVerificationModal() {
     const modal = document.getElementById('batchVerificationModal');
     if (!modal) {
-        showErrorToast('Error', 'No se pudo abrir el modal de verificación por lotes');
+        showInventoryErrorToast('Error', 'No se pudo abrir el modal de verificación por lotes');
         return;
     }
 
@@ -25,14 +25,14 @@ async function showBatchVerificationModal() {
                 await loadUserInventories();
             } catch (error) {
                 // If loading fails, show error and return
-                showErrorToast('Error', 'No se pudieron cargar los inventarios. Intenta recargar la página.');
+                showInventoryErrorToast('Error', 'No se pudieron cargar los inventarios. Intenta recargar la página.');
                 return;
             }
         }
         
         // Validate again after loading
         if (!verificationData.inventories || verificationData.inventories.length === 0) {
-            showErrorToast('Sin inventarios', 'No tienes inventarios asignados. No puedes realizar verificaciones.');
+            showInventoryErrorToast('Sin inventarios', 'No tienes inventarios asignados. No puedes realizar verificaciones.');
             return;
         }
     }
@@ -75,19 +75,19 @@ async function addManualPlate() {
     const plateNumber = input.value.trim().toUpperCase();
     
     if (!plateNumber) {
-        showErrorToast('Campo vacío', 'Por favor ingresa una placa');
+        showInventoryErrorToast('Campo vacío', 'Por favor ingresa una placa');
         return;
     }
     
     // Validate plate format (basic validation - alphanumeric)
     if (!/^[A-Z0-9]+$/.test(plateNumber)) {
-        showErrorToast('Placa inválida', 'La placa solo debe contener letras y números');
+        showInventoryErrorToast('Placa inválida', 'La placa solo debe contener letras y números');
         return;
     }
     
     // Check if plate already scanned
     if (batchVerificationState.scannedItems.some(item => item.licencePlate === plateNumber)) {
-        showWarningToast('Duplicado', `La placa ${plateNumber} ya fue agregada`);
+        showInventoryWarningToast('Duplicado', `La placa ${plateNumber} ya fue agregada`);
         input.value = '';
         input.focus();
         return;
@@ -101,7 +101,7 @@ async function addManualPlate() {
         
         // If item not found, show error
         if (!item) {
-            showErrorToast('Placa no encontrada', `La placa ${plateNumber} no coincide con ningún item`);
+            showInventoryErrorToast('Placa no encontrada', `La placa ${plateNumber} no coincide con ningún item`);
             input.value = '';
             input.focus();
             return;
@@ -125,11 +125,11 @@ async function addManualPlate() {
         input.value = '';
         input.focus();
         
-        showSuccessToast('Placa agregada', `${itemName} agregado correctamente a la lista de verificación`);
+        showInventorySuccessToast('Placa agregada', `${itemName} agregado correctamente a la lista de verificación`);
     } catch (error) {
         // Si el error es que no pertenece a inventarios, ya se muestra toast en la API
         if (!error.message || !error.message.includes('no pertenece')) {
-            showErrorToast('Error al buscar placa', error.message || `No se pudo encontrar la placa ${plateNumber}. Verifica que la placa sea correcta.`);
+            showInventoryErrorToast('Error al buscar placa', error.message || `No se pudo encontrar la placa ${plateNumber}. Verifica que la placa sea correcta.`);
         }
         input.value = '';
         input.focus();
@@ -147,7 +147,7 @@ async function startBatchScanner() {
         
         // Check if Html5Qrcode is available
         if (typeof Html5Qrcode === 'undefined') {
-            showErrorToast('Error', 'Biblioteca de escaneo no disponible. Por favor recarga la página.');
+            showInventoryErrorToast('Error', 'Biblioteca de escaneo no disponible. Por favor recarga la página.');
             return;
         }
 
@@ -182,10 +182,10 @@ async function startBatchScanner() {
         document.getElementById('stopCameraBtn').classList.remove('hidden');
         document.getElementById('capturePhotoBtn').classList.remove('hidden');
 
-        showSuccessToast('Cámara iniciada', 'Escanea las placas de los items. La cámara capturará automáticamente al detectar un código.');
+        showInventorySuccessToast('Cámara iniciada', 'Escanea las placas de los items. La cámara capturará automáticamente al detectar un código.');
 
     } catch (error) {
-        showErrorToast('Error al iniciar cámara', 'No se pudo iniciar la cámara. Verifica los permisos del navegador y que la cámara esté disponible.');
+        showInventoryErrorToast('Error al iniciar cámara', 'No se pudo iniciar la cámara. Verifica los permisos del navegador y que la cámara esté disponible.');
         stopBatchScanner();
     }
 }
@@ -217,7 +217,7 @@ async function stopBatchScanner() {
         document.getElementById('capturePhotoBtn').classList.add('hidden');
 
     } catch (error) {
-        showWarningToast('Advertencia', 'Hubo un problema al detener la cámara, pero se cerró correctamente.');
+        showInventoryWarningToast('Advertencia', 'Hubo un problema al detener la cámara, pero se cerró correctamente.');
     }
 }
 
@@ -239,7 +239,7 @@ async function handleScannedCode(code) {
 
     // Check if already scanned
     if (batchVerificationState.scannedItems.some(item => item.licencePlate === cleanedCode)) {
-        showInfoToast('Ya escaneado', `La placa ${cleanedCode} ya fue escaneada`);
+        showInventoryInfoToast('Ya escaneado', `La placa ${cleanedCode} ya fue escaneada`);
         return;
     }
 
@@ -251,19 +251,19 @@ async function handleScannedCode(code) {
         
         // If item not found, don't add to list
         if (!item) {
-            showErrorToast('Placa no encontrada', `La placa ${cleanedCode} no coincide con ningún item en el sistema`);
+            showInventoryErrorToast('Placa no encontrada', `La placa ${cleanedCode} no coincide con ningún item en el sistema`);
             return;
         }
         
         const itemName = item.productName;
-        showInfoToast('Item encontrado', `Escaneando ${itemName}...`);
+        showInventoryInfoToast('Item encontrado', `Escaneando ${itemName}...`);
         
         // Capture photo automatically only if item exists
         capturePhotoForScannedCode(cleanedCode, itemName);
     } catch (error) {
         // Si el error es que no pertenece a inventarios, ya se muestra toast en la API
         if (!error.message || !error.message.includes('no pertenece')) {
-            showErrorToast('Error al escanear', error.message || `No se pudo procesar la placa ${cleanedCode}. Intenta nuevamente.`);
+            showInventoryErrorToast('Error al escanear', error.message || `No se pudo procesar la placa ${cleanedCode}. Intenta nuevamente.`);
         }
     }
 }
@@ -299,7 +299,7 @@ async function capturePhotoForScannedCode(licencePlate, itemName = null) {
         }
 
     } catch (error) {
-        showWarningToast('Foto no capturada', 'No se pudo capturar la foto automáticamente, pero el item fue agregado. Puedes agregar evidencia manualmente.');
+        showInventoryWarningToast('Foto no capturada', 'No se pudo capturar la foto automáticamente, pero el item fue agregado. Puedes agregar evidencia manualmente.');
         // Add item without photo if capture fails
         addScannedItem(licencePlate, null, itemName);
     }
@@ -323,7 +323,7 @@ function captureFrameToCanvas(videoElement, canvasElement, licencePlate, isManua
             }
         }, 'image/jpeg', 0.9);
     } catch (error) {
-        showWarningToast('Error al capturar foto', 'No se pudo capturar la foto del frame, pero el item fue agregado.');
+        showInventoryWarningToast('Error al capturar foto', 'No se pudo capturar la foto del frame, pero el item fue agregado.');
         addScannedItem(licencePlate, null, itemName);
     }
 }
@@ -335,12 +335,12 @@ function captureBatchPhoto() {
     const canvasElement = document.getElementById('cameraCanvas');
     
     if (!videoElement || !canvasElement) {
-        showErrorToast('Error', 'La cámara no está disponible');
+        showInventoryErrorToast('Error', 'La cámara no está disponible');
         return;
     }
     
     captureFrameToCanvas(videoElement, canvasElement, 'manual_' + Date.now(), true, null);
-    showSuccessToast('Foto capturada', 'Foto capturada manualmente y agregada a la lista');
+    showInventorySuccessToast('Foto capturada', 'Foto capturada manualmente y agregada a la lista');
 }
 
 // Add Scanned Item
@@ -360,7 +360,7 @@ function addScannedItem(licencePlate, photo, itemName) {
         `Placa ${licencePlate} escaneada y foto capturada` : 
         `Placa ${licencePlate} escaneada`;
     
-        showSuccessToast('Item agregado', message);
+        showInventorySuccessToast('Item agregado', message);
 }
 
 // Remove Scanned Item
@@ -374,7 +374,7 @@ function handleEvidenceChange(index, file) {
     if (file && batchVerificationState.scannedItems[index]) {
         batchVerificationState.scannedItems[index].evidence = file;
         updateScannedItemsList();
-        showSuccessToast('Evidencia adjuntada', `Evidencia adjuntada para ${batchVerificationState.scannedItems[index].licencePlate}`);
+        showInventorySuccessToast('Evidencia adjuntada', `Evidencia adjuntada para ${batchVerificationState.scannedItems[index].licencePlate}`);
     }
 }
 
@@ -408,7 +408,7 @@ function handleEvidenceCameraChange(index, file) {
     if (file && batchVerificationState.scannedItems[index]) {
         batchVerificationState.scannedItems[index].evidence = file;
         updateScannedItemsList();
-        showSuccessToast('Evidencia capturada', `Evidencia capturada con la cámara para ${batchVerificationState.scannedItems[index].licencePlate}`);
+        showInventorySuccessToast('Evidencia capturada', `Evidencia capturada con la cámara para ${batchVerificationState.scannedItems[index].licencePlate}`);
     }
 }
 
@@ -513,17 +513,17 @@ async function finalizeBatchVerification() {
     const items = batchVerificationState.scannedItems;
 
     if (items.length === 0) {
-        showErrorToast('Error', 'No hay placas escaneadas para verificar');
+        showInventoryErrorToast('Error', 'No hay placas escaneadas para verificar');
         return;
     }
 
     try {
-        showInfoToast('Procesando verificaciones', `Creando ${items.length} verificación(es)...`);
+        showInventoryInfoToast('Procesando verificaciones', `Creando ${items.length} verificación(es)...`);
         showLoadingState();
         
         const token = localStorage.getItem('jwt');
         if (!token) {
-            showErrorToast('Sesión expirada', 'Por favor inicia sesión nuevamente');
+            showInventoryErrorToast('Sesión expirada', 'Por favor inicia sesión nuevamente');
             throw new Error('No authentication token found');
         }
 
@@ -586,11 +586,11 @@ async function finalizeBatchVerification() {
                                 evidenceUploadCount++;
                                 return { success: true, licencePlate: verificationResult.licencePlateNumber };
                             } else {
-                                showWarningToast('Evidencia no subida', `No se pudo subir la evidencia adicional para ${verificationResult.licencePlateNumber}`);
+                                showInventoryWarningToast('Evidencia no subida', `No se pudo subir la evidencia adicional para ${verificationResult.licencePlateNumber}`);
                                 return { success: false, licencePlate: verificationResult.licencePlateNumber };
                             }
                         }).catch(error => {
-                            showWarningToast('Error en evidencia', `Error al subir evidencia adicional para ${verificationResult.licencePlateNumber}`);
+                            showInventoryWarningToast('Error en evidencia', `Error al subir evidencia adicional para ${verificationResult.licencePlateNumber}`);
                             return { success: false, licencePlate: verificationResult.licencePlateNumber };
                         });
                         
@@ -603,14 +603,14 @@ async function finalizeBatchVerification() {
             if (evidenceUploadPromises.length > 0) {
                 await Promise.all(evidenceUploadPromises);
                 if (evidenceUploadCount > 0) {
-                    showSuccessToast('Evidencias subidas', `Se subieron ${evidenceUploadCount} evidencias adicionales`);
+                    showInventorySuccessToast('Evidencias subidas', `Se subieron ${evidenceUploadCount} evidencias adicionales`);
                 }
             }
         }
 
         // Show results with details about failed items
         if (result.successfulItems === result.totalItems) {
-            showSuccessToast('Verificaciones completadas', `Se crearon ${result.successfulItems} verificaciones exitosamente`);
+            showInventorySuccessToast('Verificaciones completadas', `Se crearon ${result.successfulItems} verificaciones exitosamente`);
         } else {
             // Show which items failed and why
             const failedItems = result.results ? result.results.filter(r => !r.success) : [];
@@ -618,23 +618,26 @@ async function finalizeBatchVerification() {
             
             if (failedItems.length > 0) {
                 const failedPlates = failedItems.map(f => f.licencePlateNumber || 'Desconocido').join(', ');
-                failedMessage += ` Items que fallaron: ${failedPlates}. Estos items no pertenecen a tus inventarios o no se encontraron.`;
+                failedMessage += ` Items que fallaron: ${failedPlates}. Estos items no están en tu inventario. Solo puedes verificar items de los cuales eres owner, manager o signatory.`;
             }
             
-            showWarningToast('Verificación parcial', failedMessage);
+            showInventoryWarningToast('Verificación parcial', failedMessage);
         }
 
         // Close modal and reload data
         closeBatchVerificationModal();
-        showInfoToast('Actualizando datos', 'Recargando verificaciones...');
+        showInventoryInfoToast('Actualizando datos', 'Recargando verificaciones...');
         await loadVerificationData();
 
     } catch (error) {
         // Si el error contiene información sobre items que no pertenecen, ya se muestra toast
-        if (error.message && error.message.includes('no pertenece')) {
-            showErrorToast('Error de autorización', error.message);
+        if (error.message && (error.message.includes('no pertenece') || error.message.includes('not authorized') || error.message.includes('no está en mi inventario'))) {
+            const errorMsg = error.message.includes('no está en mi inventario') 
+                ? error.message 
+                : 'Algunos items no están en tu inventario. Solo puedes verificar items de los cuales eres owner, manager o signatory.';
+            showInventoryErrorToast('Item no está en tu inventario', errorMsg);
         } else {
-            showErrorToast('Error al crear verificaciones', error.message || 'No se pudieron crear las verificaciones. Verifica que todos los items pertenezcan a tus inventarios.');
+            showInventoryErrorToast('Error al crear verificaciones', error.message || 'No se pudieron crear las verificaciones. Verifica que todos los items pertenezcan a tus inventarios.');
         }
     } finally {
         hideLoadingState();
