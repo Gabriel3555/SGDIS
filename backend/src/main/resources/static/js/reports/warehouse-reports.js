@@ -501,7 +501,27 @@ async function generateReport() {
                 };
                 break;
             case 'loans':
-                data = await fetchLoansReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
+                console.log('Fetching loans report with filters:', {
+                    regionalId: userRegionalId,
+                    institutionId: userInstitutionId,
+                    inventoryId: inventoryId,
+                    startDate: startDate,
+                    endDate: endDate
+                });
+                try {
+                    data = await fetchLoansReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
+                    console.log('Loans data received, length:', data ? data.length : 0, 'data:', data);
+                    if (!data || !Array.isArray(data)) {
+                        console.warn('Loans data is not an array, converting to empty array');
+                        data = [];
+                    }
+                } catch (error) {
+                    console.error('Error fetching loans:', error);
+                    showReportErrorToast('Error', 'Error al cargar préstamos: ' + error.message);
+                    document.getElementById('reportLoadingState').classList.add('hidden');
+                    document.getElementById('reportEmptyState').classList.remove('hidden');
+                    return;
+                }
                 break;
             case 'verifications':
                 data = await fetchVerificationsReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
@@ -512,13 +532,18 @@ async function generateReport() {
             case 'general':
                 data = await fetchGeneralReport(userRegionalId, userInstitutionId, startDate, endDate);
                 break;
+            default:
+                console.warn('Unknown report type:', reportType);
+                data = [];
         }
 
         currentReportData = data || [];
-        displayReport(data || []);
+        console.log('Final data to display, type:', typeof currentReportData, 'isArray:', Array.isArray(currentReportData), 'length:', Array.isArray(currentReportData) ? currentReportData.length : 'N/A');
+        console.log('Calling displayReport with currentReportType:', currentReportType);
+        displayReport(currentReportData);
     } catch (error) {
         console.error('Error generating report:', error);
-        showReportErrorToast('Error', 'Error al generar el reporte: ' + error.message);
+        showReportErrorToast('Error', 'Error al generar el reporte: ' + (error.message || 'Error desconocido'));
         document.getElementById('reportLoadingState').classList.add('hidden');
         document.getElementById('reportEmptyState').classList.remove('hidden');
     }
@@ -736,14 +761,16 @@ async function fetchLoansReport(regionalId, institutionId, inventoryId, startDat
     
     // Fetch item names for all unique item IDs
     const uniqueItemIds = [...new Set(loans.map(loan => loan.itemId).filter(id => id != null))];
+    console.log('Unique item IDs to fetch:', uniqueItemIds);
     const itemNamesMap = await fetchItemNames(uniqueItemIds, headers);
+    console.log('Item names map:', itemNamesMap);
     
     // Map loan data to expected format for display
-    return loans.map(loan => {
+    const mappedLoans = loans.map(loan => {
         const itemId = loan.itemId;
         const itemName = itemNamesMap[itemId] || `Item #${itemId || 'N/A'}`;
         
-        return {
+        const mappedLoan = {
             id: loan.id,
             userName: loan.responsibleName || 'N/A',
             itemName: itemName,
@@ -757,7 +784,11 @@ async function fetchLoansReport(regionalId, institutionId, inventoryId, startDat
             detailsReturn: loan.detailsReturn,
             returned: (loan.returned === true || loan.returned === 'true')
         };
+        return mappedLoan;
     });
+    
+    console.log('Mapped loans:', mappedLoans);
+    return mappedLoans;
 }
 
 // Fetch item names for given item IDs
@@ -1560,21 +1591,35 @@ function displayVerificationsReport(data) {
 
 // Display loans report with statistics
 function displayLoansReport(data) {
+    console.log('displayLoansReport called with data:', data);
     const loans = Array.isArray(data) ? data : [];
 
+    console.log('Processed loans array length:', loans.length);
+
     if (loans.length === 0) {
+        console.log('No loans data, showing empty state');
         document.getElementById('reportEmptyState').classList.remove('hidden');
         document.getElementById('reportResultsSection').classList.add('hidden');
         return;
     }
+
+    // Show results section and hide empty state
+    document.getElementById('reportEmptyState').classList.add('hidden');
+    document.getElementById('reportResultsSection').classList.remove('hidden');
 
     // Generate statistics
     generateStatistics(loans);
 
     // Generate table
     const headers = getHeadersForReportType('loans');
+    console.log('Loans headers:', headers);
     const tableHeader = document.getElementById('reportTableHeader');
     const tableBody = document.getElementById('reportTableBody');
+
+    if (!tableHeader || !tableBody) {
+        console.error('Table header or body not found!');
+        return;
+    }
 
     // Clear existing content
     tableHeader.innerHTML = '';
@@ -1611,7 +1656,12 @@ function displayLoansReport(data) {
     });
 
     // Update row count
-    document.getElementById('reportRowCount').textContent = `${loans.length} ${loans.length === 1 ? 'registro' : 'registros'}`;
+    const rowCountElement = document.getElementById('reportRowCount');
+    if (rowCountElement) {
+        rowCountElement.textContent = `${loans.length} ${loans.length === 1 ? 'registro' : 'registros'}`;
+    }
+
+    console.log('Loans report displayed successfully');
 }
 
 // Display items report with statistics
