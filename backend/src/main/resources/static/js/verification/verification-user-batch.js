@@ -107,10 +107,12 @@ async function addManualPlate() {
         input.value = '';
         input.focus();
         
-        showSuccessToast('Placa agregada', `${itemName} agregado correctamente`);
+        showSuccessToast('Placa agregada', `${itemName} agregado correctamente a la lista de verificación`);
     } catch (error) {
-        console.error('Error fetching item:', error);
-        showErrorToast('Error', error.message || `Error al buscar la placa ${plateNumber}`);
+        // Si el error es que no pertenece a inventarios, ya se muestra toast en la API
+        if (!error.message || !error.message.includes('no pertenece')) {
+            showErrorToast('Error al buscar placa', error.message || `No se pudo encontrar la placa ${plateNumber}. Verifica que la placa sea correcta.`);
+        }
         input.value = '';
         input.focus();
     }
@@ -162,11 +164,10 @@ async function startBatchScanner() {
         document.getElementById('stopCameraBtn').classList.remove('hidden');
         document.getElementById('capturePhotoBtn').classList.remove('hidden');
 
-        showSuccessToast('Cámara iniciada', 'Escanea las placas de los items');
+        showSuccessToast('Cámara iniciada', 'Escanea las placas de los items. La cámara capturará automáticamente al detectar un código.');
 
     } catch (error) {
-        console.error('Error starting scanner:', error);
-        showErrorToast('Error', 'No se pudo iniciar la cámara. Verifica los permisos.');
+        showErrorToast('Error al iniciar cámara', 'No se pudo iniciar la cámara. Verifica los permisos del navegador y que la cámara esté disponible.');
         stopBatchScanner();
     }
 }
@@ -198,7 +199,7 @@ async function stopBatchScanner() {
         document.getElementById('capturePhotoBtn').classList.add('hidden');
 
     } catch (error) {
-        console.error('Error stopping scanner:', error);
+        showWarningToast('Advertencia', 'Hubo un problema al detener la cámara, pero se cerró correctamente.');
     }
 }
 
@@ -232,18 +233,20 @@ async function handleScannedCode(code) {
         
         // If item not found, don't add to list
         if (!item) {
-            showErrorToast('Placa no encontrada', `La placa ${cleanedCode} no coincide con ningún item`);
+            showErrorToast('Placa no encontrada', `La placa ${cleanedCode} no coincide con ningún item en el sistema`);
             return;
         }
         
         const itemName = item.productName;
+        showInfoToast('Item encontrado', `Escaneando ${itemName}...`);
         
         // Capture photo automatically only if item exists
         capturePhotoForScannedCode(cleanedCode, itemName);
     } catch (error) {
-        console.error('Error fetching item:', error);
-        // Don't add item if there's an error fetching it
-        showErrorToast('Error', error.message || `Error al buscar la placa ${cleanedCode}`);
+        // Si el error es que no pertenece a inventarios, ya se muestra toast en la API
+        if (!error.message || !error.message.includes('no pertenece')) {
+            showErrorToast('Error al escanear', error.message || `No se pudo procesar la placa ${cleanedCode}. Intenta nuevamente.`);
+        }
     }
 }
 
@@ -278,7 +281,7 @@ async function capturePhotoForScannedCode(licencePlate, itemName = null) {
         }
 
     } catch (error) {
-        console.error('Error capturing photo:', error);
+        showWarningToast('Foto no capturada', 'No se pudo capturar la foto automáticamente, pero el item fue agregado. Puedes agregar evidencia manualmente.');
         // Add item without photo if capture fails
         addScannedItem(licencePlate, null, itemName);
     }
@@ -302,7 +305,7 @@ function captureFrameToCanvas(videoElement, canvasElement, licencePlate, isManua
             }
         }, 'image/jpeg', 0.9);
     } catch (error) {
-        console.error('Error capturing frame:', error);
+        showWarningToast('Error al capturar foto', 'No se pudo capturar la foto del frame, pero el item fue agregado.');
         addScannedItem(licencePlate, null, itemName);
     }
 }
@@ -319,7 +322,7 @@ function captureBatchPhoto() {
     }
     
     captureFrameToCanvas(videoElement, canvasElement, 'manual_' + Date.now(), true, null);
-    showSuccessToast('Foto capturada', 'Foto capturada manualmente');
+    showSuccessToast('Foto capturada', 'Foto capturada manualmente y agregada a la lista');
 }
 
 // Add Scanned Item
@@ -339,7 +342,7 @@ function addScannedItem(licencePlate, photo, itemName) {
         `Placa ${licencePlate} escaneada y foto capturada` : 
         `Placa ${licencePlate} escaneada`;
     
-    showSuccessToast('Placa escaneada', message);
+        showSuccessToast('Item agregado', message);
 }
 
 // Remove Scanned Item
@@ -497,10 +500,12 @@ async function finalizeBatchVerification() {
     }
 
     try {
+        showInfoToast('Procesando verificaciones', `Creando ${items.length} verificación(es)...`);
         showLoadingState();
         
         const token = localStorage.getItem('jwt');
         if (!token) {
+            showErrorToast('Sesión expirada', 'Por favor inicia sesión nuevamente');
             throw new Error('No authentication token found');
         }
 
@@ -563,11 +568,11 @@ async function finalizeBatchVerification() {
                                 evidenceUploadCount++;
                                 return { success: true, licencePlate: verificationResult.licencePlateNumber };
                             } else {
-                                console.error(`Error uploading evidence for ${verificationResult.licencePlateNumber}`);
+                                showWarningToast('Evidencia no subida', `No se pudo subir la evidencia adicional para ${verificationResult.licencePlateNumber}`);
                                 return { success: false, licencePlate: verificationResult.licencePlateNumber };
                             }
                         }).catch(error => {
-                            console.error(`Error uploading evidence for ${verificationResult.licencePlateNumber}:`, error);
+                            showWarningToast('Error en evidencia', `Error al subir evidencia adicional para ${verificationResult.licencePlateNumber}`);
                             return { success: false, licencePlate: verificationResult.licencePlateNumber };
                         });
                         
@@ -587,7 +592,7 @@ async function finalizeBatchVerification() {
 
         // Show results with details about failed items
         if (result.successfulItems === result.totalItems) {
-            showSuccessToast('Éxito', `Se crearon ${result.successfulItems} verificaciones exitosamente`);
+            showSuccessToast('Verificaciones completadas', `Se crearon ${result.successfulItems} verificaciones exitosamente`);
         } else {
             // Show which items failed and why
             const failedItems = result.results ? result.results.filter(r => !r.success) : [];
@@ -595,19 +600,24 @@ async function finalizeBatchVerification() {
             
             if (failedItems.length > 0) {
                 const failedPlates = failedItems.map(f => f.licencePlateNumber || 'Desconocido').join(', ');
-                failedMessage += ` Items que fallaron: ${failedPlates}. Verifica que estos items pertenezcan a tus inventarios.`;
+                failedMessage += ` Items que fallaron: ${failedPlates}. Estos items no pertenecen a tus inventarios o no se encontraron.`;
             }
             
-            showInfoToast('Verificación parcial', failedMessage);
+            showWarningToast('Verificación parcial', failedMessage);
         }
 
         // Close modal and reload data
         closeBatchVerificationModal();
+        showInfoToast('Actualizando datos', 'Recargando verificaciones...');
         await loadVerificationData();
 
     } catch (error) {
-        console.error('Error finalizing batch verification:', error);
-        showErrorToast('Error', error.message || 'Error al crear las verificaciones');
+        // Si el error contiene información sobre items que no pertenecen, ya se muestra toast
+        if (error.message && error.message.includes('no pertenece')) {
+            showErrorToast('Error de autorización', error.message);
+        } else {
+            showErrorToast('Error al crear verificaciones', error.message || 'No se pudieron crear las verificaciones. Verifica que todos los items pertenezcan a tus inventarios.');
+        }
     } finally {
         hideLoadingState();
     }
