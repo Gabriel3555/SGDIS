@@ -276,7 +276,7 @@
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>
-            <a href="/superadmin/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+            <a href="/superadmin/info-me" id="navInfoMe" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
@@ -314,7 +314,7 @@
 
                 <div class="flex items-center gap-4">
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
-                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" id="headerUserInfo"
                         onclick="window.location.href='/superadmin/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
                         <div class="hidden sm:block">
@@ -418,6 +418,46 @@
     <script src="../../js/inactivity-monitor.js"></script>
     <script src="../../js/dark-mode.js"></script>
     <script src="../../js/notifications-bell.js"></script>
+    <script>
+        // Detectar si es warehouse y actualizar enlaces del sidebar y header
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const isWarehouse = currentPath.includes('/warehouse/');
+            
+            if (isWarehouse) {
+                // Actualizar todos los enlaces del sidebar
+                const sidebarLinks = document.querySelectorAll('nav a.sidebar-item');
+                sidebarLinks.forEach(link => {
+                    const href = link.getAttribute('href');
+                    const onclick = link.getAttribute('onclick');
+                    
+                    if (href && href.startsWith('/superadmin/')) {
+                        const newHref = href.replace('/superadmin/', '/warehouse/');
+                        link.setAttribute('href', newHref);
+                        
+                        if (onclick) {
+                            const newOnclick = onclick.replace(/\/superadmin\//g, '/warehouse/');
+                            link.setAttribute('onclick', newOnclick);
+                        }
+                    }
+                });
+                
+                // Actualizar enlace del header
+                const headerUserInfo = document.getElementById('headerUserInfo');
+                if (headerUserInfo) {
+                    headerUserInfo.setAttribute('onclick', "window.location.href='/warehouse/info-me'");
+                }
+                
+                // Ocultar Centros si es warehouse (warehouse no tiene acceso a centers)
+                const centersLink = Array.from(sidebarLinks).find(link => 
+                    link.getAttribute('href') && link.getAttribute('href').includes('/centers')
+                );
+                if (centersLink) {
+                    centersLink.style.display = 'none';
+                }
+            }
+        });
+    </script>
 
     <style>
         /* Smooth transition animation for dark/light mode changes - 0.5 seconds */
