@@ -874,7 +874,17 @@ function updateInventoryTable() {
   
   if (useServerPagination) {
     // For server-side pagination, use all inventories (they're already paginated from server)
-    paginatedInventories = window.inventoryData.filteredInventories || [];
+    // But limit to 6 for admin regional if server returned more
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    let allInventories = window.inventoryData.filteredInventories || [];
+    
+    if (isAdminRegional && allInventories.length > 6) {
+      // Limit to 6 for admin regional if server returned more
+      paginatedInventories = allInventories.slice(0, 6);
+    } else {
+      paginatedInventories = allInventories;
+    }
   } else {
     // For client-side pagination, slice the array
     const startIndex =
@@ -1109,7 +1119,19 @@ function updateInventoryCards() {
   
   if (useServerPagination) {
     // For server-side pagination, use all inventories (they're already paginated from server)
-    paginatedInventories = window.inventoryData.filteredInventories || [];
+    // But limit to 6 for admin regional and superadmin if server returned more
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                        (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    let allInventories = window.inventoryData.filteredInventories || [];
+    
+    if ((isAdminRegional || isSuperAdmin) && allInventories.length > 6) {
+      // Limit to 6 for admin regional and superadmin if server returned more
+      paginatedInventories = allInventories.slice(0, 6);
+    } else {
+      paginatedInventories = allInventories;
+    }
   } else {
     // For client-side pagination, slice the array
     const startIndex =
