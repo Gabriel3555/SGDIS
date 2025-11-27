@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mis Inventarios - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <script>
+        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
+        (function () {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        'sena-verde': '#00AF00',
+                        'sena-verde-oscuro': '#008800'
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
+    <style>
+        /* Inventory Card Base Styles */
+        .inventory-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            border: 1px solid #e5e7eb;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .inventory-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 8px 24px rgba(0, 175, 0, 0.15);
+            border-color: #d1d5db;
+        }
+
+        /* Owner Highlight - Contorno ligero con degradado elegante */
+        .inventory-card.owner-card {
+            border: 1px solid rgba(0, 175, 0, 0.2);
+            box-shadow: 0 4px 20px rgba(0, 175, 0, 0.12);
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 50%, #ffffff 100%);
+            position: relative;
+        }
+
+        .inventory-card.owner-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 32px rgba(0, 175, 0, 0.2);
+            border-color: rgba(0, 175, 0, 0.3);
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 40%, #dcfce7 60%, #f0fdf4 80%, #ffffff 100%);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.1);
+            }
+        }
+
+        /* Dark Mode Styles */
+        .dark .inventory-card {
+            background: #1f2937;
+            border-color: #374151;
+            color: #f3f4f6;
+        }
+
+        .dark .inventory-card:hover {
+            border-color: #00AF00;
+            box-shadow: 0 8px 24px rgba(0, 175, 0, 0.25);
+        }
+
+        .dark .inventory-card.owner-card {
+            border-color: rgba(0, 175, 0, 0.3);
+            background: linear-gradient(135deg, #1f2937 0%, #0f2e1a 50%, #1f2937 100%);
+            box-shadow: 0 4px 20px rgba(0, 175, 0, 0.15);
+        }
+
+        .dark .inventory-card.owner-card:hover {
+            box-shadow: 0 12px 32px rgba(0, 175, 0, 0.25);
+            border-color: rgba(0, 175, 0, 0.4);
+            background: linear-gradient(135deg, #1f2937 0%, #0f2e1a 40%, #064e3b 60%, #0f2e1a 80%, #1f2937 100%);
+        }
+
+        /* Role Badges */
+        .role-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .role-badge:hover {
+            transform: scale(1.05);
+        }
+
+        .role-owner {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            box-shadow: 0 2px 4px rgba(0, 175, 0, 0.15);
+        }
+
+        .dark .role-owner {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            color: #d1fae5;
+            border-color: #10b981;
+        }
+
+        .role-manager {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            color: #166534;
+            border: 1px solid #86efac;
+            box-shadow: 0 2px 4px rgba(0, 175, 0, 0.1);
+        }
+
+        .dark .role-manager {
+            background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+            color: #dcfce7;
+            border-color: #22c55e;
+        }
+
+        .role-signatory {
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+            box-shadow: 0 2px 4px rgba(0, 175, 0, 0.1);
+        }
+
+        .dark .role-signatory {
+            background: linear-gradient(135deg, #14532d 0%, #15803d 100%);
+            color: #f0fdf4;
+            border-color: #4ade80;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #065f46;
+            border: 1px solid #6ee7b7;
+            box-shadow: 0 2px 4px rgba(6, 95, 70, 0.1);
+            border-radius: 9999px;
+        }
+
+        .dark .status-active {
+            background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+            color: #d1fae5;
+            border-color: #10b981;
+            border-radius: 9999px;
+        }
+
+        .status-inactive {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            box-shadow: 0 2px 4px rgba(153, 27, 27, 0.1);
+            border-radius: 9999px;
+        }
+
+        .dark .status-inactive {
+            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+            color: #fee2e2;
+            border-color: #ef4444;
+            border-radius: 9999px;
+        }
+
+        /* Filter Tabs */
+        .filter-tab {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .filter-tab.active {
+            color: #00AF00;
+        }
+
+        .filter-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #00AF00, #008800);
+            border-radius: 2px 2px 0 0;
+        }
+
+        .dark .filter-tab {
+            color: #d1d5db;
+        }
+
+        .dark .filter-tab.active {
+            color: #00AF00;
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .stat-card {
+            background: #1f2937;
+            border-color: #374151;
+        }
+
+        .dark .stat-card:hover {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header improvements */
+        .dark header {
+            background: #1f2937;
+            border-bottom: 1px solid #374151;
+        }
+
+        /* Button improvements */
+        .btn-view {
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-view::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-view:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-view:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 175, 0, 0.3);
+        }
+
+        /* Image improvements */
+        .inventory-image {
+            transition: all 0.3s ease;
+            border: 2px solid #e5e7eb;
+        }
+
+        .inventory-card:hover .inventory-image {
+            transform: scale(1.1);
+            border-color: #00AF00;
+        }
+
+        .dark .inventory-image {
+            border-color: #374151;
+        }
+
+        .inventory-card.owner-card .inventory-image {
+            border-color: rgba(0, 175, 0, 0.2);
+        }
+
+        /* Text improvements for dark mode */
+        .dark h1, .dark h2, .dark h3 {
+            color: #f9fafb;
+        }
+
+        .dark p, .dark span {
+            color: #d1d5db;
+        }
+
+        .dark .text-gray-600 {
+            color: #9ca3af;
+        }
+
+        .dark .text-gray-500 {
+            color: #6b7280;
+        }
+
+        .dark .border-gray-200 {
+            border-color: #374151;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        // Replace sidebar with user sidebar immediately if user route
+        (function() {
+            const path = window.location.pathname;
+            const isUserRoute = path.includes('/user/') || 
+                               path.includes('/dashboard/user') || 
+                               path === '/info-me' ||
+                               path.includes('/info-me');
+            
+            if (isUserRoute) {
+                function buildUserSidebarHTML(currentPath) {
+                    return `
+                        <a href="/user/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/dashboard' || currentPath === '/dashboard/user' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/dashboard')">
+                            <i class="fas fa-chart-line text-lg"></i>
+                            <span class="font-medium">Dashboard</span>
+                        </a>
+                        <a href="/user/my-inventories" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/my-inventories' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/my-inventories')">
+                            <i class="fas fa-boxes text-lg"></i>
+                            <span class="font-medium">Mis Inventarios</span>
+                        </a>
+                        <a href="/user/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/notifications' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/notifications')">
+                            <i class="fas fa-bell text-lg"></i>
+                            <span class="font-medium">Notificaciones</span>
+                        </a>
+                        <a href="/user/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/loans' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/loans')">
+                            <i class="fas fa-hand-holding text-lg"></i>
+                            <span class="font-medium">Préstamos</span>
+                        </a>
+                        <a href="/user/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/verification' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/verification')">
+                            <i class="fas fa-clipboard-check text-lg"></i>
+                            <span class="font-medium">Verificación</span>
+                        </a>
+                        <a href="/user/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/transfers' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/user/transfers')">
+                            <i class="fas fa-exchange-alt text-lg"></i>
+                            <span class="font-medium">Transferencias</span>
+                        </a>
+                        <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/info-me' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/info-me')">
+                            <i class="fas fa-user-circle text-lg"></i>
+                            <span class="font-medium">Mi Perfil</span>
+                        </a>`;
+                }
+                
+                function replaceSidebarWithUser() {
+                    const nav = document.querySelector('nav.flex-1.px-4.py-4.overflow-y-auto');
+                    if (nav) {
+                        nav.innerHTML = buildUserSidebarHTML(window.location.pathname);
+                        return true;
+                    }
+                    return false;
+                }
+                
+                if (!replaceSidebarWithUser()) {
+                    const observer = new MutationObserver(function(mutations, obs) {
+                        if (replaceSidebarWithUser()) {
+                            obs.disconnect();
+                        }
+                    });
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', replaceSidebarWithUser);
+                    }
+                }
+            }
+        })();
+    </script>
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay"
+        style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;">
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar"
+        style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <!-- Sidebar header -->
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                    <img src="../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                </div>
+                <div class="text-gray-800">
+                    <div class="font-bold text-lg">SGDIS</div>
+                    <div class="text-xs opacity-70">Mis Inventarios</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar navigation -->
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <!-- Content will be replaced by script -->
+        </nav>
+
+        <!-- Logout button -->
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()"
+                class="w-full flex items-center justify-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white font-semibold py-3 px-4 rounded-xl transition-colors">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content min-h-screen">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 flex-1">
+                    <button class="sidebar-toggle text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-colors" id="menuToggle">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Mis Inventarios</h1>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Gestiona tus inventarios como propietario, gestor o firmante</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                        onclick="window.location.href='/info-me'">
+                        <div class="user-avatar" id="headerUserAvatar"></div>
+                        <div class="hidden sm:block">
+                            <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400" id="headerUserRole"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="p-6">
+            <!-- Filter Tabs -->
+            <div class="mb-6 flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+                <button onclick="filterInventories('all')" id="filterAll"
+                    class="filter-tab px-5 py-3 font-semibold text-sm whitespace-nowrap active">
+                    <i class="fas fa-th-large mr-2"></i>
+                    Todos
+                </button>
+                <button onclick="filterInventories('owner')" id="filterOwner"
+                    class="filter-tab px-5 py-3 font-semibold text-sm whitespace-nowrap">
+                    <i class="fas fa-crown mr-2"></i>
+                    Como Propietario
+                </button>
+                <button onclick="filterInventories('manager')" id="filterManager"
+                    class="filter-tab px-5 py-3 font-semibold text-sm whitespace-nowrap">
+                    <i class="fas fa-user-tie mr-2"></i>
+                    Como Gestor
+                </button>
+                <button onclick="filterInventories('signatory')" id="filterSignatory"
+                    class="filter-tab px-5 py-3 font-semibold text-sm whitespace-nowrap">
+                    <i class="fas fa-signature mr-2"></i>
+                    Como Firmante
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-6">
+                <div class="stat-card">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Total Inventarios</p>
+                            <p class="text-3xl font-bold text-gray-800" id="totalCount">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-boxes text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Como Propietario</p>
+                            <p class="text-3xl font-bold text-gray-800" id="ownerCount">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-crown text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-sm text-gray-600 mb-1">Como Gestor/Firmante</p>
+                            <p class="text-3xl font-bold text-gray-800" id="managedCount">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user-tie text-yellow-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-green-600 mb-4"></i>
+                <p class="text-gray-600">Cargando tus inventarios...</p>
+            </div>
+
+            <!-- Inventories Grid -->
+            <div id="inventoriesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" style="display: none;">
+                <!-- Inventories will be loaded here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="text-center py-12" style="display: none;">
+                <i class="fas fa-inbox text-6xl text-gray-400 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">No tienes inventarios</h3>
+                <p class="text-gray-600">Aún no se te ha asignado ningún inventario como propietario, gestor o firmante.</p>
+            </div>
+        </main>
+    </div>
+
+    <script src="../../js/user-sidebar.js"></script>
+    <script src="../../js/dashboard.js"></script>
+    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
+    <script src="../../js/inventory/user-my-inventories.js"></script>
+
+    <style>
+        /* Adjust main content margin to account for fixed sidebar */
+        .main-content {
+            margin-left: 280px;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .overlay {
+                display: none;
+            }
+
+            .overlay.active {
+                display: block;
+            }
+        }
+    </style>
+
+    <script>
+        // Handle sidebar click
+        function handleSidebarClick(event, link) {
+            if (link === '#') {
+                event.preventDefault();
+                return;
+            }
+            event.preventDefault();
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+            if (link.startsWith('/')) {
+                window.location.href = link;
+            }
+        }
+
+        // Setup mobile menu toggle
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    sidebar.classList.toggle('active');
+                    overlay.classList.toggle('active');
+                });
+
+                overlay.addEventListener('click', function () {
+                    sidebar.classList.remove('active');
+                    overlay.classList.remove('active');
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setupMobileMenuToggle();
+        });
+
+        // Logout function
+        function logout() {
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                localStorage.removeItem('jwt');
+                window.location.href = '/';
+            }
+        }
+    </script>
+
+</body>
+
+</html>
+

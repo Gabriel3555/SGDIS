@@ -53,5 +53,17 @@ public interface SpringDataTransferRepository extends JpaRepository<TransferEnti
 
     @Query("SELECT t FROM TransferEntity t ORDER BY t.requestedAt DESC")
     Page<TransferEntity> findAllOrderedByRequestedAt(Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT t FROM TransferEntity t
+            LEFT JOIN FETCH t.item
+            LEFT JOIN FETCH t.inventory inv
+            LEFT JOIN FETCH t.sourceInventory srcInv
+            LEFT JOIN FETCH t.requestedBy
+            LEFT JOIN FETCH t.approvedBy
+            WHERE (inv.institution.regional.id = :regionalId OR srcInv.institution.regional.id = :regionalId)
+            ORDER BY t.requestedAt DESC
+            """)
+    Page<TransferEntity> findAllByRegionalId(@Param("regionalId") Long regionalId, Pageable pageable);
 }
 

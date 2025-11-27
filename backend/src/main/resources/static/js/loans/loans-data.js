@@ -1,16 +1,21 @@
 let loansData = {
     loans: [],
     filteredLoans: [],
+    loansMade: [], // Loans where user is the lender
+    filteredLoansMade: [],
     regionals: [],
     institutions: [],
     inventories: [],
+    userInventoriesWithPermission: [], // For USER role: list of inventory IDs where user is owner or signatory
     currentPage: 1,
     itemsPerPage: 10,
     searchTerm: '',
     selectedRegional: 'all',
     selectedInstitution: 'all',
     selectedInventory: 'all',
-    isLoading: false
+    isLoading: false,
+    userRole: null, // Store current user role
+    canCreateLoans: false // Whether user can create loans
 };
 
 function getLoanStatusText(returned) {

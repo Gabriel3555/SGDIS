@@ -52,6 +52,8 @@ function updateUserStats() {
 
   const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
   const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+  const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                         (window.location.pathname && window.location.pathname.includes('/admin_regional'));
   const isSuperAdmin = currentRole === 'SUPERADMIN';
 
   // Use statistics from endpoint if available (for SUPERADMIN), otherwise calculate from current page
@@ -90,7 +92,7 @@ function updateUserStats() {
   }
   
   container.innerHTML = `
-        ${!isAdminInstitution ? `<div class="stat-card">
+        ${!isAdminInstitution && !isAdminRegional ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Super Admin</p>
@@ -103,7 +105,7 @@ function updateUserStats() {
             <p class="text-red-600 text-sm font-medium">Administradores del sistema</p>
         </div>` : ''}
 
-        <div class="stat-card">
+        ${!isAdminInstitution ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Admin Institución</p>
@@ -114,7 +116,7 @@ function updateUserStats() {
                 </div>
             </div>
             <p class="text-purple-600 text-sm font-medium">Administradores de institución</p>
-        </div>
+        </div>` : ''}
 
         ${!isAdminInstitution ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
@@ -20,7 +21,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/superadmin/dashboard.html");
+        Resource resource = new ClassPathResource("static/views/dashboard/admin-institution/dashboard.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -34,7 +35,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> usersManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/users/users.html");
+        Resource resource = new ClassPathResource("static/views/users/users-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -48,7 +49,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> inventoryManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/inventory/inventory.html");
+        Resource resource = new ClassPathResource("static/views/inventory/inventory-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -300,7 +301,77 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionVerificationManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/verification/verification.html");
+        Resource resource = new ClassPathResource("static/views/verification/verification-admin-institution.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/transfers", "/admininstitution/transfers"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionTransfers() throws IOException {
+        Resource resource = new ClassPathResource("static/views/transfers/transfers.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/loans", "/admininstitution/loans"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionLoans() throws IOException {
+        Resource resource = new ClassPathResource("static/views/loans/loans.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/auditory", "/admininstitution/auditory"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionAuditory() throws IOException {
+        Resource resource = new ClassPathResource("static/views/auditory/auditory.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/notifications", "/admininstitution/notifications"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionNotifications() throws IOException {
+        Resource resource = new ClassPathResource("static/views/notifications/notifications.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/import-export", "/admininstitution/import-export"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionImportExport() throws IOException {
+        Resource resource = new ClassPathResource("static/views/import-export/import-export.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -539,6 +610,105 @@ public class AdminDashboardController {
     @ResponseBody
     public ResponseEntity<Resource> superadminCenters() throws IOException {
         Resource resource = new ClassPathResource("static/views/centers/centers.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    // User routes
+    @GetMapping("/user/dashboard")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userDashboard() throws IOException {
+        Resource resource = new ClassPathResource("static/views/dashboard/user/dashboard.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/user/my-inventories")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userMyInventories() throws IOException {
+        Resource resource = new ClassPathResource("static/views/inventory/user-my-inventories.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/user/inventory/{inventoryId}")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userInventoryItems(@PathVariable Long inventoryId) throws IOException {
+        Resource resource = new ClassPathResource("static/views/inventory/user-inventory-items.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/user/notifications")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userNotifications() throws IOException {
+        Resource resource = new ClassPathResource("static/views/notifications/notifications.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/user/loans")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userLoans() throws IOException {
+        Resource resource = new ClassPathResource("static/views/loans/loans.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/user/verification")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userVerification() throws IOException {
+        Resource resource = new ClassPathResource("static/views/verification/verification.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/user/transfers")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userTransfers() throws IOException {
+        Resource resource = new ClassPathResource("static/views/transfers/transfers.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

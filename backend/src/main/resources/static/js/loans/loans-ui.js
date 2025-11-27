@@ -1,7 +1,12 @@
 function updateLoansUI() {
-    updateLoansStats();
-    updateLoansTable();
-    updatePagination();
+    // Check if user is USER role and show different UI
+    if (loansData.userRole === 'USER') {
+        updateUserLoansUI();
+    } else {
+        updateLoansStats();
+        updateLoansTable();
+        updatePagination();
+    }
 }
 
 function updateLoansStats() {
@@ -69,6 +74,11 @@ function updateLoansStats() {
 }
 
 function updateLoansTable() {
+    // If user is USER role, don't use this function - use updateUserLoansUI instead
+    if (loansData.userRole === 'USER') {
+        return;
+    }
+
     const container = document.getElementById('loansTableContainer');
     if (!container) {
         console.warn('loansTableContainer not found');
@@ -181,6 +191,452 @@ function updateLoansTable() {
     container.innerHTML = tableHtml;
 }
 
+// Update UI specifically for USER role
+function updateUserLoansUI() {
+    updateUserLoansStats();
+    updateUserLoansContent();
+}
+
+// Update stats for USER role
+function updateUserLoansStats() {
+    const statsContainer = document.getElementById('loansStatsContainer');
+    if (!statsContainer) return;
+
+    // Use filteredLoans if available, otherwise use loans
+    const allLoans = (loansData.filteredLoans && loansData.filteredLoans.length > 0) ? loansData.filteredLoans : (loansData.loans || []);
+    const activeLoans = allLoans.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
+    const returnedLoans = allLoans.filter(loan => loan.returned === true);
+    
+    // Loans made by user
+    const allLoansMade = (loansData.filteredLoansMade && loansData.filteredLoansMade.length > 0) ? loansData.filteredLoansMade : (loansData.loansMade || []);
+    const activeLoansMade = allLoansMade.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
+
+    statsContainer.innerHTML = `
+        <div class="stat-card bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border border-yellow-200 dark:border-yellow-800">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-sm text-yellow-600 dark:text-yellow-400 font-medium mb-1">Préstamos Activos</p>
+                    <p class="text-3xl font-bold text-yellow-800 dark:text-yellow-300">${activeLoans.length}</p>
+                </div>
+                <div class="w-12 h-12 bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-clock text-white text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-yellow-600 dark:text-yellow-400">Items que tienes actualmente</p>
+        </div>
+
+        <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border border-green-200 dark:border-green-800">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-sm text-green-600 dark:text-green-400 font-medium mb-1">Préstamos Devueltos</p>
+                    <p class="text-3xl font-bold text-green-800 dark:text-green-300">${returnedLoans.length}</p>
+                </div>
+                <div class="w-12 h-12 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-check-circle text-white text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-green-600 dark:text-green-400">Items que has devuelto</p>
+        </div>
+
+        <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">Préstamos Realizados</p>
+                    <p class="text-3xl font-bold text-purple-800 dark:text-purple-300">${allLoansMade.length}</p>
+                </div>
+                <div class="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-hand-holding text-white text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-purple-600 dark:text-purple-400">Items que has prestado</p>
+        </div>
+
+        <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <p class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">Total Préstamos</p>
+                    <p class="text-3xl font-bold text-blue-800 dark:text-blue-300">${allLoans.length}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-list text-white text-xl"></i>
+                </div>
+            </div>
+            <p class="text-xs text-blue-600 dark:text-blue-400">Todos tus préstamos recibidos</p>
+        </div>
+    `;
+}
+
+// Update content for USER role with tabs
+function updateUserLoansContent() {
+    const container = document.getElementById('loansTableContainer');
+    if (!container) return;
+
+    if (loansData.isLoading) {
+        container.innerHTML = `
+            <div class="flex items-center justify-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AF00]"></div>
+            </div>
+        `;
+        return;
+    }
+
+    // Use filteredLoans if available, otherwise use loans
+    const allLoans = (loansData.filteredLoans && loansData.filteredLoans.length > 0) ? loansData.filteredLoans : (loansData.loans || []);
+    const activeLoans = allLoans.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
+    const returnedLoans = allLoans.filter(loan => loan.returned === true);
+
+    // Get current active tab from localStorage or default to 'active'
+    let currentTab = localStorage.getItem('userLoansActiveTab') || 'active';
+    
+    // Loans made by user
+    const allLoansMade = (loansData.filteredLoansMade && loansData.filteredLoansMade.length > 0) ? loansData.filteredLoansMade : (loansData.loansMade || []);
+    const activeLoansMade = allLoansMade.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
+    const returnedLoansMade = allLoansMade.filter(loan => loan.returned === true);
+
+    let html = `
+        <div class="mb-6">
+            <div class="flex border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+                <button onclick="switchUserLoansTab('active')" 
+                    class="px-6 py-3 font-semibold text-sm transition-colors whitespace-nowrap ${
+                        currentTab === 'active' 
+                            ? 'border-b-2 border-[#00AF00] text-[#00AF00] dark:text-green-400' 
+                            : 'text-gray-600 dark:text-gray-400 hover:text-[#00AF00] dark:hover:text-green-400'
+                    }">
+                    <i class="fas fa-clock mr-2"></i>
+                    Préstamos Activos (${activeLoans.length})
+                </button>
+                <button onclick="switchUserLoansTab('history')" 
+                    class="px-6 py-3 font-semibold text-sm transition-colors whitespace-nowrap ${
+                        currentTab === 'history' 
+                            ? 'border-b-2 border-[#00AF00] text-[#00AF00] dark:text-green-400' 
+                            : 'text-gray-600 dark:text-gray-400 hover:text-[#00AF00] dark:hover:text-green-400'
+                    }">
+                    <i class="fas fa-history mr-2"></i>
+                    Historial (${returnedLoans.length})
+                </button>
+                <button onclick="switchUserLoansTab('made')" 
+                    class="px-6 py-3 font-semibold text-sm transition-colors whitespace-nowrap ${
+                        currentTab === 'made' 
+                            ? 'border-b-2 border-[#00AF00] text-[#00AF00] dark:text-green-400' 
+                            : 'text-gray-600 dark:text-gray-400 hover:text-[#00AF00] dark:hover:text-green-400'
+                    }">
+                    <i class="fas fa-hand-holding mr-2"></i>
+                    Préstamos Realizados (${allLoansMade.length})
+                </button>
+            </div>
+        </div>
+    `;
+
+    if (currentTab === 'active') {
+        html += renderActiveLoans(activeLoans);
+    } else if (currentTab === 'history') {
+        html += renderLoanHistory(returnedLoans);
+    } else if (currentTab === 'made') {
+        html += renderLoansMade(allLoansMade, activeLoansMade, returnedLoansMade);
+    }
+
+    container.innerHTML = html;
+}
+
+// Render active loans with return buttons
+function renderActiveLoans(activeLoans) {
+    if (activeLoans.length === 0) {
+        return `
+            <div class="text-center py-12">
+                <i class="fas fa-check-circle text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">No tienes préstamos activos</p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Todos tus items han sido devueltos</p>
+            </div>
+        `;
+    }
+
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+
+    activeLoans.forEach(loan => {
+        const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'N/A';
+
+        const daysSinceLend = loan.lendAt ? Math.floor((new Date() - new Date(loan.lendAt)) / (1000 * 60 * 60 * 24)) : 0;
+
+        html += `
+            <div class="stat-card border-2 border-yellow-200 dark:border-yellow-800 hover:border-yellow-300 dark:hover:border-yellow-700 transition-all">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-box text-yellow-600 dark:text-yellow-400"></i>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">Item #${loan.itemId || 'N/A'}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            <i class="fas fa-user mr-1"></i>
+                            Prestado por: ${loan.lenderName || 'N/A'}
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            <i class="fas fa-calendar mr-1"></i>
+                            ${lendDate}
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            <i class="fas fa-clock mr-1"></i>
+                            ${daysSinceLend} día${daysSinceLend !== 1 ? 's' : ''} prestado
+                        </p>
+                        ${loan.detailsLend ? `
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-2 italic">
+                                "${loan.detailsLend}"
+                            </p>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button onclick="showReturnLoanModal(${loan.id})" 
+                        class="w-full bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
+                        <i class="fas fa-undo"></i>
+                        Devolver Item
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    return html;
+}
+
+// Render loan history
+function renderLoanHistory(returnedLoans) {
+    if (returnedLoans.length === 0) {
+        return `
+            <div class="text-center py-12">
+                <i class="fas fa-inbox text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">No hay historial de préstamos</p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Los préstamos devueltos aparecerán aquí</p>
+            </div>
+        `;
+    }
+
+    // Sort by return date, most recent first
+    const sortedLoans = [...returnedLoans].sort((a, b) => {
+        if (!a.returnAt && !b.returnAt) return 0;
+        if (!a.returnAt) return 1;
+        if (!b.returnAt) return -1;
+        return new Date(b.returnAt) - new Date(a.returnAt);
+    });
+
+    let html = '<div class="space-y-4">';
+
+    sortedLoans.forEach(loan => {
+        const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'N/A';
+
+        const returnDate = loan.returnAt ? new Date(loan.returnAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'N/A';
+
+        html += `
+            <div class="stat-card border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 transition-all">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-box text-green-600 dark:text-green-400"></i>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">Item #${loan.itemId || 'N/A'}</span>
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+                                Devuelto
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <p><i class="fas fa-user mr-1"></i> Prestado por: ${loan.lenderName || 'N/A'}</p>
+                            <p><i class="fas fa-calendar-alt mr-1"></i> Prestado: ${lendDate}</p>
+                            <p><i class="fas fa-check-circle mr-1"></i> Devuelto: ${returnDate}</p>
+                        </div>
+                        ${loan.detailsLend ? `
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-2 italic">
+                                <strong>Motivo:</strong> "${loan.detailsLend}"
+                            </p>
+                        ` : ''}
+                        ${loan.detailsReturn ? `
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1 italic">
+                                <strong>Observación devolución:</strong> "${loan.detailsReturn}"
+                            </p>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    return html;
+}
+
+// Render loans made by user
+function renderLoansMade(allLoansMade, activeLoansMade, returnedLoansMade) {
+    if (allLoansMade.length === 0) {
+        return `
+            <div class="text-center py-12">
+                <i class="fas fa-hand-holding text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">No has realizado ningún préstamo</p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Los préstamos que realices aparecerán aquí</p>
+            </div>
+        `;
+    }
+
+    // Sort by lend date, most recent first
+    const sortedLoans = [...allLoansMade].sort((a, b) => {
+        if (!a.lendAt && !b.lendAt) return 0;
+        if (!a.lendAt) return 1;
+        if (!b.lendAt) return -1;
+        return new Date(b.lendAt) - new Date(a.lendAt);
+    });
+
+    let html = `
+        <div class="mb-4">
+            <div class="flex gap-2 mb-4">
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
+                    <i class="fas fa-clock mr-1"></i> Activos: ${activeLoansMade.length}
+                </span>
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
+                    <i class="fas fa-check-circle mr-1"></i> Devueltos: ${returnedLoansMade.length}
+                </span>
+            </div>
+        </div>
+        <div class="space-y-4">
+    `;
+
+    sortedLoans.forEach(loan => {
+        const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : 'N/A';
+
+        const returnDate = loan.returnAt ? new Date(loan.returnAt).toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        }) : null;
+
+        const isActive = !loan.returned || loan.returned === null || loan.returned === false;
+        const statusColor = isActive ? 'yellow' : 'green';
+        const statusText = isActive ? 'Activo' : 'Devuelto';
+        const borderColor = isActive ? 'border-yellow-200 dark:border-yellow-800' : 'border-green-200 dark:border-green-800';
+        const iconColor = isActive ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400';
+
+        html += `
+            <div class="stat-card border-2 ${borderColor} hover:border-opacity-70 transition-all">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="fas fa-box ${iconColor}"></i>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">Item #${loan.itemId || 'N/A'}</span>
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-${statusColor}-100 dark:bg-${statusColor}-900/30 text-${statusColor}-800 dark:text-${statusColor}-400">
+                                ${statusText}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <p><i class="fas fa-user mr-1"></i> Prestado a: ${loan.responsibleName || 'N/A'}</p>
+                            <p><i class="fas fa-calendar-alt mr-1"></i> Fecha préstamo: ${lendDate}</p>
+                            ${returnDate ? `<p><i class="fas fa-check-circle mr-1"></i> Devuelto: ${returnDate}</p>` : ''}
+                        </div>
+                        ${loan.detailsLend ? `
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-2 italic">
+                                <strong>Motivo:</strong> "${loan.detailsLend}"
+                            </p>
+                        ` : ''}
+                        ${loan.detailsReturn ? `
+                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1 italic">
+                                <strong>Observación devolución:</strong> "${loan.detailsReturn}"
+                            </p>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    return html;
+}
+
+// Switch between active and history tabs
+function switchUserLoansTab(tab) {
+    localStorage.setItem('userLoansActiveTab', tab);
+    updateUserLoansContent();
+}
+
+// Show return loan modal
+function showReturnLoanModal(loanId) {
+    const modal = document.getElementById('returnLoanModal');
+    if (!modal) {
+        console.error('Return loan modal not found');
+        return;
+    }
+
+    // Store loan ID in modal
+    modal.setAttribute('data-loan-id', loanId);
+
+    // Reset form
+    const form = document.getElementById('returnLoanForm');
+    if (form) {
+        form.reset();
+    }
+
+    modal.classList.remove('hidden');
+}
+
+// Close return loan modal
+function closeReturnLoanModal() {
+    const modal = document.getElementById('returnLoanModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    const form = document.getElementById('returnLoanForm');
+    if (form) {
+        form.reset();
+    }
+}
+
+// Handle return loan form submission
+async function handleReturnLoanSubmit(e) {
+    e.preventDefault();
+
+    const modal = document.getElementById('returnLoanModal');
+    if (!modal) return;
+
+    const loanId = modal.getAttribute('data-loan-id');
+    if (!loanId) {
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se pudo identificar el préstamo');
+        }
+        return;
+    }
+
+    const detailsReturn = document.getElementById('returnLoanDetails')?.value?.trim() || '';
+
+    try {
+        await returnLoanItem(loanId, detailsReturn);
+        closeReturnLoanModal();
+    } catch (error) {
+        console.error('Error returning loan:', error);
+        // Error is already handled in returnLoanItem
+    }
+}
+
 function updatePagination() {
     const container = document.getElementById('paginationContainer');
     if (!container) return;
@@ -248,6 +704,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize custom selects
     initializeCustomSelects();
     
+    // Setup return loan form handler
+    const returnLoanForm = document.getElementById('returnLoanForm');
+    if (returnLoanForm) {
+        returnLoanForm.addEventListener('submit', handleReturnLoanSubmit);
+    }
+    
     // Load data after a small delay to ensure all scripts are loaded
     setTimeout(() => {
         if (typeof window.loadLoansData === 'function') {
@@ -301,4 +763,10 @@ window.updateLoansUI = updateLoansUI;
 window.updateLoansTable = updateLoansTable;
 window.updatePagination = updatePagination;
 window.updateLoansStats = updateLoansStats;
+window.updateUserLoansUI = updateUserLoansUI;
+window.updateUserLoansContent = updateUserLoansContent;
+window.switchUserLoansTab = switchUserLoansTab;
+window.showReturnLoanModal = showReturnLoanModal;
+window.closeReturnLoanModal = closeReturnLoanModal;
+window.handleReturnLoanSubmit = handleReturnLoanSubmit;
 

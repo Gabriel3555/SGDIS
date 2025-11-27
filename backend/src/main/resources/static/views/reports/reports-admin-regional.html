@@ -160,18 +160,234 @@
         </header>
 
         <main class="p-6">
+            <!-- Welcome Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Reportes - Admin Regional</h1>
-                    <p class="text-gray-600">Administración de reportes de la regional</p>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">Reportes - Admin Regional</h1>
+                    <p class="text-gray-600 dark:text-gray-400" id="reportsWelcomeMessage">Genere y exporte reportes detallados de la regional</p>
                 </div>
             </div>
 
-            <div class="stat-card">
-                <div class="text-center py-12">
-                    <i class="fas fa-chart-bar text-gray-400 text-6xl mb-4"></i>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Gestión de Reportes</h2>
-                    <p class="text-gray-600">Esta sección está en desarrollo. La implementación específica para Admin Regional se agregará aquí.</p>
+            <!-- Filters Section -->
+            <div class="stat-card shadow-lg border border-gray-100 dark:border-gray-700 mb-6">
+                <div class="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200 dark:border-gray-600">
+                    <div
+                        class="w-14 h-14 bg-gradient-to-br from-purple-100 to-purple-50 dark:from-purple-900/30 dark:to-purple-800/20 rounded-2xl flex items-center justify-center shadow-sm">
+                        <i class="fas fa-filter text-purple-600 dark:text-purple-400 text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1">Filtros de Reporte</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Seleccione los criterios para generar su
+                            reporte</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <!-- Report Type -->
+                    <div class="form-group">
+                        <label
+                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-file-alt text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Tipo de
+                            Reporte
+                        </label>
+                        <div class="relative">
+                            <select id="reportTypeSelect"
+                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-pointer">
+                                <option value="items">Items</option>
+                                <option value="users">Usuarios</option>
+                                <option value="loans">Préstamos</option>
+                                <option value="verifications">Verificaciones</option>
+                                <option value="inventory">Inventarios</option>
+                                <option value="general">Reporte General</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Regional (Disabled for Admin Regional) -->
+                    <div class="form-group">
+                        <label
+                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i
+                                class="fas fa-map-marker-alt text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Regional
+                        </label>
+                        <div class="relative">
+                            <select id="regionalSelect"
+                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-not-allowed"
+                                disabled>
+                                <option value="" id="regionalSelectOption">Cargando...</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Institution -->
+                    <div class="form-group">
+                        <label
+                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-building text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Centro
+                        </label>
+                        <div class="relative">
+                            <select id="institutionSelect"
+                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-pointer">
+                                <option value="">Todos los centros</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Inventory -->
+                    <div class="form-group">
+                        <label
+                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-boxes text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Inventario
+                        </label>
+                        <div class="relative">
+                            <select id="inventorySelect"
+                                class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-gray-50 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-500 appearance-none cursor-not-allowed"
+                                disabled>
+                                <option value="">Primero seleccione un centro...</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Date Range -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div class="form-group">
+                        <label
+                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-calendar-alt text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Fecha
+                            Inicio
+                        </label>
+                        <input type="date" id="startDate"
+                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                    <div class="form-group">
+                        <label
+                            class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
+                            <i class="fas fa-calendar-check text-purple-500 dark:text-purple-400 mr-2 text-xs"></i>Fecha
+                            Fin
+                        </label>
+                        <input type="date" id="endDate"
+                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-4">
+                    <button id="generateReportBtn"
+                        class="flex-1 max-w-xs bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 dark:from-purple-500 dark:to-purple-600 dark:hover:from-purple-600 dark:hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Generar Reporte</span>
+                    </button>
+                    <button id="clearFiltersBtn"
+                        class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-2">
+                        <i class="fas fa-redo"></i>
+                        <span>Limpiar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Report Results Section -->
+            <div id="reportResultsSection" class="hidden">
+                <div class="stat-card shadow-lg border border-gray-100 dark:border-gray-700 mb-6">
+                    <div
+                        class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200 dark:border-gray-600">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-14 h-14 bg-gradient-to-br from-green-100 to-green-50 dark:from-green-900/30 dark:to-green-800/20 rounded-2xl flex items-center justify-center shadow-sm">
+                                <i class="fas fa-chart-bar text-green-600 dark:text-green-400 text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-1" id="reportTitle">
+                                    Reporte</h2>
+                                <p class="text-sm text-gray-500 dark:text-gray-400" id="reportSubtitle">Resultados del
+                                    reporte generado</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="exportPdfBtn"
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-md hover:shadow-lg">
+                                <i class="fas fa-file-pdf"></i>
+                                <span>PDF</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Report Statistics -->
+                    <div id="reportStats" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"></div>
+
+                    <!-- Charts Container (for general reports) -->
+                    <div id="chartsContainer" class="hidden mb-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Items Más Movidos
+                                </h3>
+                                <canvas id="mostMovedChart"></canvas>
+                            </div>
+                            <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Items Más Caros</h3>
+                                <canvas id="mostExpensiveChart"></canvas>
+                            </div>
+                            <div
+                                class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl lg:col-span-2">
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Items con Más
+                                    Verificaciones</h3>
+                                <canvas id="mostVerifiedChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Report Table -->
+                    <div
+                        class="border-2 border-gray-200 dark:border-gray-600 rounded-xl overflow-hidden max-h-[600px] overflow-y-auto custom-scrollbar bg-white dark:bg-gray-800">
+                        <table id="reportTable" class="w-full text-sm" style="border-collapse: collapse; border-spacing: 0;">
+                            <thead
+                                class="bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-purple-900/30 dark:to-purple-800/20 sticky top-0 z-10">
+                                <tr id="reportTableHeader"></tr>
+                            </thead>
+                            <tbody id="reportTableBody"
+                                class="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                        <p class="text-sm font-medium text-gray-600 dark:text-gray-400 text-center" id="reportRowCount">
+                            0 registros</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="reportLoadingState" class="hidden stat-card shadow-lg border border-gray-100 dark:border-gray-700">
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div
+                        class="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mb-4">
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 font-medium">Generando reporte...</p>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="reportEmptyState" class="hidden stat-card shadow-lg border border-gray-100 dark:border-gray-700">
+                <div class="flex flex-col items-center justify-center py-12">
+                    <div
+                        class="w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-bar text-purple-600 dark:text-purple-400 text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">No hay datos para mostrar</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-center max-w-md">Seleccione los filtros y genere un
+                        reporte para ver los resultados</p>
                 </div>
             </div>
         </main>
@@ -199,6 +415,115 @@
             .overlay.active {
                 display: block;
             }
+        }
+
+        /* Form Group Styles */
+        .form-group select:not(:disabled) {
+            background: white;
+        }
+
+        .dark .form-group select:not(:disabled) {
+            background: #1e293b;
+        }
+
+        .form-group select:disabled {
+            background: #f9fafb;
+            cursor: not-allowed;
+        }
+
+        .dark .form-group select:disabled {
+            background: #334155;
+        }
+
+        .form-group select:not(:disabled):hover {
+            border-color: #d1d5db;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-track {
+            background: #334155;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        /* Table Styles */
+        #reportTable {
+            table-layout: fixed;
+            width: 100%;
+            border-collapse: collapse;
+            border-spacing: 0;
+        }
+
+        #reportTable thead th {
+            padding: 8px 12px !important;
+            margin: 0 !important;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            color: #374151;
+            border: none;
+            box-sizing: border-box;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .dark #reportTable thead th {
+            color: #f1f5f9;
+        }
+
+        #reportTable tbody td {
+            padding: 6px 12px !important;
+            margin: 0 !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            border: none;
+            box-sizing: border-box;
+            vertical-align: middle;
+            text-align: left;
+        }
+
+        .dark #reportTable tbody td {
+            color: #cbd5e1;
+        }
+
+        #reportTable tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        .dark #reportTable tbody tr:hover {
+            background: #334155;
+        }
+
+        /* Dark mode for stat-card */
+        .dark .stat-card {
+            background-color: #1e293b;
+            border-color: #334155;
         }
     </style>
 
@@ -306,9 +631,17 @@
         });
     </script>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
     <script src="../../js/websocket-client.js"></script>
     <script src="../../js/notifications-bell.js"></script>
+    <!-- Reports Module Scripts -->
+    <script src="../../js/reports/reports.js"></script>
+    <!-- Admin Regional specific reports functionality -->
+    <script src="../../js/reports/reports-admin-regional.js"></script>
 </body>
 
 </html>

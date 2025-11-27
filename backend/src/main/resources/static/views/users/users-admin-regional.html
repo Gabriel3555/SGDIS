@@ -160,18 +160,110 @@
         </header>
 
         <main class="p-6">
+            <!-- Header Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-800 mb-1">Gestión de Usuarios - Admin Regional</h1>
-                    <p class="text-gray-600">Administración de usuarios de la regional</p>
+                    <p class="text-gray-600" id="usersWelcomeMessage">Administración de usuarios de la regional</p>
+                </div>
+                <button onclick="loadUsersData()"
+                    class="btn-update flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                    <span id="refreshText">Actualizar</span>
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="userStatsContainer">
+                <!-- Loading State -->
+                <div class="stat-card animate-pulse">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    </div>
+                    <div class="h-3 bg-gray-200 rounded w-32"></div>
+                </div>
+                <div class="stat-card animate-pulse">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
+                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    </div>
+                    <div class="h-3 bg-gray-200 rounded w-28"></div>
+                </div>
+                <div class="stat-card animate-pulse">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <div class="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
+                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    </div>
+                    <div class="h-3 bg-gray-200 rounded w-20"></div>
+                </div>
+                <div class="stat-card animate-pulse">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <div class="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-12"></div>
+                        </div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    </div>
+                    <div class="h-3 bg-gray-200 rounded w-24"></div>
                 </div>
             </div>
 
-            <div class="stat-card">
-                <div class="text-center py-12">
-                    <i class="fas fa-users text-gray-400 text-6xl mb-4"></i>
-                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Gestión de Usuarios</h2>
-                    <p class="text-gray-600">Esta sección está en desarrollo. La implementación específica para Admin Regional se agregará aquí.</p>
+            <!-- Search and Filter Section -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-6" id="searchFilterContainer">
+                <!-- Loading State -->
+                <div class="flex-1 animate-pulse">
+                    <div class="h-12 bg-gray-200 rounded-xl w-full"></div>
+                </div>
+                <div class="flex gap-2 animate-pulse">
+                    <div class="h-12 bg-gray-200 rounded-xl w-32"></div>
+                    <div class="h-12 bg-gray-200 rounded-xl w-32"></div>
+                </div>
+            </div>
+
+            <!-- View Mode Buttons -->
+            <div id="viewModeButtonsContainer">
+                <!-- Dynamic content loaded by JavaScript -->
+            </div>
+
+            <!-- Users Content -->
+            <div class="stat-card" id="usersTableContainer">
+                <!-- Loading State -->
+                <div class="animate-pulse">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-5 h-5 bg-gray-200 rounded"></div>
+                        <div class="h-6 bg-gray-200 rounded w-32"></div>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6" id="paginationContainer">
+                <!-- Loading State -->
+                <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-32"></div>
+                </div>
+                <div class="flex gap-2 animate-pulse">
+                    <div class="h-10 bg-gray-200 rounded w-10"></div>
+                    <div class="h-10 bg-gray-200 rounded w-10"></div>
+                    <div class="h-10 bg-gray-200 rounded w-10"></div>
+                    <div class="h-10 bg-gray-200 rounded w-10"></div>
                 </div>
             </div>
         </main>
@@ -306,7 +398,21 @@
         });
     </script>
 
+    <!-- Application Scripts -->
+    <script src="../../js/dashboard.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/users/users-data.js"></script>
+    <script src="../../js/users/users-api.js"></script>
+    <script src="../../js/users/users-filters.js"></script>
+    <script src="../../js/users/users-forms.js"></script>
+    <script src="../../js/users/users-modals.js"></script>
+    <script src="../../js/users/users-pagination.js"></script>
+    <script src="../../js/users/users-toast.js"></script>
+    <script src="../../js/users/users-ui.js"></script>
+    <script src="../../js/users/users-images.js"></script>
+    <script src="../../js/users/users.js"></script>
+    <!-- Admin Regional specific overrides - must load after users-ui.js -->
+    <script src="../../js/users/users-admin-regional.js"></script>
     <script src="../../js/websocket-client.js"></script>
     <script src="../../js/notifications-bell.js"></script>
 </body>

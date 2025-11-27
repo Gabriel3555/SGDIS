@@ -4,6 +4,7 @@ import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.loan.application.dto.LoanResponse;
 import com.sgdis.backend.loan.application.port.GetMyLoansUseCase;
+import com.sgdis.backend.loan.application.service.LoanService;
 import com.sgdis.backend.user.application.dto.*;
 import com.sgdis.backend.user.application.port.in.*;
 import com.sgdis.backend.user.domain.Role;
@@ -56,6 +57,7 @@ public class UserController {
     private final FileUploadService fileUploadService;
     private final AuthService authService;
     private final GetMyLoansUseCase getMyLoansUseCase;
+    private final LoanService loanService;
 
     @Operation(
             summary = "Get user by ID",
@@ -249,6 +251,65 @@ public class UserController {
     }
 
     @Operation(
+            summary = "Get current user owned inventories",
+            description = "Retrieves all inventories owned by the currently authenticated user"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Owned inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/me/inventories/owner")
+    public ResponseEntity<List<InventoryResponse>> getMyOwnedInventories() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        
+        List<InventoryEntity> inventories = 
+                userRepository.findInventoriesByOwnerId(userId);
+        
+        List<InventoryResponse> responses = inventories.stream()
+                .map(InventoryMapper::toResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(
+            summary = "Get current user signatory inventories",
+            description = "Retrieves all inventories where the currently authenticated user is a signatory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Signatory inventories retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/me/inventories/signatory")
+    public ResponseEntity<List<InventoryResponse>> getMySignatoryInventories() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException(userId));
+        
+        // Force initialization of lazy collection within transaction
+        List<InventoryEntity> inventories = user.getMySignatories();
+        if (inventories == null) {
+            inventories = List.of();
+        } else {
+            // Initialize the collection to avoid LazyInitializationException
+            inventories.size();
+        }
+        
+        List<InventoryResponse> responses = inventories.stream()
+                .map(InventoryMapper::toResponse)
+                .toList();
+        
+        return ResponseEntity.ok(responses);
+    }
+
+    @Operation(
             summary = "Get managed inventories by user ID",
             description = "Retrieves all inventories managed by a specific user (Admin only)"
     )
@@ -320,6 +381,55 @@ public class UserController {
     }
 
     @Operation(
+            summary = "Get users by current user's regional",
+            description = "Retrieves all users from the current user's regional with pagination, excluding SUPERADMIN role and the current user"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Users retrieved successfully",
+            content = @Content(schema = @Schema(implementation = PagedUserResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @ApiResponse(responseCode = "404", description = "Current user or regional not found")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/regional")
+    public PagedUserResponse getUsersByRegional(
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "6") int size) {
+        UserEntity currentUser = authService.getCurrentUser();
+        
+        if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+            throw new ResourceNotFoundException("Current user does not have an institution or regional assigned");
+        }
+        
+        Long regionalId = currentUser.getInstitution().getRegional().getId();
+        Long currentUserId = currentUser.getId();
+        
+        Pageable pageable = PageRequest.of(page, size);
+        org.springframework.data.domain.Page<UserEntity> userPage = userRepository.findByRegionalExcludingRoleAndCurrentUser(
+                regionalId,
+                Role.SUPERADMIN,
+                currentUserId,
+                pageable
+        );
+        
+        List<UserResponse> userResponses = userPage.getContent()
+                .stream()
+                .map(UserMapper::toResponse)
+                .toList();
+        
+        return PagedUserResponse.builder()
+                .users(userResponses)
+                .currentPage(userPage.getNumber())
+                .totalPages(userPage.getTotalPages())
+                .totalUsers(userPage.getTotalElements())
+                .pageSize(userPage.getSize())
+                .first(userPage.isFirst())
+                .last(userPage.isLast())
+                .build();
+    }
+
+    @Operation(
             summary = "Get user statistics",
             description = "Retrieves total statistics of users by role (Superadmin only)"
     )
@@ -364,6 +474,24 @@ public class UserController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         Long userId = (Long) authentication.getPrincipal();
         List<LoanResponse> loans = getMyLoansUseCase.getMyLoans(userId);
+        return ResponseEntity.ok(loans);
+    }
+
+    @Operation(
+            summary = "Get loans I made",
+            description = "Retrieves all loans that the currently authenticated user has made (where user is the lender)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Loans retrieved successfully",
+            content = @Content(schema = @Schema(implementation = LoanResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/me/loans-made")
+    public ResponseEntity<List<LoanResponse>> getMyLoansMade() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) authentication.getPrincipal();
+        List<LoanResponse> loans = loanService.getLoansByLenderId(userId);
         return ResponseEntity.ok(loans);
     }
 

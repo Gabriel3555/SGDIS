@@ -45,6 +45,15 @@ function filterLoans() {
                 matches = true;
             }
 
+            // Search in loan details
+            if (loan.detailsLend && loan.detailsLend.toLowerCase().includes(searchLower)) {
+                matches = true;
+            }
+
+            if (loan.detailsReturn && loan.detailsReturn.toLowerCase().includes(searchLower)) {
+                matches = true;
+            }
+
             return matches;
         });
         console.log('After search filter:', filtered.length, 'loans');
@@ -57,25 +66,57 @@ function filterLoans() {
     
     // Update UI - use window to ensure functions are available
     console.log('Updating UI components...');
-    if (typeof window.updateLoansTable === 'function') {
-        console.log('Calling updateLoansTable');
-        window.updateLoansTable();
+    
+    // For USER role, also filter loans made
+    if (loansData.userRole === 'USER' && loansData.loansMade) {
+        let filteredMade = [...loansData.loansMade];
+        
+        if (loansData.searchTerm && loansData.searchTerm.trim() !== '') {
+            const searchLower = loansData.searchTerm.toLowerCase().trim();
+            filteredMade = filteredMade.filter(loan => {
+                let matches = false;
+                if (loan.responsibleName && loan.responsibleName.toLowerCase().includes(searchLower)) matches = true;
+                if (loan.lenderName && loan.lenderName.toLowerCase().includes(searchLower)) matches = true;
+                if (loan.itemId && loan.itemId.toString().includes(searchLower)) matches = true;
+                if (loan.detailsLend && loan.detailsLend.toLowerCase().includes(searchLower)) matches = true;
+                if (loan.detailsReturn && loan.detailsReturn.toLowerCase().includes(searchLower)) matches = true;
+                return matches;
+            });
+        }
+        
+        loansData.filteredLoansMade = filteredMade;
+    }
+    
+    // Check if user is USER role and use appropriate UI update
+    if (loansData.userRole === 'USER') {
+        if (typeof window.updateUserLoansUI === 'function') {
+            console.log('Calling updateUserLoansUI for USER role');
+            window.updateUserLoansUI();
+        } else if (typeof window.updateLoansUI === 'function') {
+            console.log('Calling updateLoansUI as fallback for USER');
+            window.updateLoansUI();
+        }
     } else {
-        console.warn('updateLoansTable function not available on window');
-    }
-    
-    if (typeof window.updatePagination === 'function') {
-        window.updatePagination();
-    }
-    
-    if (typeof window.updateLoansStats === 'function') {
-        window.updateLoansStats();
-    }
-    
-    // Fallback: try updateLoansUI if individual functions don't work
-    if (typeof window.updateLoansUI === 'function') {
-        console.log('Also calling updateLoansUI as fallback');
-        window.updateLoansUI();
+        if (typeof window.updateLoansTable === 'function') {
+            console.log('Calling updateLoansTable');
+            window.updateLoansTable();
+        } else {
+            console.warn('updateLoansTable function not available on window');
+        }
+        
+        if (typeof window.updatePagination === 'function') {
+            window.updatePagination();
+        }
+        
+        if (typeof window.updateLoansStats === 'function') {
+            window.updateLoansStats();
+        }
+        
+        // Fallback: try updateLoansUI if individual functions don't work
+        if (typeof window.updateLoansUI === 'function') {
+            console.log('Also calling updateLoansUI as fallback');
+            window.updateLoansUI();
+        }
     }
 }
 

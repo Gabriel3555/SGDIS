@@ -390,11 +390,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre del Responsable <span class="text-red-500">*</span></label>
-                    <input type="text" id="lendResponsibleName" required
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
-                        placeholder="Ingrese el nombre del responsable">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Persona a quien se prestará el item</p>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Usuario Responsable <span class="text-red-500">*</span></label>
+                    <select id="lendResponsibleId" required
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                        <option value="">Cargando usuarios...</option>
+                        <!-- Options loaded dynamically -->
+                    </select>
+                    <div id="lendUsersLoading" class="mt-2 text-sm text-gray-500 dark:text-gray-400" style="display: none;">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Cargando usuarios...
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Seleccione el usuario que será responsable del préstamo</p>
                 </div>
 
                 <div>
