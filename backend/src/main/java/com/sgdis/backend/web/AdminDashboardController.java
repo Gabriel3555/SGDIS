@@ -754,7 +754,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('USER')")
     @ResponseBody
     public ResponseEntity<Resource> userVerification() throws IOException {
-        Resource resource = new ClassPathResource("static/views/verification/verification.html");
+        Resource resource = new ClassPathResource("static/views/verification/verification-user.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
