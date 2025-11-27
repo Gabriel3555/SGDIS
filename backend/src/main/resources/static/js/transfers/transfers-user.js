@@ -601,19 +601,304 @@ function viewUserTransfer(transferId) {
 }
 
 /**
- * Shows new transfer modal - overrides global function for user view
+ * Shows new transfer modal with user-specific form
  */
-function showNewTransferModalUser() {
-    // Use existing modal function from transfers-modals.js
-    if (window.showNewTransferModal) {
-        window.showNewTransferModal();
-    } else {
-        const modal = document.getElementById('newTransferModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-            if (window.populateNewTransferForm) {
-                window.populateNewTransferForm();
+async function showNewTransferModalUser() {
+    const modal = document.getElementById('newTransferModal');
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    await populateUserNewTransferForm();
+}
+
+/**
+ * Populates the new transfer form with dropdowns for user role
+ */
+async function populateUserNewTransferForm(itemId = null) {
+    const form = document.getElementById('newTransferForm');
+    if (!form) return;
+    
+    // Show loading state
+    form.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex items-center justify-center py-8">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AF00]"></div>
+            </div>
+        </div>
+    `;
+    
+    try {
+        // Load user inventories and items
+        const inventories = await loadUserInventoriesForTransfers();
+        const allItems = await loadAllUserItems(inventories);
+        
+        // Build form with selects
+        form.innerHTML = `
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item a Transferir *</label>
+                    <select id="newTransferItemId" 
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                        required
+                        onchange="handleUserTransferItemChange(this.value)">
+                        <option value="">Seleccionar item...</option>
+                        ${allItems.map(item => `
+                            <option value="${item.id}" data-inventory-id="${item.inventoryId}" ${itemId && item.id === parseInt(itemId) ? 'selected' : ''}>
+                                ${item.productName || `Item ${item.id}`} ${item.inventoryName ? `(Inventario: ${item.inventoryName})` : ''}
+                            </option>
+                        `).join('')}
+                    </select>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecciona el item que deseas transferir</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario de Destino *</label>
+                    <select id="newTransferDestinationInventoryId" 
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                        required
+                        disabled>
+                        <option value="">Primero selecciona un item</option>
+                    </select>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecciona el inventario de destino</p>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Detalles / Observaciones</label>
+                    <textarea id="newTransferDetails" 
+                        rows="4" 
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
+                        placeholder="Detalles adicionales sobre la transferencia (opcional, máximo 500 caracteres)"
+                        maxlength="500"></textarea>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Información adicional sobre la transferencia</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeNewTransferModal()" 
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancelar
+                </button>
+                <button type="submit" 
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Solicitar Transferencia
+                </button>
+            </div>
+        `;
+        
+        // Add event listener to form
+        const formElement = document.getElementById('newTransferForm');
+        if (formElement) {
+            // Remove existing listeners
+            const newForm = formElement.cloneNode(true);
+            formElement.parentNode.replaceChild(newForm, formElement);
+            // Add our submit handler
+            newForm.addEventListener('submit', handleUserNewTransferSubmit);
+        }
+        
+        // If itemId is provided, trigger the change handler
+        if (itemId) {
+            const itemSelect = document.getElementById('newTransferItemId');
+            if (itemSelect) {
+                handleUserTransferItemChange(itemId);
             }
+        }
+    } catch (error) {
+        console.error('Error populating user transfer form:', error);
+        form.innerHTML = `
+            <div class="space-y-4">
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                    <p class="text-red-600 dark:text-red-400 mb-2">Error al cargar el formulario</p>
+                    <button onclick="populateUserNewTransferForm()" 
+                        class="mt-4 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                        Reintentar
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Loads all items from user inventories
+ */
+async function loadAllUserItems(inventories) {
+    if (!inventories || inventories.length === 0) {
+        return [];
+    }
+    
+    const allItems = [];
+    const token = localStorage.getItem('jwt');
+    const headers = { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+    
+    // Load items from all inventories in parallel
+    const itemPromises = inventories.map(async (inventory) => {
+        try {
+            const response = await fetch(`/api/v1/items/inventory/${inventory.id}?page=0&size=1000`, {
+                method: 'GET',
+                headers: headers
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const items = data.content || data || [];
+                // Add inventory info to each item
+                return items.map(item => ({
+                    ...item,
+                    inventoryId: inventory.id,
+                    inventoryName: inventory.name
+                }));
+            }
+            return [];
+        } catch (error) {
+            console.error(`Error loading items from inventory ${inventory.id}:`, error);
+            return [];
+        }
+    });
+    
+    const itemsArrays = await Promise.all(itemPromises);
+    itemsArrays.forEach(items => {
+        allItems.push(...items);
+    });
+    
+    return allItems;
+}
+
+/**
+ * Handles item selection change - updates destination inventory dropdown
+ */
+async function handleUserTransferItemChange(itemId) {
+    const itemSelect = document.getElementById('newTransferItemId');
+    const destinationSelect = document.getElementById('newTransferDestinationInventoryId');
+    
+    if (!itemSelect || !destinationSelect) return;
+    
+    const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+    const sourceInventoryId = selectedOption ? parseInt(selectedOption.getAttribute('data-inventory-id')) : null;
+    
+    if (!sourceInventoryId) {
+        destinationSelect.disabled = true;
+        destinationSelect.innerHTML = '<option value="">Primero selecciona un item</option>';
+        return;
+    }
+    
+    // Show loading state
+    destinationSelect.disabled = true;
+    destinationSelect.innerHTML = '<option value="">Cargando inventarios...</option>';
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+        
+        // Load all inventories from user's institution (not just assigned ones)
+        // For USER role, use institutionAdminInventories endpoint to get all institution inventories
+        const endpoint = '/api/v1/inventory/institutionAdminInventories?page=0&size=1000';
+        
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: headers
+        });
+        
+        if (response.ok) {
+            const payload = await response.json();
+            
+            // Handle both array and paginated response formats
+            let inventories = [];
+            if (Array.isArray(payload)) {
+                inventories = payload;
+            } else if (payload && Array.isArray(payload.content)) {
+                inventories = payload.content;
+            }
+            
+            // Filter out source inventory
+            const availableInventories = inventories.filter(inv => inv.id !== sourceInventoryId);
+            
+            if (availableInventories.length === 0) {
+                destinationSelect.disabled = true;
+                destinationSelect.innerHTML = '<option value="">No hay inventarios de destino disponibles</option>';
+                return;
+            }
+            
+            destinationSelect.disabled = false;
+            destinationSelect.innerHTML = `
+                <option value="">Seleccionar inventario destino...</option>
+                ${availableInventories.map(inv => `
+                    <option value="${inv.id}">${inv.name || `Inventario ${inv.id}`}${inv.location ? ' - ' + inv.location : ''}</option>
+                `).join('')}
+            `;
+        } else {
+            throw new Error('Error al cargar inventarios');
+        }
+    } catch (error) {
+        console.error('Error loading destination inventories:', error);
+        destinationSelect.disabled = true;
+        destinationSelect.innerHTML = '<option value="">Error al cargar inventarios</option>';
+        
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se pudieron cargar los inventarios de destino');
+        }
+    }
+}
+
+/**
+ * Handles new transfer form submission for user
+ */
+async function handleUserNewTransferSubmit(event) {
+    event.preventDefault();
+    
+    const itemId = document.getElementById('newTransferItemId')?.value?.trim();
+    const destinationInventoryId = document.getElementById('newTransferDestinationInventoryId')?.value?.trim();
+    const details = document.getElementById('newTransferDetails')?.value?.trim() || '';
+    
+    if (!itemId || !destinationInventoryId) {
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'Por favor completa todos los campos requeridos');
+        }
+        return;
+    }
+    
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton ? submitButton.innerHTML : '';
+    
+    try {
+        if (submitButton) {
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
+            submitButton.disabled = true;
+        }
+        
+        const transferData = {
+            itemId: parseInt(itemId),
+            destinationInventoryId: parseInt(destinationInventoryId),
+            details: details
+        };
+        
+        const response = await window.requestTransfer(transferData);
+        
+        if (window.showSuccessToast) {
+            window.showSuccessToast('Transferencia Solicitada', response.message || 'La transferencia ha sido solicitada exitosamente');
+        }
+        
+        closeNewTransferModal();
+        
+        // Reload transfers data
+        if (window.loadUserTransfersData) {
+            await window.loadUserTransfersData();
+        }
+    } catch (error) {
+        console.error('Error requesting transfer:', error);
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', error.message || 'No se pudo solicitar la transferencia');
+        }
+    } finally {
+        if (submitButton) {
+            submitButton.innerHTML = originalButtonText;
+            submitButton.disabled = false;
         }
     }
 }
@@ -625,6 +910,12 @@ function closeNewTransferModal() {
     const modal = document.getElementById('newTransferModal');
     if (modal) {
         modal.classList.add('hidden');
+    }
+    
+    // Clear form
+    const form = document.getElementById('newTransferForm');
+    if (form) {
+        form.innerHTML = '';
     }
 }
 
@@ -655,6 +946,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.transfersUserData = transfersUserData;
     }
     
+    // Override showNewTransferModal for user role
+    window.showNewTransferModal = showNewTransferModalUser;
+    
     // Load transfers data
     loadUserTransfersData();
 });
@@ -667,8 +961,10 @@ window.handleUserTransferInventoryFilterChange = handleUserTransferInventoryFilt
 window.setUserTransfersViewMode = setUserTransfersViewMode;
 window.changeUserTransfersPage = changeUserTransfersPage;
 window.viewUserTransfer = viewUserTransfer;
-// Note: showNewTransferModal is already defined globally in transfers-modals.js
-// We keep the close functions here for consistency
+window.showNewTransferModalUser = showNewTransferModalUser;
+window.populateUserNewTransferForm = populateUserNewTransferForm;
+window.handleUserTransferItemChange = handleUserTransferItemChange;
+window.handleUserNewTransferSubmit = handleUserNewTransferSubmit;
 window.closeNewTransferModal = closeNewTransferModal;
 window.closeViewTransferModal = closeViewTransferModal;
 window.closeApproveTransferModal = closeApproveTransferModal;
