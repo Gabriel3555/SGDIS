@@ -18,51 +18,51 @@ document.addEventListener('DOMContentLoaded', function() {
                     const serialNumber = document.getElementById('newVerificationSerial').value.trim();
                     
                     if (!serialNumber) {
-                        showErrorToast('Campo requerido', 'Por favor ingresa un número de serie');
+                        showInventoryErrorToast('Campo requerido', 'Por favor ingresa un número de serie');
                         return;
                     }
                     
                     // Validate that user has inventories
                     if (!verificationData.inventories || verificationData.inventories.length === 0) {
-                        showErrorToast('Sin inventarios', 'No tienes inventarios asignados. No puedes realizar verificaciones.');
+                        showInventoryErrorToast('Sin inventarios', 'No tienes inventarios asignados. No puedes realizar verificaciones.');
                         return;
                     }
                     
-                    showInfoToast('Creando verificación', 'Verificando item por número de serie...');
+                    showInventoryInfoToast('Creando verificación', 'Verificando item por número de serie...');
                     verification = await createVerificationBySerial(serialNumber);
                 } else {
                     const licensePlate = document.getElementById('newVerificationPlate').value.trim();
                     
                     if (!licensePlate) {
-                        showErrorToast('Campo requerido', 'Por favor ingresa un número de placa');
+                        showInventoryErrorToast('Campo requerido', 'Por favor ingresa un número de placa');
                         return;
                     }
                     
                     // Validate that user has inventories
                     if (!verificationData.inventories || verificationData.inventories.length === 0) {
-                        showErrorToast('Sin inventarios', 'No tienes inventarios asignados. No puedes realizar verificaciones.');
+                        showInventoryErrorToast('Sin inventarios', 'No tienes inventarios asignados. No puedes realizar verificaciones.');
                         return;
                     }
                     
-                    showInfoToast('Creando verificación', 'Verificando item por placa...');
+                    showInventoryInfoToast('Creando verificación', 'Verificando item por placa...');
                     verification = await createVerificationByPlate(licensePlate);
                 }
                 
                 // Upload evidence if available
                 if (newVerificationEvidenceFile && verification && verification.verificationId) {
                     try {
-                        showInfoToast('Subiendo evidencia', 'Subiendo evidencia de la verificación...');
+                        showInventoryInfoToast('Subiendo evidencia', 'Subiendo evidencia de la verificación...');
                         await uploadEvidence(verification.verificationId, newVerificationEvidenceFile);
                         // El toast de éxito ya se muestra en uploadEvidence
                     } catch (evidenceError) {
-                        showWarningToast('Verificación creada', 'Verificación creada pero no se pudo subir la evidencia. Puedes subirla más tarde.');
+                        showInventoryWarningToast('Verificación creada', 'Verificación creada pero no se pudo subir la evidencia. Puedes subirla más tarde.');
                     }
                 }
                 // El toast de verificación creada ya se muestra en la API
                 
                 closeNewVerificationModal();
                 clearNewVerificationEvidence();
-                showInfoToast('Actualizando datos', 'Recargando verificaciones...');
+                showInventoryInfoToast('Actualizando datos', 'Recargando verificaciones...');
                 await loadVerificationData();
                 
             } catch (error) {
@@ -70,8 +70,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Solo mostrar toast adicional si no es un error de inventario o item no encontrado
                 if (!error.message.includes('no pertenece') && 
                     !error.message.includes('no se encontró') && 
-                    !error.message.includes('No se encontró')) {
-                    showErrorToast('Error al crear verificación', error.message || 'No se pudo crear la verificación. Intenta nuevamente.');
+                    !error.message.includes('No se encontró') &&
+                    !error.message.includes('no está en mi inventario')) {
+                    showInventoryErrorToast('Error al crear verificación', error.message || 'No se pudo crear la verificación. Intenta nuevamente.');
                 }
             }
         });
@@ -88,23 +89,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const file = fileInput.files[0];
             
             if (!file) {
-                showErrorToast('Archivo requerido', 'Por favor selecciona un archivo');
+                showInventoryErrorToast('Archivo requerido', 'Por favor selecciona un archivo');
                 return;
             }
             
             if (!verificationData.currentVerificationId) {
-                showErrorToast('Error', 'No se ha seleccionado una verificación');
+                showInventoryErrorToast('Error', 'No se ha seleccionado una verificación');
                 return;
             }
             
             try {
-                showInfoToast('Subiendo evidencia', 'Subiendo archivo de evidencia...');
+                showInventoryInfoToast('Subiendo evidencia', 'Subiendo archivo de evidencia...');
                 await uploadEvidence(verificationData.currentVerificationId, file);
                 closeUploadEvidenceModal();
-                showInfoToast('Actualizando datos', 'Recargando verificaciones...');
+                showInventoryInfoToast('Actualizando datos', 'Recargando verificaciones...');
                 await loadVerificationData();
             } catch (error) {
-                showErrorToast('Error al subir evidencia', error.message || 'No se pudo subir la evidencia. Intenta nuevamente.');
+                showInventoryErrorToast('Error al subir evidencia', error.message || 'No se pudo subir la evidencia. Intenta nuevamente.');
             }
         });
     }
@@ -126,14 +127,14 @@ window.handleNewVerificationFileChange = function(event) {
     // Validate file size (max 5MB)
     const maxSize = 5 * 1024 * 1024; // 5MB in bytes
     if (file.size > maxSize) {
-        showErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
+        showInventoryErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
         event.target.value = '';
         return;
     }
     
     // Validate file type
     if (!file.type.startsWith('image/')) {
-        showErrorToast('Tipo de archivo inválido', 'Solo se permiten imágenes');
+        showInventoryErrorToast('Tipo de archivo inválido', 'Solo se permiten imágenes');
         event.target.value = '';
         return;
     }
@@ -153,7 +154,7 @@ window.handleNewVerificationFileChange = function(event) {
     };
     reader.readAsDataURL(file);
     
-    showSuccessToast('Imagen seleccionada', file.name);
+    showInventorySuccessToast('Imagen seleccionada', file.name);
 };
 
 // Clear evidence
@@ -188,7 +189,7 @@ window.openNewVerificationCamera = async function() {
         modal.classList.remove('hidden');
         
     } catch (error) {
-        showErrorToast('Error de cámara', 'No se pudo acceder a la cámara. Verifica los permisos del navegador.');
+        showInventoryErrorToast('Error de cámara', 'No se pudo acceder a la cámara. Verifica los permisos del navegador.');
     }
 };
 
@@ -224,7 +225,7 @@ window.captureNewVerificationPhoto = function() {
     // Convert canvas to blob
     canvas.toBlob(function(blob) {
         if (!blob) {
-            showErrorToast('Error', 'No se pudo capturar la foto');
+            showInventoryErrorToast('Error', 'No se pudo capturar la foto');
             return;
         }
         
@@ -246,7 +247,7 @@ window.captureNewVerificationPhoto = function() {
         reader.readAsDataURL(file);
         
         closeNewVerificationCamera();
-        showSuccessToast('Foto capturada', 'Foto capturada correctamente');
+        showInventorySuccessToast('Foto capturada', 'Foto capturada correctamente');
         
     }, 'image/jpeg', 0.9);
 };
@@ -283,7 +284,7 @@ window.handleEvidenceFileChange = function(event) {
     if (file) {
         const fileSize = file.size / 1024 / 1024; // Convert to MB
         if (fileSize > 5) {
-            showErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
+            showInventoryErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
             event.target.value = '';
             if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
             return;

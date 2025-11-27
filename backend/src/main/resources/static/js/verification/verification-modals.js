@@ -202,6 +202,9 @@ async function loadEvidencePreview(verificationId) {
                 <p class="text-gray-600 text-sm">No se pudo cargar la vista previa</p>
             </div>
         `;
+        if (typeof showInventoryErrorToast === 'function') {
+            showInventoryErrorToast('Error', 'No se pudo cargar la imagen');
+        }
     }
 }
 
@@ -222,11 +225,19 @@ async function openImagePreviewForVerification(verificationId) {
             const imageUrl = URL.createObjectURL(blob);
             openImagePreview(imageUrl);
         } else {
-            showErrorToast('Error', 'No se pudo cargar la imagen');
+            if (typeof showInventoryErrorToast === 'function') {
+                showInventoryErrorToast('Error', 'No se pudo cargar la imagen');
+            } else {
+                showErrorToast('Error', 'No se pudo cargar la imagen');
+            }
         }
     } catch (error) {
         console.error('Error loading image:', error);
-        showErrorToast('Error', 'No se pudo cargar la imagen');
+        if (typeof showInventoryErrorToast === 'function') {
+            showInventoryErrorToast('Error', 'No se pudo cargar la imagen');
+        } else {
+            showErrorToast('Error', 'No se pudo cargar la imagen');
+        }
     }
 }
 
@@ -266,7 +277,11 @@ function handleEvidenceFileChange(event) {
     if (file) {
         const fileSize = file.size / 1024 / 1024; // Convert to MB
         if (fileSize > 5) {
-            showErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
+            if (typeof showInventoryErrorToast === 'function') {
+                showInventoryErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
+            } else {
+                showErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
+            }
             event.target.value = '';
             fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
             return;

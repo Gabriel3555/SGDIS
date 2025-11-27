@@ -782,7 +782,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('USER')")
     @ResponseBody
     public ResponseEntity<Resource> userLoans() throws IOException {
-        Resource resource = new ClassPathResource("static/views/loans/loans.html");
+        Resource resource = new ClassPathResource("static/views/loans/loans-user.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
