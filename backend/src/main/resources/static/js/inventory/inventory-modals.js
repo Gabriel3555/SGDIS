@@ -56,7 +56,8 @@ if (
         console.warn('CustomSelect initialization failed: missing required elements', {
           container: !!this.container,
           trigger: !!this.trigger,
-          textElement: !!this.textElement
+          textElement: !!this.textElement,
+          containerId: this.container?.id
         });
         return;
       }
@@ -72,13 +73,30 @@ if (
         this.trigger.parentNode.replaceChild(newTrigger, this.trigger);
         this.trigger = newTrigger;
         
+        // Add click listener to trigger
         this.trigger.addEventListener("click", (event) => {
           event.preventDefault();
           event.stopPropagation();
+          console.log('CustomSelect trigger clicked:', this.container.id, 'disabled:', this.isDisabled);
           if (this.isDisabled) {
+            console.log('CustomSelect is disabled, ignoring click');
             return;
           }
+          console.log('Toggling CustomSelect:', this.container.id);
           this.toggle();
+        });
+        
+        // Also add click listener to the entire container as fallback
+        this.container.addEventListener("click", (event) => {
+          // Only handle if click is on the container itself or trigger, not on dropdown
+          if (event.target === this.container || event.target === this.trigger || this.trigger.contains(event.target)) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (this.isDisabled) {
+              return;
+            }
+            this.toggle();
+          }
         });
       }
 
@@ -108,9 +126,34 @@ if (
     }
 
     setOptions(options) {
-      this.options = options;
-      this.filteredOptions = [...options];
+      this.options = options || [];
+      this.filteredOptions = [...this.options];
+      
+      // If a value is already selected, try to preserve it
+      const currentValue = this.selectedValue;
+      const currentText = this.selectedText;
+      
+      // Re-render options
       this.renderOptions();
+      
+      // If we had a selected value, try to restore it
+      if (currentValue && currentValue !== '') {
+        const option = this.options.find(opt => String(opt.value) === String(currentValue));
+        if (option) {
+          // Value still exists in new options, keep it selected
+          this.selectedValue = option.value;
+          this.selectedText = option.label;
+          if (this.textElement) {
+            this.textElement.textContent = option.label;
+            this.textElement.classList.remove("custom-select-placeholder");
+          }
+        } else {
+          // Value no longer exists, clear selection
+          if (currentValue !== '') {
+            this.clear();
+          }
+        }
+      }
     }
 
     renderOptions() {
@@ -177,14 +220,49 @@ if (
       this.selectedValue = option.value;
       this.selectedText = option.label;
 
-      this.textElement.textContent = option.label;
-      this.textElement.classList.remove("custom-select-placeholder");
+      // Re-find textElement in case DOM was updated
+      if (!this.textElement || !this.container.contains(this.textElement)) {
+        this.textElement = this.container.querySelector(".custom-select-text");
+      }
+
+      // Ensure textElement exists before updating
+      if (this.textElement) {
+        this.textElement.textContent = option.label;
+        this.textElement.classList.remove("custom-select-placeholder");
+        
+        // Force update by directly setting innerHTML as well
+        if (this.textElement.innerHTML !== option.label) {
+          this.textElement.innerHTML = option.label;
+        }
+      } else {
+        console.error('CustomSelect: textElement not found when trying to update text');
+        // Try to find it one more time
+        const textEl = this.container.querySelector(".custom-select-text");
+        if (textEl) {
+          textEl.textContent = option.label;
+          textEl.classList.remove("custom-select-placeholder");
+          this.textElement = textEl;
+        }
+      }
 
       if (this.hiddenInput) {
         this.hiddenInput.value = option.value;
       }
 
+      // Re-render options to update selected state
+      this.renderOptions();
+
       this.close();
+
+      // Verify the text was updated after a short delay
+      setTimeout(() => {
+        const currentText = this.container.querySelector(".custom-select-text");
+        if (currentText && currentText.textContent !== option.label) {
+          console.warn('CustomSelect: Text was reset after selectOption, fixing...');
+          currentText.textContent = option.label;
+          currentText.classList.remove("custom-select-placeholder");
+        }
+      }, 100);
 
       if (this.onChange) {
         this.onChange(option);
@@ -193,14 +271,27 @@ if (
 
     toggle() {
       if (this.isDisabled) {
+        console.log('CustomSelect toggle: isDisabled = true');
         return;
       }
+      
+      if (!this.container) {
+        console.error('CustomSelect toggle: container is null');
+        return;
+      }
+      
       const isOpen = this.container.classList.contains("open");
+      console.log('CustomSelect toggle:', this.container.id, 'isOpen:', isOpen);
 
       // Close all other selects
       document.querySelectorAll(".custom-select.open").forEach((select) => {
         if (select !== this.container) {
           select.classList.remove("open");
+          const container = select.closest('.custom-select-container');
+          if (container) {
+            container.classList.remove('select-open');
+            container.classList.remove('dropdown-up');
+          }
         }
       });
 
@@ -227,41 +318,74 @@ if (
       // Use setTimeout to ensure dropdown is rendered first
       setTimeout(() => {
         if (this.dropdown && this.trigger) {
-          const triggerRect = this.trigger.getBoundingClientRect();
-          const viewportHeight = window.innerHeight;
-          const spaceBelow = viewportHeight - triggerRect.bottom;
-          const spaceAbove = triggerRect.top;
-          const dropdownHeight = 250; // Approximate max height of dropdown (increased for safety)
-          
-          // Always check if we're in the filter section (bottom half of viewport)
-          // If trigger is in bottom 40% of viewport, prefer opening upward
-          const isInBottomHalf = triggerRect.top > (viewportHeight * 0.6);
-          
-          // If not enough space below but enough space above, open upward
-          // Or if in bottom half of viewport, prefer upward
-          if ((spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) || 
-              (isInBottomHalf && spaceAbove > dropdownHeight)) {
-            this.container.classList.add('dropdown-up');
-          } else {
-            this.container.classList.remove('dropdown-up');
-          }
-          
-          // Set dropdown position using fixed positioning
-          const rect = this.trigger.getBoundingClientRect();
-          this.dropdown.style.position = 'fixed';
-          this.dropdown.style.width = `${rect.width}px`;
-          
-          if (this.container.classList.contains('dropdown-up')) {
-            this.dropdown.style.bottom = `${viewportHeight - rect.top}px`;
-            this.dropdown.style.top = 'auto';
-          } else {
-            this.dropdown.style.top = `${rect.bottom}px`;
-            this.dropdown.style.bottom = 'auto';
-          }
-          
-          this.dropdown.style.left = `${rect.left}px`;
+          this.updateDropdownPosition();
         }
       }, 10);
+      
+      // Add scroll listener to update position when scrolling
+      if (!this._scrollListener) {
+        this._scrollListener = () => {
+          if (this.container && this.container.classList.contains("open")) {
+            this.updateDropdownPosition();
+          }
+        };
+        window.addEventListener('scroll', this._scrollListener, true);
+        // Also listen to scroll on the container's parent elements
+        let parent = this.container.parentElement;
+        while (parent && parent !== document.body) {
+          parent.addEventListener('scroll', this._scrollListener, true);
+          parent = parent.parentElement;
+        }
+      }
+    }
+    
+    updateDropdownPosition() {
+      if (!this.dropdown || !this.trigger || !this.container) {
+        return;
+      }
+      
+      // Ensure container has position relative for absolute positioning to work
+      const containerStyle = window.getComputedStyle(this.container);
+      if (containerStyle.position === 'static') {
+        this.container.style.position = 'relative';
+      }
+      
+      const triggerRect = this.trigger.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - triggerRect.bottom;
+      const spaceAbove = triggerRect.top;
+      const dropdownHeight = 250; // Approximate max height of dropdown
+      
+      // Check if we're in the filter section (bottom half of viewport)
+      const isInBottomHalf = triggerRect.top > (viewportHeight * 0.6);
+      
+      // If not enough space below but enough space above, open upward
+      // Or if in bottom half of viewport, prefer upward
+      if ((spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) || 
+          (isInBottomHalf && spaceAbove > dropdownHeight)) {
+        this.container.classList.add('dropdown-up');
+      } else {
+        this.container.classList.remove('dropdown-up');
+      }
+      
+      // Use absolute positioning relative to the container instead of fixed
+      // This keeps the dropdown attached to the trigger even when scrolling
+      // The CSS already has position: absolute, so we just need to set width and top/bottom
+      this.dropdown.style.position = 'absolute';
+      this.dropdown.style.width = `${this.trigger.offsetWidth}px`;
+      this.dropdown.style.left = '0';
+      this.dropdown.style.right = 'auto';
+      this.dropdown.style.minWidth = `${this.trigger.offsetWidth}px`;
+      
+      if (this.container.classList.contains('dropdown-up')) {
+        // Open upward - position above the trigger
+        this.dropdown.style.bottom = `${this.trigger.offsetHeight}px`;
+        this.dropdown.style.top = 'auto';
+      } else {
+        // Open downward - position below the trigger
+        this.dropdown.style.top = `${this.trigger.offsetHeight}px`;
+        this.dropdown.style.bottom = 'auto';
+      }
       
       if (this.searchable && this.searchInput) {
         setTimeout(() => {
@@ -290,6 +414,19 @@ if (
         this.dropdown.style.bottom = '';
         this.dropdown.style.left = '';
         this.dropdown.style.width = '';
+        this.dropdown.style.right = '';
+      }
+      
+      // Remove scroll listeners when closed
+      if (this._scrollListener) {
+        window.removeEventListener('scroll', this._scrollListener, true);
+        // Remove from parent elements
+        let parent = this.container?.parentElement;
+        while (parent && parent !== document.body) {
+          parent.removeEventListener('scroll', this._scrollListener, true);
+          parent = parent.parentElement;
+        }
+        this._scrollListener = null;
       }
     }
 
@@ -320,9 +457,88 @@ if (
     }
 
     setValue(value) {
-      const option = this.options.find((opt) => opt.value === value);
+      // Convert value to string for comparison
+      const stringValue = value !== null && value !== undefined ? String(value) : '';
+      
+      // Re-find textElement in case DOM was updated
+      if (!this.textElement || !this.container.contains(this.textElement)) {
+        this.textElement = this.container.querySelector(".custom-select-text");
+      }
+      
+      // If value is empty, clear the selection
+      if (stringValue === '') {
+        this.clear();
+        return;
+      }
+      
+      // Check if the value is already set and the text is correct
+      const currentValue = this.selectedValue !== null && this.selectedValue !== undefined ? String(this.selectedValue) : '';
+      const currentText = this.textElement?.textContent || '';
+      
+      if (currentValue === stringValue && currentText !== this.placeholder && currentText !== '') {
+        // Value is already set and text is correct, just ensure hidden input is synced
+        if (this.hiddenInput) {
+          this.hiddenInput.value = stringValue;
+        }
+        // Re-render options to update selected state
+        this.renderOptions();
+        return;
+      }
+      
+      // Find the option that matches the value
+      const option = this.options.find((opt) => {
+        const optValue = opt.value !== null && opt.value !== undefined ? String(opt.value) : '';
+        return optValue === stringValue;
+      });
+      
       if (option) {
-        this.selectOption(option);
+        // Update the selected value and text without triggering onChange
+        this.selectedValue = option.value;
+        this.selectedText = option.label;
+        
+        // Update the text element - force update
+        if (this.textElement) {
+          this.textElement.textContent = option.label;
+          this.textElement.innerHTML = option.label; // Also set innerHTML to be sure
+          this.textElement.classList.remove("custom-select-placeholder");
+        } else {
+          // Try to find it again
+          const textEl = this.container.querySelector(".custom-select-text");
+          if (textEl) {
+            textEl.textContent = option.label;
+            textEl.innerHTML = option.label;
+            textEl.classList.remove("custom-select-placeholder");
+            this.textElement = textEl;
+          }
+        }
+        
+        // Update hidden input
+        if (this.hiddenInput) {
+          this.hiddenInput.value = option.value;
+        }
+        
+        // Re-render options to update selected state (without triggering onChange)
+        this.renderOptions();
+      } else {
+        // If option not found, check if we have a current text that matches
+        // This can happen if setValue is called before options are loaded
+        // or if the options were just updated
+        if (this.textElement && this.textElement.textContent !== this.placeholder && this.textElement.textContent !== '') {
+          // Text is already set and looks correct, just store the value
+          this.selectedValue = stringValue;
+          if (this.hiddenInput) {
+            this.hiddenInput.value = stringValue;
+          }
+          // Don't update text - keep the current text
+          this.renderOptions();
+        } else {
+          // No text set or text is placeholder, store the value but don't update text
+          this.selectedValue = stringValue;
+          if (this.hiddenInput) {
+            this.hiddenInput.value = stringValue;
+          }
+          console.warn(`CustomSelect: Option with value "${stringValue}" not found in ${this.options.length} options. Value stored but text not updated.`);
+        }
       }
     }
 
