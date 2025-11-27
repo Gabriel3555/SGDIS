@@ -57,53 +57,41 @@ function updateUserStats() {
   const isSuperAdmin = currentRole === 'SUPERADMIN';
 
   // Use statistics from endpoint if available (for SUPERADMIN), otherwise calculate from current page
-  let totalUsers, superadminCount, adminInstitutionCount, adminRegionalCount, warehouseCount, userCount;
+  // Exclude SUPERADMIN users from statistics
+  let totalUsers, adminInstitutionCount, adminRegionalCount, warehouseCount, userCount;
 
   if (isSuperAdmin && window.usersData.statistics) {
-    // Use total statistics from endpoint
+    // Use total statistics from endpoint (excluding SUPERADMIN)
     const stats = window.usersData.statistics;
-    totalUsers = stats.totalUsers || 0;
-    superadminCount = stats.superadminCount || 0;
+    totalUsers = (stats.totalUsers || 0) - (stats.superadminCount || 0);
     adminInstitutionCount = stats.adminInstitutionCount || 0;
     adminRegionalCount = stats.adminRegionalCount || 0;
     warehouseCount = stats.warehouseCount || 0;
     userCount = stats.userCount || 0;
   } else {
-    // Fallback to local calculation from current page data
+    // Fallback to local calculation from current page data (excluding SUPERADMIN)
     if (!window.usersData.users) {
       return;
     }
-    totalUsers = window.usersData.users.length;
-    superadminCount = window.usersData.users.filter(
-      (u) => u && u.role === "SUPERADMIN"
-    ).length;
-    adminInstitutionCount = window.usersData.users.filter(
+    const usersWithoutSuperAdmin = window.usersData.users.filter(
+      (u) => u && u.role !== "SUPERADMIN"
+    );
+    totalUsers = usersWithoutSuperAdmin.length;
+    adminInstitutionCount = usersWithoutSuperAdmin.filter(
       (u) => u && u.role === "ADMIN_INSTITUTION"
     ).length;
-    adminRegionalCount = window.usersData.users.filter(
+    adminRegionalCount = usersWithoutSuperAdmin.filter(
       (u) => u && u.role === "ADMIN_REGIONAL"
     ).length;
-    warehouseCount = window.usersData.users.filter(
+    warehouseCount = usersWithoutSuperAdmin.filter(
       (u) => u && u.role === "WAREHOUSE"
     ).length;
-    userCount = window.usersData.users.filter(
+    userCount = usersWithoutSuperAdmin.filter(
       (u) => u && u.role === "USER"
     ).length;
   }
   
   container.innerHTML = `
-        ${!isAdminInstitution && !isAdminRegional ? `<div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Super Admin</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${superadminCount}</h3>
-                </div>
-                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-user-shield text-red-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-red-600 text-sm font-medium">Administradores del sistema</p>
-        </div>` : ''}
 
         ${!isAdminInstitution ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">
@@ -538,12 +526,24 @@ function updateUsersTable() {
   // Get current user role and ID to filter out current user for SUPERADMIN and ADMIN_INSTITUTION
   const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
   const currentUserId = window.usersData ? window.usersData.currentLoggedInUserId : null;
+  const isSuperAdmin = (currentRole === 'SUPERADMIN') || 
+                      (window.location.pathname && window.location.pathname.includes('/superadmin'));
   const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION') && currentUserId;
 
-  // Filter out current user if needed
+  // Filter out current user and SUPERADMIN users if needed
   let usersToDisplay = window.usersData.filteredUsers;
+  
+  // For superadmin, exclude all SUPERADMIN users
+  if (isSuperAdmin) {
+    usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+  }
+  
   if (shouldExcludeCurrentUser) {
     usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+    // Limit to itemsPerPage to ensure consistent page size (especially for first page)
+    if (!hasFilters && window.usersData.currentPage === 1) {
+      usersToDisplay = usersToDisplay.slice(0, window.usersData.itemsPerPage);
+    }
   }
 
   let paginatedUsers;
@@ -967,9 +967,8 @@ function initializeFilterSelects() {
         { value: "USER", label: "Usuario" }
       );
     } else {
-      // Super Admin or other roles see all roles
+      // Super Admin or other roles see all roles (except SUPERADMIN)
       roleOptions.push(
-        { value: "SUPERADMIN", label: "Super Admin" },
         { value: "ADMIN_INSTITUTION", label: "Admin Institución" },
         { value: "ADMIN_REGIONAL", label: "Admin Regional" },
         { value: "WAREHOUSE", label: "Almacén" },
@@ -1310,6 +1309,10 @@ function updateUsersCards() {
   let usersToDisplay = window.usersData.filteredUsers;
   if (shouldExcludeCurrentUser) {
     usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+    // Limit to itemsPerPage to ensure consistent page size
+    if (!hasFilters && window.usersData.currentPage === 1) {
+      usersToDisplay = usersToDisplay.slice(0, window.usersData.itemsPerPage);
+    }
   }
 
   let paginatedUsers;
