@@ -6,9 +6,17 @@ async function loadTransfersData() {
         return;
     }
     
-    // Check if user is superadmin
+    // Check if user is superadmin or warehouse
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
+    
+    // If warehouse, use warehouse-specific loader (already overridden)
+    if (isWarehouse && window.loadWarehouseTransfersData) {
+        await window.loadWarehouseTransfersData();
+        return;
+    }
     
     // If superadmin, load all transfers with pagination
     if (isSuperAdmin) {
