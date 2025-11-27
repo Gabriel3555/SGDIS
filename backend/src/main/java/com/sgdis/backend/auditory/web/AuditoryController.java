@@ -29,7 +29,7 @@ public class AuditoryController {
 
     @Operation(
             summary = "List all auditory records",
-            description = "Retrieves all auditory records with pagination (Superadmin only)"
+            description = "Retrieves all auditory records with pagination and optional filters (Superadmin only)"
     )
     @ApiResponse(
             responseCode = "200",
@@ -41,8 +41,19 @@ public class AuditoryController {
     @GetMapping
     public PagedAuditoryResponse listAuditories(
             @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size) {
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size,
+            @Parameter(description = "Filter by regional ID") @RequestParam(required = false) Long regionalId,
+            @Parameter(description = "Filter by institution ID") @RequestParam(required = false) Long institutionId,
+            @Parameter(description = "Filter by performer (user) ID") @RequestParam(required = false) Long performerId) {
         Pageable pageable = PageRequest.of(page, size);
+        com.sgdis.backend.auditory.application.service.AuditoryService auditoryService = 
+            (com.sgdis.backend.auditory.application.service.AuditoryService) listAuditoryUseCase;
+        
+        // If any filter is provided, use filtered method
+        if (regionalId != null || institutionId != null || performerId != null) {
+            return auditoryService.listAuditoriesWithFilters(regionalId, institutionId, performerId, pageable);
+        }
+        
         return listAuditoryUseCase.listAuditories(pageable);
     }
 

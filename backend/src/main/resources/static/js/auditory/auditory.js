@@ -4,7 +4,14 @@ let auditoryData = {
     pageSize: 10,
     totalPages: 0,
     totalAuditories: 0,
-    isLoading: false
+    isLoading: false,
+    isSuperadmin: false,
+    regionalsLoaded: false,
+    filters: {
+        regionalId: null,
+        institutionId: null,
+        performerId: null
+    }
 };
 
 // Load auditories from API
@@ -35,17 +42,47 @@ async function loadAuditories(page = 0) {
                 const currentRole = userData.role || '';
                 const institutionId = userData.institution?.id || userData.institutionId;
                 
-                if (currentRole === 'ADMIN_INSTITUTION') {
-                    // Use institution endpoint for ADMIN_INSTITUTION (gets institution from current user)
-                    endpoint = `/api/v1/auditories/institution?page=${page}&size=${auditoryData.pageSize}`;
-                } else if (currentRole === 'ADMIN_REGIONAL') {
-                    // For ADMIN_REGIONAL, use regional endpoint
-                    const regionalId = userData.institution?.regional?.id || userData.regional?.id || userData.regionalId;
-                    if (regionalId) {
-                        endpoint = `/api/v1/auditories/regional/${regionalId}?page=${page}&size=${auditoryData.pageSize}`;
+                // Check if user is SUPERADMIN
+                auditoryData.isSuperadmin = currentRole === 'SUPERADMIN';
+                
+                // Update table header based on role
+                updateTableHeader();
+                
+                // Show/hide filters and load filter options for Superadmin
+                if (auditoryData.isSuperadmin) {
+                    showFilters();
+                    loadFilterOptions();
+                    
+                    // Build endpoint with filters for SUPERADMIN
+                    const params = new URLSearchParams();
+                    params.append('page', page);
+                    params.append('size', auditoryData.pageSize);
+                    
+                    if (auditoryData.filters.regionalId) {
+                        params.append('regionalId', auditoryData.filters.regionalId);
+                    }
+                    if (auditoryData.filters.institutionId) {
+                        params.append('institutionId', auditoryData.filters.institutionId);
+                    }
+                    if (auditoryData.filters.performerId) {
+                        params.append('performerId', auditoryData.filters.performerId);
+                    }
+                    
+                    endpoint = `/api/v1/auditories?${params.toString()}`;
+                } else {
+                    hideFilters();
+                    
+                    if (currentRole === 'ADMIN_INSTITUTION') {
+                        // Use institution endpoint for ADMIN_INSTITUTION (gets institution from current user)
+                        endpoint = `/api/v1/auditories/institution?page=${page}&size=${auditoryData.pageSize}`;
+                    } else if (currentRole === 'ADMIN_REGIONAL') {
+                        // For ADMIN_REGIONAL, use regional endpoint
+                        const regionalId = userData.institution?.regional?.id || userData.regional?.id || userData.regionalId;
+                        if (regionalId) {
+                            endpoint = `/api/v1/auditories/regional/${regionalId}?page=${page}&size=${auditoryData.pageSize}`;
+                        }
                     }
                 }
-                // For SUPERADMIN, use default endpoint (all auditories)
             }
         } catch (userError) {
             console.error('Error checking user role:', userError);
@@ -113,16 +150,42 @@ function createUserAvatar(imgUrl, fullName, size = 'w-10 h-10') {
     }
 }
 
+// Update table header based on user role
+function updateTableHeader() {
+    const header = document.getElementById('auditoryTableHeader');
+    if (!header) return;
+    
+    if (auditoryData.isSuperadmin) {
+        // Add Regional and Centro columns for Superadmin
+        header.innerHTML = `
+            <th class="text-left py-3 px-4 font-semibold text-gray-700">Fecha/Hora</th>
+            <th class="text-left py-3 px-4 font-semibold text-gray-700">Usuario</th>
+            <th class="text-left py-3 px-4 font-semibold text-gray-700">Acción</th>
+            <th class="text-left py-3 px-4 font-semibold text-gray-700">Institution</th>
+            <th class="text-left py-3 px-4 font-semibold text-gray-700">Regional</th>
+        `;
+    } else {
+        // Standard columns for other roles
+        header.innerHTML = `
+            <th class="text-left py-3 px-4 font-semibold text-gray-700">Fecha/Hora</th>
+            <th class="text-left py-3 px-4 font-semibold text-gray-700">Usuario</th>
+            <th class="text-left py-3 px-4 font-semibold text-gray-700">Acción</th>
+        `;
+    }
+}
+
 // Display auditories in table
 function displayAuditories(auditories) {
     const tbody = document.getElementById('auditoryTableBody');
     
     if (!tbody) return;
     
+    const colspan = auditoryData.isSuperadmin ? 5 : 3;
+    
     if (auditories.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="3" class="py-8 text-center text-gray-500">
+                <td colspan="${colspan}" class="py-8 text-center text-gray-500">
                     No hay registros de auditoría disponibles
                 </td>
             </tr>
@@ -144,21 +207,44 @@ function displayAuditories(auditories) {
         const performerName = auditory.performerName || 'N/A';
         const avatarHtml = createUserAvatar(auditory.performerImgUrl, performerName, 'w-10 h-10');
         
-        return `
-            <tr class="border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${formattedDate}</td>
-                <td class="py-3 px-4">
-                    <div class="flex items-center gap-3">
-                        ${avatarHtml}
-                        <div class="flex flex-col">
-                            <span class="text-gray-700 dark:text-gray-300 font-medium">${escapeHtml(performerName)}</span>
-                            ${auditory.performerEmail ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(auditory.performerEmail)}</span>` : ''}
+        const regionalName = escapeHtml(auditory.regionalName || '-');
+        const institutionName = escapeHtml(auditory.institutionName || '-');
+        
+        if (auditoryData.isSuperadmin) {
+            return `
+                <tr class="border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${formattedDate}</td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                            ${avatarHtml}
+                            <div class="flex flex-col">
+                                <span class="text-gray-700 dark:text-gray-300 font-medium">${escapeHtml(performerName)}</span>
+                                ${auditory.performerEmail ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(auditory.performerEmail)}</span>` : ''}
+                            </div>
                         </div>
-                    </div>
-                </td>
-                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${escapeHtml(auditory.action || 'N/A')}</td>
-            </tr>
-        `;
+                    </td>
+                    <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${escapeHtml(auditory.action || 'N/A')}</td>
+                    <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${institutionName}</td>
+                    <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${regionalName}</td>
+                </tr>
+            `;
+        } else {
+            return `
+                <tr class="border-b border-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${formattedDate}</td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center gap-3">
+                            ${avatarHtml}
+                            <div class="flex flex-col">
+                                <span class="text-gray-700 dark:text-gray-300 font-medium">${escapeHtml(performerName)}</span>
+                                ${auditory.performerEmail ? `<span class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(auditory.performerEmail)}</span>` : ''}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${escapeHtml(auditory.action || 'N/A')}</td>
+                </tr>
+            `;
+        }
     }).join('');
 }
 
@@ -205,9 +291,10 @@ function showLoadingState() {
     const refreshText = document.getElementById('refreshText');
     
     if (tbody) {
+        const colspan = auditoryData.isSuperadmin ? 5 : 3;
         tbody.innerHTML = `
             <tr>
-                <td colspan="3" class="py-8 text-center">
+                <td colspan="${colspan}" class="py-8 text-center">
                     <div class="flex flex-col items-center gap-2">
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                         <span class="text-gray-500">Cargando registros...</span>
@@ -245,9 +332,10 @@ function showErrorState(message) {
     const tbody = document.getElementById('auditoryTableBody');
     
     if (tbody) {
+        const colspan = auditoryData.isSuperadmin ? 5 : 3;
         tbody.innerHTML = `
             <tr>
-                <td colspan="3" class="py-8 text-center text-red-500">
+                <td colspan="${colspan}" class="py-8 text-center text-red-500">
                     <div class="flex flex-col items-center gap-2">
                         <i class="fas fa-exclamation-circle text-2xl"></i>
                         <span>${escapeHtml(message)}</span>
@@ -264,6 +352,242 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Show filters section
+function showFilters() {
+    const filtersSection = document.getElementById('filtersSection');
+    if (filtersSection) {
+        filtersSection.style.display = 'block';
+    }
+}
+
+// Hide filters section
+function hideFilters() {
+    const filtersSection = document.getElementById('filtersSection');
+    if (filtersSection) {
+        filtersSection.style.display = 'none';
+    }
+}
+
+// Load filter options
+async function loadFilterOptions() {
+    const token = localStorage.getItem('jwt');
+    if (!token) return;
+
+    // Prevent multiple loads for regionals
+    if (auditoryData.regionalsLoaded) {
+        return;
+    }
+
+    try {
+        // Load Regionals
+        const regionalsResponse = await fetch('/api/v1/regional', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (regionalsResponse.ok) {
+            const regionals = await regionalsResponse.json();
+            const regionalSelect = document.getElementById('filterRegional');
+            if (regionalSelect) {
+                // Clear existing options except the first one (default)
+                while (regionalSelect.options.length > 1) {
+                    regionalSelect.remove(1);
+                }
+                regionals.forEach(regional => {
+                    const option = document.createElement('option');
+                    option.value = regional.id;
+                    option.textContent = regional.name;
+                    regionalSelect.appendChild(option);
+                });
+            }
+        }
+
+        // Load all users initially
+        await loadUsers();
+        
+        // Mark regionals as loaded
+        auditoryData.regionalsLoaded = true;
+    } catch (error) {
+        console.error('Error loading filter options:', error);
+        auditoryData.regionalsLoaded = false; // Allow retry on error
+    }
+}
+
+// Load institutions by regional
+async function loadInstitutionsByRegional(regionalId) {
+    const token = localStorage.getItem('jwt');
+    if (!token) return;
+
+    const institutionSelect = document.getElementById('filterInstitution');
+    if (!institutionSelect) return;
+
+    // Clear existing options except the first one (default)
+    while (institutionSelect.options.length > 1) {
+        institutionSelect.remove(1);
+    }
+
+    if (!regionalId || regionalId === '') {
+        // Reset to default if no regional selected
+        institutionSelect.value = '';
+        return;
+    }
+
+    try {
+        const institutionsResponse = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (institutionsResponse.ok) {
+            const institutions = await institutionsResponse.json();
+            institutions.forEach(institution => {
+                const option = document.createElement('option');
+                option.value = institution.id;
+                option.textContent = institution.name;
+                institutionSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading institutions by regional:', error);
+    }
+}
+
+// Load users based on filters
+async function loadUsers(regionalId = null, institutionId = null) {
+    const token = localStorage.getItem('jwt');
+    if (!token) return;
+
+    const userSelect = document.getElementById('filterUser');
+    if (!userSelect) return;
+
+    // Clear existing options except the first one (default)
+    while (userSelect.options.length > 1) {
+        userSelect.remove(1);
+    }
+
+    try {
+        let users = [];
+        let institutionNames = [];
+        
+        // Get institution names to filter by
+        if (institutionId && institutionId !== '') {
+            // Get the selected institution name
+            const institutionSelect = document.getElementById('filterInstitution');
+            if (institutionSelect) {
+                const selectedOption = institutionSelect.options[institutionSelect.selectedIndex];
+                if (selectedOption && selectedOption.textContent) {
+                    institutionNames = [selectedOption.textContent];
+                }
+            }
+        } else if (regionalId && regionalId !== '') {
+            // Get all institution names for the selected regional
+            const institutionsResponse = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (institutionsResponse.ok) {
+                const institutions = await institutionsResponse.json();
+                institutionNames = institutions.map(inst => inst.name);
+            }
+        }
+        
+        // Load all users
+        const usersResponse = await fetch('/api/v1/users?page=0&size=10000', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (usersResponse.ok) {
+            const usersData = await usersResponse.json();
+            if (usersData.users) {
+                if (institutionNames.length > 0) {
+                    // Filter users by institution name
+                    users = usersData.users.filter(user => 
+                        user.institution && institutionNames.includes(user.institution)
+                    );
+                } else {
+                    // Load all users
+                    users = usersData.users;
+                }
+            }
+        }
+
+        // Populate user select
+        users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.fullName || user.email;
+            userSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading users:', error);
+    }
+}
+
+// Handle regional change
+async function onRegionalChange() {
+    const regionalSelect = document.getElementById('filterRegional');
+    const regionalId = regionalSelect && regionalSelect.value && regionalSelect.value !== '' ? regionalSelect.value : null;
+    
+    // Clear institution selection
+    const institutionSelect = document.getElementById('filterInstitution');
+    if (institutionSelect) {
+        institutionSelect.value = '';
+    }
+    
+    // Load institutions for selected regional
+    await loadInstitutionsByRegional(regionalId);
+    
+    // Update users based on regional
+    await loadUsers(regionalId, null);
+    
+    // Update filters and reload auditories
+    applyFilters();
+}
+
+// Handle institution change
+async function onInstitutionChange() {
+    const regionalSelect = document.getElementById('filterRegional');
+    const institutionSelect = document.getElementById('filterInstitution');
+    
+    const regionalId = regionalSelect && regionalSelect.value && regionalSelect.value !== '' ? regionalSelect.value : null;
+    const institutionId = institutionSelect && institutionSelect.value && institutionSelect.value !== '' ? institutionSelect.value : null;
+    
+    // Update users based on institution
+    await loadUsers(regionalId, institutionId);
+    
+    // Update filters and reload auditories
+    applyFilters();
+}
+
+// Apply filters
+function applyFilters() {
+    const regionalSelect = document.getElementById('filterRegional');
+    const institutionSelect = document.getElementById('filterInstitution');
+    const userSelect = document.getElementById('filterUser');
+
+    // Get values and convert to numbers, or null if empty
+    const regionalValue = regionalSelect && regionalSelect.value && regionalSelect.value !== '' ? parseInt(regionalSelect.value) : null;
+    const institutionValue = institutionSelect && institutionSelect.value && institutionSelect.value !== '' ? parseInt(institutionSelect.value) : null;
+    const userValue = userSelect && userSelect.value && userSelect.value !== '' ? parseInt(userSelect.value) : null;
+
+    // Update filters
+    auditoryData.filters.regionalId = regionalValue;
+    auditoryData.filters.institutionId = institutionValue;
+    auditoryData.filters.performerId = userValue;
+
+    // Reset to first page when filters change
+    auditoryData.currentPage = 0;
+    loadAuditories(0);
 }
 
 // Initialize on page load

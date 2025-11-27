@@ -17,4 +17,15 @@ public interface SpringDataAuditoryRepository extends JpaRepository<AuditoryEnti
     
     @Query("SELECT a FROM AuditoryEntity a WHERE a.institution.id = :institutionId ORDER BY a.date DESC")
     Page<AuditoryEntity> findAllByInstitutionIdOrderByDateDesc(@Param("institutionId") Long institutionId, Pageable pageable);
+    
+    @Query("SELECT a FROM AuditoryEntity a WHERE " +
+           "(:regionalId IS NULL OR a.regional.id = :regionalId) AND " +
+           "(:institutionId IS NULL OR a.institution.id = :institutionId) AND " +
+           "(:performerId IS NULL OR a.performer.id = :performerId) " +
+           "ORDER BY a.date DESC")
+    Page<AuditoryEntity> findAllWithFilters(
+            @Param("regionalId") Long regionalId,
+            @Param("institutionId") Long institutionId,
+            @Param("performerId") Long performerId,
+            Pageable pageable);
 }
