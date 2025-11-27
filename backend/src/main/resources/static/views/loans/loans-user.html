@@ -494,9 +494,27 @@
 <script src="../../js/users/users-api.js"></script>
 <script src="../../js/notifications-bell.js"></script>
 <script>
+    // Scroll to active sidebar item
+    function scrollToActiveSidebarItem() {
+        const sidebarNav = document.querySelector('#sidebar nav');
+        if (sidebarNav) {
+            const activeItem = sidebarNav.querySelector('.sidebar-item.active');
+            if (activeItem) {
+                setTimeout(() => {
+                    activeItem.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }, 100);
+            }
+        }
+    }
+
     // Initialize loan selects when page loads
     document.addEventListener('DOMContentLoaded', function() {
         initializeLoanSelects();
+        scrollToActiveSidebarItem();
     });
 
     // Logout function - shows confirmation modal
