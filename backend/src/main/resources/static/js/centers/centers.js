@@ -182,31 +182,42 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
                 container.classList.add('select-open');
             }
             
-            // Calculate position relative to the container
+            // Calculate position - use fixed positioning for modals
             requestAnimationFrame(() => {
                 if (this.dropdown && this.trigger) {
-                    const containerElement = this.container.closest('.custom-select-container');
-                    if (containerElement) {
-                        // Get trigger position relative to container
-                        const containerRect = containerElement.getBoundingClientRect();
+                    // Check if we're inside a modal
+                    const isInModal = this.container.closest('[id$="Modal"]') !== null;
+                    
+                    if (isInModal) {
+                        // Use fixed positioning for modals
                         const triggerRect = this.trigger.getBoundingClientRect();
-                        
-                        // Calculate position relative to container
-                        const top = triggerRect.bottom - containerRect.top;
-                        const left = triggerRect.left - containerRect.left;
-                        const width = triggerRect.width;
-                        
-                        this.dropdown.style.position = 'absolute';
-                        this.dropdown.style.top = `${top}px`;
-                        this.dropdown.style.left = `${left}px`;
-                        this.dropdown.style.width = `${width}px`;
-                    } else {
-                        // Fallback: use fixed positioning if container not found
-                        const rect = this.trigger.getBoundingClientRect();
                         this.dropdown.style.position = 'fixed';
-                        this.dropdown.style.width = `${rect.width}px`;
-                        this.dropdown.style.top = `${rect.bottom}px`;
-                        this.dropdown.style.left = `${rect.left}px`;
+                        this.dropdown.style.width = `${triggerRect.width}px`;
+                        this.dropdown.style.top = `${triggerRect.bottom}px`;
+                        this.dropdown.style.left = `${triggerRect.left}px`;
+                    } else {
+                        // Use absolute positioning for normal pages
+                        const containerElement = this.container.closest('.custom-select-container');
+                        if (containerElement) {
+                            const containerRect = containerElement.getBoundingClientRect();
+                            const triggerRect = this.trigger.getBoundingClientRect();
+                            
+                            const top = triggerRect.bottom - containerRect.top;
+                            const left = triggerRect.left - containerRect.left;
+                            const width = triggerRect.width;
+                            
+                            this.dropdown.style.position = 'absolute';
+                            this.dropdown.style.top = `${top}px`;
+                            this.dropdown.style.left = `${left}px`;
+                            this.dropdown.style.width = `${width}px`;
+                        } else {
+                            // Fallback: use fixed positioning
+                            const rect = this.trigger.getBoundingClientRect();
+                            this.dropdown.style.position = 'fixed';
+                            this.dropdown.style.width = `${rect.width}px`;
+                            this.dropdown.style.top = `${rect.bottom}px`;
+                            this.dropdown.style.left = `${rect.left}px`;
+                        }
                     }
                 }
             });

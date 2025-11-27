@@ -100,6 +100,34 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
             throw new DomainValidationException("No cuentas con permisos para solicitar la transferencia de este ítem");
         }
 
+        // Additional validation for WAREHOUSE role
+        if (requester.getRole() == Role.WAREHOUSE) {
+            // Warehouse can only transfer items from their institution
+            if (requester.getInstitution() == null) {
+                throw new DomainValidationException("El usuario warehouse no tiene una institución asignada");
+            }
+            
+            if (sourceInventory.getInstitution() == null || 
+                !sourceInventory.getInstitution().getId().equals(requester.getInstitution().getId())) {
+                throw new DomainValidationException("Solo puedes transferir items que pertenecen a tu institución");
+            }
+            
+            // Warehouse can only transfer to inventories in their regional
+            if (requester.getInstitution().getRegional() == null) {
+                throw new DomainValidationException("La institución del usuario warehouse no tiene una regional asignada");
+            }
+            
+            if (destinationInventory.getInstitution() == null || 
+                destinationInventory.getInstitution().getRegional() == null) {
+                throw new DomainValidationException("El inventario de destino no tiene una regional asignada");
+            }
+            
+            if (!destinationInventory.getInstitution().getRegional().getId()
+                    .equals(requester.getInstitution().getRegional().getId())) {
+                throw new DomainValidationException("Solo puedes transferir a inventarios de tu regional");
+            }
+        }
+
         // Check if user has privileged role for direct transfer
         boolean isDirectTransfer = hasTransferPrivilegedRole(requester);
 

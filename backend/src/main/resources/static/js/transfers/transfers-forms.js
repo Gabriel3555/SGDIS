@@ -17,9 +17,11 @@ function populateNewTransferForm(itemId = null) {
     const form = document.getElementById('newTransferForm');
     if (!form) return;
     
-    // Check if user is superadmin
+    // Check if user is superadmin or warehouse
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
     
     // If itemId is provided, pre-fill it
     const itemIdValue = itemId || '';
@@ -196,6 +198,173 @@ function populateNewTransferForm(itemId = null) {
                 setTimeout(initSelects, 150);
             });
         });
+    } else if (isWarehouse) {
+        // For warehouse: use licence plate with verification, but only show inventories from warehouse's regional
+        form.innerHTML = `
+        <div class="space-y-4">
+            <!-- Error message container -->
+            <div id="transferFormError" class="hidden">
+                <!-- Error messages will be displayed here -->
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item a Transferir *</label>
+                <!-- Inventory Info Display (shown after verification) -->
+                <div id="itemInventoryInfo" class="mb-3 hidden">
+                    <!-- Will be populated when item is verified -->
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="newTransferLicencePlate" 
+                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
+                        placeholder="Placa del item" 
+                        onkeypress="if(event.key === 'Enter') { event.preventDefault(); verifyItemByLicencePlate(); }"
+                        required>
+                    <button type="button" onclick="verifyItemByLicencePlate()" 
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-search"></i>
+                        <span class="hidden sm:inline">Verificar</span>
+                    </button>
+                </div>
+                <input type="hidden" id="newTransferItemId" value="${itemIdValue}">
+                <div id="itemVerificationResult" class="mt-2"></div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ingresa la placa del item y verifica su existencia. Solo puedes transferir items de tu institución.</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario de Destino *</label>
+                
+                <!-- Inventario Dropdown (only inventories from warehouse's regional) -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Inventario</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="newTransferInventorySelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Seleccione un inventario</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
+                                <div class="custom-select-options" id="newTransferInventoryOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="newTransferDestinationInventoryId" value="" required>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Solo puedes transferir a inventarios de tu regional. La transferencia se aprobará automáticamente.</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Detalles / Observaciones</label>
+                <textarea id="newTransferDetails" 
+                    rows="4" 
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
+                    placeholder="Detalles adicionales sobre la transferencia (opcional, máximo 500 caracteres)"
+                    maxlength="500"></textarea>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Información adicional sobre la transferencia</p>
+            </div>
+        </div>
+
+        <div class="flex gap-3 pt-4 mt-6 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" onclick="closeNewTransferModal()" 
+                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancelar
+            </button>
+            <button type="submit" 
+                class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors font-semibold">
+                <i class="fas fa-check-circle mr-2"></i>
+                Crear Transferencia (Aprobación Automática)
+            </button>
+        </div>
+    `;
+        
+        // Initialize inventory select for warehouse
+        const initWarehouseSelect = (retries = 0, maxRetries = 30) => {
+            // Check if CustomSelect is available (check both window.CustomSelect and global CustomSelect)
+            const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+            
+            if (!CustomSelectClass && retries < maxRetries) {
+                setTimeout(() => initWarehouseSelect(retries + 1, maxRetries), 200);
+                return;
+            }
+            
+            if (!CustomSelectClass) {
+                console.error('CustomSelect not available. Please ensure centers.js is loaded before transfers-forms.js.');
+                return;
+            }
+            
+            const inventoryContainer = document.getElementById('newTransferInventorySelect');
+            
+            if (!inventoryContainer) {
+                if (retries < maxRetries) {
+                    setTimeout(() => initWarehouseSelect(retries + 1, maxRetries), 50);
+                }
+                return;
+            }
+            
+            const inventoryOptions = inventoryContainer.querySelector('.custom-select-options');
+            
+            if (!inventoryOptions) {
+                if (retries < maxRetries) {
+                    setTimeout(() => initWarehouseSelect(retries + 1, maxRetries), 50);
+                }
+                return;
+            }
+            
+            // Initialize inventory select
+            if (!newTransferInventorySelect) {
+                try {
+                    const selectInstance = new CustomSelectClass('newTransferInventorySelect', {
+                        placeholder: 'Seleccione un inventario',
+                        onChange: (option) => {
+                            if (option && option.value) {
+                                const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
+                                if (hiddenInput) {
+                                    hiddenInput.value = option.value;
+                                }
+                            } else {
+                                const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
+                                if (hiddenInput) {
+                                    hiddenInput.value = '';
+                                }
+                            }
+                        }
+                    });
+                    
+                    if (selectInstance && selectInstance.container) {
+                        newTransferInventorySelect = selectInstance;
+                    }
+                } catch (error) {
+                    console.error('Error initializing warehouse inventory select:', error);
+                    return;
+                }
+            }
+            
+            // Load inventories for warehouse's regional
+            setTimeout(() => {
+                loadInventoriesForWarehouseTransferForm();
+            }, 100);
+        };
+        
+        // Wait a bit more to ensure DOM and CustomSelect are ready
+        setTimeout(() => {
+            initWarehouseSelect();
+        }, 300);
+        
+        // Re-attach event listener after populating form HTML (similar to transfers-user.js)
+        // This is necessary because innerHTML replaces all content including event listeners
+        setTimeout(() => {
+            const formElement = document.getElementById('newTransferForm');
+            if (formElement) {
+                // Remove existing listeners by cloning the form
+                const newForm = formElement.cloneNode(true);
+                formElement.parentNode.replaceChild(newForm, formElement);
+                // Re-attach the submit handler
+                newForm.addEventListener('submit', handleNewTransferSubmit);
+            }
+        }, 100);
     } else {
         // For other users: use item ID (original behavior)
         form.innerHTML = `
@@ -465,12 +634,14 @@ async function verifyItemByLicencePlate() {
 async function handleNewTransferSubmit(event) {
     event.preventDefault();
     
-    // Check if user is superadmin
+    // Check if user is superadmin or warehouse
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
     
-    // For superadmin, verify item first if not already verified
-    if (isSuperAdmin) {
+    // For superadmin and warehouse, verify item first if not already verified
+    if (isSuperAdmin || isWarehouse) {
         const licencePlateInput = document.getElementById('newTransferLicencePlate');
         const itemIdInput = document.getElementById('newTransferItemId');
         
@@ -492,8 +663,8 @@ async function handleNewTransferSubmit(event) {
     }
     
     let itemId;
-    if (isSuperAdmin) {
-        // For superadmin, get itemId from hidden input
+    if (isSuperAdmin || isWarehouse) {
+        // For superadmin and warehouse, get itemId from hidden input
         itemId = document.getElementById('newTransferItemId')?.value?.trim();
     } else {
         // For other users, get from visible input
@@ -1289,6 +1460,104 @@ async function loadInstitutionsForTransferForm(regionalId) {
 }
 
 /**
+ * Load inventories for warehouse transfer form (from warehouse's regional)
+ */
+async function loadInventoriesForWarehouseTransferForm() {
+    try {
+        // Use the function from transfers-warehouse.js if available
+        if (window.loadInventoriesForWarehouseTransfer) {
+            const inventories = await window.loadInventoriesForWarehouseTransfer();
+            
+            if (!inventories || inventories.length === 0) {
+                if (newTransferInventorySelect) {
+                    newTransferInventorySelect.setOptions([{
+                        value: '',
+                        label: 'No hay inventarios disponibles en tu regional'
+                    }]);
+                    newTransferInventorySelect.setDisabled(true);
+                }
+                if (window.showErrorToast) {
+                    window.showErrorToast('Sin inventarios', 'No se encontraron inventarios en tu regional para realizar transferencias.');
+                }
+                return;
+            }
+            
+            const inventoryOptions = inventories.map(inventory => ({
+                value: inventory.inventoryId ? inventory.inventoryId.toString() : inventory.id.toString(),
+                label: inventory.name || `Inventario ${inventory.inventoryId || inventory.id}`
+            }));
+
+            if (newTransferInventorySelect) {
+                newTransferInventorySelect.setOptions(inventoryOptions);
+                newTransferInventorySelect.setDisabled(false);
+            }
+            return;
+        }
+        
+        // Fallback: try to load from institution endpoint
+        const token = localStorage.getItem('jwt');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`/api/v1/inventory/institutionAdminInventories?page=0&size=1000`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const inventories = Array.isArray(data.content) ? data.content : (Array.isArray(data) ? data : []);
+            
+            if (inventories.length === 0) {
+                if (newTransferInventorySelect) {
+                    newTransferInventorySelect.setOptions([{
+                        value: '',
+                        label: 'No hay inventarios disponibles'
+                    }]);
+                    newTransferInventorySelect.setDisabled(true);
+                }
+                return;
+            }
+            
+            const inventoryOptions = inventories.map(inventory => ({
+                value: inventory.inventoryId ? inventory.inventoryId.toString() : inventory.id.toString(),
+                label: inventory.name || `Inventario ${inventory.inventoryId || inventory.id}`
+            }));
+
+            if (newTransferInventorySelect) {
+                newTransferInventorySelect.setOptions(inventoryOptions);
+                newTransferInventorySelect.setDisabled(false);
+            }
+        } else {
+            let errorMessage = `Error al cargar inventarios: ${response.statusText}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.detail || errorMessage;
+            } catch (e) {
+                // Ignore parse error
+            }
+            throw new Error(errorMessage);
+        }
+    } catch (error) {
+        console.error('Error loading inventories for warehouse transfer form:', error);
+        if (newTransferInventorySelect) {
+            newTransferInventorySelect.setOptions([{
+                value: '',
+                label: 'Error al cargar inventarios'
+            }]);
+            newTransferInventorySelect.setDisabled(true);
+        }
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', `No se pudieron cargar los inventarios: ${error.message}`);
+        }
+    }
+}
+
+/**
  * Load inventories for transfer form based on institution
  */
 async function loadInventoriesForTransferForm(institutionId) {
@@ -1339,6 +1608,7 @@ window.handleApproveTransferSubmit = handleApproveTransferSubmit;
 window.verifyItemByLicencePlate = verifyItemByLicencePlate;
 window.initializeTransferFormSelects = initializeTransferFormSelects;
 window.loadRegionalsForTransferForm = loadRegionalsForTransferForm;
+window.loadInventoriesForWarehouseTransferForm = loadInventoriesForWarehouseTransferForm;
 window.showTransferSummaryModal = showTransferSummaryModal;
 window.closeTransferSummaryModal = closeTransferSummaryModal;
 window.confirmTransferRequest = confirmTransferRequest;

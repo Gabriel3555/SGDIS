@@ -36,9 +36,11 @@ async function updateTransfersStats() {
     `;
     
     try {
-        // Check if user is superadmin
+        // Check if user is superadmin or warehouse
         const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                              (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                           (window.location.pathname && window.location.pathname.includes('/warehouse'));
         
         let totalTransfers, pendingTransfers, approvedTransfers, rejectedTransfers;
         
@@ -49,14 +51,40 @@ async function updateTransfersStats() {
             pendingTransfers = stats.pendingTransfers || 0;
             approvedTransfers = stats.approvedTransfers || 0;
             rejectedTransfers = stats.rejectedTransfers || 0;
+        } else if (isWarehouse && window.transfersData) {
+            // For warehouse, use all regional transfers for accurate statistics
+            const transfers = window.transfersData.allRegionalTransfers || window.transfersData.transfers || [];
+            // Use totalElements if available for total count
+            totalTransfers = window.transfersData.totalRegionalTransfers || window.transfersData.totalElements || 0;
+            pendingTransfers = 0;
+            approvedTransfers = 0;
+            rejectedTransfers = 0;
+            
+            if (transfers.length > 0) {
+                pendingTransfers = transfers.filter(t => t.status === 'PENDING').length;
+                approvedTransfers = transfers.filter(t => t.status === 'APPROVED').length;
+                rejectedTransfers = transfers.filter(t => t.status === 'REJECTED').length;
+            }
+            
+            // Ensure values are numbers
+            totalTransfers = totalTransfers || 0;
+            pendingTransfers = pendingTransfers || 0;
+            approvedTransfers = approvedTransfers || 0;
+            rejectedTransfers = rejectedTransfers || 0;
         } else {
             // Calculate from loaded transfers for other users
             const transfers = window.transfersData.transfers || [];
-            totalTransfers = transfers.length;
-            pendingTransfers = transfers.filter(t => t.status === 'PENDING').length;
-            approvedTransfers = transfers.filter(t => t.status === 'APPROVED').length;
-            rejectedTransfers = transfers.filter(t => t.status === 'REJECTED').length;
+            totalTransfers = transfers.length || 0;
+            pendingTransfers = transfers.filter(t => t.status === 'PENDING').length || 0;
+            approvedTransfers = transfers.filter(t => t.status === 'APPROVED').length || 0;
+            rejectedTransfers = transfers.filter(t => t.status === 'REJECTED').length || 0;
         }
+        
+        // Ensure all values are numbers (default to 0)
+        totalTransfers = totalTransfers || 0;
+        pendingTransfers = pendingTransfers || 0;
+        approvedTransfers = approvedTransfers || 0;
+        rejectedTransfers = rejectedTransfers || 0;
         
         container.innerHTML = `
             <div class="stat-card">

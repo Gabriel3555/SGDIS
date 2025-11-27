@@ -248,6 +248,85 @@
                 display: block;
             }
         }
+
+        /* Custom Select Styles for Modals */
+        .custom-select-container {
+            position: relative;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select-dropdown {
+            position: fixed !important;
+            background: white;
+            border: 2px solid #10b981;
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 10050 !important;
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            min-width: 180px;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+        }
+
+        .dark .custom-select-dropdown {
+            background-color: #1f2937;
+            border-color: #10b981;
+        }
+
+        .custom-select.open .custom-select-dropdown {
+            display: block !important;
+        }
+
+        /* Ensure modals allow dropdowns to overflow */
+        #newTransferModal,
+        #viewTransferModal,
+        #approveTransferModal {
+            overflow: visible !important;
+        }
+
+        /* Allow dropdowns to overflow from modal content container */
+        #newTransferModal > div,
+        #viewTransferModal > div,
+        #approveTransferModal > div {
+            overflow: visible !important;
+        }
+
+        /* Ensure form containers allow overflow for dropdowns */
+        #newTransferForm,
+        #approveTransferForm {
+            overflow: visible !important;
+        }
+
+        /* Ensure custom-select-container inside modals has proper overflow */
+        #newTransferModal .custom-select-container,
+        #viewTransferModal .custom-select-container,
+        #approveTransferModal .custom-select-container {
+            position: relative;
+            overflow: visible !important;
+            z-index: 1;
+        }
+
+        /* When select is open, ensure parent containers allow overflow */
+        #newTransferModal .custom-select.open,
+        #viewTransferModal .custom-select.open,
+        #approveTransferModal .custom-select.open {
+            z-index: 10051 !important;
+            position: relative;
+        }
+
+        /* Ensure dropdown appears above everything */
+        .custom-select.open .custom-select-dropdown {
+            z-index: 10052 !important;
+        }
     </style>
 
     <script>
@@ -409,27 +488,31 @@
     <script src="../../js/transfers/transfers-data.js"></script>
     <script src="../../js/transfers/transfers-api.js"></script>
     <script src="../../js/transfers/transfers-filters.js"></script>
+    <!-- CustomSelect component (needed for forms - must load before transfers-forms.js) -->
+    <script src="../../js/centers/centers.js"></script>
     <script src="../../js/transfers/transfers-ui.js"></script>
     <script src="../../js/transfers/transfers-modals.js"></script>
     <script src="../../js/transfers/transfers-forms.js"></script>
     <script src="../../js/transfers/transfers.js"></script>
     <!-- Warehouse specific transfers functionality -->
-    <script src="../../js/transfers/transfers-admin-institution.js"></script>
+    <script src="../../js/transfers/transfers-warehouse.js"></script>
 
     <!-- New Transfer Modal -->
     <div id="newTransferModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
         style="z-index: 9999;">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-2xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full mx-4 my-8 max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between p-8 pb-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Nueva Transferencia</h2>
                 <button onclick="closeNewTransferModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
 
-            <form id="newTransferForm" class="space-y-4">
-                <!-- Form fields will be loaded dynamically -->
-            </form>
+            <div class="flex-1 overflow-y-auto p-8 pt-6">
+                <form id="newTransferForm" class="space-y-4">
+                    <!-- Form fields will be loaded dynamically -->
+                </form>
+            </div>
         </div>
     </div>
 
