@@ -1288,12 +1288,13 @@ class CustomSelect {
     toggle() {
         if (!this.container) return;
         
-        const isOpen = this.container.classList.contains('open');
+        const isOpen = this.container.classList.contains('open') || this.container.classList.contains('active');
 
         // Close all other selects
-        document.querySelectorAll('.custom-select.open').forEach(select => {
+        document.querySelectorAll('.custom-select.open, .custom-select.active').forEach(select => {
             if (select !== this.container) {
                 select.classList.remove('open');
+                select.classList.remove('active');
             }
         });
 
@@ -1307,6 +1308,7 @@ class CustomSelect {
     open() {
         if (!this.container) return;
         this.container.classList.add('open');
+        this.container.classList.add('active');
         
         // Add class to parent container to increase z-index
         const container = this.container.closest('.custom-select-container');
@@ -1314,13 +1316,21 @@ class CustomSelect {
             container.classList.add('select-open');
         }
         
-        // Position dropdown using fixed positioning to avoid overflow issues
+        // Position dropdown using absolute positioning relative to container
         // Use setTimeout to ensure dropdown is rendered first
         setTimeout(() => {
             if (this.dropdown && this.trigger) {
+                // Reset positioning styles to use CSS defaults
+                this.dropdown.style.position = 'absolute';
+                this.dropdown.style.top = '';
+                this.dropdown.style.bottom = '';
+                this.dropdown.style.left = '';
+                this.dropdown.style.right = '';
+                this.dropdown.style.width = '';
+                
                 const triggerRect = this.trigger.getBoundingClientRect();
+                const containerRect = this.container.getBoundingClientRect();
                 const viewportHeight = window.innerHeight;
-                const viewportWidth = window.innerWidth;
                 const spaceBelow = viewportHeight - triggerRect.bottom;
                 const spaceAbove = triggerRect.top;
                 const dropdownHeight = 250; // Approximate max height of dropdown
@@ -1335,20 +1345,23 @@ class CustomSelect {
                 
                 if (shouldOpenUp) {
                     this.container.classList.add('dropdown-up');
-                    // Position above trigger
+                    // Position above trigger using bottom
                     this.dropdown.style.top = 'auto';
-                    this.dropdown.style.bottom = `${viewportHeight - triggerRect.top}px`;
+                    this.dropdown.style.bottom = '100%';
+                    this.dropdown.style.marginTop = '0';
+                    this.dropdown.style.marginBottom = '4px';
                 } else {
                     this.container.classList.remove('dropdown-up');
-                    // Position below trigger
-                    this.dropdown.style.top = `${triggerRect.bottom}px`;
+                    // Position below trigger (CSS default)
+                    this.dropdown.style.top = '100%';
                     this.dropdown.style.bottom = 'auto';
+                    this.dropdown.style.marginTop = '4px';
+                    this.dropdown.style.marginBottom = '0';
                 }
                 
-                // Set left position and width to match trigger
-                this.dropdown.style.left = `${triggerRect.left}px`;
-                this.dropdown.style.width = `${triggerRect.width}px`;
-                this.dropdown.style.right = 'auto';
+                // Ensure dropdown matches trigger width
+                this.dropdown.style.width = '100%';
+                this.dropdown.style.minWidth = `${triggerRect.width}px`;
             }
         }, 10);
         
@@ -1363,6 +1376,7 @@ class CustomSelect {
 
     close() {
         this.container.classList.remove('open');
+        this.container.classList.remove('active');
         
         // Remove class from parent container to restore z-index
         const container = this.container.closest('.custom-select-container');
@@ -1377,6 +1391,10 @@ class CustomSelect {
             this.dropdown.style.left = '';
             this.dropdown.style.width = '';
             this.dropdown.style.right = '';
+            this.dropdown.style.minWidth = '';
+            this.dropdown.style.marginTop = '';
+            this.dropdown.style.marginBottom = '';
+            this.dropdown.style.position = '';
         }
         
         if (this.searchInput) {
