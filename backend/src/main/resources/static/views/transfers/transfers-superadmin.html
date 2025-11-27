@@ -353,6 +353,8 @@
             cursor: pointer;
             transition: all 0.2s ease;
             min-height: 2.5rem;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         .dark .custom-select-trigger {
@@ -390,7 +392,7 @@
         }
 
         .custom-select-arrow {
-            color: #6b7280;
+            color: #10b981;
             transition: transform 0.2s ease;
         }
 
@@ -399,7 +401,7 @@
         }
 
         .custom-select-dropdown {
-            position: absolute;
+            position: fixed;
             background: white;
             border: 2px solid #10b981;
             border-top: none;
@@ -412,7 +414,6 @@
             overflow-x: hidden;
             display: none;
             min-width: 180px;
-            margin-top: 0;
         }
 
         .dark .custom-select-dropdown {

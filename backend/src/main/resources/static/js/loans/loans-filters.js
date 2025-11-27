@@ -59,6 +59,21 @@ function filterLoans() {
         console.log('After search filter:', filtered.length, 'loans');
     }
 
+    // Sort: first by active loans (returned === false/null), then by ID
+    filtered.sort((a, b) => {
+        // First criterion: active loans first (returned === false or null)
+        const aIsActive = !a.returned || a.returned === null || a.returned === false;
+        const bIsActive = !b.returned || b.returned === null || b.returned === false;
+        
+        if (aIsActive && !bIsActive) return -1; // a is active, b is not -> a comes first
+        if (!aIsActive && bIsActive) return 1;  // b is active, a is not -> b comes first
+        
+        // Second criterion: by ID (descending - highest ID first)
+        const aId = a.id || 0;
+        const bId = b.id || 0;
+        return bId - aId;
+    });
+    
     loansData.filteredLoans = filtered;
     loansData.currentPage = 1;
     console.log('Final filteredLoans:', loansData.filteredLoans.length);

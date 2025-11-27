@@ -108,10 +108,15 @@ public class SecurityConfig  {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // Allow all origins with pattern (works with credentials false)
         configuration.addAllowedOriginPattern("*");
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
+        // Set credentials to false when using wildcard origin pattern
         configuration.setAllowCredentials(false);
+        configuration.setMaxAge(3600L);
+        // Expose Authorization header
+        configuration.addExposedHeader("Authorization");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

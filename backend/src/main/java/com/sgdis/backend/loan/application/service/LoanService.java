@@ -29,6 +29,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -135,6 +136,9 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         itemRepository.save(item);
         loanRepository.save(loanEntity);
 
+        // Verificar y eliminar préstamos duplicados en los últimos 2 minutos
+        checkAndRemoveDuplicateLoans(loanEntity);
+
         // Registrar auditoría
         String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
         String inventoryName = item.getInventory() != null && item.getInventory().getName() != null 
@@ -199,6 +203,48 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         return new ReturnItemResponse(user.getFullName(), "Item devuelto exitosamente");
     }
 
+    /**
+     * Verifica si hay préstamos duplicados en los últimos 2 minutos y elimina los duplicados.
+     * Dos préstamos se consideran duplicados si tienen el mismo item, lender y responsible.
+     * Si hay 2 o más duplicados, se eliminan todos menos el más reciente.
+     */
+    private void checkAndRemoveDuplicateLoans(LoanEntity savedLoan) {
+        if (savedLoan.getItem() == null || savedLoan.getLender() == null || savedLoan.getResponsible() == null || savedLoan.getLendAt() == null) {
+            return; // No se puede verificar si falta información esencial
+        }
+
+        // Calcular la fecha de hace 2 minutos
+        LocalDateTime twoMinutesAgo = savedLoan.getLendAt().minus(2, ChronoUnit.MINUTES);
+
+        // Buscar préstamos duplicados en los últimos 2 minutos
+        List<LoanEntity> duplicateLoans = loanRepository.findDuplicateLoans(
+                savedLoan.getItem().getId(),
+                savedLoan.getLender().getId(),
+                savedLoan.getResponsible().getId(),
+                twoMinutesAgo
+        );
+
+        // Si hay 2 o más préstamos duplicados (incluyendo el que acabamos de guardar)
+        if (duplicateLoans.size() >= 2) {
+            // Ordenar por fecha de préstamo descendente (más reciente primero)
+            duplicateLoans.sort((l1, l2) -> {
+                if (l1.getLendAt() == null && l2.getLendAt() == null) return 0;
+                if (l1.getLendAt() == null) return 1;
+                if (l2.getLendAt() == null) return -1;
+                return l2.getLendAt().compareTo(l1.getLendAt());
+            });
+
+            // Mantener solo el más reciente, eliminar el resto
+            for (int i = 1; i < duplicateLoans.size(); i++) {
+                LoanEntity duplicateLoan = duplicateLoans.get(i);
+                // Solo eliminar si no está devuelto (para evitar eliminar préstamos ya procesados)
+                if (duplicateLoan.getReturned() == null || !duplicateLoan.getReturned()) {
+                    loanRepository.delete(duplicateLoan);
+                }
+            }
+        }
+    }
+
     @Override
     public List<LoanResponse> getLoansByItemId(Long itemId) {
         itemRepository.findById(itemId)
@@ -215,8 +261,10 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         itemRepository.findById(itemId)
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
 
-        Optional<LoanEntity> lastLoan = loanRepository.findLastLoanByItemId(itemId);
-        return lastLoan.map(LoanMapper::toDto);
+        List<LoanEntity> loans = loanRepository.findLastLoanByItemId(itemId);
+        return loans.stream()
+                .findFirst()
+                .map(LoanMapper::toDto);
     }
 
     @Override

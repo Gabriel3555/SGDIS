@@ -35,8 +35,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -452,9 +454,10 @@ public class VerificationController {
             @Parameter(description = "Page number (0-indexed)")
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size")
-            @RequestParam(defaultValue = "10000") int size
+            @RequestParam(defaultValue = "6") int size
     ) {
-        Pageable pageable = PageRequest.of(page, size);
+        // Create pageable with sorting by ID descending (highest ID first)
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         Page<VerificationEntity> verificationPage;
         
         if (inventoryId != null) {
@@ -464,8 +467,20 @@ public class VerificationController {
         } else if (regionalId != null) {
             verificationPage = verificationRepository.findAllByRegionalId(regionalId, pageable);
         } else {
-            // Get all verifications
-            verificationPage = verificationRepository.findAll(pageable);
+            // Get all verifications with JOIN FETCH to load relationships
+            // First get total count
+            long totalCount = verificationRepository.countAll();
+            
+            // Then get all verifications with JOIN FETCH
+            List<VerificationEntity> allVerifications = verificationRepository.findAllWithJoins();
+            
+            // Apply pagination manually
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), allVerifications.size());
+            List<VerificationEntity> paginatedVerifications = allVerifications.subList(start, end);
+            
+            // Create Page manually
+            verificationPage = new PageImpl<>(paginatedVerifications, pageable, totalCount);
         }
         
         Page<VerificationResponse> responsePage = verificationPage.map(VerificationMapper::toDto);

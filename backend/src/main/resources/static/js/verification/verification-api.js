@@ -7,8 +7,23 @@ async function loadVerificationData() {
 
     try {
         await loadCurrentUserInfo();
-        await loadInventories();
-        await loadLatestVerifications();
+        
+        // Check if user is superadmin
+        const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                             (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        
+        if (isSuperAdmin) {
+            // Use backend pagination for superadmin
+            verificationData.useBackendPagination = true;
+            await loadInventories();
+            await loadVerificationsFromBackend(0); // Load first page
+        } else {
+            // Use client-side pagination for other roles
+            verificationData.useBackendPagination = false;
+            await loadInventories();
+            await loadLatestVerifications();
+        }
+        
         // Update filters first to show inventories, then update UI
         if (typeof updateFilters === 'function') {
             updateFilters();
@@ -37,6 +52,57 @@ async function loadVerificationData() {
     } finally {
         verificationData.isLoading = false;
         hideLoadingState();
+    }
+}
+
+/**
+ * Loads verifications from backend with pagination (for superadmin)
+ * @param {number} page - Page number (0-indexed)
+ */
+async function loadVerificationsFromBackend(page = 0) {
+    try {
+        const filters = {};
+        
+        // Apply filters
+        if (verificationData.selectedInventory && verificationData.selectedInventory !== 'all') {
+            filters.inventoryId = parseInt(verificationData.selectedInventory);
+        }
+        if (verificationData.selectedInstitution && verificationData.selectedInstitution !== 'all') {
+            filters.institutionId = parseInt(verificationData.selectedInstitution);
+        }
+        if (verificationData.selectedRegional && verificationData.selectedRegional !== 'all') {
+            filters.regionalId = parseInt(verificationData.selectedRegional);
+        }
+        
+        const response = await fetchAllVerifications(page, verificationData.itemsPerPage, filters);
+        
+        // Update verification data
+        verificationData.verifications = Array.isArray(response.content) ? response.content : [];
+        verificationData.totalElements = response.totalElements || 0;
+        verificationData.totalPages = response.totalPages || 0;
+        verificationData.currentPage = (response.number || 0) + 1; // Convert to 1-indexed
+        
+        // Apply client-side filters (status, search) if needed
+        if (typeof filterVerifications === 'function') {
+            filterVerifications();
+        } else {
+            verificationData.filteredVerifications = [...verificationData.verifications];
+        }
+        
+        // Update UI
+        if (typeof updateVerificationTable === 'function') {
+            updateVerificationTable();
+        }
+        if (typeof updatePagination === 'function') {
+            updatePagination();
+        }
+    } catch (error) {
+        console.error('Error loading verifications from backend:', error);
+        verificationData.verifications = [];
+        verificationData.filteredVerifications = [];
+        verificationData.totalElements = 0;
+        verificationData.totalPages = 0;
+        throw error;
     }
 }
 
@@ -160,11 +226,11 @@ async function loadLatestVerifications() {
             }
         }
 
-        // Sort verifications by date (most recent first)
+        // Sort verifications by ID descending (highest ID first)
         allVerifications.sort((a, b) => {
-            const dateA = new Date(a.verificationDate || 0);
-            const dateB = new Date(b.verificationDate || 0);
-            return dateB - dateA; // Most recent first
+            const aId = a.id || 0;
+            const bId = b.id || 0;
+            return bId - aId; // Highest ID first
         });
 
         verificationData.verifications = allVerifications;
@@ -453,8 +519,81 @@ async function downloadEvidence(verificationId) {
     }
 }
 
+/**
+ * Fetches paginated verifications from backend (for superadmin)
+ * @param {number} page - Page number (0-indexed)
+ * @param {number} size - Page size
+ * @param {Object} filters - Optional filters {regionalId, institutionId, inventoryId, status}
+ * @returns {Promise<Object>} Page object with verifications
+ */
+async function fetchAllVerifications(page = 0, size = 6, filters = {}) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        // Build query parameters
+        const params = new URLSearchParams({
+            page: page.toString(),
+            size: size.toString()
+        });
+
+        if (filters.regionalId) {
+            params.append('regionalId', filters.regionalId.toString());
+        }
+        if (filters.institutionId) {
+            params.append('institutionId', filters.institutionId.toString());
+        }
+        if (filters.inventoryId) {
+            params.append('inventoryId', filters.inventoryId.toString());
+        }
+
+        const response = await fetch(`/api/v1/verifications?${params.toString()}`, {
+            method: 'GET',
+            headers: headers,
+            credentials: 'same-origin' // Use same-origin instead of include
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Transform the response to match frontend expectations
+        if (data.content && Array.isArray(data.content)) {
+            data.content = data.content.map(v => ({
+                id: v.id || v.verificationId,
+                itemId: v.itemId,
+                licensePlate: v.itemLicencePlateNumber || v.licencePlateNumber,
+                itemName: v.itemName,
+                inventoryId: v.inventoryId,
+                inventoryName: v.inventoryName,
+                status: v.status || 'PENDING',
+                hasEvidence: v.photoUrl && v.photoUrl.length > 0,
+                verificationDate: v.verifiedAt || v.createdAt,
+                photoUrl: v.photoUrl || null,
+                photoUrls: v.photoUrl ? [v.photoUrl] : [],
+                userId: v.userId,
+                userFullName: v.userFullName,
+                userEmail: v.userEmail
+            }));
+        }
+        
+        return data;
+    } catch (error) {
+        console.error('Error fetching verifications:', error);
+        throw error;
+    }
+}
+
 // Export functions
 window.loadVerificationData = loadVerificationData;
+window.loadVerificationsFromBackend = loadVerificationsFromBackend;
 window.loadCurrentUserInfo = loadCurrentUserInfo;
 window.loadInventories = loadInventories;
 window.loadLatestVerifications = loadLatestVerifications;
@@ -464,4 +603,5 @@ window.createVerificationBySerial = createVerificationBySerial;
 window.createVerificationByPlate = createVerificationByPlate;
 window.uploadEvidence = uploadEvidence;
 window.downloadEvidence = downloadEvidence;
+window.fetchAllVerifications = fetchAllVerifications;
 
