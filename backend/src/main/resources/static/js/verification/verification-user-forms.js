@@ -124,7 +124,7 @@ window.handleNewVerificationFileChange = function(event) {
     
     if (!file) return;
     
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe (under 5MB limit)
     
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -159,13 +159,26 @@ window.handleNewVerificationFileChange = function(event) {
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
+            const MAX_WIDTH = 1600;
+            const MAX_HEIGHT = 1600;
             let currentWidth = img.width;
             let currentHeight = img.height;
             
-            // Function to compress with progressive quality and size reduction
+            // Reduce dimensions immediately if too large
+            if (currentWidth > MAX_WIDTH || currentHeight > MAX_HEIGHT) {
+                if (currentWidth > currentHeight) {
+                    currentHeight = Math.round((currentHeight * MAX_WIDTH) / currentWidth);
+                    currentWidth = MAX_WIDTH;
+                } else {
+                    currentWidth = Math.round((currentWidth * MAX_HEIGHT) / currentHeight);
+                    currentHeight = MAX_HEIGHT;
+                }
+            }
+            
+            // Function to compress with aggressive quality and size reduction
             const compressImage = function(quality, width, height, attempt = 0) {
                 // Limit attempts to prevent infinite loop
-                if (attempt > 10) {
+                if (attempt > 15) {
                     showInventoryErrorToast('Imagen muy pesada', 'La imagen es demasiado pesada incluso después de comprimir. Por favor, intenta con otra imagen.');
                     event.target.value = '';
                     return;
@@ -207,18 +220,32 @@ window.handleNewVerificationFileChange = function(event) {
                         return;
                     }
                     
-                    // File is still too large, try with lower quality
-                    if (quality > 0.3) {
-                        // Reduce quality
-                        compressImage(Math.max(0.3, quality - 0.1), width, height, attempt + 1);
+                    // File is still too large, try with lower quality first
+                    if (quality > 0.4) {
+                        // Reduce quality more aggressively
+                        compressImage(Math.max(0.4, quality - 0.15), width, height, attempt + 1);
                         return;
                     }
                     
-                    // Quality is already at minimum, try reducing dimensions
-                    if (width > 640 || height > 640) {
-                        const newWidth = Math.floor(width * 0.8);
-                        const newHeight = Math.floor(height * 0.8);
+                    // Quality is already low, try reducing dimensions
+                    if (width > 800 || height > 800) {
+                        const newWidth = Math.floor(width * 0.7); // Reduce 30% at a time
+                        const newHeight = Math.floor(height * 0.7);
                         compressImage(0.5, newWidth, newHeight, attempt + 1);
+                        return;
+                    }
+                    
+                    // If still too large at small dimensions, try even lower quality
+                    if (quality > 0.3) {
+                        compressImage(0.3, width, height, attempt + 1);
+                        return;
+                    }
+                    
+                    // Last resort: reduce dimensions even more
+                    if (width > 600 || height > 600) {
+                        const newWidth = Math.floor(width * 0.6);
+                        const newHeight = Math.floor(height * 0.6);
+                        compressImage(0.3, newWidth, newHeight, attempt + 1);
                         return;
                     }
                     
@@ -228,8 +255,8 @@ window.handleNewVerificationFileChange = function(event) {
                 }, 'image/jpeg', quality);
             };
             
-            // Start compression with initial quality of 0.8
-            compressImage(0.8, currentWidth, currentHeight, 0);
+            // Start compression with lower initial quality (0.6)
+            compressImage(0.6, currentWidth, currentHeight, 0);
         };
         img.onerror = function() {
             showInventoryErrorToast('Error', 'No se pudo cargar la imagen');
@@ -301,22 +328,37 @@ window.captureNewVerificationPhoto = function() {
     
     if (!video || !canvas) return;
     
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe (under 5MB limit)
+    const MAX_WIDTH = 1600; // Start with smaller dimensions
+    const MAX_HEIGHT = 1600;
+    
+    // Calculate initial dimensions (reduce from start)
     let currentWidth = video.videoWidth;
     let currentHeight = video.videoHeight;
     
-    // Set canvas size to video size initially
+    // Reduce dimensions immediately if too large
+    if (currentWidth > MAX_WIDTH || currentHeight > MAX_HEIGHT) {
+        if (currentWidth > currentHeight) {
+            currentHeight = Math.round((currentHeight * MAX_WIDTH) / currentWidth);
+            currentWidth = MAX_WIDTH;
+        } else {
+            currentWidth = Math.round((currentWidth * MAX_HEIGHT) / currentHeight);
+            currentHeight = MAX_HEIGHT;
+        }
+    }
+    
+    // Set canvas size to reduced dimensions
     canvas.width = currentWidth;
     canvas.height = currentHeight;
     
-    // Draw video frame to canvas
+    // Draw video frame to canvas (already scaled down)
     const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    context.drawImage(video, 0, 0, currentWidth, currentHeight);
     
-    // Function to compress with progressive quality reduction
+    // Function to compress with aggressive quality reduction
     const compressImage = function(quality, width, height, attempt = 0) {
         // Limit attempts to prevent infinite loop
-        if (attempt > 10) {
+        if (attempt > 15) {
             showInventoryErrorToast('Imagen muy pesada', 'La imagen es demasiado pesada incluso después de comprimir. Por favor, intenta con otra foto o reduce la resolución de la cámara.');
             closeNewVerificationCamera();
             return;
@@ -352,22 +394,36 @@ window.captureNewVerificationPhoto = function() {
                 reader.readAsDataURL(file);
                 
                 closeNewVerificationCamera();
-                showInventorySuccessToast('Foto capturada', 'Foto capturada correctamente');
+                showInventorySuccessToast('Foto capturada', 'Foto capturada y comprimida correctamente');
                 return;
             }
             
-            // File is still too large, try with lower quality
-            if (quality > 0.3) {
-                // Reduce quality
-                compressImage(Math.max(0.3, quality - 0.1), width, height, attempt + 1);
+            // File is still too large, try with lower quality first
+            if (quality > 0.4) {
+                // Reduce quality more aggressively
+                compressImage(Math.max(0.4, quality - 0.15), width, height, attempt + 1);
                 return;
             }
             
-            // Quality is already at minimum, try reducing dimensions
-            if (width > 640 || height > 640) {
-                const newWidth = Math.floor(width * 0.8);
-                const newHeight = Math.floor(height * 0.8);
+            // Quality is already low, try reducing dimensions
+            if (width > 800 || height > 800) {
+                const newWidth = Math.floor(width * 0.7); // Reduce 30% at a time
+                const newHeight = Math.floor(height * 0.7);
                 compressImage(0.5, newWidth, newHeight, attempt + 1);
+                return;
+            }
+            
+            // If still too large at small dimensions, try even lower quality
+            if (quality > 0.3) {
+                compressImage(0.3, width, height, attempt + 1);
+                return;
+            }
+            
+            // Last resort: reduce dimensions even more
+            if (width > 600 || height > 600) {
+                const newWidth = Math.floor(width * 0.6);
+                const newHeight = Math.floor(height * 0.6);
+                compressImage(0.3, newWidth, newHeight, attempt + 1);
                 return;
             }
             
@@ -377,8 +433,8 @@ window.captureNewVerificationPhoto = function() {
         }, 'image/jpeg', quality);
     };
     
-    // Start compression with initial quality of 0.8
-    compressImage(0.8, currentWidth, currentHeight, 0);
+    // Start compression with lower initial quality (0.6 instead of 0.8)
+    compressImage(0.6, currentWidth, currentHeight, 0);
 };
 
 // Show Upload Evidence Modal
@@ -415,7 +471,7 @@ window.handleEvidenceFileChange = function(event) {
         return;
     }
     
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe (under 5MB limit)
     
     // For PDF files, just validate size (can't compress PDFs easily)
     if (file.type === 'application/pdf') {
