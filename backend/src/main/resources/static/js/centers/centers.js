@@ -6,7 +6,6 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
         constructor(containerId, options = {}) {
             this.container = document.getElementById(containerId);
             if (!this.container) {
-                console.warn(`CustomSelect: Container with id "${containerId}" not found`);
                 return;
             }
 
@@ -18,12 +17,6 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
 
             // Verify all required elements exist
             if (!this.trigger || !this.dropdown || !this.optionsContainer || !this.textElement) {
-                console.warn(`CustomSelect: Required elements not found in container "${containerId}"`, {
-                    trigger: !!this.trigger,
-                    dropdown: !!this.dropdown,
-                    optionsContainer: !!this.optionsContainer,
-                    textElement: !!this.textElement
-                });
                 return;
             }
 
@@ -56,7 +49,6 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
 
         init() {
             if (!this.textElement || !this.optionsContainer) {
-                console.warn('CustomSelect: Cannot initialize, required elements missing');
                 return;
             }
             
@@ -99,7 +91,6 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
 
         renderOptions() {
             if (!this.optionsContainer) {
-                console.warn('CustomSelect: Cannot render options, optionsContainer is missing');
                 return;
             }
             
