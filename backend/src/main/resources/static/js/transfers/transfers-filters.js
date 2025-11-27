@@ -123,13 +123,14 @@ async function handleTransferRegionalFilterChange(regionalId) {
     window.transfersData.selectedInstitution = ''; // Clear institution
     
     // Clear institution dropdown
-    const institutionSelect = document.getElementById('transferInstitutionFilter');
-    if (institutionSelect) {
-        institutionSelect.disabled = !regionalId;
-        while (institutionSelect.options.length > 1) {
-            institutionSelect.remove(1);
+    if (window.transferInstitutionSelect) {
+        if (!regionalId) {
+            window.transferInstitutionSelect.disable();
+        } else {
+            window.transferInstitutionSelect.enable();
         }
-        institutionSelect.value = '';
+        window.transferInstitutionSelect.clear();
+        window.transferInstitutionSelect.setOptions([{ value: '', label: 'Todas las instituciones' }]);
     }
     
     // Load institutions for the selected regional
@@ -144,9 +145,8 @@ async function handleTransferRegionalFilterChange(regionalId) {
     
     // Clear current inventory selection if it doesn't match the new filter
     window.transfersData.currentInventoryId = null;
-    const inventorySelect = document.getElementById('transferInventoryFilter');
-    if (inventorySelect) {
-        inventorySelect.value = '';
+    if (window.transferInventorySelect) {
+        window.transferInventorySelect.clear();
     }
     
     // Clear transfers display
@@ -209,9 +209,8 @@ async function handleTransferInstitutionFilterChange(institutionId) {
     
     // Clear current inventory selection if it doesn't match the new filter
     window.transfersData.currentInventoryId = null;
-    const inventorySelect = document.getElementById('transferInventoryFilter');
-    if (inventorySelect) {
-        inventorySelect.value = '';
+    if (window.transferInventorySelect) {
+        window.transferInventorySelect.clear();
     }
     
     // Clear transfers display
@@ -280,28 +279,22 @@ async function loadRegionalsForTransferFilter() {
 
         if (response.ok) {
             const regionals = await response.json();
-            const select = document.getElementById('transferRegionalFilter');
-            if (select) {
-                // Clear existing options except the first one
-                while (select.options.length > 1) {
-                    select.remove(1);
-                }
-                
-                // Get current selected regional
-                const data = window.inventoryData || window.transfersData || {};
-                const currentRegional = data.selectedRegional || '';
-                
-                // Add regional options
+            const data = window.inventoryData || window.transfersData || {};
+            const currentRegional = data.selectedRegional || '';
+            
+            if (window.transferRegionalSelect) {
+                const options = [{ value: '', label: 'Todas las regionales' }];
                 if (Array.isArray(regionals)) {
                     regionals.forEach(regional => {
-                        const option = document.createElement('option');
-                        option.value = regional.id.toString();
-                        option.textContent = regional.name;
-                        if (currentRegional === regional.id.toString()) {
-                            option.selected = true;
-                        }
-                        select.appendChild(option);
+                        options.push({
+                            value: regional.id.toString(),
+                            label: regional.name
+                        });
                     });
+                }
+                window.transferRegionalSelect.setOptions(options);
+                if (currentRegional) {
+                    window.transferRegionalSelect.setValue(currentRegional.toString());
                 }
             }
         }
@@ -316,13 +309,10 @@ async function loadRegionalsForTransferFilter() {
 async function loadInstitutionsForTransferFilter(regionalId) {
     try {
         if (!regionalId) {
-            const select = document.getElementById('transferInstitutionFilter');
-            if (select) {
-                select.disabled = true;
-                while (select.options.length > 1) {
-                    select.remove(1);
-                }
-                select.value = '';
+            if (window.transferInstitutionSelect) {
+                window.transferInstitutionSelect.disable();
+                window.transferInstitutionSelect.clear();
+                window.transferInstitutionSelect.setOptions([{ value: '', label: 'Todas las instituciones' }]);
             }
             return;
         }
@@ -338,31 +328,23 @@ async function loadInstitutionsForTransferFilter(regionalId) {
 
         if (response.ok) {
             const institutions = await response.json();
-            const select = document.getElementById('transferInstitutionFilter');
-            if (select) {
-                // Clear existing options except the first one
-                while (select.options.length > 1) {
-                    select.remove(1);
-                }
-                
-                // Enable the select
-                select.disabled = false;
-                
-                // Get current selected institution
-                const data = window.inventoryData || window.transfersData || {};
-                const currentInstitution = data.selectedInstitution || '';
-                
-                // Add institution options
+            const data = window.inventoryData || window.transfersData || {};
+            const currentInstitution = data.selectedInstitution || '';
+            
+            if (window.transferInstitutionSelect) {
+                window.transferInstitutionSelect.enable();
+                const options = [{ value: '', label: 'Todas las instituciones' }];
                 if (Array.isArray(institutions)) {
                     institutions.forEach(institution => {
-                        const option = document.createElement('option');
-                        option.value = institution.id.toString();
-                        option.textContent = institution.name;
-                        if (currentInstitution === institution.id.toString()) {
-                            option.selected = true;
-                        }
-                        select.appendChild(option);
+                        options.push({
+                            value: institution.id.toString(),
+                            label: institution.name
+                        });
                     });
+                }
+                window.transferInstitutionSelect.setOptions(options);
+                if (currentInstitution) {
+                    window.transferInstitutionSelect.setValue(currentInstitution.toString());
                 }
             }
         }
@@ -398,27 +380,21 @@ async function loadInventoriesForTransferFilter() {
                 inventories = payload.content;
             }
             
-            const select = document.getElementById('transferInventoryFilter');
-            if (select) {
-                // Clear existing options except the first one
-                while (select.options.length > 1) {
-                    select.remove(1);
-                }
-                
-                // Get current selected inventory
-                const currentInventoryId = window.transfersData?.currentInventoryId || '';
-                
-                // Add inventory options
+            const currentInventoryId = window.transfersData?.currentInventoryId || '';
+            
+            if (window.transferInventorySelect) {
+                const options = [{ value: '', label: 'Seleccionar inventario...' }];
                 if (Array.isArray(inventories)) {
                     inventories.forEach(inventory => {
-                        const option = document.createElement('option');
-                        option.value = inventory.id.toString();
-                        option.textContent = inventory.name || `Inventario ${inventory.id}`;
-                        if (currentInventoryId && currentInventoryId.toString() === inventory.id.toString()) {
-                            option.selected = true;
-                        }
-                        select.appendChild(option);
+                        options.push({
+                            value: inventory.id.toString(),
+                            label: inventory.name || `Inventario ${inventory.id}`
+                        });
                     });
+                }
+                window.transferInventorySelect.setOptions(options);
+                if (currentInventoryId) {
+                    window.transferInventorySelect.setValue(currentInventoryId.toString());
                 }
             }
         }

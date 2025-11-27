@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
             transfers: [],
             currentInventoryId: null,
             currentPage: 0,
-            pageSize: 10,
+            pageSize: 6,
             totalPages: 0,
             totalElements: 0,
             viewMode: 'table',

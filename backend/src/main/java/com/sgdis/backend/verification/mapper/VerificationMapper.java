@@ -21,10 +21,26 @@ public final class VerificationMapper {
     }
 
     public static VerificationResponse toDto(VerificationEntity entity) {
+        ItemEntity item = entity.getItem();
+        String itemName = null;
+        Long inventoryId = null;
+        String inventoryName = null;
+        
+        if (item != null) {
+            itemName = item.getProductName();
+            if (item.getInventory() != null) {
+                inventoryId = item.getInventory().getId();
+                inventoryName = item.getInventory().getName();
+            }
+        }
+        
         return new VerificationResponse(
                 entity.getId(),
-                entity.getItem() != null ? entity.getItem().getId() : null,
-                entity.getItem() != null ? entity.getItem().getLicencePlateNumber() : null,
+                item != null ? item.getId() : null,
+                item != null ? item.getLicencePlateNumber() : null,
+                itemName,
+                inventoryId,
+                inventoryName,
                 entity.getUser() != null ? entity.getUser().getId() : null,
                 entity.getUser() != null ? entity.getUser().getFullName() : null,
                 entity.getUser() != null ? entity.getUser().getEmail() : null,

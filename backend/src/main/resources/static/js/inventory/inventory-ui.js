@@ -157,19 +157,6 @@ async function updateInventoryStats() {
             <p class="text-emerald-600 text-sm font-medium">Inventarios activos</p>
         </div>
 
-        ${isSuperAdmin ? `<div class="stat-card">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-gray-600 text-sm font-medium mb-1">Inactivos</p>
-                    <h3 class="text-3xl font-bold text-gray-800">${inactiveInventories}</h3>
-                </div>
-                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
-                </div>
-            </div>
-            <p class="text-red-600 text-sm font-medium">Inventarios inactivos</p>
-        </div>` : ''}
-
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>

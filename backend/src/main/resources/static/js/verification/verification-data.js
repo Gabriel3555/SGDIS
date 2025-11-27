@@ -3,13 +3,18 @@ let verificationData = {
     filteredVerifications: [],
     inventories: [],
     currentPage: 1,
-    itemsPerPage: 10,
+    itemsPerPage: 6,
+    totalPages: 0,
+    totalElements: 0,
     searchTerm: '',
     selectedInventory: 'all',
     selectedStatus: 'all',
+    selectedRegional: '',
+    selectedInstitution: '',
     isLoading: false,
     currentVerificationId: null,
-    verificationType: 'serial' // 'serial' or 'plate'
+    verificationType: 'serial', // 'serial' or 'plate'
+    useBackendPagination: false // Flag to indicate if using backend pagination
 };
 
 function getStatusText(status) {
@@ -34,27 +39,49 @@ function getStatusColor(status) {
     }
 }
 
-function setInventoryFilter(inventoryId) {
+async function setInventoryFilter(inventoryId) {
     verificationData.selectedInventory = inventoryId;
     verificationData.currentPage = 1;
-    filterVerifications();
+    
+    if (verificationData.useBackendPagination) {
+        // Reload from backend with new filter
+        if (window.loadVerificationsFromBackend) {
+            await window.loadVerificationsFromBackend(0);
+        }
+    } else {
+        filterVerifications();
+    }
 }
 
-function setStatusFilter(status) {
+async function setStatusFilter(status) {
     verificationData.selectedStatus = status;
     verificationData.currentPage = 1;
+    
+    // Status filter is client-side only (backend doesn't support it)
     filterVerifications();
 }
 
 function applySearchFilter() {
+    // Search filter is client-side only
     filterVerifications();
 }
 
-function changePage(page) {
-    if (page >= 1 && page <= Math.ceil(verificationData.filteredVerifications.length / verificationData.itemsPerPage)) {
-        verificationData.currentPage = page;
-        updateVerificationTable();
-        updatePagination();
+async function changePage(page) {
+    if (verificationData.useBackendPagination) {
+        // Backend pagination: load data from backend
+        if (page >= 1) {
+            verificationData.currentPage = page;
+            if (window.loadVerificationsFromBackend) {
+                await window.loadVerificationsFromBackend(page - 1); // Convert to 0-indexed
+            }
+        }
+    } else {
+        // Client-side pagination: use filtered data
+        if (page >= 1 && page <= Math.ceil(verificationData.filteredVerifications.length / verificationData.itemsPerPage)) {
+            verificationData.currentPage = page;
+            updateVerificationTable();
+            updatePagination();
+        }
     }
 }
 

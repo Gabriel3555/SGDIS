@@ -115,8 +115,7 @@ function updateLoansTable() {
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700">
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">ID</th>
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Item ID</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Número de Placa</th>
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Responsable</th>
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Prestador</th>
                         <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha Préstamo</th>
@@ -160,8 +159,7 @@ function updateLoansTable() {
 
         tableHtml += `
             <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">${loan.id || 'N/A'}</td>
-                <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">${loan.itemId || 'N/A'}</td>
+                <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">${loan.licencePlateNumber || 'N/A'}</td>
                 <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">${loan.responsibleName || 'N/A'}</td>
                 <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">${loan.lenderName || 'N/A'}</td>
                 <td class="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">${lendDate}</td>
@@ -658,55 +656,60 @@ function updatePagination() {
 
     const totalPages = Math.ceil(loansData.filteredLoans.length / loansData.itemsPerPage);
     const currentPage = loansData.currentPage;
+    const totalElements = loansData.filteredLoans.length;
 
-    if (totalPages <= 1) {
-        container.innerHTML = `
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-                Mostrando ${loansData.filteredLoans.length} préstamo(s)
-            </div>
-        `;
-        return;
-    }
+    // Calculate start and end items
+    const startItem = totalElements > 0 ? (currentPage - 1) * loansData.itemsPerPage + 1 : 0;
+    const endItem = Math.min(currentPage * loansData.itemsPerPage, totalElements);
 
     let paginationHtml = `
-        <div class="text-sm text-gray-600 dark:text-gray-400">
-            Mostrando ${((currentPage - 1) * loansData.itemsPerPage) + 1} - ${Math.min(currentPage * loansData.itemsPerPage, loansData.filteredLoans.length)} de ${loansData.filteredLoans.length} préstamo(s)
+        <div class="text-sm text-gray-600">
+            Mostrando ${startItem}-${endItem} de ${totalElements} préstamo${totalElements !== 1 ? 's' : ''}
         </div>
-        <div class="flex gap-2">
+        <div class="flex items-center gap-2 ml-auto">
     `;
 
-    // Previous button
-    paginationHtml += `
-        <button onclick="changePage(${currentPage - 1})" 
-            ${currentPage === 1 ? 'disabled' : ''}
-            class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-            <i class="fas fa-chevron-left"></i>
-        </button>
-    `;
+    if (loansData && totalPages > 0) {
+        // Previous button
+        paginationHtml += `
+            <button onclick="changePage(${currentPage - 1})" ${
+            currentPage === 1 ? 'disabled' : ''
+        } class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        `;
 
-    // Page numbers
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+        // Page numbers - show up to 5 pages
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        // Show page numbers
+        for (let i = startPage; i <= endPage; i++) {
             paginationHtml += `
-                <button onclick="changePage(${i})" 
-                    ${i === currentPage ? 'class="px-3 py-2 rounded-lg bg-[#00AF00] text-white font-semibold"' : 'class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"'}
-                >
+                <button onclick="changePage(${i})" class="px-3 py-2 border ${
+                currentPage === i
+                    ? 'bg-[#00AF00] text-white border-[#00AF00]'
+                    : 'border-gray-300 text-gray-700'
+            } rounded-lg hover:bg-gray-50 transition-colors">
                     ${i}
                 </button>
             `;
-        } else if (i === currentPage - 3 || i === currentPage + 3) {
-            paginationHtml += `<span class="px-3 py-2 text-gray-500">...</span>`;
         }
-    }
 
-    // Next button
-    paginationHtml += `
-        <button onclick="changePage(${currentPage + 1})" 
-            ${currentPage === totalPages ? 'disabled' : ''}
-            class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-            <i class="fas fa-chevron-right"></i>
-        </button>
-    `;
+        // Next button
+        paginationHtml += `
+            <button onclick="changePage(${currentPage + 1})" ${
+            currentPage === totalPages ? 'disabled' : ''
+        } class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+    }
 
     paginationHtml += `</div>`;
 
