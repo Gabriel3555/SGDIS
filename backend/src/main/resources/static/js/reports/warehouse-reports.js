@@ -807,50 +807,129 @@ async function fetchVerificationsReport(regionalId, institutionId, inventoryId, 
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    // Build endpoint with filters
-    const params = new URLSearchParams();
-    params.append('page', '0');
-    params.append('size', '10000');
-    
-    if (inventoryId) {
-        params.append('inventoryId', inventoryId.toString());
-    } else if (institutionId) {
-        params.append('institutionId', institutionId.toString());
-    } else if (regionalId) {
-        params.append('regionalId', regionalId.toString());
-    }
-    
-    const endpoint = `/api/v1/verifications?${params.toString()}`;
-    
     try {
-        const response = await fetch(endpoint, {
-            method: 'GET',
-            headers: headers
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            let verifications = data.content || data || [];
+        let allVerifications = [];
+        
+        // For warehouse role, we need to get verifications from inventories
+        // Get all inventories for the institution
+        let inventoriesToCheck = [];
+        
+        if (inventoryId) {
+            // Specific inventory selected
+            inventoriesToCheck = [{ id: inventoryId }];
+        } else if (institutionId) {
+            // Get all inventories for the institution
+            const inventoriesResponse = await fetch(`/api/v1/inventory/institutionAdminInventories/${institutionId}?page=0&size=1000`, {
+                method: 'GET',
+                headers: headers
+            });
             
-            // Filter by date if provided
-            if (startDate || endDate) {
-                verifications = verifications.filter(verification => {
-                    const verDate = verification.createdAt;
-                    if (!verDate) return false;
-                    const date = new Date(verDate);
-                    if (startDate && date < new Date(startDate)) return false;
-                    if (endDate && date > new Date(endDate)) return false;
-                    return true;
-                });
+            if (inventoriesResponse.ok) {
+                const inventoriesData = await inventoriesResponse.json();
+                inventoriesToCheck = inventoriesData.content || [];
+            } else {
+                throw new Error('Error al cargar inventarios');
             }
-            
-            return verifications;
         } else {
-            throw new Error('Error al cargar verificaciones');
+            // No filters - return empty array
+            return [];
         }
+        
+        // Get all items from the inventories
+        const allItems = [];
+        for (const inv of inventoriesToCheck) {
+            try {
+                const itemsResponse = await fetch(`/api/v1/items/inventory/${inv.id}?page=0&size=10000`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                if (itemsResponse.ok) {
+                    const itemsData = await itemsResponse.json();
+                    const items = itemsData.content || itemsData || [];
+                    allItems.push(...items);
+                }
+            } catch (error) {
+                console.warn(`Error loading items for inventory ${inv.id}:`, error);
+            }
+        }
+        
+        // Get verifications for each item
+        for (const item of allItems) {
+            if (!item.id) continue;
+            
+            try {
+                const verificationsResponse = await fetch(`/api/v1/items/${item.id}/verifications?page=0&size=10000`, {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                if (verificationsResponse.ok) {
+                    const verificationsData = await verificationsResponse.json();
+                    let itemVerifications = [];
+                    
+                    if (verificationsData.content) {
+                        itemVerifications = verificationsData.content;
+                    } else if (Array.isArray(verificationsData)) {
+                        itemVerifications = verificationsData;
+                    }
+                    
+                    // Transform to match expected format
+                    const transformedVerifications = itemVerifications.map(v => ({
+                        id: v.id,
+                        itemId: v.itemId || item.id,
+                        itemLicencePlateNumber: v.itemLicencePlateNumber || item.licencePlateNumber || item.productName,
+                        userId: v.userId,
+                        userFullName: v.userFullName,
+                        userEmail: v.userEmail,
+                        photoUrl: v.photoUrl,
+                        createdAt: v.createdAt
+                    }));
+                    
+                    allVerifications.push(...transformedVerifications);
+                }
+            } catch (error) {
+                console.warn(`Error loading verifications for item ${item.id}:`, error);
+            }
+        }
+        
+        // Remove duplicates (same verification ID)
+        const uniqueVerifications = [];
+        const seenIds = new Set();
+        for (const v of allVerifications) {
+            if (v.id && !seenIds.has(v.id)) {
+                seenIds.add(v.id);
+                uniqueVerifications.push(v);
+            }
+        }
+        
+        // Sort by date (most recent first)
+        uniqueVerifications.sort((a, b) => {
+            const dateA = new Date(a.createdAt || 0);
+            const dateB = new Date(b.createdAt || 0);
+            return dateB - dateA;
+        });
+        
+        // Filter by date if provided
+        if (startDate || endDate) {
+            return uniqueVerifications.filter(verification => {
+                const verDate = verification.createdAt;
+                if (!verDate) return false;
+                const date = new Date(verDate);
+                if (startDate && date < new Date(startDate)) return false;
+                if (endDate) {
+                    const endDateObj = new Date(endDate);
+                    endDateObj.setHours(23, 59, 59, 999);
+                    if (date > endDateObj) return false;
+                }
+                return true;
+            });
+        }
+        
+        return uniqueVerifications;
     } catch (error) {
         console.error('Error fetching verifications:', error);
-        throw new Error('Error al cargar verificaciones: ' + error.message);
+        throw new Error('Error al cargar verificaciones: ' + (error.message || 'Error desconocido'));
     }
 }
 
@@ -1097,6 +1176,12 @@ function displayTableReport(data) {
     // Special handling for items report - show statistics instead of full table
     if (currentReportType === 'items') {
         displayItemsReport(data);
+        return;
+    }
+    
+    // Special handling for loans report - show statistics and table
+    if (currentReportType === 'loans') {
+        displayLoansReport(data);
         return;
     }
     
@@ -1471,6 +1556,62 @@ function displayVerificationsReport(data) {
 
     // Update row count
     document.getElementById('reportRowCount').textContent = `${verifications.length} ${verifications.length === 1 ? 'registro' : 'registros'}`;
+}
+
+// Display loans report with statistics
+function displayLoansReport(data) {
+    const loans = Array.isArray(data) ? data : [];
+
+    if (loans.length === 0) {
+        document.getElementById('reportEmptyState').classList.remove('hidden');
+        document.getElementById('reportResultsSection').classList.add('hidden');
+        return;
+    }
+
+    // Generate statistics
+    generateStatistics(loans);
+
+    // Generate table
+    const headers = getHeadersForReportType('loans');
+    const tableHeader = document.getElementById('reportTableHeader');
+    const tableBody = document.getElementById('reportTableBody');
+
+    // Clear existing content
+    tableHeader.innerHTML = '';
+    tableBody.innerHTML = '';
+
+    // Create header row
+    const headerRow = document.createElement('tr');
+    headers.forEach((header, colIndex) => {
+        const th = document.createElement('th');
+        th.textContent = header.label;
+        th.className = 'py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap';
+        th.style.padding = '8px 12px';
+        headerRow.appendChild(th);
+    });
+    tableHeader.appendChild(headerRow);
+
+    // Create body rows
+    loans.forEach((loan, index) => {
+        const row = document.createElement('tr');
+        row.className = index % 2 === 0 
+            ? 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700' 
+            : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-600';
+        
+        headers.forEach((header) => {
+            const td = document.createElement('td');
+            const value = getValueForField(loan, header.field);
+            td.textContent = formatValue(value, header.type, header.field);
+            td.className = 'py-2 text-sm text-gray-800 dark:text-gray-200';
+            td.style.padding = '6px 12px';
+            row.appendChild(td);
+        });
+        
+        tableBody.appendChild(row);
+    });
+
+    // Update row count
+    document.getElementById('reportRowCount').textContent = `${loans.length} ${loans.length === 1 ? 'registro' : 'registros'}`;
 }
 
 // Display items report with statistics
@@ -1946,7 +2087,7 @@ function getHeadersForReportType(reportType) {
         ],
         loans: [
             { field: 'id', label: 'ID', type: 'number' },
-            { field: 'userName', label: 'Usuario', type: 'string' },
+            { field: 'userName', label: 'Responsable', type: 'string' },
             { field: 'itemName', label: 'Item', type: 'string' },
             { field: 'loanDate', label: 'Fecha Préstamo', type: 'date' },
             { field: 'returnDate', label: 'Fecha Devolución', type: 'date' },
@@ -2056,6 +2197,42 @@ function generateStatistics(data) {
                     <i class="fas fa-times-circle text-red-500"></i>
                 </div>
                 <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${inactiveCount}</div>
+            </div>
+        `;
+    } else if (currentReportType === 'loans') {
+        const totalLoans = data.length;
+        const returnedLoans = data.filter(loan => loan.returned === true || loan.returned === 'true').length;
+        const activeLoans = totalLoans - returnedLoans;
+        const returnPercent = totalLoans > 0 ? Math.round((returnedLoans / totalLoans) * 100) : 0;
+        
+        statsHTML = `
+            <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Préstamos</span>
+                    <i class="fas fa-hand-holding text-blue-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${totalLoans}</div>
+            </div>
+            <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Activos</span>
+                    <i class="fas fa-clock text-orange-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${activeLoans}</div>
+            </div>
+            <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Devueltos</span>
+                    <i class="fas fa-check-circle text-green-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${returnedLoans}</div>
+            </div>
+            <div class="stat-card p-4 border border-gray-200 dark:border-gray-600 rounded-xl">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Porcentaje Devuelto</span>
+                    <i class="fas fa-percentage text-purple-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">${returnPercent}%</div>
             </div>
         `;
     } else {
@@ -2373,111 +2550,6 @@ async function exportToPDF() {
             
             doc.setTextColor(0, 0, 0); // Reset to black
             yPos += cardHeight + 18;
-
-            // Enhanced Charts section - Nueva página
-            // Check if we need a new page for charts section
-            if (yPos > doc.internal.pageSize.getHeight() - 100) {
-                doc.addPage();
-                yPos = 20;
-            } else {
-                // Si hay espacio pero poco, también crear nueva página para mejor presentación
-                doc.addPage();
-                yPos = 20;
-            }
-            
-            doc.setFontSize(16);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(0, 140, 0);
-            doc.text('ANALISIS VISUAL', 14, yPos);
-            doc.setTextColor(0, 0, 0);
-            yPos += 16;
-
-            // Charts with more width and centered
-            const chartWidth = (pageWidth - 50) / 2; // Más ancho (reducir márgenes)
-            const chartHeight = 60; // Más alto para mejor visualización
-            const chartSpacing = 12;
-            const chartStartX = (pageWidth - (chartWidth * 2 + chartSpacing)) / 2; // Centrado
-
-            // Chart 1: Most Moved Items (left side)
-            if (chartInstances.mostMoved && mostMovedItems.length > 0) {
-                try {
-                    // Chart box with border
-                    doc.setFillColor(250, 250, 252);
-                    doc.roundedRect(chartStartX, yPos - 5, chartWidth, chartHeight + 25, 4, 4, 'F');
-                    doc.setDrawColor(220, 220, 220);
-                    doc.setLineWidth(0.8);
-                    doc.roundedRect(chartStartX, yPos - 5, chartWidth, chartHeight + 25, 4, 4);
-                    
-                    const chartImage = chartInstances.mostMoved.toBase64Image('image/png', 1);
-                    doc.setFontSize(11);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(147, 51, 234);
-                    doc.text('ITEMS MAS MOVIDOS', chartStartX + 8, yPos);
-                    doc.setTextColor(0, 0, 0);
-                    
-                    doc.addImage(chartImage, 'PNG', chartStartX + 8, yPos + 6, chartWidth - 16, chartHeight);
-                } catch (e) {
-                    console.warn('Error exporting most moved chart:', e);
-                }
-            }
-
-            // Chart 2: Most Expensive Items (right side)
-            if (chartInstances.mostExpensive && mostExpensiveItems.length > 0) {
-                try {
-                    // Chart box with border
-                    doc.setFillColor(250, 250, 252);
-                    doc.roundedRect(chartStartX + chartWidth + chartSpacing, yPos - 5, chartWidth, chartHeight + 25, 4, 4, 'F');
-                    doc.setDrawColor(220, 220, 220);
-                    doc.setLineWidth(0.8);
-                    doc.roundedRect(chartStartX + chartWidth + chartSpacing, yPos - 5, chartWidth, chartHeight + 25, 4, 4);
-                    
-                    const chartImage = chartInstances.mostExpensive.toBase64Image('image/png', 1);
-                    doc.setFontSize(11);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(34, 197, 94);
-                    doc.text('ITEMS MAS CAROS', chartStartX + chartWidth + chartSpacing + 8, yPos);
-                    doc.setTextColor(0, 0, 0);
-                    
-                    doc.addImage(chartImage, 'PNG', chartStartX + chartWidth + chartSpacing + 8, yPos + 6, chartWidth - 16, chartHeight);
-                } catch (e) {
-                    console.warn('Error exporting most expensive chart:', e);
-                }
-            }
-
-            yPos += chartHeight + 40;
-
-            // Chart 3: Most Verified Items (full width, centered)
-            if (chartInstances.mostVerified && mostVerifiedItems.length > 0) {
-                try {
-                    // Check if we need a new page
-                    if (yPos > doc.internal.pageSize.getHeight() - 90) {
-                        doc.addPage();
-                        yPos = 20;
-                    }
-                    
-                    // Chart box with border (full width but with margins for centering)
-                    const fullChartWidth = pageWidth - 30; // Más ancho, menos márgenes
-                    const fullChartStartX = (pageWidth - fullChartWidth) / 2; // Centrado
-                    
-                    doc.setFillColor(250, 250, 252);
-                    doc.roundedRect(fullChartStartX, yPos - 5, fullChartWidth, chartHeight + 25, 4, 4, 'F');
-                    doc.setDrawColor(220, 220, 220);
-                    doc.setLineWidth(0.8);
-                    doc.roundedRect(fullChartStartX, yPos - 5, fullChartWidth, chartHeight + 25, 4, 4);
-                    
-                    const chartImage = chartInstances.mostVerified.toBase64Image('image/png', 1);
-                    doc.setFontSize(11);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(249, 115, 22);
-                    doc.text('ITEMS CON MAS VERIFICACIONES', fullChartStartX + 10, yPos);
-                    doc.setTextColor(0, 0, 0);
-                    
-                    doc.addImage(chartImage, 'PNG', fullChartStartX + 10, yPos + 6, fullChartWidth - 20, chartHeight);
-                    yPos += chartHeight + 35;
-                } catch (e) {
-                    console.warn('Error exporting most verified chart:', e);
-                }
-            }
 
             // Check if we need a new page for tables
             if (yPos > doc.internal.pageSize.getHeight() - 40) {
@@ -2911,6 +2983,303 @@ async function exportToPDF() {
                         lineWidth: 0.3
                     },
                     margin: { left: 14, right: 14 }
+                });
+            } else {
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.setTextColor(140, 140, 140);
+                doc.text('No hay datos disponibles', 20, yPos);
+                doc.setTextColor(0, 0, 0);
+            }
+        } else if (currentReportType === 'verifications') {
+            // Verifications report with statistics
+            const verifications = Array.isArray(currentReportData) ? currentReportData : [];
+            
+            // Calculate statistics
+            const totalVerifications = verifications.length;
+            const verificationsWithEvidence = verifications.filter(v => v.photoUrl && v.photoUrl.trim() !== '').length;
+            const verificationsWithoutEvidence = totalVerifications - verificationsWithEvidence;
+            
+            // Get unique items verified
+            const uniqueItems = new Set(verifications.map(v => v.itemId).filter(id => id != null));
+            
+            // Get verifications by date (today)
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const verificationsToday = verifications.filter(v => {
+                if (!v.createdAt) return false;
+                const date = new Date(v.createdAt);
+                return date >= today;
+            }).length;
+            
+            // Enhanced Statistics section with cards
+            yPos += 10;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('ESTADISTICAS DE VERIFICACIONES', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 14;
+
+            // Statistics cards in 2x2 grid
+            const cardWidth = (pageWidth - 42) / 2;
+            const cardHeight = 32;
+            const cardSpacing = 10;
+            
+            // Card 1: Total Verifications
+            doc.setFillColor(59, 130, 246); // Blue
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(40, 100, 200);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('TOTAL VERIFICACIONES', 20, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(totalVerifications.toString(), 20, yPos + 22);
+            
+            // Card 2: With Evidence
+            doc.setFillColor(34, 197, 94); // Green
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(20, 150, 70);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('CON EVIDENCIA', 20 + cardWidth + cardSpacing, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(verificationsWithEvidence.toString(), 20 + cardWidth + cardSpacing, yPos + 22);
+            
+            yPos += cardHeight + cardSpacing;
+            
+            // Card 3: Unique Items
+            doc.setFillColor(147, 51, 234); // Purple
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(100, 30, 180);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('ITEMS UNICOS', 20, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(uniqueItems.size.toString(), 20, yPos + 22);
+            
+            // Card 4: Verifications Today
+            doc.setFillColor(249, 115, 22); // Orange
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(200, 80, 10);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('VERIFICACIONES HOY', 20 + cardWidth + cardSpacing, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(verificationsToday.toString(), 20 + cardWidth + cardSpacing, yPos + 22);
+            
+            doc.setTextColor(0, 0, 0); // Reset to black
+            yPos += cardHeight + 18;
+
+            // Check if we need a new page for table
+            if (yPos > doc.internal.pageSize.getHeight() - 50) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Enhanced Table section
+            yPos += 10;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('DETALLE DE REGISTROS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 12;
+
+            const headers = getHeadersForReportType('verifications');
+            const tableData = verifications.map(item => 
+                headers.map(header => formatValue(getValueForField(item, header.field), header.type, header.field))
+            );
+
+            if (tableData.length > 0) {
+                doc.autoTable({
+                    startY: yPos,
+                    head: [headers.map(h => h.label)],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [0, 140, 0],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10,
+                        cellPadding: 5,
+                        halign: 'center'
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 4,
+                        halign: 'left'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [250, 250, 252]
+                    },
+                    styles: { 
+                        fontSize: 9,
+                        cellPadding: 3,
+                        lineColor: [220, 220, 220],
+                        lineWidth: 0.3
+                    },
+                    margin: { left: 14, right: 14 },
+                    overflow: 'linebreak'
+                });
+            } else {
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'italic');
+                doc.setTextColor(140, 140, 140);
+                doc.text('No hay datos disponibles', 20, yPos);
+                doc.setTextColor(0, 0, 0);
+            }
+        } else if (currentReportType === 'loans') {
+            // Loans report with statistics
+            const loans = Array.isArray(currentReportData) ? currentReportData : [];
+            
+            // Calculate statistics
+            const totalLoans = loans.length;
+            const returnedLoans = loans.filter(loan => loan.returned === true || loan.returned === 'true').length;
+            const activeLoans = totalLoans - returnedLoans;
+            const returnPercent = totalLoans > 0 ? Math.round((returnedLoans / totalLoans) * 100) : 0;
+            
+            // Enhanced Statistics section with cards
+            yPos += 10;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('ESTADISTICAS DE PRESTAMOS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 14;
+
+            // Statistics cards in 2x2 grid
+            const cardWidth = (pageWidth - 42) / 2;
+            const cardHeight = 32;
+            const cardSpacing = 10;
+            
+            // Card 1: Total Loans
+            doc.setFillColor(59, 130, 246); // Blue
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(40, 100, 200);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('TOTAL PRESTAMOS', 20, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(totalLoans.toString(), 20, yPos + 22);
+            
+            // Card 2: Active Loans
+            doc.setFillColor(249, 115, 22); // Orange
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(200, 80, 10);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('PRESTAMOS ACTIVOS', 20 + cardWidth + cardSpacing, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(activeLoans.toString(), 20 + cardWidth + cardSpacing, yPos + 22);
+            
+            yPos += cardHeight + cardSpacing;
+            
+            // Card 3: Returned Loans
+            doc.setFillColor(34, 197, 94); // Green
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(20, 150, 70);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('DEVUELTOS', 20, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(returnedLoans.toString(), 20, yPos + 22);
+            
+            // Card 4: Return Percentage
+            doc.setFillColor(147, 51, 234); // Purple
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4, 'F');
+            doc.setDrawColor(100, 30, 180);
+            doc.setLineWidth(0.5);
+            doc.roundedRect(14 + cardWidth + cardSpacing, yPos, cardWidth, cardHeight, 4, 4);
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.text('PORCENTAJE DEVUELTO', 20 + cardWidth + cardSpacing, yPos + 8);
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.text(returnPercent + '%', 20 + cardWidth + cardSpacing, yPos + 22);
+            
+            doc.setTextColor(0, 0, 0); // Reset to black
+            yPos += cardHeight + 18;
+
+            // Check if we need a new page for table
+            if (yPos > doc.internal.pageSize.getHeight() - 50) {
+                doc.addPage();
+                yPos = 20;
+            }
+
+            // Enhanced Table section
+            yPos += 10;
+            doc.setFontSize(16);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 140, 0);
+            doc.text('DETALLE DE PRESTAMOS', 14, yPos);
+            doc.setTextColor(0, 0, 0);
+            yPos += 12;
+
+            const headers = getHeadersForReportType('loans');
+            const tableData = loans.map(item => 
+                headers.map(header => formatValue(getValueForField(item, header.field), header.type, header.field))
+            );
+
+            if (tableData.length > 0) {
+                doc.autoTable({
+                    startY: yPos,
+                    head: [headers.map(h => h.label)],
+                    body: tableData,
+                    theme: 'striped',
+                    headStyles: { 
+                        fillColor: [0, 140, 0],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10,
+                        cellPadding: 5,
+                        halign: 'center'
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        cellPadding: 4,
+                        halign: 'left'
+                    },
+                    alternateRowStyles: {
+                        fillColor: [250, 250, 252]
+                    },
+                    styles: { 
+                        fontSize: 9,
+                        cellPadding: 3,
+                        lineColor: [220, 220, 220],
+                        lineWidth: 0.3
+                    },
+                    margin: { left: 14, right: 14 },
+                    overflow: 'linebreak'
                 });
             } else {
                 doc.setFontSize(10);
