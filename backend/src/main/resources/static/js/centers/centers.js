@@ -5,13 +5,27 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
     var CustomSelect = class CustomSelect {
         constructor(containerId, options = {}) {
             this.container = document.getElementById(containerId);
-            if (!this.container) return;
+            if (!this.container) {
+                console.warn(`CustomSelect: Container with id "${containerId}" not found`);
+                return;
+            }
 
             this.trigger = this.container.querySelector(".custom-select-trigger");
             this.dropdown = this.container.querySelector(".custom-select-dropdown");
             this.searchInput = this.container.querySelector(".custom-select-search");
             this.optionsContainer = this.container.querySelector(".custom-select-options");
             this.textElement = this.container.querySelector(".custom-select-text");
+
+            // Verify all required elements exist
+            if (!this.trigger || !this.dropdown || !this.optionsContainer || !this.textElement) {
+                console.warn(`CustomSelect: Required elements not found in container "${containerId}"`, {
+                    trigger: !!this.trigger,
+                    dropdown: !!this.dropdown,
+                    optionsContainer: !!this.optionsContainer,
+                    textElement: !!this.textElement
+                });
+                return;
+            }
 
             // Buscar el hidden input en el contenedor padre (custom-select-container)
             const parentContainer = this.container.closest('.custom-select-container');
@@ -41,6 +55,11 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
         }
 
         init() {
+            if (!this.textElement || !this.optionsContainer) {
+                console.warn('CustomSelect: Cannot initialize, required elements missing');
+                return;
+            }
+            
             this.textElement.textContent = this.placeholder;
             this.textElement.classList.add("custom-select-placeholder");
 
@@ -79,6 +98,11 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
         }
 
         renderOptions() {
+            if (!this.optionsContainer) {
+                console.warn('CustomSelect: Cannot render options, optionsContainer is missing');
+                return;
+            }
+            
             this.optionsContainer.innerHTML = "";
 
             if (this.filteredOptions.length === 0) {
@@ -167,15 +191,34 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
                 container.classList.add('select-open');
             }
             
-            setTimeout(() => {
+            // Calculate position relative to the container
+            requestAnimationFrame(() => {
                 if (this.dropdown && this.trigger) {
-                    const rect = this.trigger.getBoundingClientRect();
-                    this.dropdown.style.position = 'fixed';
-                    this.dropdown.style.width = `${rect.width}px`;
-                    this.dropdown.style.top = `${rect.bottom}px`;
-                    this.dropdown.style.left = `${rect.left}px`;
+                    const containerElement = this.container.closest('.custom-select-container');
+                    if (containerElement) {
+                        // Get trigger position relative to container
+                        const containerRect = containerElement.getBoundingClientRect();
+                        const triggerRect = this.trigger.getBoundingClientRect();
+                        
+                        // Calculate position relative to container
+                        const top = triggerRect.bottom - containerRect.top;
+                        const left = triggerRect.left - containerRect.left;
+                        const width = triggerRect.width;
+                        
+                        this.dropdown.style.position = 'absolute';
+                        this.dropdown.style.top = `${top}px`;
+                        this.dropdown.style.left = `${left}px`;
+                        this.dropdown.style.width = `${width}px`;
+                    } else {
+                        // Fallback: use fixed positioning if container not found
+                        const rect = this.trigger.getBoundingClientRect();
+                        this.dropdown.style.position = 'fixed';
+                        this.dropdown.style.width = `${rect.width}px`;
+                        this.dropdown.style.top = `${rect.bottom}px`;
+                        this.dropdown.style.left = `${rect.left}px`;
+                    }
                 }
-            }, 10);
+            });
             
             if (this.searchable && this.searchInput) {
                 setTimeout(() => {
@@ -250,6 +293,7 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
 }
 
 let centersData = [];
+let allCentersData = []; // Almacenar todos los centros sin filtrar
 let regionalsData = [];
 let citiesData = [];
 let currentEditingCenterId = null;
@@ -257,12 +301,16 @@ let newCenterRegionalSelect = null;
 let newCenterCitySelect = null;
 let editCenterRegionalSelect = null;
 let editCenterCitySelect = null;
+let filterRegionalSelect = null;
+let filterCitySelect = null;
+let filterCitiesData = []; // Ciudades para el filtro
 
 // Cargar datos al iniciar
 document.addEventListener('DOMContentLoaded', function() {
     loadCenters();
     loadRegionals();
     loadCurrentUserInfo();
+    // Initialize filter selects will be called after regionals are loaded
 });
 
 async function loadCurrentUserInfo() {
@@ -301,7 +349,8 @@ async function loadCenters() {
         });
 
         if (response.ok) {
-            centersData = await response.json();
+            allCentersData = await response.json();
+            centersData = [...allCentersData]; // Inicializar con todos los centros
             renderCenters();
         } else {
             throw new Error('Error al cargar los centros');
@@ -324,6 +373,11 @@ async function loadRegionals() {
         if (response.ok) {
             regionalsData = await response.json();
             populateRegionalSelects();
+            // Initialize filter selects if not already initialized
+            if (!filterRegionalSelect) {
+                initializeFilterSelects();
+            }
+            populateFilterRegionalSelect();
         }
     } catch (error) {
         console.error('Error loading regionals:', error);
@@ -685,5 +739,151 @@ function showError(message) {
     setTimeout(() => {
         toast.remove();
     }, 3000);
+}
+
+/**
+ * Initialize filter selects for regional and city
+ */
+function initializeFilterSelects() {
+    // Initialize regional filter select
+    if (!filterRegionalSelect) {
+        filterRegionalSelect = new CustomSelect('filterRegionalSelect', {
+            placeholder: 'Todas las regionales',
+            onChange: async (option) => {
+                if (option && option.value) {
+                    // Load cities for selected regional
+                    if (filterCitySelect) {
+                        filterCitySelect.setDisabled(true);
+                        filterCitySelect.clear();
+                    }
+                    await loadFilterCitiesByRegional(parseInt(option.value));
+                    if (filterCitySelect) {
+                        filterCitySelect.setDisabled(false);
+                    }
+                } else {
+                    // Clear city filter when no regional is selected
+                    if (filterCitySelect) {
+                        filterCitySelect.clear();
+                        filterCitySelect.setDisabled(true);
+                    }
+                    filterCitiesData = [];
+                }
+                // Apply filters
+                applyFilters();
+            }
+        });
+    }
+
+    // Initialize city filter select
+    if (!filterCitySelect) {
+        filterCitySelect = new CustomSelect('filterCitySelect', {
+            placeholder: 'Todas las ciudades',
+            onChange: (option) => {
+                // Apply filters when city changes
+                applyFilters();
+            }
+        });
+        // Initially disabled until a regional is selected
+        if (filterCitySelect) {
+            filterCitySelect.setDisabled(true);
+        }
+    }
+}
+
+/**
+ * Populate regional filter select
+ */
+function populateFilterRegionalSelect() {
+    if (!filterRegionalSelect) return;
+
+    const regionalOptions = [
+        { value: '', label: 'Todas las regionales' },
+        ...regionalsData.map(regional => ({
+            value: regional.id.toString(),
+            label: regional.name
+        }))
+    ];
+
+    filterRegionalSelect.setOptions(regionalOptions);
+}
+
+/**
+ * Load cities for filter based on selected regional
+ */
+async function loadFilterCitiesByRegional(regionalId) {
+    try {
+        // Get the regional to obtain its department
+        const regional = regionalsData.find(r => r.id === regionalId);
+        if (!regional || !regional.departamentId) {
+            console.warn('Regional no encontrada o sin departamento');
+            filterCitiesData = [];
+            populateFilterCitySelect();
+            return;
+        }
+
+        // Load cities from the regional's department
+        const response = await fetch(`/api/v1/departments/${regional.departamentId}/cities`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            filterCitiesData = await response.json();
+            populateFilterCitySelect();
+        } else {
+            throw new Error('Error al cargar las ciudades');
+        }
+    } catch (error) {
+        console.error('Error loading filter cities:', error);
+        filterCitiesData = [];
+        populateFilterCitySelect();
+    }
+}
+
+/**
+ * Populate city filter select
+ */
+function populateFilterCitySelect() {
+    if (!filterCitySelect) return;
+
+    const cityOptions = [
+        { value: '', label: 'Todas las ciudades' },
+        ...filterCitiesData.map(city => ({
+            value: city.id.toString(),
+            label: city.city
+        }))
+    ];
+
+    filterCitySelect.setOptions(cityOptions);
+}
+
+/**
+ * Apply filters based on selected regional and city
+ */
+function applyFilters() {
+    const selectedRegionalId = filterRegionalSelect ? filterRegionalSelect.getValue() : '';
+    const selectedCityId = filterCitySelect ? filterCitySelect.getValue() : '';
+
+    // Filter centers
+    let filtered = [...allCentersData];
+
+    if (selectedRegionalId) {
+        filtered = filtered.filter(center => {
+            const centerRegionalId = center.regionalId ? center.regionalId.toString() : '';
+            return centerRegionalId === selectedRegionalId;
+        });
+    }
+
+    if (selectedCityId) {
+        filtered = filtered.filter(center => {
+            const centerCityId = center.cityId ? center.cityId.toString() : '';
+            return centerCityId === selectedCityId;
+        });
+    }
+
+    centersData = filtered;
+    renderCenters();
 }
 

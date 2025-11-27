@@ -12,11 +12,13 @@ import com.sgdis.backend.transfers.application.dto.ApproveTransferResponse;
 import com.sgdis.backend.transfers.application.dto.RequestTransferRequest;
 import com.sgdis.backend.transfers.application.dto.RequestTransferResponse;
 import com.sgdis.backend.transfers.application.dto.TransferSummaryResponse;
+import com.sgdis.backend.transfers.application.dto.TransferStatisticsResponse;
 import com.sgdis.backend.transfers.application.port.in.ApproveTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetAllTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetRegionalTransfersUseCase;
+import com.sgdis.backend.transfers.application.port.in.GetTransferStatisticsUseCase;
 import com.sgdis.backend.transfers.application.port.in.RequestTransferUseCase;
 import com.sgdis.backend.transfers.domain.TransferStatus;
 import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
@@ -40,7 +42,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class TransferService implements ApproveTransferUseCase, RequestTransferUseCase, GetInventoryTransfersUseCase,
-        GetItemTransfersUseCase, GetAllTransfersUseCase, GetRegionalTransfersUseCase {
+        GetItemTransfersUseCase, GetAllTransfersUseCase, GetRegionalTransfersUseCase, GetTransferStatisticsUseCase {
 
     private final AuthService authService;
     private final SpringDataTransferRepository transferRepository;
@@ -69,6 +71,24 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
 
         if (sourceInventory.getId().equals(destinationInventory.getId())) {
             throw new DomainValidationException("El inventario de destino debe ser diferente al actual");
+        }
+
+        // Validate that both inventories belong to the same institution
+        if (sourceInventory.getInstitution() == null || destinationInventory.getInstitution() == null) {
+            throw new DomainValidationException("Ambos inventarios deben pertenecer a una institución para realizar la transferencia");
+        }
+
+        if (!sourceInventory.getInstitution().getId().equals(destinationInventory.getInstitution().getId())) {
+            String sourceInstitutionName = sourceInventory.getInstitution().getName() != null 
+                ? sourceInventory.getInstitution().getName() 
+                : "sin nombre";
+            String destinationInstitutionName = destinationInventory.getInstitution().getName() != null 
+                ? destinationInventory.getInstitution().getName() 
+                : "sin nombre";
+            throw new DomainValidationException(
+                String.format("Los inventarios deben pertenecer al mismo centro. Inventario origen: %s, Inventario destino: %s", 
+                    sourceInstitutionName, destinationInstitutionName)
+            );
         }
 
         if (transferRepository.existsByItemIdAndStatus(item.getId(), TransferStatus.PENDING)) {
@@ -298,19 +318,24 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
     @Override
     @Transactional(readOnly = true)
     public Page<TransferSummaryResponse> getAllTransfers(Pageable pageable) {
-        // Obtener IDs paginados primero
-        Page<Long> transferIds = transferRepository.findAllOrderedByRequestedAt(pageable)
-                .map(TransferEntity::getId);
+        // Obtener el total de transferencias
+        Long totalElements = transferRepository.countAllTransfers();
         
-        // Cargar las transferencias con todas sus relaciones usando los IDs
-        List<TransferEntity> transfers = transferIds.getContent().stream()
-                .map(id -> transferRepository.findByIdWithRelations(id))
-                .filter(java.util.Optional::isPresent)
-                .map(java.util.Optional::get)
-                .collect(Collectors.toList());
+        // Cargar todas las transferencias con relaciones (sin paginación en la query)
+        List<TransferEntity> allTransfers = transferRepository.findAllOrderedByRequestedAtWithRelations();
+        
+        // Aplicar paginación manualmente
+        int page = pageable.getPageNumber();
+        int size = pageable.getPageSize();
+        int start = page * size;
+        int end = Math.min(start + size, allTransfers.size());
+        
+        List<TransferEntity> paginatedTransfers = start < allTransfers.size() 
+            ? allTransfers.subList(start, end)
+            : new java.util.ArrayList<>();
         
         // Convertir a DTOs
-        List<TransferSummaryResponse> content = transfers.stream()
+        List<TransferSummaryResponse> content = paginatedTransfers.stream()
                 .map(TransferMapper::toSummaryResponse)
                 .collect(Collectors.toList());
         
@@ -318,7 +343,7 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         return new org.springframework.data.domain.PageImpl<>(
                 content,
                 pageable,
-                transferIds.getTotalElements()
+                totalElements
         );
     }
 
@@ -343,6 +368,17 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
                 pageable,
                 transferPage.getTotalElements()
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TransferStatisticsResponse getTransferStatistics() {
+        Long total = transferRepository.countAllTransfers();
+        Long pending = transferRepository.countByStatus(TransferStatus.PENDING);
+        Long approved = transferRepository.countByStatus(TransferStatus.APPROVED);
+        Long rejected = transferRepository.countByStatus(TransferStatus.REJECTED);
+        
+        return new TransferStatisticsResponse(total, pending, approved, rejected);
     }
 
     /**
