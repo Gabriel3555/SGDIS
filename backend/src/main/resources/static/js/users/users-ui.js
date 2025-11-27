@@ -946,17 +946,56 @@ function initializeFilterSelects() {
   if (!window.filterRoleSelect) {
     const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
     const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+    const isAdminRegional = currentRole === 'ADMIN_REGIONAL';
     
-    const roleOptions = [
-      { value: "all", label: "Todos los roles" },
-      ...(isAdminInstitution ? [] : [{ value: "SUPERADMIN", label: "Super Admin" }]),
-      { value: "ADMIN_INSTITUTION", label: "Admin Institución" },
-      ...(isAdminInstitution ? [] : [{ value: "ADMIN_REGIONAL", label: "Admin Regional" }]),
-      { value: "WAREHOUSE", label: "Almacén" },
-      { value: "USER", label: "Usuario" },
+    // Build role options based on user role
+    let roleOptions = [
+      { value: "all", label: "Todos los roles" }
     ];
+    
+    if (isAdminRegional) {
+      // Admin Regional can see Admin Institución, Almacenista, and Usuario
+      roleOptions.push(
+        { value: "ADMIN_INSTITUTION", label: "Admin Institución" },
+        { value: "WAREHOUSE", label: "Almacenista" },
+        { value: "USER", label: "Usuario" }
+      );
+    } else if (isAdminInstitution) {
+      // Admin Institution can see limited roles
+      roleOptions.push(
+        { value: "WAREHOUSE", label: "Almacén" },
+        { value: "USER", label: "Usuario" }
+      );
+    } else {
+      // Super Admin or other roles see all roles
+      roleOptions.push(
+        { value: "SUPERADMIN", label: "Super Admin" },
+        { value: "ADMIN_INSTITUTION", label: "Admin Institución" },
+        { value: "ADMIN_REGIONAL", label: "Admin Regional" },
+        { value: "WAREHOUSE", label: "Almacén" },
+        { value: "USER", label: "Usuario" }
+      );
+    }
 
     try {
+      // Verify all required elements exist before creating CustomSelect
+      const trigger = roleSelectContainer.querySelector(".custom-select-trigger");
+      const dropdown = roleSelectContainer.querySelector(".custom-select-dropdown");
+      const searchInput = roleSelectContainer.querySelector(".custom-select-search");
+      const optionsContainer = roleSelectContainer.querySelector(".custom-select-options");
+      const textElement = roleSelectContainer.querySelector(".custom-select-text");
+      
+      if (!trigger || !dropdown || !searchInput || !optionsContainer || !textElement) {
+        console.error("filterRoleSelect: Required elements not found", {
+          trigger: !!trigger,
+          dropdown: !!dropdown,
+          searchInput: !!searchInput,
+          optionsContainer: !!optionsContainer,
+          textElement: !!textElement
+        });
+        return;
+      }
+
       window.filterRoleSelect = new CustomSelectClass("filterRoleSelect", {
         placeholder: "Todos los roles",
         onChange: function (option) {
@@ -965,19 +1004,31 @@ function initializeFilterSelects() {
       });
 
       if (!window.filterRoleSelect || !window.filterRoleSelect.container) {
+        console.error("filterRoleSelect: Failed to create CustomSelect instance");
         return;
       }
 
+      // Verify the instance has the required methods
+      if (!window.filterRoleSelect.setOptions) {
+        console.error("filterRoleSelect: setOptions method not available");
+        return;
+      }
+
+      // Set options immediately - CustomSelect should be ready after constructor
       if (window.filterRoleSelect && window.filterRoleSelect.setOptions) {
         window.filterRoleSelect.setOptions(roleOptions);
       } else {
-        return;
+        // If setOptions is not available, try again after a short delay
+        setTimeout(() => {
+          if (window.filterRoleSelect && window.filterRoleSelect.setOptions) {
+            window.filterRoleSelect.setOptions(roleOptions);
+          } else {
+            console.error("filterRoleSelect: setOptions method still not available after delay");
+          }
+        }, 100);
       }
 
       // Mark trigger as having listener attached
-      const trigger = roleSelectContainer.querySelector(
-        ".custom-select-trigger"
-      );
       if (trigger) {
         trigger.setAttribute("data-listener-attached", "true");
       }
