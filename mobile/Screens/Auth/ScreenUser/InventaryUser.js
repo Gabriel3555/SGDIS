@@ -83,7 +83,7 @@ export default function Inventary({ navigation }) {
         },
       });
 
-      Alert.alert("Éxito", "Has renunciado como gestor del inventario");
+      Alert.alert("Éxito", "Has renunciado como manager del inventario");
       // Refetch inventories to update the list
       fetchManagerInventories();
       fetchAssignedInventories();
@@ -92,7 +92,7 @@ export default function Inventary({ navigation }) {
       console.error("Error quitting manager:", error);
       const status = error.response?.status;
       const message = error.response?.data?.message || error.message;
-      Alert.alert("Error", `No se pudo renunciar como gestor: ${status || 'Desconocido'} - ${message}`);
+      Alert.alert("Error", `No se pudo renunciar como manager: ${status || 'Desconocido'} - ${message}`);
     }
   };
 

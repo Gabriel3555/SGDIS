@@ -302,9 +302,6 @@ function displayItems(items) {
                     <button onclick="event.stopPropagation(); if(window.showTransferItemModal) { showTransferItemModal(${item.id}); }" class="px-2.5 py-1.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-xs transition-colors" title="Transferir Item">
                         <i class="fas fa-exchange-alt"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); if(window.showApproveTransferModal) { showApproveTransferModal(${item.id}); }" class="px-2.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs transition-colors" title="Aprobar Transferencia">
-                        <i class="fas fa-check-circle"></i>
-                    </button>
                     <button onclick="event.stopPropagation(); if(window.showItemTransferHistoryModal) { showItemTransferHistoryModal(${item.id}); }" class="px-2.5 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg text-xs transition-colors" title="Historial de Transferencias">
                         <i class="fas fa-history"></i>
                     </button>
