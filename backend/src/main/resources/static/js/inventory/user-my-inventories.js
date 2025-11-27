@@ -134,12 +134,32 @@ async function loadMyInventories() {
 // Update statistics
 function updateStats() {
     const totalCount = allInventories.length;
-    const ownerCount = ownedInventories.length;
-    const managedCount = managedInventories.length + signatoryInventories.length;
+    
+    // Count unique inventories where user is owner
+    const ownerCount = allInventories.filter(inv => inv.roles && inv.roles.includes('owner')).length;
+    
+    // Count unique inventories where user is manager, but NOT owner (to avoid duplicates)
+    const managerCount = allInventories.filter(inv => {
+        const roles = inv.roles || [];
+        const isManager = roles.includes('manager');
+        const isOwner = roles.includes('owner');
+        // Count if user is manager, but not owner
+        return isManager && !isOwner;
+    }).length;
+    
+    // Count unique inventories where user is signatory, but NOT owner (to avoid duplicates)
+    const signatoryCount = allInventories.filter(inv => {
+        const roles = inv.roles || [];
+        const isSignatory = roles.includes('signatory');
+        const isOwner = roles.includes('owner');
+        // Count if user is signatory, but not owner
+        return isSignatory && !isOwner;
+    }).length;
 
     document.getElementById('totalCount').textContent = totalCount;
     document.getElementById('ownerCount').textContent = ownerCount;
-    document.getElementById('managedCount').textContent = managedCount;
+    document.getElementById('managerCount').textContent = managerCount;
+    document.getElementById('signatoryCount').textContent = signatoryCount;
 }
 
 // Filter inventories by role
