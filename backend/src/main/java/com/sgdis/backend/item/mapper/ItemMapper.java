@@ -108,7 +108,9 @@ public final class ItemMapper {
                 itemEntity.getLocation() != null ? itemEntity.getLocation() : "",
                 itemEntity.getResponsible() != null ? itemEntity.getResponsible() : "",
                 itemEntity.getUrlsImages() != null ? itemEntity.getUrlsImages().get(0) : null,
-                itemEntity.isStatus()
+                itemEntity.isStatus(),
+                itemEntity.getInventory() != null ? itemEntity.getInventory().getId() : null,
+                itemEntity.getInventory() != null ? itemEntity.getInventory().getName() : null
         );
     }
 

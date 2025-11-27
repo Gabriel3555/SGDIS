@@ -36,12 +36,27 @@ async function updateTransfersStats() {
     `;
     
     try {
-        const transfers = window.transfersData.transfers || [];
+        // Check if user is superadmin
+        const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                             (window.location.pathname && window.location.pathname.includes('/superadmin'));
         
-        const totalTransfers = transfers.length;
-        const pendingTransfers = transfers.filter(t => t.status === 'PENDING').length;
-        const approvedTransfers = transfers.filter(t => t.status === 'APPROVED').length;
-        const rejectedTransfers = transfers.filter(t => t.status === 'REJECTED').length;
+        let totalTransfers, pendingTransfers, approvedTransfers, rejectedTransfers;
+        
+        if (isSuperAdmin && window.fetchTransferStatistics) {
+            // Fetch statistics from API for superadmin
+            const stats = await window.fetchTransferStatistics();
+            totalTransfers = stats.totalTransfers || 0;
+            pendingTransfers = stats.pendingTransfers || 0;
+            approvedTransfers = stats.approvedTransfers || 0;
+            rejectedTransfers = stats.rejectedTransfers || 0;
+        } else {
+            // Calculate from loaded transfers for other users
+            const transfers = window.transfersData.transfers || [];
+            totalTransfers = transfers.length;
+            pendingTransfers = transfers.filter(t => t.status === 'PENDING').length;
+            approvedTransfers = transfers.filter(t => t.status === 'APPROVED').length;
+            rejectedTransfers = transfers.filter(t => t.status === 'REJECTED').length;
+        }
         
         container.innerHTML = `
             <div class="stat-card">

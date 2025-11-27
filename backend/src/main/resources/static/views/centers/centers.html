@@ -155,6 +155,48 @@
                 </button>
             </div>
 
+            <!-- Filtros de Regional y Ciudad -->
+            <div class="stat-card mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Regional</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="filterRegionalSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Todas las regionales</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                    <div class="custom-select-options" id="filterRegionalOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="filterRegional" value="">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Ciudad</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="filterCitySelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Todas las ciudades</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar ciudad...">
+                                    <div class="custom-select-options" id="filterCityOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="filterCity" value="">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="stat-card" id="centersTableContainer">
                 <div class="animate-pulse">
                     <div class="h-4 bg-gray-200 rounded w-full mb-4"></div>
@@ -407,7 +449,7 @@
         }
 
         .custom-select-dropdown {
-            position: fixed;
+            position: absolute;
             background: white;
             border: 2px solid #10b981;
             border-top: none;
@@ -420,6 +462,7 @@
             overflow-x: hidden;
             display: none;
             min-width: 180px;
+            margin-top: 0;
         }
 
         .dark .custom-select-dropdown {

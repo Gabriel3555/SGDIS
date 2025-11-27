@@ -15,5 +15,7 @@ public record ItemDTO(
         String location,
         String responsible,
         String urlImg,
-        Boolean status
+        Boolean status,
+        Long inventoryId,
+        String inventoryName
 ) {}

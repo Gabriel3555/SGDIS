@@ -6,6 +6,16 @@ async function loadTransfersData() {
         return;
     }
     
+    // Check if user is superadmin
+    const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    
+    // If superadmin, load all transfers with pagination
+    if (isSuperAdmin) {
+        await loadAllTransfersForSuperAdmin();
+        return;
+    }
+    
     // Try to get inventory ID from multiple sources
     const urlParams = new URLSearchParams(window.location.search);
     let inventoryId = urlParams.get('inventoryId') || 
@@ -54,6 +64,60 @@ async function loadTransfersData() {
         }
     } catch (error) {
         console.error("Error loading transfers:", error);
+        if (container) {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                    <p class="text-red-600 dark:text-red-400">Error al cargar las transferencias</p>
+                    <button onclick="loadTransfersData()" 
+                        class="mt-4 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                        Reintentar
+                    </button>
+                </div>
+            `;
+        }
+        if (window.showErrorToast) {
+            window.showErrorToast(
+                "Error",
+                "No se pudieron cargar las transferencias"
+            );
+        }
+    }
+}
+
+/**
+ * Loads all transfers for superadmin with pagination
+ */
+async function loadAllTransfersForSuperAdmin() {
+    const container = document.getElementById('transferTableContainer');
+    if (container) {
+        container.innerHTML = `
+            <div class="animate-pulse space-y-4">
+                <div class="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                <div class="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+                <div class="h-32 bg-gray-200 dark:bg-gray-700 rounded-xl"></div>
+            </div>
+        `;
+    }
+    
+    try {
+        const page = window.transfersData.currentPage || 0;
+        const size = window.transfersData.pageSize || 6;
+        
+        const response = await window.fetchAllTransfers(page, size);
+        
+        // Update transfers data
+        window.transfersData.transfers = Array.isArray(response.content) ? response.content : [];
+        window.transfersData.totalElements = response.totalElements || 0;
+        window.transfersData.totalPages = response.totalPages || 0;
+        window.transfersData.currentPage = response.number || 0;
+        
+        // Update UI
+        if (window.updateTransfersUI) {
+            window.updateTransfersUI();
+        }
+    } catch (error) {
+        console.error("Error loading all transfers:", error);
         if (container) {
             container.innerHTML = `
                 <div class="text-center py-12">
@@ -394,6 +458,23 @@ function closeNewTransferModal() {
     const form = document.getElementById('newTransferForm');
     if (form) {
         form.innerHTML = '';
+    }
+    
+    // Clear transfer form selects
+    if (window.newTransferRegionalSelect) {
+        window.newTransferRegionalSelect.clear();
+    }
+    if (window.newTransferInstitutionSelect) {
+        window.newTransferInstitutionSelect.clear();
+        if (window.newTransferInstitutionSelect.setDisabled) {
+            window.newTransferInstitutionSelect.setDisabled(true);
+        }
+    }
+    if (window.newTransferInventorySelect) {
+        window.newTransferInventorySelect.clear();
+        if (window.newTransferInventorySelect.setDisabled) {
+            window.newTransferInventorySelect.setDisabled(true);
+        }
     }
 }
 

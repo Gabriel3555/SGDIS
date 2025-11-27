@@ -171,9 +171,81 @@ async function approveTransfer(transferId, approvalData = {}) {
     }
 }
 
+/**
+ * Fetches all transfers with pagination (for superadmin)
+ * @param {number} page - Page number (0-indexed)
+ * @param {number} size - Page size
+ * @returns {Promise<Object>} Page object with transfers
+ */
+async function fetchAllTransfers(page = 0, size = 6) {
+    try {
+        const token = localStorage.getItem("jwt");
+        const headers = {
+            "Content-Type": "application/json",
+        };
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+            `/api/v1/transfers?page=${page}&size=${size}`,
+            {
+                method: "GET",
+                headers: headers,
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error fetching all transfers:", error);
+        throw error;
+    }
+}
+
+/**
+ * Fetches transfer statistics
+ * @returns {Promise<Object>} Statistics object
+ */
+async function fetchTransferStatistics() {
+    try {
+        const token = localStorage.getItem("jwt");
+        const headers = {
+            "Content-Type": "application/json",
+        };
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+            `/api/v1/transfers/statistics`,
+            {
+                method: "GET",
+                headers: headers,
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Error fetching transfer statistics:", error);
+        throw error;
+    }
+}
+
 // Export functions globally
 window.fetchTransfersByInventory = fetchTransfersByInventory;
 window.fetchTransfersByItem = fetchTransfersByItem;
 window.requestTransfer = requestTransfer;
 window.approveTransfer = approveTransfer;
+window.fetchAllTransfers = fetchAllTransfers;
+window.fetchTransferStatistics = fetchTransferStatistics;
 

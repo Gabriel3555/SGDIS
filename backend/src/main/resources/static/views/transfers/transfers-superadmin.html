@@ -270,6 +270,8 @@
 
     <script src="../../js/dashboard.js"></script>
     <script src="../../js/inactivity-monitor.js"></script>
+    <!-- Custom Select Component (needed for transfer form) - Load from centers.js -->
+    <script src="../../js/centers/centers.js"></script>
     <!-- Transfers Module Scripts -->
     <script src="../../js/transfers/transfers-data.js"></script>
     <script src="../../js/transfers/transfers-api.js"></script>
@@ -309,6 +311,169 @@
             .overlay.active {
                 display: block;
             }
+        }
+        
+        .custom-select-container {
+            position: relative;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .custom-select-container.select-open {
+            z-index: 10002;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border-color: #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger:hover {
+            border-color: #e5e7eb;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-arrow {
+            color: #d1d5db;
+        }
+
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.75rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 2.5rem;
+        }
+
+        .dark .custom-select-trigger {
+            background-color: #1f2937;
+            border-color: #374151;
+            color: #f3f4f6;
+        }
+
+        .custom-select-trigger:hover {
+            border-color: #10b981;
+        }
+
+        .custom-select-trigger:focus-within {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: #10b981;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .custom-select-text {
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .dark .custom-select-text {
+            color: #f3f4f6;
+        }
+
+        .custom-select-placeholder {
+            color: #9ca3af;
+        }
+
+        .custom-select-arrow {
+            color: #6b7280;
+            transition: transform 0.2s ease;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+        }
+
+        .custom-select-dropdown {
+            position: absolute;
+            background: white;
+            border: 2px solid #10b981;
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 10050;
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            min-width: 180px;
+            margin-top: 0;
+        }
+
+        .dark .custom-select-dropdown {
+            background-color: #1f2937;
+            border-color: #10b981;
+        }
+
+        .custom-select.open .custom-select-dropdown {
+            display: block;
+        }
+
+        .custom-select-search {
+            width: 100%;
+            padding: 0.625rem 0.875rem;
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            outline: none;
+            font-size: 0.875rem;
+            background: white;
+            box-sizing: border-box;
+        }
+
+        .dark .custom-select-search {
+            background-color: #1f2937;
+            color: #f3f4f6;
+            border-bottom-color: #374151;
+        }
+
+        .custom-select-options {
+            max-height: 240px;
+            overflow-y: auto;
+        }
+
+        .custom-select-option {
+            padding: 0.625rem 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+            color: #374151;
+        }
+
+        .dark .custom-select-option {
+            color: #f3f4f6;
+        }
+
+        .custom-select-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .dark .custom-select-option:hover {
+            background-color: #374151;
+        }
+
+        .custom-select-option.selected {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .custom-select-option.disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
         }
     </style>
 
@@ -494,6 +659,35 @@
             <form id="approveTransferForm" class="space-y-4">
                 <!-- Form fields will be loaded dynamically -->
             </form>
+        </div>
+    </div>
+
+    <!-- Transfer Summary Modal -->
+    <div id="transferSummaryModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-2xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Resumen de Transferencia</h2>
+                <button onclick="closeTransferSummaryModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div id="transferSummaryContent" class="space-y-4">
+                <!-- Content loaded dynamically -->
+            </div>
+
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeTransferSummaryModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmTransferRequest()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    <i class="fas fa-check mr-2"></i>
+                    Confirmar Transferencia
+                </button>
+            </div>
         </div>
     </div>
 </body>

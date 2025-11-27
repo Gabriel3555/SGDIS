@@ -11,6 +11,8 @@ import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseC
 import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetAllTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetRegionalTransfersUseCase;
+import com.sgdis.backend.transfers.application.port.in.GetTransferStatisticsUseCase;
+import com.sgdis.backend.transfers.application.dto.TransferStatisticsResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -42,6 +44,7 @@ public class TransferController {
     private final GetItemTransfersUseCase getItemTransfersUseCase;
     private final GetAllTransfersUseCase getAllTransfersUseCase;
     private final GetRegionalTransfersUseCase getRegionalTransfersUseCase;
+    private final GetTransferStatisticsUseCase getTransferStatisticsUseCase;
 
     @Operation(
             summary = "Get all transfers",
@@ -163,6 +166,23 @@ public class TransferController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "requestedAt"));
         Page<TransferSummaryResponse> transfers = getRegionalTransfersUseCase.getTransfersByRegional(regionalId, pageable);
         return ResponseEntity.ok(transfers);
+    }
+
+    @Operation(
+            summary = "Get transfer statistics",
+            description = "Retrieves statistics about transfers (total, pending, approved, rejected)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = TransferStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @GetMapping("/statistics")
+    public ResponseEntity<TransferStatisticsResponse> getTransferStatistics() {
+        TransferStatisticsResponse statistics = getTransferStatisticsUseCase.getTransferStatistics();
+        return ResponseEntity.ok(statistics);
     }
 }
 

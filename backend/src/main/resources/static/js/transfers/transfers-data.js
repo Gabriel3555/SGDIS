@@ -29,7 +29,9 @@ function setTransfersViewMode(mode) {
 function changeTransfersPage(page) {
     if (transfersData && page >= 0 && page < transfersData.totalPages) {
         transfersData.currentPage = page;
-        loadTransfersData();
+        if (window.loadTransfersData) {
+            window.loadTransfersData();
+        }
     }
 }
 
