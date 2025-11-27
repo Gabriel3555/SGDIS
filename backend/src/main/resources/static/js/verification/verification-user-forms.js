@@ -214,84 +214,75 @@ window.captureNewVerificationPhoto = function() {
     
     if (!video || !canvas) return;
     
-    // Maximum dimensions for the image (to reduce file size)
-    const MAX_WIDTH = 1920;
-    const MAX_HEIGHT = 1920;
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+    // Set canvas size to video size
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
     
-    // Calculate new dimensions maintaining aspect ratio
-    let width = video.videoWidth;
-    let height = video.videoHeight;
-    
-    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-        if (width > height) {
-            height = (height * MAX_WIDTH) / width;
-            width = MAX_WIDTH;
-        } else {
-            width = (width * MAX_HEIGHT) / height;
-            height = MAX_HEIGHT;
-        }
-    }
-    
-    // Set canvas size to calculated dimensions
-    canvas.width = width;
-    canvas.height = height;
-    
-    // Draw video frame to canvas (scaled)
+    // Draw video frame to canvas
     const context = canvas.getContext('2d');
-    context.drawImage(video, 0, 0, width, height);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    // Function to compress and validate image
-    const compressImage = function(quality) {
-        canvas.toBlob(function(blob) {
-            if (!blob) {
-                showInventoryErrorToast('Error', 'No se pudo capturar la foto');
-                return;
-            }
-            
-            // Check file size
-            if (blob.size > MAX_FILE_SIZE && quality > 0.3) {
-                // If too large and quality can still be reduced, try again with lower quality
-                compressImage(quality - 0.1);
-                return;
-            }
-            
-            if (blob.size > MAX_FILE_SIZE) {
-                // If still too large even at minimum quality, try reducing dimensions further
-                const reducedWidth = Math.floor(width * 0.8);
-                const reducedHeight = Math.floor(height * 0.8);
-                canvas.width = reducedWidth;
-                canvas.height = reducedHeight;
-                context.drawImage(video, 0, 0, reducedWidth, reducedHeight);
-                compressImage(0.5); // Try with reduced size and medium quality
-                return;
-            }
-            
-            // Create file from blob
-            const file = new File([blob], `evidencia_${Date.now()}.jpg`, { type: 'image/jpeg' });
-            newVerificationEvidenceFile = file;
-            
-            // Show preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const preview = document.getElementById('newVerificationEvidencePreview');
-                const image = document.getElementById('newVerificationEvidenceImage');
-                const buttons = document.getElementById('newVerificationEvidenceButtons');
+    // Convert canvas to blob with compression to reduce file size
+    // Use lower quality (0.7) to ensure file stays under 5MB limit
+    canvas.toBlob(function(blob) {
+        if (!blob) {
+            showInventoryErrorToast('Error', 'No se pudo capturar la foto');
+            return;
+        }
+        
+        // Check file size and compress further if needed
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+        if (blob.size > MAX_FILE_SIZE) {
+            // If still too large, reduce quality further
+            canvas.toBlob(function(compressedBlob) {
+                if (!compressedBlob) {
+                    showInventoryErrorToast('Error', 'No se pudo comprimir la foto');
+                    return;
+                }
                 
-                if (image) image.src = e.target.result;
-                if (preview) preview.classList.remove('hidden');
-                if (buttons) buttons.classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
+                const file = new File([compressedBlob], `evidencia_${Date.now()}.jpg`, { type: 'image/jpeg' });
+                newVerificationEvidenceFile = file;
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('newVerificationEvidencePreview');
+                    const image = document.getElementById('newVerificationEvidenceImage');
+                    const buttons = document.getElementById('newVerificationEvidenceButtons');
+                    
+                    if (image) image.src = e.target.result;
+                    if (preview) preview.classList.remove('hidden');
+                    if (buttons) buttons.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+                
+                closeNewVerificationCamera();
+                showInventorySuccessToast('Foto capturada', 'Foto capturada correctamente');
+            }, 'image/jpeg', 0.5);
+            return;
+        }
+        
+        // Create file from blob
+        const file = new File([blob], `evidencia_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        newVerificationEvidenceFile = file;
+        
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const preview = document.getElementById('newVerificationEvidencePreview');
+            const image = document.getElementById('newVerificationEvidenceImage');
+            const buttons = document.getElementById('newVerificationEvidenceButtons');
             
-            closeNewVerificationCamera();
-            showInventorySuccessToast('Foto capturada', 'Foto capturada correctamente');
-            
-        }, 'image/jpeg', quality);
-    };
-    
-    // Start compression with initial quality of 0.8
-    compressImage(0.8);
+            if (image) image.src = e.target.result;
+            if (preview) preview.classList.remove('hidden');
+            if (buttons) buttons.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+        
+        closeNewVerificationCamera();
+        showInventorySuccessToast('Foto capturada', 'Foto capturada correctamente');
+        
+    }, 'image/jpeg', 0.7);
 };
 
 // Show Upload Evidence Modal
