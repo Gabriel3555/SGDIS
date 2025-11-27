@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     
+                    showInfoToast('Creando verificación', 'Verificando item por número de serie...');
                     verification = await createVerificationBySerial(serialNumber);
                 } else {
                     const licensePlate = document.getElementById('newVerificationPlate').value.trim();
@@ -43,29 +44,67 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
                     
+                    showInfoToast('Creando verificación', 'Verificando item por placa...');
                     verification = await createVerificationByPlate(licensePlate);
                 }
                 
                 // Upload evidence if available
                 if (newVerificationEvidenceFile && verification && verification.verificationId) {
                     try {
+                        showInfoToast('Subiendo evidencia', 'Subiendo evidencia de la verificación...');
                         await uploadEvidence(verification.verificationId, newVerificationEvidenceFile);
-                        showSuccessToast('Verificación creada', 'La verificación y evidencia se crearon exitosamente');
+                        // El toast de éxito ya se muestra en uploadEvidence
                     } catch (evidenceError) {
-                        console.error('Error uploading evidence:', evidenceError);
-                        showWarningToast('Verificación creada', 'Verificación creada pero no se pudo subir la evidencia');
+                        showWarningToast('Verificación creada', 'Verificación creada pero no se pudo subir la evidencia. Puedes subirla más tarde.');
                     }
-                } else {
-                    showSuccessToast('Verificación creada', 'La verificación se creó exitosamente');
                 }
+                // El toast de verificación creada ya se muestra en la API
                 
                 closeNewVerificationModal();
                 clearNewVerificationEvidence();
+                showInfoToast('Actualizando datos', 'Recargando verificaciones...');
                 await loadVerificationData();
                 
             } catch (error) {
-                console.error('Error creating verification:', error);
-                showErrorToast('Error al crear verificación', error.message || 'Inténtalo de nuevo');
+                // El error ya muestra toast en la API si es 403 (item no pertenece a inventarios) o 404
+                // Solo mostrar toast adicional si no es un error de inventario o item no encontrado
+                if (!error.message.includes('no pertenece') && 
+                    !error.message.includes('no se encontró') && 
+                    !error.message.includes('No se encontró')) {
+                    showErrorToast('Error al crear verificación', error.message || 'No se pudo crear la verificación. Intenta nuevamente.');
+                }
+            }
+        });
+    }
+    
+    // Handle Upload Evidence Form Submission
+    const uploadEvidenceForm = document.getElementById('uploadEvidenceForm');
+    
+    if (uploadEvidenceForm) {
+        uploadEvidenceForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('evidenceFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showErrorToast('Archivo requerido', 'Por favor selecciona un archivo');
+                return;
+            }
+            
+            if (!verificationData.currentVerificationId) {
+                showErrorToast('Error', 'No se ha seleccionado una verificación');
+                return;
+            }
+            
+            try {
+                showInfoToast('Subiendo evidencia', 'Subiendo archivo de evidencia...');
+                await uploadEvidence(verificationData.currentVerificationId, file);
+                closeUploadEvidenceModal();
+                showInfoToast('Actualizando datos', 'Recargando verificaciones...');
+                await loadVerificationData();
+            } catch (error) {
+                showErrorToast('Error al subir evidencia', error.message || 'No se pudo subir la evidencia. Intenta nuevamente.');
             }
         });
     }
@@ -149,8 +188,7 @@ window.openNewVerificationCamera = async function() {
         modal.classList.remove('hidden');
         
     } catch (error) {
-        console.error('Error accessing camera:', error);
-        showErrorToast('Error de cámara', 'No se pudo acceder a la cámara. Verifica los permisos.');
+        showErrorToast('Error de cámara', 'No se pudo acceder a la cámara. Verifica los permisos del navegador.');
     }
 };
 
@@ -211,5 +249,49 @@ window.captureNewVerificationPhoto = function() {
         showSuccessToast('Foto capturada', 'Foto capturada correctamente');
         
     }, 'image/jpeg', 0.9);
+};
+
+// Show Upload Evidence Modal
+window.showUploadEvidenceModal = function(verificationId) {
+    verificationData.currentVerificationId = verificationId;
+    const modal = document.getElementById('uploadEvidenceModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        const form = document.getElementById('uploadEvidenceForm');
+        const fileInput = document.getElementById('evidenceFile');
+        const fileNameDisplay = document.getElementById('evidenceFileName');
+        if (form) form.reset();
+        if (fileInput) fileInput.value = '';
+        if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+    }
+};
+
+// Close Upload Evidence Modal
+window.closeUploadEvidenceModal = function() {
+    const modal = document.getElementById('uploadEvidenceModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    verificationData.currentVerificationId = null;
+};
+
+// Handle Evidence File Change
+window.handleEvidenceFileChange = function(event) {
+    const file = event.target.files[0];
+    const fileNameDisplay = document.getElementById('evidenceFileName');
+    
+    if (file) {
+        const fileSize = file.size / 1024 / 1024; // Convert to MB
+        if (fileSize > 5) {
+            showErrorToast('Archivo muy grande', 'El archivo no debe superar 5MB');
+            event.target.value = '';
+            if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+            return;
+        }
+        
+        if (fileNameDisplay) fileNameDisplay.textContent = file.name;
+    } else {
+        if (fileNameDisplay) fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+    }
 };
 
