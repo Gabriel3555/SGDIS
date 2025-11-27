@@ -782,7 +782,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('USER')")
     @ResponseBody
     public ResponseEntity<Resource> userTransfers() throws IOException {
-        Resource resource = new ClassPathResource("static/views/transfers/transfers.html");
+        Resource resource = new ClassPathResource("static/views/transfers/transfers-user.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
