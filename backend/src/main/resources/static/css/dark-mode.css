@@ -399,6 +399,50 @@ html.dark > * {
     box-shadow: 0 6px 25px rgba(0, 175, 0, 0.5);
 }
 
+/* Botón de toggle en modo claro - fondo verde con icono blanco */
+html:not(.dark) #darkModeToggle {
+    background: linear-gradient(135deg, #00AF00 0%, #008800 100%) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 4px 20px rgba(0, 175, 0, 0.3) !important;
+}
+
+html:not(.dark) #darkModeToggle.bg-white {
+    background: linear-gradient(135deg, #00AF00 0%, #008800 100%) !important;
+}
+
+html:not(.dark) #darkModeToggle .moon-icon {
+    color: #ffffff !important;
+}
+
+html:not(.dark) #darkModeToggle .moon-icon.text-gray-700 {
+    color: #ffffff !important;
+}
+
+html:not(.dark) #darkModeToggle .moon-icon.text-gray-700.dark\:text-gray-300 {
+    color: #ffffff !important;
+}
+
+html:not(.dark) #darkModeToggle .sun-icon {
+    color: #ffffff !important;
+}
+
+html:not(.dark) #darkModeToggle .sun-icon.text-gray-700 {
+    color: #ffffff !important;
+}
+
+html:not(.dark) #darkModeToggle .sun-icon.text-gray-700.dark\:text-gray-300 {
+    color: #ffffff !important;
+}
+
+html:not(.dark) #darkModeToggle:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 25px rgba(0, 175, 0, 0.5) !important;
+}
+
+html:not(.dark) #darkModeToggle:active {
+    transform: scale(0.95) !important;
+}
+
 /* Forzar fondo oscuro en todos los elementos principales */
 html.dark,
 html.dark * {
