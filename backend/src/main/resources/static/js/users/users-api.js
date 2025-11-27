@@ -118,11 +118,13 @@ async function loadUsers(page = 0) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Check if current user is ADMIN_INSTITUTION or ADMIN_REGIONAL
+        // Check if current user is ADMIN_INSTITUTION, ADMIN_REGIONAL, or WAREHOUSE
         const currentRole = usersData.currentLoggedInUserRole || '';
         const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
         const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
                                 (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isWarehouse = currentRole === 'WAREHOUSE' || 
+                           (window.location.pathname && window.location.pathname.includes('/warehouse'));
         
         // Check if filters are active (including regional and institution for super admin)
         const isSuperAdmin = (usersData.currentLoggedInUserRole && usersData.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
@@ -133,8 +135,8 @@ async function loadUsers(page = 0) {
                           (isSuperAdmin && (usersData.selectedRegional || usersData.selectedInstitution));
         
         let url;
-        if (isAdminInstitution) {
-            // Use institution endpoint for ADMIN_INSTITUTION
+        if (isAdminInstitution || isWarehouse) {
+            // Use institution endpoint for ADMIN_INSTITUTION and WAREHOUSE (excludes SUPERADMIN)
             if (hasFilters) {
                 // Load all users for filtering (set a large page size)
                 url = `/api/v1/users/institution?page=0&size=1000`;
@@ -142,7 +144,8 @@ async function loadUsers(page = 0) {
                 // For first page, if we need to exclude current user, request one extra to maintain 6 per page
                 const isFirstPage = page === 0;
                 const shouldExcludeCurrentUser = (usersData.currentLoggedInUserRole === 'SUPERADMIN' || 
-                                                 usersData.currentLoggedInUserRole === 'ADMIN_INSTITUTION') && 
+                                                 usersData.currentLoggedInUserRole === 'ADMIN_INSTITUTION' ||
+                                                 usersData.currentLoggedInUserRole === 'WAREHOUSE') && 
                                                  usersData.currentLoggedInUserId;
                 const pageSize = (isFirstPage && shouldExcludeCurrentUser) ? 
                                 (usersData.itemsPerPage + 1) : 
@@ -199,6 +202,13 @@ async function loadUsers(page = 0) {
                 loadedUsers = loadedUsers.filter(user => user && user.role !== 'SUPERADMIN');
             }
             
+            // For warehouse, exclude all SUPERADMIN users (additional filter for safety)
+            const isWarehouse = (usersData.currentLoggedInUserRole === 'WAREHOUSE') ||
+                               (window.location.pathname && window.location.pathname.includes('/warehouse'));
+            if (isWarehouse) {
+                loadedUsers = loadedUsers.filter(user => user && user.role !== 'SUPERADMIN');
+            }
+            
             usersData.users = loadedUsers;
             
             if (hasFilters) {
@@ -251,11 +261,13 @@ async function loadAdditionalUserForFirstPage() {
         const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
         const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
                                (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isWarehouse = currentRole === 'WAREHOUSE' || 
+                           (window.location.pathname && window.location.pathname.includes('/warehouse'));
         const isSuperAdmin = (usersData.currentLoggedInUserRole && usersData.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
                              (window.location.pathname && window.location.pathname.includes('/superadmin'));
         
         let url;
-        if (isAdminInstitution) {
+        if (isAdminInstitution || isWarehouse) {
             url = `/api/v1/users/institution?page=1&size=1`;
         } else if (isAdminRegional) {
             url = `/api/v1/users/regional?page=1&size=1`;
