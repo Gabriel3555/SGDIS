@@ -145,14 +145,22 @@ async function loadItemsForLoan(inventoryId) {
     }
 }
 
-// Load users for responsible selection
+// Load users for responsible selection (from user's institution for USER role)
 async function loadUsersForLoan() {
     try {
         const token = localStorage.getItem('jwt');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch('/api/v1/users?page=0&size=1000', {
+        // For USER role, load users from their institution
+        const isUserRole = window.loansData && window.loansData.userRole === 'USER';
+        let endpoint = '/api/v1/users?page=0&size=1000';
+        
+        if (isUserRole) {
+            endpoint = '/api/v1/users/institution?page=0&size=1000';
+        }
+
+        const response = await fetch(endpoint, {
             method: 'GET',
             headers: headers
         });
@@ -160,12 +168,66 @@ async function loadUsersForLoan() {
         if (response.ok) {
             const data = await response.json();
             loanFormData.users = data.users || data || [];
+            
+            // Filter out current user
+            try {
+                const currentUserResponse = await fetch('/api/v1/users/me', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+                });
+                if (currentUserResponse.ok) {
+                    const currentUser = await currentUserResponse.json();
+                    loanFormData.users = loanFormData.users.filter(user => user.id !== currentUser.id);
+                }
+            } catch (e) {
+                console.warn('Could not get current user info:', e);
+            }
+            
             populateResponsibleSelectForLoan();
         } else {
             console.error('Failed to load users');
         }
     } catch (error) {
         console.error('Error loading users:', error);
+    }
+}
+
+// Load user's inventories (owner or signatory) for USER role
+async function loadUserInventoriesForLoan() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Load both owner and signatory inventories
+        const [ownedResponse, signatoryResponse] = await Promise.all([
+            fetch('/api/v1/users/me/inventories/owner', { headers }),
+            fetch('/api/v1/users/me/inventories/signatory', { headers })
+        ]);
+
+        let ownedInventories = [];
+        let signatoryInventories = [];
+
+        if (ownedResponse.ok) {
+            ownedInventories = await ownedResponse.json();
+        }
+        if (signatoryResponse.ok) {
+            signatoryInventories = await signatoryResponse.json();
+        }
+
+        // Combine and remove duplicates
+        const allInventoriesMap = new Map();
+        [...ownedInventories, ...signatoryInventories].forEach(inv => {
+            if (inv && inv.id) {
+                allInventoriesMap.set(inv.id, inv);
+            }
+        });
+
+        loanFormData.inventories = Array.from(allInventoriesMap.values());
+        populateInventorySelectForLoan();
+    } catch (error) {
+        console.error('Error loading user inventories:', error);
+        loanFormData.inventories = [];
+        populateInventorySelectForLoan();
     }
 }
 
@@ -255,6 +317,15 @@ function populateInventorySelectForLoan() {
     
     optionsContainer.innerHTML = '';
     
+    if (loanFormData.inventories.length === 0) {
+        const noInventoriesOption = document.createElement('div');
+        noInventoriesOption.className = 'custom-select-option text-gray-500';
+        noInventoriesOption.textContent = 'No hay inventarios disponibles';
+        noInventoriesOption.style.cursor = 'not-allowed';
+        optionsContainer.appendChild(noInventoriesOption);
+        return;
+    }
+    
     loanFormData.inventories.forEach(inventory => {
         const option = document.createElement('div');
         option.className = 'custom-select-option';
@@ -323,14 +394,24 @@ function populateResponsibleSelectForLoan() {
     
     optionsContainer.innerHTML = '';
     
+    if (loanFormData.users.length === 0) {
+        const noUsersOption = document.createElement('div');
+        noUsersOption.className = 'custom-select-option text-gray-500';
+        noUsersOption.textContent = 'No hay usuarios disponibles';
+        noUsersOption.style.cursor = 'not-allowed';
+        optionsContainer.appendChild(noUsersOption);
+        return;
+    }
+    
     loanFormData.users.forEach(user => {
         const option = document.createElement('div');
         option.className = 'custom-select-option';
         option.setAttribute('data-value', user.id);
-        option.textContent = user.fullName || user.email || `Usuario #${user.id}`;
+        const userName = user.fullName || `${user.name || ''} ${user.lastName || ''}`.trim() || user.email || `Usuario #${user.id}`;
+        option.textContent = userName;
         option.onclick = () => {
             document.getElementById('loanSelectedResponsibleId').value = user.id;
-            document.querySelector('#loanResponsibleSelect .custom-select-text').textContent = user.fullName || user.email || `Usuario #${user.id}`;
+            document.querySelector('#loanResponsibleSelect .custom-select-text').textContent = userName;
             document.getElementById('loanResponsibleSelect').classList.remove('open');
             loanFormData.selectedResponsible = user.id;
         };
@@ -383,6 +464,13 @@ async function handleLendItem() {
 
         if (response.ok) {
             const result = await response.json();
+            
+            // For USER role: check and remove duplicate loans after successful creation
+            const isUserRole = window.loansData && window.loansData.userRole === 'USER';
+            if (isUserRole) {
+                await checkAndRemoveDuplicateLoansForUser(parseInt(itemId));
+            }
+            
             if (window.showSuccessToast) {
                 window.showSuccessToast('Éxito', result.message || 'Item prestado exitosamente');
             }
@@ -393,9 +481,16 @@ async function handleLendItem() {
             // Close modal
             closeLendItemModal();
             
-            // Reload loans data
-            if (typeof loadLoansData === 'function') {
-                loadLoansData();
+            // For USER role: reload page to avoid duplicates
+            if (isUserRole) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                // For other roles: reload loans data normally
+                if (typeof loadLoansData === 'function') {
+                    loadLoansData();
+                }
             }
         } else {
             let errorMessage = 'Error al prestar el item';
@@ -499,17 +594,43 @@ function resetLoanForm() {
 }
 
 // Open lend item modal
-function openLendItemModal() {
+async function openLendItemModal() {
     const modal = document.getElementById('lendItemModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        resetLoanForm();
-        initializeLoanForm();
-        // Initialize selects if not already done
-        setTimeout(() => {
-            initializeLoanSelects();
-        }, 100);
+    if (!modal) return;
+
+    // Check if user is USER role
+    const isUserRole = window.loansData && window.loansData.userRole === 'USER';
+    
+    // Show/hide fields based on role
+    const regionalContainer = document.getElementById('loanRegionalContainer');
+    const institutionContainer = document.getElementById('loanInstitutionContainer');
+    
+    if (isUserRole) {
+        // Hide Regional and Institution fields for USER role
+        if (regionalContainer) regionalContainer.style.display = 'none';
+        if (institutionContainer) institutionContainer.style.display = 'none';
+    } else {
+        // Show Regional and Institution fields for other roles
+        if (regionalContainer) regionalContainer.style.display = 'block';
+        if (institutionContainer) institutionContainer.style.display = 'block';
     }
+
+    modal.classList.remove('hidden');
+    resetLoanForm();
+    
+    if (isUserRole) {
+        // For USER role: load user inventories and users from institution
+        await loadUserInventoriesForLoan();
+        await loadUsersForLoan();
+    } else {
+        // For other roles: use normal flow
+        await initializeLoanForm();
+    }
+    
+    // Initialize selects if not already done
+    setTimeout(() => {
+        initializeLoanSelects();
+    }, 100);
 }
 
 // Close lend item modal
@@ -518,6 +639,12 @@ function closeLendItemModal() {
     if (modal) {
         modal.classList.add('hidden');
         resetLoanForm();
+        
+        // Restore visibility of Regional and Institution fields (in case they were hidden for USER role)
+        const regionalContainer = document.getElementById('loanRegionalContainer');
+        const institutionContainer = document.getElementById('loanInstitutionContainer');
+        if (regionalContainer) regionalContainer.style.display = 'block';
+        if (institutionContainer) institutionContainer.style.display = 'block';
     }
 }
 
@@ -678,6 +805,86 @@ function filterSelectOptions(selectElement, searchTerm) {
     });
 }
 
+// Check and remove duplicate loans for USER role only
+async function checkAndRemoveDuplicateLoansForUser(itemId) {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) return;
+
+        // Get all loans for this item
+        const response = await fetch(`/api/v1/loan/item/${itemId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            console.warn('No se pudieron obtener los préstamos para verificar duplicados');
+            return;
+        }
+
+        const loans = await response.json();
+        
+        // Check if there are at least 2 loans
+        if (loans.length < 2) {
+            return; // No duplicates possible
+        }
+
+        // Get the last 2 loans (most recent first - they should be sorted by creation date)
+        // Sort by lendAt descending to get most recent first
+        const sortedLoans = [...loans].sort((a, b) => {
+            const dateA = a.lendAt ? new Date(a.lendAt).getTime() : 0;
+            const dateB = b.lendAt ? new Date(b.lendAt).getTime() : 0;
+            return dateB - dateA;
+        });
+
+        const lastLoan = sortedLoans[0];
+        const secondLastLoan = sortedLoans[1];
+
+        // Check if they are duplicates
+        // Compare: itemId, responsibleId, detailsLend, and returned status
+        const areDuplicates = 
+            lastLoan.itemId === secondLastLoan.itemId &&
+            lastLoan.responsibleId === secondLastLoan.responsibleId &&
+            (lastLoan.detailsLend || '') === (secondLastLoan.detailsLend || '') &&
+            lastLoan.returned === secondLastLoan.returned;
+
+        if (areDuplicates) {
+            // Check if they were created very close in time (within 5 seconds)
+            const lastLoanDate = lastLoan.lendAt ? new Date(lastLoan.lendAt) : null;
+            const secondLastLoanDate = secondLastLoan.lendAt ? new Date(secondLastLoan.lendAt) : null;
+            
+            if (lastLoanDate && secondLastLoanDate) {
+                const timeDiff = Math.abs(lastLoanDate.getTime() - secondLastLoanDate.getTime());
+                const fiveSeconds = 5 * 1000; // 5 seconds in milliseconds
+                
+                if (timeDiff <= fiveSeconds) {
+                    // They are duplicates created within 5 seconds - delete the second one (older)
+                    console.log('Duplicado detectado, eliminando préstamo ID:', secondLastLoan.id);
+                    
+                    const deleteResponse = await fetch(`/api/v1/loan/${secondLastLoan.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (deleteResponse.ok) {
+                        console.log('Préstamo duplicado eliminado exitosamente');
+                    } else {
+                        console.warn('No se pudo eliminar el préstamo duplicado');
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error verificando duplicados:', error);
+        // Don't throw error, just log it
+    }
+}
+
 // Export functions
 window.initializeLoanForm = initializeLoanForm;
 window.handleLendItem = handleLendItem;
@@ -689,4 +896,5 @@ window.closeReturnItemModal = closeReturnItemModal;
 window.handleReturnItemClick = handleReturnItemClick;
 window.submitReturnItem = submitReturnItem;
 window.initializeLoanSelects = initializeLoanSelects;
+window.checkAndRemoveDuplicateLoansForUser = checkAndRemoveDuplicateLoansForUser;
 
