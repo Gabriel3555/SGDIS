@@ -637,6 +637,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/warehouse/loans")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseLoans() throws IOException {
+        Resource resource = new ClassPathResource("static/views/loans/loans-warehouse.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/user/settings")
     @PreAuthorize("hasRole('USER')")
     @ResponseBody

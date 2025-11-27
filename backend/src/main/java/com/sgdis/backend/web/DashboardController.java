@@ -19,15 +19,9 @@ public class DashboardController {
     @GetMapping("/dashboard/user")
     @PreAuthorize("hasRole('USER')")
     @ResponseBody
-    public ResponseEntity<Resource> userDashboard() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/user/dashboard.html");
-        if (resource.exists()) {
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(resource);
-        } else {
-            return ResponseEntity.notFound().build();
-        }
+    public String userDashboard() {
+        // Redirige a la ruta oficial de usuario para evitar rutas duplicadas
+        return "redirect:/user/dashboard";
     }
 
 
