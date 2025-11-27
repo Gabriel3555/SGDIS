@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transferencias - Superadmin - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <title>Transferencias - Warehouse - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
-        // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function () {
             const saved = localStorage.getItem('sgdis-dark-mode');
             if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -14,25 +13,28 @@
             }
         })();
     </script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'sena-verde': '#00AF00',
-                        'sena-verde-oscuro': '#008800'
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
                     }
                 }
             }
         }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/jpeg" href="../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/users-toast.css">
     <link rel="stylesheet" href="../../css/dark-mode.css">
     <link rel="stylesheet" href="../../css/notifications-bell.css">
 </head>
@@ -46,7 +48,6 @@
     <!-- Sidebar -->
     <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar"
         style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
-        <!-- Sidebar header -->
         <div class="p-6 border-b border-gray-200">
             <div class="flex items-center gap-2">
                 <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
@@ -59,76 +60,69 @@
             </div>
         </div>
 
-        <!-- Sidebar navigation -->
         <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+            <a href="/warehouse/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/dashboard')">
                 <i class="fas fa-chart-line text-lg"></i>
                 <span class="font-medium">Dashboard</span>
             </a>
-            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/inventory')">
+            <a href="/warehouse/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/inventory')">
                 <i class="fas fa-boxes text-lg"></i>
                 <span class="font-medium">Inventario</span>
             </a>
-            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/users')">
+            <a href="/warehouse/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/users')">
                 <i class="fas fa-users text-lg"></i>
                 <span class="font-medium">Usuarios</span>
             </a>
-            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/centers')">
-                <i class="fas fa-building text-lg"></i>
-                <span class="font-medium">Centros</span>
-            </a>
-            <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
-                onclick="handleSidebarClick(event, '/superadmin/transfers')">
+            <a href="/warehouse/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+                onclick="handleSidebarClick(event, '/warehouse/transfers')">
                 <i class="fas fa-exchange-alt text-lg"></i>
                 <span class="font-medium">Transferencias</span>
             </a>
-            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/verification')">
+            <a href="/warehouse/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/verification')">
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
-            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/loans')">
+            <a href="/warehouse/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/loans')">
                 <i class="fas fa-hand-holding text-lg"></i>
                 <span class="font-medium">Préstamos</span>
             </a>
-            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/reports')">
+            <a href="/warehouse/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
                 <span class="font-medium">Reportes</span>
             </a>
-            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/auditory')">
+            <a href="/warehouse/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/auditory')">
                 <i class="fas fa-clipboard-list text-lg"></i>
                 <span class="font-medium">Auditoría</span>
             </a>
-            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/notifications')">
+            <a href="/warehouse/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/notifications')">
                 <i class="fas fa-bell text-lg"></i>
                 <span class="font-medium">Notificaciones</span>
             </a>
-            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/import-export')">
+            <a href="/warehouse/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/import-export')">
                 <i class="fas fa-file-import text-lg"></i>
                 <span class="font-medium">Importar/Exportar</span>
             </a>
-            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/settings')">
+            <a href="/warehouse/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/settings')">
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>
-            <a href="/superadmin/info-me" id="navInfoMe" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/info-me')">
+            <a href="/warehouse/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
             </a>
         </nav>
 
-        <!-- Logout button -->
         <div class="p-4 border-t border-gray-200 mt-auto">
             <button onclick="logout()"
                 class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
@@ -136,15 +130,13 @@
                 <span>Cerrar Sesión</span>
             </button>
         </div>
-
     </aside>
-    <!-- Main Content -->
+
     <div class="main-content min-h-screen">
-        <!-- Header -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
+        <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-4 flex-1">
-                    <button class="sidebar-toggle text-gray-600 dark:text-gray-300 hover:text-[#00AF00] transition-colors" id="menuToggle">
+                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
                     <div class="relative flex-1 max-w-xl">
@@ -155,7 +147,6 @@
                             onkeyup="if(event.key === 'Enter') handleTransferSearchButton()">
                     </div>
                 </div>
-
                 <div class="flex items-center gap-4">
                     <button onclick="showNewTransferModal()"
                         class="bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
@@ -166,24 +157,22 @@
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
 
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-                        onclick="window.location.href='/superadmin/info-me'">
+                        onclick="window.location.href='/warehouse/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
                         <div class="hidden sm:block">
-                            <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm" id="headerUserName"></div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400" id="headerUserRole"></div>
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500" id="headerUserRole"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Transfers Management Content -->
         <main class="p-6">
-            <!-- Header Section -->
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">Gestión de Transferencias</h1>
-                    <p class="text-gray-600 dark:text-gray-400" id="transferWelcomeMessage">Administración y control de transferencias de inventario entre ubicaciones</p>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-1">Transferencias - Warehouse</h1>
+                    <p class="text-gray-600" id="transferWelcomeMessage">Administración de transferencias del warehouse</p>
                 </div>
                 <button onclick="loadTransfersData()"
                     class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
@@ -198,42 +187,12 @@
                 <div class="stat-card animate-pulse">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-16"></div>
+                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                            <div class="h-8 bg-gray-200 rounded w-16"></div>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
-                </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2"></div>
-                            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
-                        </div>
-                        <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    </div>
-                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-28"></div>
-                </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mb-2"></div>
-                            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
-                        </div>
-                        <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    </div>
-                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
-                </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20 mb-2"></div>
-                            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
-                        </div>
-                        <div class="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    </div>
-                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                    <div class="h-3 bg-gray-200 rounded w-32"></div>
                 </div>
             </div>
 
@@ -249,63 +208,42 @@
 
             <!-- Transfers Content -->
             <div class="stat-card" id="transferTableContainer">
-                <!-- Dynamic content loaded by JavaScript -->
+                <div class="animate-pulse">
+                    <div class="h-4 bg-gray-200 rounded w-full mb-4"></div>
+                    <div class="space-y-3">
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                        <div class="h-4 bg-gray-200 rounded w-full"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Pagination -->
             <div class="flex items-center justify-between mt-6" id="paginationContainer">
-                <!-- Loading State -->
-                <div class="animate-pulse">
-                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
-                </div>
-                <div class="flex gap-2 animate-pulse">
-                    <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded w-10"></div>
-                    <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded w-10"></div>
-                    <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded w-10"></div>
-                    <div class="h-10 bg-gray-200 dark:bg-gray-700 rounded w-10"></div>
-                </div>
+                <!-- Dynamic content loaded by JavaScript -->
             </div>
         </main>
     </div>
 
-    <script src="../../js/dashboard.js"></script>
-    <script src="../../js/inactivity-monitor.js"></script>
-    <!-- Transfers Module Scripts -->
-    <script src="../../js/transfers/transfers-data.js"></script>
-    <script src="../../js/transfers/transfers-api.js"></script>
-    <script src="../../js/transfers/transfers-filters.js"></script>
-    <script src="../../js/transfers/transfers-ui.js"></script>
-    <script src="../../js/transfers/transfers-modals.js"></script>
-    <script src="../../js/transfers/transfers-forms.js"></script>
-    <script src="../../js/transfers/transfers.js"></script>
-    <script src="../../js/notifications-bell.js"></script>
-
     <style>
-        /* Adjust main content margin to account for fixed sidebar */
         .main-content {
             margin-left: 280px;
             transition: margin-left 0.3s ease;
         }
-
-        /* Responsive adjustments */
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
             }
-
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
             }
-
             .sidebar.active {
                 transform: translateX(0);
             }
-
             .overlay {
                 display: none;
             }
-
             .overlay.active {
                 display: block;
             }
@@ -313,60 +251,26 @@
     </style>
 
     <script>
-        // Handle sidebar click with debounce
         function handleSidebarClick(event, link) {
             if (link === '#') {
                 event.preventDefault();
                 return;
             }
-
-            // Prevent default to avoid immediate navigation
             event.preventDefault();
-
-            // Close sidebar on mobile after click
             if (window.innerWidth <= 1024) {
                 const sidebar = document.getElementById('sidebar');
                 const overlay = document.getElementById('overlay');
                 if (sidebar) sidebar.classList.remove('active');
                 if (overlay) overlay.classList.remove('active');
             }
-
-            // Navigate to the link with debounce
             if (link.startsWith('/')) {
                 if (typeof debouncedNavigate === 'function') {
                     debouncedNavigate(link);
                 } else {
-                    // Fallback if debouncedNavigate is not available
                     window.location.href = link;
                 }
             }
         }
-
-        // Setup mobile menu toggle
-        function setupMobileMenuToggle() {
-            const menuToggle = document.getElementById('menuToggle');
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-
-            if (menuToggle && sidebar && overlay) {
-                menuToggle.addEventListener('click', function () {
-                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
-
-                    if (isHidden) {
-                        sidebar.style.transform = 'translateX(0)';
-                        overlay.style.display = 'block';
-                    } else {
-                        sidebar.style.transform = 'translateX(-100%)';
-                        overlay.style.display = 'none';
-                    }
-                });
-            }
-        }
-
-        // Initialize mobile menu toggle when DOM is ready
-        document.addEventListener('DOMContentLoaded', function () {
-            setupMobileMenuToggle();
-        });
 
         // Logout function - shows confirmation modal
         function logout() {
@@ -390,9 +294,80 @@
             window.location.href = '/';
         }
 
-        // Initialize transfers page
-        document.addEventListener('DOMContentLoaded', function() {
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+                    if (isHidden) {
+                        sidebar.style.transform = 'translateX(0)';
+                        overlay.style.display = 'block';
+                    } else {
+                        sidebar.style.transform = 'translateX(-100%)';
+                        overlay.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) throw new Error('No authentication token found');
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                updateHeaderUserInfo({
+                    fullName: 'Admin Warehouse',
+                    role: 'WAREHOUSE',
+                    email: 'warehouse@sena.edu.co'
+                });
+            }
+        }
+
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Warehouse';
+            if (headerUserRole) headerUserRole.textContent = userData.role || 'WAREHOUSE';
+            if (headerUserAvatar) {
+                if (userData.imgUrl) {
+                    const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
+                    headerUserAvatar.innerHTML = `
+                        <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
+                            <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
+                                <div class="image-loading-spinner"></div>
+                            </div>
+                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Warehouse'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                                 id="img-${uniqueId}"
+                                 onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
+                                 onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
+                        </div>
+                    `;
+                } else {
+                    headerUserAvatar.textContent = (userData.fullName || 'Admin Warehouse').charAt(0).toUpperCase();
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
+            loadCurrentUserInfo();
             
             // Get inventory ID from URL if available
             const urlParams = new URLSearchParams(window.location.search);
@@ -409,35 +384,19 @@
         });
     </script>
 
-    <!-- Logout Confirmation Modal -->
-    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
-        style="z-index: 9999;">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Confirmar Cierre de Sesión</h2>
-                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-
-            <div class="text-center mb-6">
-                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">¿Está seguro que desea cerrar sesión?</h3>
-                <p class="text-gray-600 dark:text-gray-400">Será redirigido a la página de inicio de sesión.</p>
-            </div>
-
-            <div class="flex gap-3">
-                <button onclick="closeLogoutModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    Cancelar
-                </button>
-                <button onclick="confirmLogout()"
-                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                    Cerrar Sesión
-                </button>
-            </div>
-        </div>
-    </div>
+    <script src="../../js/inactivity-monitor.js"></script>
+    <script src="../../js/websocket-client.js"></script>
+    <script src="../../js/notifications-bell.js"></script>
+    <!-- Transfers Module Scripts -->
+    <script src="../../js/transfers/transfers-data.js"></script>
+    <script src="../../js/transfers/transfers-api.js"></script>
+    <script src="../../js/transfers/transfers-filters.js"></script>
+    <script src="../../js/transfers/transfers-ui.js"></script>
+    <script src="../../js/transfers/transfers-modals.js"></script>
+    <script src="../../js/transfers/transfers-forms.js"></script>
+    <script src="../../js/transfers/transfers.js"></script>
+    <!-- Warehouse specific transfers functionality -->
+    <script src="../../js/transfers/transfers-admin-institution.js"></script>
 
     <!-- New Transfer Modal -->
     <div id="newTransferModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
@@ -494,6 +453,36 @@
             <form id="approveTransferForm" class="space-y-4">
                 <!-- Form fields will be loaded dynamically -->
             </form>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600 dark:text-gray-400">Será redirigido a la página de inicio de sesión.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeLogoutModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmLogout()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
         </div>
     </div>
 </body>

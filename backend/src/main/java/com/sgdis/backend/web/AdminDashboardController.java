@@ -291,7 +291,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseBody
     public ResponseEntity<Resource> superadminLoansManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/loans/loans.html");
+        Resource resource = new ClassPathResource("static/views/loans/loans-superadmin.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -305,7 +305,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseBody
     public ResponseEntity<Resource> superadminTransfers() throws IOException {
-        Resource resource = new ClassPathResource("static/views/transfers/transfers.html");
+        Resource resource = new ClassPathResource("static/views/transfers/transfers-superadmin.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -642,6 +642,20 @@ public class AdminDashboardController {
     @ResponseBody
     public ResponseEntity<Resource> warehouseLoans() throws IOException {
         Resource resource = new ClassPathResource("static/views/loans/loans-warehouse.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/warehouse/transfers")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseTransfers() throws IOException {
+        Resource resource = new ClassPathResource("static/views/transfers/transfers-warehouse.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

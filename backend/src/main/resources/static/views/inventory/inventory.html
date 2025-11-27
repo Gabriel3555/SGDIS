@@ -45,8 +45,8 @@
             const path = window.location.pathname;
             const isUserRoute = path.includes('/user/') || 
                                path.includes('/dashboard/user') || 
-                               path === '/info-me' ||
-                               path.includes('/info-me');
+                               path === '/superadmin/info-me' ||
+                               path.includes('/superadmin/info-me');
             
             if (isUserRoute) {
                 function buildUserSidebarHTML(currentPath) {
@@ -81,8 +81,8 @@
                             <i class="fas fa-exchange-alt text-lg"></i>
                             <span class="font-medium">Transferencias</span>
                         </a>
-                        <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/info-me' ? 'active' : ''}"
-                            onclick="handleSidebarClick(event, '/info-me')">
+                        <a href="/superadmin/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/superadmin/info-me' ? 'active' : ''}"
+                            onclick="handleSidebarClick(event, '/superadmin/info-me')">
                             <i class="fas fa-user-circle text-lg"></i>
                             <span class="font-medium">Mi Perfil</span>
                         </a>`;
@@ -198,8 +198,8 @@
                 <i class="fas fa-sliders-h text-lg"></i>
                 <span class="font-medium">Configuración</span>
             </a>
-            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/info-me')">
+            <a href="/superadmin/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/info-me')">
                 <i class="fas fa-user-circle text-lg"></i>
                 <span class="font-medium">Mi Perfil</span>
             </a>
@@ -241,7 +241,7 @@
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
 
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-                        onclick="window.location.href='/info-me'">
+                        onclick="window.location.href='/superadmin/info-me'">
                         <div class="user-avatar" id="headerUserAvatar"></div>
                         <div class="hidden sm:block">
                             <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
