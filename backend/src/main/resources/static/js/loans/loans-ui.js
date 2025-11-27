@@ -202,21 +202,21 @@ function updateUserLoansStats() {
     const statsContainer = document.getElementById('loansStatsContainer');
     if (!statsContainer) return;
 
-    // Use filteredLoans if available, otherwise use loans
-    const allLoans = (loansData.filteredLoans && loansData.filteredLoans.length > 0) ? loansData.filteredLoans : (loansData.loans || []);
-    const activeLoans = allLoans.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
-    const returnedLoans = allLoans.filter(loan => loan.returned === true);
+    // Always use the complete loans data (not filtered) for statistics
+    // Loans received by user (where user is responsible)
+    const allLoansReceived = loansData.loans || [];
+    const activeLoansReceived = allLoansReceived.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
+    const returnedLoansReceived = allLoansReceived.filter(loan => loan.returned === true);
     
-    // Loans made by user
-    const allLoansMade = (loansData.filteredLoansMade && loansData.filteredLoansMade.length > 0) ? loansData.filteredLoansMade : (loansData.loansMade || []);
-    const activeLoansMade = allLoansMade.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
+    // Loans made by user (where user is lender)
+    const allLoansMade = loansData.loansMade || [];
 
     statsContainer.innerHTML = `
         <div class="stat-card bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border border-yellow-200 dark:border-yellow-800">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-sm text-yellow-600 dark:text-yellow-400 font-medium mb-1">Préstamos Activos</p>
-                    <p class="text-3xl font-bold text-yellow-800 dark:text-yellow-300">${activeLoans.length}</p>
+                    <p class="text-3xl font-bold text-yellow-800 dark:text-yellow-300">${activeLoansReceived.length}</p>
                 </div>
                 <div class="w-12 h-12 bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center">
                     <i class="fas fa-clock text-white text-xl"></i>
@@ -229,7 +229,7 @@ function updateUserLoansStats() {
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-sm text-green-600 dark:text-green-400 font-medium mb-1">Préstamos Devueltos</p>
-                    <p class="text-3xl font-bold text-green-800 dark:text-green-300">${returnedLoans.length}</p>
+                    <p class="text-3xl font-bold text-green-800 dark:text-green-300">${returnedLoansReceived.length}</p>
                 </div>
                 <div class="w-12 h-12 bg-green-500 dark:bg-green-600 rounded-full flex items-center justify-center">
                     <i class="fas fa-check-circle text-white text-xl"></i>
@@ -255,7 +255,7 @@ function updateUserLoansStats() {
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">Total Préstamos</p>
-                    <p class="text-3xl font-bold text-blue-800 dark:text-blue-300">${allLoans.length}</p>
+                    <p class="text-3xl font-bold text-blue-800 dark:text-blue-300">${allLoansReceived.length}</p>
                 </div>
                 <div class="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-full flex items-center justify-center">
                     <i class="fas fa-list text-white text-xl"></i>

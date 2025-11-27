@@ -10,7 +10,7 @@ public class UserHasAssignedInventoriesException extends DomainConflictException
     
     public UserHasAssignedInventoriesException(Long userId, int ownedCount, int managedCount) {
         super(String.format("No se puede eliminar el usuario con ID %d porque tiene %d inventario(s) como propietario " +
-                "y %d inventario(s) como gestor. Transfiere la propiedad y gestión de los inventarios a otro usuario antes de eliminarlo.", 
+                "y %d inventario(s) como manager. Transfiere la propiedad y gestión de los inventarios a otro usuario antes de eliminarlo.",
                 userId, ownedCount, managedCount));
     }
 }
