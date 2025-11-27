@@ -409,7 +409,7 @@ function handleEvidenceCameraChange(index, file) {
         return;
     }
     
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe (under 5MB limit)
     
     // Check if file is an image
     if (!file.type.startsWith('image/')) {
@@ -430,13 +430,26 @@ function handleEvidenceCameraChange(index, file) {
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
+            const MAX_WIDTH = 1600;
+            const MAX_HEIGHT = 1600;
             let currentWidth = img.width;
             let currentHeight = img.height;
             
-            // Function to compress with progressive quality and size reduction
+            // Reduce dimensions immediately if too large
+            if (currentWidth > MAX_WIDTH || currentHeight > MAX_HEIGHT) {
+                if (currentWidth > currentHeight) {
+                    currentHeight = Math.round((currentHeight * MAX_WIDTH) / currentWidth);
+                    currentWidth = MAX_WIDTH;
+                } else {
+                    currentWidth = Math.round((currentWidth * MAX_HEIGHT) / currentHeight);
+                    currentHeight = MAX_HEIGHT;
+                }
+            }
+            
+            // Function to compress with aggressive quality and size reduction
             const compressImage = function(quality, width, height, attempt = 0) {
                 // Limit attempts to prevent infinite loop
-                if (attempt > 10) {
+                if (attempt > 15) {
                     showInventoryErrorToast('Imagen muy pesada', `La imagen para ${batchVerificationState.scannedItems[index].licencePlate} es demasiado pesada incluso después de comprimir. Por favor, intenta con otra foto.`);
                     return;
                 }
@@ -463,18 +476,32 @@ function handleEvidenceCameraChange(index, file) {
                         return;
                     }
                     
-                    // File is still too large, try with lower quality
-                    if (quality > 0.3) {
-                        // Reduce quality
-                        compressImage(Math.max(0.3, quality - 0.1), width, height, attempt + 1);
+                    // File is still too large, try with lower quality first
+                    if (quality > 0.4) {
+                        // Reduce quality more aggressively
+                        compressImage(Math.max(0.4, quality - 0.15), width, height, attempt + 1);
                         return;
                     }
                     
-                    // Quality is already at minimum, try reducing dimensions
-                    if (width > 640 || height > 640) {
-                        const newWidth = Math.floor(width * 0.8);
-                        const newHeight = Math.floor(height * 0.8);
+                    // Quality is already low, try reducing dimensions
+                    if (width > 800 || height > 800) {
+                        const newWidth = Math.floor(width * 0.7); // Reduce 30% at a time
+                        const newHeight = Math.floor(height * 0.7);
                         compressImage(0.5, newWidth, newHeight, attempt + 1);
+                        return;
+                    }
+                    
+                    // If still too large at small dimensions, try even lower quality
+                    if (quality > 0.3) {
+                        compressImage(0.3, width, height, attempt + 1);
+                        return;
+                    }
+                    
+                    // Last resort: reduce dimensions even more
+                    if (width > 600 || height > 600) {
+                        const newWidth = Math.floor(width * 0.6);
+                        const newHeight = Math.floor(height * 0.6);
+                        compressImage(0.3, newWidth, newHeight, attempt + 1);
                         return;
                     }
                     
@@ -483,8 +510,8 @@ function handleEvidenceCameraChange(index, file) {
                 }, 'image/jpeg', quality);
             };
             
-            // Start compression with initial quality of 0.8
-            compressImage(0.8, currentWidth, currentHeight, 0);
+            // Start compression with lower initial quality (0.6)
+            compressImage(0.6, currentWidth, currentHeight, 0);
         };
         img.onerror = function() {
             showInventoryErrorToast('Error', 'No se pudo cargar la imagen');
