@@ -427,10 +427,28 @@
             }
         }
 
+        // Scroll to active sidebar item
+        function scrollToActiveSidebarItem() {
+            const sidebarNav = document.querySelector('#sidebar nav');
+            if (sidebarNav) {
+                const activeItem = sidebarNav.querySelector('.sidebar-item.active');
+                if (activeItem) {
+                    setTimeout(() => {
+                        activeItem.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }, 100);
+                }
+            }
+        }
+
         // Initialize when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
             loadCurrentUserInfo();
+            scrollToActiveSidebarItem();
         });
     </script>
 
