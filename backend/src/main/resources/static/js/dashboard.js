@@ -159,25 +159,82 @@ document.addEventListener("DOMContentLoaded", async function () {
 
 function rewriteAdminInstitutionSidebarLinks() {
   const path = window.location.pathname || "";
-  if (!path.includes("/admininstitution")) {
+  const isAdminInstitution = path.includes("/admininstitution") || path.includes("/admin_institution");
+  
+  if (!isAdminInstitution) {
     return;
   }
 
-  const links = document.querySelectorAll("a.sidebar-item");
-  links.forEach((link) => {
-    const href = link.getAttribute("href");
-    if (href && href.startsWith("/superadmin")) {
-      link.setAttribute("href", href.replace("/superadmin", "/admininstitution"));
-    }
+  function hideCentersLink() {
+    // Multiple ways to find and hide the Centros link
+    const links = document.querySelectorAll("a.sidebar-item");
+    links.forEach((link) => {
+      const href = link.getAttribute("href") || "";
+      const linkText = link.textContent.trim().toLowerCase();
+      const span = link.querySelector("span.font-medium");
+      const spanText = span ? span.textContent.trim().toLowerCase() : "";
+      
+      // Hide "Centros" link for admin_institution - multiple checks
+      if (href.includes("/centers") || 
+          linkText === "centros" || 
+          spanText === "centros" ||
+          (href.includes("centers") && (linkText.includes("centro") || spanText.includes("centro")))) {
+        link.style.display = 'none';
+        link.style.visibility = 'hidden';
+        link.style.opacity = '0';
+        link.style.height = '0';
+        link.style.margin = '0';
+        link.style.padding = '0';
+        link.setAttribute('hidden', 'true');
+        link.remove();
+        return;
+      }
+      
+      if (href && href.startsWith("/superadmin")) {
+        const basePath = path.includes("/admin_institution") ? "/admin_institution" : "/admininstitution";
+        link.setAttribute("href", href.replace("/superadmin", basePath));
+      }
 
-    const onclickValue = link.getAttribute("onclick");
-    if (onclickValue && onclickValue.includes("'/superadmin")) {
-      link.setAttribute(
-        "onclick",
-        onclickValue.replace(/'\/superadmin/g, "'/admininstitution")
-      );
-    }
-  });
+      const onclickValue = link.getAttribute("onclick");
+      if (onclickValue && onclickValue.includes("'/superadmin")) {
+        const basePath = path.includes("/admin_institution") ? "/admin_institution" : "/admininstitution";
+        link.setAttribute(
+          "onclick",
+          onclickValue.replace(/'\/superadmin/g, `'${basePath}`)
+        );
+      }
+    });
+    
+    // Also try to hide using CSS selector
+    const centersLinks = document.querySelectorAll('a[href*="/centers"], a[href*="centers"]');
+    centersLinks.forEach(link => {
+      const linkText = link.textContent.trim().toLowerCase();
+      if (linkText.includes('centro')) {
+        link.style.display = 'none';
+        link.remove();
+      }
+    });
+  }
+
+  // Execute immediately and multiple times to catch dynamically loaded content
+  hideCentersLink();
+  setTimeout(hideCentersLink, 10);
+  setTimeout(hideCentersLink, 50);
+  setTimeout(hideCentersLink, 100);
+  setTimeout(hideCentersLink, 300);
+  setTimeout(hideCentersLink, 500);
+  setTimeout(hideCentersLink, 1000);
+  
+  // Also use MutationObserver to catch any DOM changes
+  if (typeof MutationObserver !== 'undefined') {
+    const observer = new MutationObserver(function(mutations) {
+      hideCentersLink();
+    });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
 }
 
 function rewriteAdminRegionalSidebarLinks() {

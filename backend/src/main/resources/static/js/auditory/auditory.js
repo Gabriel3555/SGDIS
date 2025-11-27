@@ -18,7 +18,41 @@ async function loadAuditories(page = 0) {
         auditoryData.isLoading = true;
         showLoadingState();
 
-        const response = await fetch(`/api/v1/auditories?page=${page}&size=${auditoryData.pageSize}`, {
+        // Determine endpoint based on user role
+        let endpoint = `/api/v1/auditories?page=${page}&size=${auditoryData.pageSize}`;
+        
+        try {
+            const userResponse = await fetch('/api/v1/users/me', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                const currentRole = userData.role || '';
+                const institutionId = userData.institution?.id || userData.institutionId;
+                
+                if (currentRole === 'ADMIN_INSTITUTION') {
+                    // Use institution endpoint for ADMIN_INSTITUTION (gets institution from current user)
+                    endpoint = `/api/v1/auditories/institution?page=${page}&size=${auditoryData.pageSize}`;
+                } else if (currentRole === 'ADMIN_REGIONAL') {
+                    // For ADMIN_REGIONAL, use regional endpoint
+                    const regionalId = userData.institution?.regional?.id || userData.regional?.id || userData.regionalId;
+                    if (regionalId) {
+                        endpoint = `/api/v1/auditories/regional/${regionalId}?page=${page}&size=${auditoryData.pageSize}`;
+                    }
+                }
+                // For SUPERADMIN, use default endpoint (all auditories)
+            }
+        } catch (userError) {
+            console.error('Error checking user role:', userError);
+            // Continue with default endpoint if user check fails
+        }
+
+        const response = await fetch(endpoint, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -88,7 +122,7 @@ function displayAuditories(auditories) {
     if (auditories.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="py-8 text-center text-gray-500">
+                <td colspan="3" class="py-8 text-center text-gray-500">
                     No hay registros de auditoría disponibles
                 </td>
             </tr>
@@ -123,8 +157,6 @@ function displayAuditories(auditories) {
                     </div>
                 </td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${escapeHtml(auditory.action || 'N/A')}</td>
-                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${auditory.institutionName ? escapeHtml(auditory.institutionName) : 'N/A'}</td>
-                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${auditory.regionalName ? escapeHtml(auditory.regionalName) : 'N/A'}</td>
             </tr>
         `;
     }).join('');
@@ -175,7 +207,7 @@ function showLoadingState() {
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="py-8 text-center">
+                <td colspan="3" class="py-8 text-center">
                     <div class="flex flex-col items-center gap-2">
                         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                         <span class="text-gray-500">Cargando registros...</span>
@@ -215,7 +247,7 @@ function showErrorState(message) {
     if (tbody) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="py-8 text-center text-red-500">
+                <td colspan="3" class="py-8 text-center text-red-500">
                     <div class="flex flex-col items-center gap-2">
                         <i class="fas fa-exclamation-circle text-2xl"></i>
                         <span>${escapeHtml(message)}</span>
