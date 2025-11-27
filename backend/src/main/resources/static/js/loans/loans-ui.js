@@ -579,61 +579,80 @@ function switchUserLoansTab(tab) {
     updateUserLoansContent();
 }
 
-// Show return loan modal
+// Show return loan modal (for USER role)
 function showReturnLoanModal(loanId) {
-    const modal = document.getElementById('returnLoanModal');
-    if (!modal) {
-        console.error('Return loan modal not found');
+    // Check if user is USER role - only allow for USER role
+    const isUserRole = window.loansData && window.loansData.userRole === 'USER';
+    if (!isUserRole) {
+        console.warn('showReturnLoanModal should only be called for USER role');
         return;
     }
 
-    // Store loan ID in modal
-    modal.setAttribute('data-loan-id', loanId);
+    const modal = document.getElementById('returnItemModal');
+    if (!modal) {
+        console.error('Return item modal not found');
+        return;
+    }
+
+    // Set loan ID in the hidden input
+    const loanIdInput = document.getElementById('returnLoanId');
+    if (loanIdInput) {
+        loanIdInput.value = loanId;
+    }
 
     // Reset form
-    const form = document.getElementById('returnLoanForm');
-    if (form) {
-        form.reset();
+    const detailsTextarea = document.getElementById('returnDetails');
+    if (detailsTextarea) {
+        detailsTextarea.value = '';
     }
 
     modal.classList.remove('hidden');
 }
 
-// Close return loan modal
+// Close return loan modal (for USER role)
 function closeReturnLoanModal() {
-    const modal = document.getElementById('returnLoanModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-    const form = document.getElementById('returnLoanForm');
-    if (form) {
-        form.reset();
-    }
-}
-
-// Handle return loan form submission
-async function handleReturnLoanSubmit(e) {
-    e.preventDefault();
-
-    const modal = document.getElementById('returnLoanModal');
-    if (!modal) return;
-
-    const loanId = modal.getAttribute('data-loan-id');
-    if (!loanId) {
-        if (window.showErrorToast) {
-            window.showErrorToast('Error', 'No se pudo identificar el préstamo');
-        }
+    // Check if user is USER role
+    const isUserRole = window.loansData && window.loansData.userRole === 'USER';
+    if (!isUserRole) {
         return;
     }
 
-    const detailsReturn = document.getElementById('returnLoanDetails')?.value?.trim() || '';
+    const modal = document.getElementById('returnItemModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    // Reset form
+    const loanIdInput = document.getElementById('returnLoanId');
+    if (loanIdInput) {
+        loanIdInput.value = '';
+    }
+    
+    const detailsTextarea = document.getElementById('returnDetails');
+    if (detailsTextarea) {
+        detailsTextarea.value = '';
+    }
+}
 
-    try {
-        await returnLoanItem(loanId, detailsReturn);
-        closeReturnLoanModal();
-    } catch (error) {
-        console.error('Error returning loan:', error);
-        // Error is already handled in returnLoanItem
+// Handle return loan form submission (for USER role - using existing submitReturnItem from loan-actions.js)
+// This function is kept for compatibility but the form in HTML uses submitReturnItem from loan-actions.js
+async function handleReturnLoanSubmit(e) {
+    e.preventDefault();
+
+    // Check if user is USER role
+    const isUserRole = window.loansData && window.loansData.userRole === 'USER';
+    if (!isUserRole) {
+        return;
+    }
+
+    // Use the existing submitReturnItem function from loan-actions.js
+    if (typeof window.submitReturnItem === 'function') {
+        window.submitReturnItem();
+    } else {
+        console.error('submitReturnItem function not found');
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'Función de devolución no disponible');
+        }
     }
 }
 
@@ -704,11 +723,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize custom selects
     initializeCustomSelects();
     
-    // Setup return loan form handler
-    const returnLoanForm = document.getElementById('returnLoanForm');
-    if (returnLoanForm) {
-        returnLoanForm.addEventListener('submit', handleReturnLoanSubmit);
-    }
+    // For USER role, the return form uses submitReturnItem from loan-actions.js
+    // No need to setup additional handler as the form already has onsubmit="event.preventDefault(); submitReturnItem();"
     
     // Load data after a small delay to ensure all scripts are loaded
     setTimeout(() => {

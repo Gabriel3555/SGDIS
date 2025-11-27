@@ -17,6 +17,7 @@ import com.sgdis.backend.loan.application.port.ReturnItemUseCase;
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository;
 import com.sgdis.backend.loan.mapper.LoanMapper;
+import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 // Auditoría
@@ -114,6 +115,11 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
         }
 
         LoanEntity loanEntity = LoanMapper.toEntity(request, item, user, responsible);
+
+        // For USER role, explicitly set returned = false to ensure it's not returned by default
+        if (user.getRole() != null && user.getRole() == Role.USER) {
+            loanEntity.setReturned(false);
+        }
 
         loanEntity.setItem(item);
         if (item.getLoans() == null) {
