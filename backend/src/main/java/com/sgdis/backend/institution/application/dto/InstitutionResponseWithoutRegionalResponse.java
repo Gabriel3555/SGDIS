@@ -4,6 +4,7 @@ public record InstitutionResponseWithoutRegionalResponse(
         Long id,
         String name,
         String codeInstitution,
-        Long cityId
+        Long cityId,
+        String cityName
 ) {
 }

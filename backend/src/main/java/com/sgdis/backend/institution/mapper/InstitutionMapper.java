@@ -109,11 +109,13 @@ public final class InstitutionMapper {
     }
 
     public static InstitutionResponseWithoutRegionalResponse toInstitutionWithoutRegional(InstitutionEntity entity) {
+        if (entity == null) return null;
         return new InstitutionResponseWithoutRegionalResponse(
                 entity.getId(),
                 entity.getName(),
                 entity.getCodeInstitution(),
-                entity.getCity().getId()
+                entity.getCity() != null ? entity.getCity().getId() : null,
+                entity.getCity() != null ? entity.getCity().getCity() : null
         );
     }
 

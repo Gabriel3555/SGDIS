@@ -667,17 +667,13 @@ function updateSearchAndFilters() {
     
     filterDropdowns = `
       <div class="relative" style="min-width: 280px; flex-shrink: 0;">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          <i class="fas fa-building mr-2 text-[#00AF00]"></i>
-          Filtrar por Centro de Formación
-        </label>
         <select id="inventoryInstitutionFilterSelect" 
                 onchange="if(typeof handleInstitutionFilterChange === 'function') handleInstitutionFilterChange(this.value)"
-                class="w-full px-4 py-3 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md appearance-none">
+                class="w-full px-4 h-12 pr-10 border-2 border-gray-200 text-gray-700 rounded-xl hover:border-[#00AF00] focus:border-[#00AF00] focus:outline-none focus:ring-2 focus:ring-[#00AF00]/20 bg-white transition-all duration-200 shadow-sm hover:shadow-md appearance-none">
           <option value="">Todos los centros</option>
           <!-- Options loaded dynamically -->
         </select>
-        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none mt-7">
+        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
           <i class="fas fa-chevron-down text-[#00AF00] text-sm"></i>
         </div>
         <input type="hidden" id="inventoryInstitutionFilter" name="institution">
@@ -709,11 +705,11 @@ function updateSearchAndFilters() {
   }
 
   container.innerHTML = `
-        <div class="relative flex-1">
-            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-            <input type="text" id="inventorySearch" value="${currentSearchTerm}" placeholder="Buscar inventarios por nombre, ubicación o UUID..." class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] transition-all" oninput="handleInventorySearchInput(event)">
+        <div class="relative flex-1" style="height: 48px;">
+            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 z-10 pointer-events-none"></i>
+            <input type="text" id="inventorySearch" value="${currentSearchTerm}" placeholder="Buscar inventarios por nombre, ubicación o UUID..." class="w-full pl-12 pr-4 h-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] transition-all" oninput="handleInventorySearchInput(event)">
         </div>
-        <div class="flex gap-2 flex-wrap">
+        <div class="flex gap-2 flex-wrap items-end">
             ${filterDropdowns}
         </div>
     `;
