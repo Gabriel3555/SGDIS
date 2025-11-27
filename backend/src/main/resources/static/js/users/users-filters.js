@@ -59,6 +59,12 @@ async function filterUsers() {
             }
 
             let filtered = [...data.users];
+            
+            // For superadmin, exclude all SUPERADMIN users from the start
+            if (isSuperAdmin) {
+                filtered = filtered.filter(user => user && user.role !== 'SUPERADMIN');
+            }
+            
             console.log('Starting with', filtered.length, 'users to filter');
             
             // Load institutions cache if needed for regional/institution filtering

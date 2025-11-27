@@ -139,8 +139,15 @@ async function loadUsers(page = 0) {
                 // Load all users for filtering (set a large page size)
                 url = `/api/v1/users/institution?page=0&size=1000`;
             } else {
-                // Use pagination
-                url = `/api/v1/users/institution?page=${page}&size=${usersData.itemsPerPage}`;
+                // For first page, if we need to exclude current user, request one extra to maintain 6 per page
+                const isFirstPage = page === 0;
+                const shouldExcludeCurrentUser = (usersData.currentLoggedInUserRole === 'SUPERADMIN' || 
+                                                 usersData.currentLoggedInUserRole === 'ADMIN_INSTITUTION') && 
+                                                 usersData.currentLoggedInUserId;
+                const pageSize = (isFirstPage && shouldExcludeCurrentUser) ? 
+                                (usersData.itemsPerPage + 1) : 
+                                usersData.itemsPerPage;
+                url = `/api/v1/users/institution?page=${page}&size=${pageSize}`;
             }
         } else if (isAdminRegional) {
             // Use regional endpoint for ADMIN_REGIONAL
@@ -148,17 +155,31 @@ async function loadUsers(page = 0) {
                 // Load all users for filtering (set a large page size)
                 url = `/api/v1/users/regional?page=0&size=1000`;
             } else {
-                // Use pagination
-                url = `/api/v1/users/regional?page=${page}&size=${usersData.itemsPerPage}`;
+                // For first page, if we need to exclude current user, request one extra to maintain 6 per page
+                const isFirstPage = page === 0;
+                const shouldExcludeCurrentUser = (usersData.currentLoggedInUserRole === 'SUPERADMIN' || 
+                                                 usersData.currentLoggedInUserRole === 'ADMIN_INSTITUTION') && 
+                                                 usersData.currentLoggedInUserId;
+                const pageSize = (isFirstPage && shouldExcludeCurrentUser) ? 
+                                (usersData.itemsPerPage + 1) : 
+                                usersData.itemsPerPage;
+                url = `/api/v1/users/regional?page=${page}&size=${pageSize}`;
             }
         } else {
-            // Use regular endpoint for other roles
+            // Use regular endpoint for other roles (SUPERADMIN)
             if (hasFilters) {
                 // Load all users for filtering (set a large page size)
                 url = `/api/v1/users?page=0&size=1000`;
             } else {
-                // Use pagination
-                url = `/api/v1/users?page=${page}&size=${usersData.itemsPerPage}`;
+                // For first page, if we need to exclude current user, request one extra to maintain 6 per page
+                const isFirstPage = page === 0;
+                const shouldExcludeCurrentUser = (usersData.currentLoggedInUserRole === 'SUPERADMIN' || 
+                                                 usersData.currentLoggedInUserRole === 'ADMIN_INSTITUTION') && 
+                                                 usersData.currentLoggedInUserId;
+                const pageSize = (isFirstPage && shouldExcludeCurrentUser) ? 
+                                (usersData.itemsPerPage + 1) : 
+                                usersData.itemsPerPage;
+                url = `/api/v1/users?page=${page}&size=${pageSize}`;
             }
         }
 
@@ -171,7 +192,14 @@ async function loadUsers(page = 0) {
             const pagedResponse = await response.json();
             
             // Update users data with paginated response
-            usersData.users = Array.isArray(pagedResponse.users) ? pagedResponse.users : [];
+            let loadedUsers = Array.isArray(pagedResponse.users) ? pagedResponse.users : [];
+            
+            // For superadmin, exclude all SUPERADMIN users
+            if (isSuperAdmin) {
+                loadedUsers = loadedUsers.filter(user => user && user.role !== 'SUPERADMIN');
+            }
+            
+            usersData.users = loadedUsers;
             
             if (hasFilters) {
                 // Will be filtered by filterUsers function
@@ -181,8 +209,20 @@ async function loadUsers(page = 0) {
             } else {
                 // Direct backend pagination
                 usersData.filteredUsers = [...usersData.users];
-                usersData.totalPages = pagedResponse.totalPages || 0;
-                usersData.totalUsers = pagedResponse.totalUsers || 0;
+                // For superadmin, we need to adjust totals since we're filtering SUPERADMIN users
+                // The backend still includes SUPERADMIN in totals, so we approximate
+                if (isSuperAdmin) {
+                    // Count how many SUPERADMIN users were in the original response
+                    const originalUsers = Array.isArray(pagedResponse.users) ? pagedResponse.users : [];
+                    const superadminCountInPage = originalUsers.filter(u => u && u.role === 'SUPERADMIN').length;
+                    // Estimate total excluding SUPERADMIN (this is approximate)
+                    const estimatedTotal = Math.max(0, (pagedResponse.totalUsers || 0) - superadminCountInPage);
+                    usersData.totalUsers = estimatedTotal;
+                    usersData.totalPages = Math.ceil(estimatedTotal / usersData.itemsPerPage) || 1;
+                } else {
+                    usersData.totalPages = pagedResponse.totalPages || 0;
+                    usersData.totalUsers = pagedResponse.totalUsers || 0;
+                }
                 usersData.backendPage = pagedResponse.currentPage || 0;
                 usersData.currentPage = (pagedResponse.currentPage || 0) + 1; // Convert to 1-indexed for UI
             }
@@ -195,6 +235,61 @@ async function loadUsers(page = 0) {
         usersData.filteredUsers = [];
         usersData.totalPages = 0;
         usersData.totalUsers = 0;
+    }
+}
+
+/**
+ * Loads an additional user from the next page to fill the gap when current user is excluded
+ */
+async function loadAdditionalUserForFirstPage() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const currentRole = usersData.currentLoggedInUserRole || '';
+        const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+        const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isSuperAdmin = (usersData.currentLoggedInUserRole && usersData.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
+                             (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        
+        let url;
+        if (isAdminInstitution) {
+            url = `/api/v1/users/institution?page=1&size=1`;
+        } else if (isAdminRegional) {
+            url = `/api/v1/users/regional?page=1&size=1`;
+        } else {
+            url = `/api/v1/users?page=1&size=1`;
+        }
+
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const pagedResponse = await response.json();
+            if (pagedResponse.users && pagedResponse.users.length > 0) {
+                const additionalUser = pagedResponse.users[0];
+                const currentUserId = usersData.currentLoggedInUserId;
+                
+                // Only add if it's not the current user
+                if (additionalUser.id !== currentUserId) {
+                    // Add to the end of current users
+                    usersData.users.push(additionalUser);
+                    usersData.filteredUsers.push(additionalUser);
+                    
+                    // Update UI
+                    if (window.updateUsersUI) {
+                        window.updateUsersUI();
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('Could not load additional user:', error);
+        // Silently fail - it's not critical
     }
 }
 
@@ -830,5 +925,6 @@ async function loadUserStatistics() {
 window.loadUserStatistics = loadUserStatistics;
 window.loadUsersData = loadUsersData;
 window.loadUsers = loadUsers;
+window.loadAdditionalUserForFirstPage = loadAdditionalUserForFirstPage;
 window.loadCurrentUserInfo = loadCurrentUserInfo;
 window.updateUsersWelcomeMessage = updateUsersWelcomeMessage;
