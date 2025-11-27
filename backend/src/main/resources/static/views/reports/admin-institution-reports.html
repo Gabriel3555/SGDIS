@@ -443,6 +443,22 @@
             border-color: #334155;
         }
 
+        /* Hide unstyled SVGs that appear incorrectly */
+        svg:not([class]):not([style]) {
+            display: none !important;
+        }
+
+        /* Hide SVGs without proper sizing */
+        svg:not([width]):not([height]):not([viewBox]) {
+            display: none !important;
+        }
+
+        /* Ensure Font Awesome icons are properly sized */
+        .fas, .far, .fal, .fab {
+            display: inline-block;
+            font-size: inherit;
+        }
+
         /* Responsive adjustments */
         @media (max-width: 1024px) {
             .main-content {
