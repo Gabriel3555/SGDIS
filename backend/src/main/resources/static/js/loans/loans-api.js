@@ -1,11 +1,9 @@
 // Load loans data
 async function loadLoansData() {
     if (loansData.isLoading) {
-        console.log('Already loading, skipping...');
         return;
     }
 
-    console.log('Starting loadLoansData');
     loansData.isLoading = true;
     showLoadingState();
 
@@ -29,7 +27,6 @@ async function loadLoansData() {
         // But ensure UI is updated as a fallback
         setTimeout(() => {
             if (typeof updateLoansUI === 'function') {
-                console.log('Fallback: calling updateLoansUI');
                 updateLoansUI();
             }
             // Also update UI for user role and admin_institution
@@ -550,7 +547,6 @@ async function loadLoans() {
             endpoint += `?${paramsString}`;
         }
         
-        console.log('Loading loans from:', endpoint);
         const response = await fetch(endpoint, {
             method: 'GET',
             headers: headers
@@ -569,15 +565,12 @@ async function loadLoans() {
             }
             
             loansData.loans = loans;
-            console.log('Loaded loans:', loansData.loans.length, loans);
             
             // Always initialize filteredLoans with all loans first
             loansData.filteredLoans = [...loansData.loans];
-            console.log('Initialized filteredLoans:', loansData.filteredLoans.length);
             
             // Apply filters immediately - filterLoans should be available by now
             if (typeof window.filterLoans === 'function') {
-                console.log('Calling filterLoans()');
                 window.filterLoans();
             } else {
                 console.warn('filterLoans function not available, updating UI directly');

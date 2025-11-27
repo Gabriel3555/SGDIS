@@ -318,8 +318,6 @@ function initializeInventoryFilterSelects() {
               window.inventoryInstitutionFilterSelect.setDisabled(false);
             }
           }
-          
-          console.log('CustomSelect institution initialized successfully');
         } catch (error) {
           console.error('Error initializing institution CustomSelect:', error);
         }
