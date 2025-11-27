@@ -6,12 +6,15 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
+import java.util.Collection;
 
 @Hidden
 @Controller
@@ -160,8 +163,62 @@ public class AdminDashboardController {
     @GetMapping("/info-me")
     @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION', 'WAREHOUSE', 'USER')")
     @ResponseBody
-    public ResponseEntity<Resource> userProfile() throws IOException {
+    public ResponseEntity<Resource> userProfile(Authentication authentication) throws IOException {
+        // Check user role and serve appropriate file
+        if (authentication != null) {
+            Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+            boolean isAdminInstitution = authorities.stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN_INSTITUTION"));
+            boolean isAdminRegional = authorities.stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN_REGIONAL"));
+            
+            if (isAdminInstitution) {
+                Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-institution.html");
+                if (resource.exists()) {
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.TEXT_HTML)
+                            .body(resource);
+                }
+            } else if (isAdminRegional) {
+                Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-regional.html");
+                if (resource.exists()) {
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.TEXT_HTML)
+                            .body(resource);
+                }
+            }
+        }
+        
+        // Default to generic info-me.html for other roles
         Resource resource = new ClassPathResource("static/views/info-me/info-me.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/info-me")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalInfoMe() throws IOException {
+        Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping({"/admin_institution/info-me", "/admininstitution/info-me"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionInfoMe() throws IOException {
+        Resource resource = new ClassPathResource("static/views/info-me/info-me-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -315,7 +372,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionTransfers() throws IOException {
-        Resource resource = new ClassPathResource("static/views/transfers/transfers.html");
+        Resource resource = new ClassPathResource("static/views/transfers/transfers-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -329,7 +386,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionLoans() throws IOException {
-        Resource resource = new ClassPathResource("static/views/loans/loans.html");
+        Resource resource = new ClassPathResource("static/views/loans/loans-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -343,7 +400,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionAuditory() throws IOException {
-        Resource resource = new ClassPathResource("static/views/auditory/auditory.html");
+        Resource resource = new ClassPathResource("static/views/auditory/auditory-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -357,7 +414,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionNotifications() throws IOException {
-        Resource resource = new ClassPathResource("static/views/notifications/notifications.html");
+        Resource resource = new ClassPathResource("static/views/notifications/notifications-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -371,7 +428,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionImportExport() throws IOException {
-        Resource resource = new ClassPathResource("static/views/import-export/import-export.html");
+        Resource resource = new ClassPathResource("static/views/import-export/imports-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
@@ -525,7 +582,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
     @ResponseBody
     public ResponseEntity<Resource> adminInstitutionConfiguration() throws IOException {
-        Resource resource = new ClassPathResource("static/views/configuration/configuration.html");
+        Resource resource = new ClassPathResource("static/views/configuration/configuration-admin-institution.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
