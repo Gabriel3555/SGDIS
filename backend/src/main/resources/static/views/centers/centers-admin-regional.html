@@ -313,6 +313,49 @@
         });
     </script>
 
+    <!-- Edit Center Modal -->
+    <div id="editCenterModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4" style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-2xl w-full mx-4 my-8 shadow-xl">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Editar Centro</h2>
+                <button onclick="closeEditCenterModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+            <form id="editCenterForm" onsubmit="handleUpdateCenter(event)">
+                <input type="hidden" id="editCenterId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nombre del Centro *</label>
+                        <input type="text" id="editCenterName" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-transparent dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Código del Centro *</label>
+                        <input type="text" id="editCenterCode" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-transparent dark:bg-gray-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Regional</label>
+                        <input type="text" id="editCenterRegional" readonly class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-100 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Ciudad *</label>
+                        <select id="editCenterCity" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-transparent dark:bg-gray-700 dark:text-white">
+                            <option value="">Seleccione una ciudad</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" onclick="closeEditCenterModal()" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Actualizar Centro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="../../js/inactivity-monitor.js"></script>
     <script src="../../js/websocket-client.js"></script>
     <script src="../../js/notifications-bell.js"></script>
