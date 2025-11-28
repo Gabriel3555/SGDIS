@@ -459,33 +459,54 @@
             <!-- Charts Row -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Chart: Usuarios por Rol -->
-                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-chart-pie text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Usuarios por Rol</h2>
+                <div class="chart-container bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg p-6 border border-blue-100 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-blue-200">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-users text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Usuarios por Rol</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Distribución de usuarios en el sistema</p>
+                        </div>
                     </div>
-                    <canvas id="usersByRoleChart" height="250"></canvas>
+                    <div class="relative h-64">
+                        <canvas id="usersByRoleChart"></canvas>
+                    </div>
                 </div>
 
                 <!-- Chart: Mapa de Calor de Actividad por Regionales -->
-                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-fire text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Mapa de Calor de Actividad por Regionales</h2>
+                <div class="chart-container bg-gradient-to-br from-white to-orange-50 rounded-2xl shadow-lg p-6 border border-orange-100 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-orange-200">
+                        <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-fire text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Mapa de Calor de Actividad por Regionales</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Actividad registrada por regional</p>
+                        </div>
                     </div>
-                    <canvas id="activityHeatmapByRegionalChart" height="250"></canvas>
+                    <div class="relative h-64">
+                        <canvas id="activityHeatmapByRegionalChart"></canvas>
+                    </div>
                 </div>
             </div>
 
             <!-- Charts Row 2 -->
             <div class="grid grid-cols-1 gap-6 mb-6">
                 <!-- Chart: Valores de Inventario por Regionales -->
-                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-chart-bar text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Valores de Inventario por Regionales</h2>
+                <div class="chart-container bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg p-6 border border-purple-100 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-purple-200">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-chart-bar text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Valores de Inventario por Regionales</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Valor total de inventarios por regional</p>
+                        </div>
                     </div>
-                    <canvas id="inventoryValueByRegionalChart" height="250"></canvas>
+                    <div class="relative h-64">
+                        <canvas id="inventoryValueByRegionalChart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -545,49 +566,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Quick Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-md p-6 border border-green-200">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
-                        <div>
-                            <div class="text-sm text-gray-600">Sistema</div>
-                            <div class="text-xl font-bold text-gray-800">Operativo</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-md p-6 border border-blue-200">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-server text-blue-600 text-2xl"></i>
-                        <div>
-                            <div class="text-sm text-gray-600">APIs</div>
-                            <div class="text-xl font-bold text-gray-800" id="apiStatus">-</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-md p-6 border border-purple-200">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-database text-purple-600 text-2xl"></i>
-                        <div>
-                            <div class="text-sm text-gray-600">Base de Datos</div>
-                            <div class="text-xl font-bold text-gray-800">Conectada</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-md p-6 border border-orange-200">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-sync-alt text-orange-600 text-2xl"></i>
-                        <div>
-                            <div class="text-sm text-gray-600">Última actualización</div>
-                            <div class="text-lg font-bold text-gray-800" id="lastUpdate">-</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
 
@@ -598,6 +576,7 @@
 
     <!-- Application Scripts -->
     <!-- dashboard.js removed - superadmin has its own inline JavaScript -->
+    <script src="../../../js/dark-mode.js"></script>
     <script src="../../../js/inactivity-monitor.js"></script>
     <script src="../../../js/websocket-client.js"></script>
     <script src="../../../js/notification-sound.js"></script>
@@ -644,9 +623,46 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
 
+        /* Image loading spinner */
+        .image-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 175, 0, 0.2);
+            border-top-color: #00AF00;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         /* Chart container styles */
-        canvas {
-            max-height: 250px;
+        .chart-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-container canvas {
+            max-height: 100%;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(0, 175, 0, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-container:hover::before {
+            opacity: 1;
         }
 
         /* Responsive grid adjustments */
@@ -944,6 +960,15 @@
             loadCurrentUserInfo(); // Load user info for header
             scrollToActiveSidebarItem(); // Scroll to active sidebar item
             loadDashboardData(); // Load all dashboard data
+
+            // Listen for theme changes and update charts
+            document.addEventListener('themeChanged', function(event) {
+                console.log('Theme changed to dark mode:', event.detail.isDarkMode);
+                // Reinitialize charts with new theme colors
+                if (Object.keys(superadminDashboardData.charts).length > 0) {
+                    initializeCharts();
+                }
+            });
             
             // Hide Centros for admin_institution - execute after DOM is ready
             const path = window.location.pathname || "";
@@ -1020,12 +1045,8 @@
                 
                 // Initialize charts after data is loaded
                 initializeCharts();
-
-                // Update last update time
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-ES');
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
-                document.getElementById('apiStatus').textContent = 'Error';
             }
         }
 
@@ -1258,9 +1279,6 @@
 
             // Update recent verifications
             updateRecentVerifications();
-
-            // Set API status
-            document.getElementById('apiStatus').textContent = 'Activas';
         }
 
         // Update recent inventories display
@@ -1364,11 +1382,40 @@
             });
             superadminDashboardData.charts = {};
 
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const colors = {
+                textColor: isDarkMode ? '#CBD5E1' : '#374151',
+                gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                tooltipBg: isDarkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                tooltipBorder: isDarkMode ? 'rgba(148, 163, 184, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+            };
+
             // Chart: Users by Role
             if (superadminDashboardData.userStats) {
-                const ctx = document.getElementById('usersByRoleChart');
-                if (ctx) {
-                    superadminDashboardData.charts.usersByRole = new Chart(ctx, {
+                const canvas = document.getElementById('usersByRoleChart');
+                if (canvas) {
+                    const ctx2d = canvas.getContext('2d');
+                    const gradient1 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient1.addColorStop(0, '#EF4444');
+                    gradient1.addColorStop(1, '#DC2626');
+                    
+                    const gradient2 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient2.addColorStop(0, '#3B82F6');
+                    gradient2.addColorStop(1, '#2563EB');
+                    
+                    const gradient3 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient3.addColorStop(0, '#8B5CF6');
+                    gradient3.addColorStop(1, '#7C3AED');
+                    
+                    const gradient4 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient4.addColorStop(0, '#F59E0B');
+                    gradient4.addColorStop(1, '#D97706');
+                    
+                    const gradient5 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient5.addColorStop(0, '#10B981');
+                    gradient5.addColorStop(1, '#059669');
+
+                    superadminDashboardData.charts.usersByRole = new Chart(canvas, {
                         type: 'doughnut',
                         data: {
                             labels: ['Superadmin', 'Admin Regional', 'Admin Inst.', 'Warehouse', 'Usuarios'],
@@ -1380,21 +1427,56 @@
                                     superadminDashboardData.userStats.warehouseCount || 0,
                                     superadminDashboardData.userStats.userCount || 0
                                 ],
-                                backgroundColor: [
-                                    '#EF4444',
-                                    '#3B82F6',
-                                    '#8B5CF6',
-                                    '#F59E0B',
-                                    '#10B981'
-                                ]
+                                backgroundColor: [gradient1, gradient2, gradient3, gradient4, gradient5],
+                                borderWidth: 0,
+                                hoverOffset: 8
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: true,
+                            maintainAspectRatio: false,
+                            cutout: '60%',
+                            borderRadius: 8,
+                            animation: {
+                                animateRotate: true,
+                                animateScale: true,
+                                duration: 1000
+                            },
                             plugins: {
                                 legend: {
-                                    position: 'bottom'
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        font: {
+                                            size: 12,
+                                            weight: '500'
+                                        },
+                                        color: colors.textColor
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    },
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1404,8 +1486,8 @@
 
             // Chart: Activity Heatmap by Regional
             if (superadminDashboardData.allAuditories && superadminDashboardData.regionals) {
-                const ctx = document.getElementById('activityHeatmapByRegionalChart');
-                if (ctx) {
+                const canvas = document.getElementById('activityHeatmapByRegionalChart');
+                if (canvas) {
                     console.log('Processing auditories for heatmap. Total:', superadminDashboardData.allAuditories.length);
                     
                     // Create a map of institutionId -> regionalId from institutions data
@@ -1478,7 +1560,7 @@
 
                     // If no activity, show message
                     if (regionalsWithActivity.length === 0) {
-                        ctx.parentElement.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">No hay actividad registrada en ninguna regional</p>';
+                        canvas.parentElement.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">No hay actividad registrada en ninguna regional</p>';
                         return;
                     }
 
@@ -1515,7 +1597,7 @@
                         }
                     });
 
-                    superadminDashboardData.charts.activityHeatmapByRegional = new Chart(ctx, {
+                    superadminDashboardData.charts.activityHeatmapByRegional = new Chart(canvas, {
                         type: 'bar',
                         data: {
                             labels: labels,
@@ -1524,18 +1606,35 @@
                                 data: values,
                                 backgroundColor: colors,
                                 borderColor: colors.map(c => c.replace('0.8', '1')),
-                                borderWidth: 1
+                                borderWidth: 2,
+                                borderRadius: 6,
+                                borderSkipped: false
                             }]
                         },
                         options: {
                             indexAxis: 'y',
                             responsive: true,
-                            maintainAspectRatio: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeInOutQuart'
+                            },
                             plugins: {
                                 legend: {
                                     display: false
                                 },
                                 tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    },
                                     callbacks: {
                                         label: function(context) {
                                             return `Actividades: ${context.parsed.x}`;
@@ -1546,15 +1645,45 @@
                             scales: {
                                 x: {
                                     beginAtZero: true,
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 11
+                                        }
+                                    },
                                     title: {
                                         display: true,
-                                        text: 'Número de Actividades'
+                                        text: 'Número de Actividades',
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 12,
+                                            weight: '600'
+                                        }
                                     }
                                 },
                                 y: {
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 11
+                                        }
+                                    },
                                     title: {
                                         display: true,
-                                        text: 'Regionales'
+                                        text: 'Regionales',
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 12,
+                                            weight: '600'
+                                        }
                                     }
                                 }
                             }
@@ -1565,8 +1694,9 @@
 
             // Chart: Inventory Values by Regional
             if (superadminDashboardData.allInventories && superadminDashboardData.institutions && superadminDashboardData.regionals) {
-                const ctx = document.getElementById('inventoryValueByRegionalChart');
-                if (ctx) {
+                const canvas = document.getElementById('inventoryValueByRegionalChart');
+                if (canvas) {
+                    const ctx2d = canvas.getContext('2d');
                     // Create a map of institutionId -> regionalId
                     const institutionToRegional = {};
                     superadminDashboardData.institutions.forEach(inst => {
@@ -1610,26 +1740,56 @@
                         values.push(value);
                     });
 
-                    superadminDashboardData.charts.inventoryValueByRegional = new Chart(ctx, {
+                    // Create gradients for each bar
+                    const barGradients = colors.slice(0, labels.length).map((color, index) => {
+                        const gradient = ctx2d.createLinearGradient(0, 0, 0, 400);
+                        // Extract hex color and convert to RGB for gradient
+                        const hex = color.replace('#', '');
+                        const r = parseInt(hex.substring(0, 2), 16);
+                        const g = parseInt(hex.substring(2, 4), 16);
+                        const b = parseInt(hex.substring(4, 6), 16);
+                        gradient.addColorStop(0, color);
+                        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.7)`);
+                        return gradient;
+                    });
+
+                    superadminDashboardData.charts.inventoryValueByRegional = new Chart(canvas, {
                         type: 'bar',
                         data: {
                             labels: labels,
                             datasets: [{
                                 label: 'Valor Total (COP)',
                                 data: values,
-                                backgroundColor: colors.slice(0, labels.length),
-                                borderColor: colors.slice(0, labels.length).map(c => c.replace('0.8', '1')),
-                                borderWidth: 1
+                                backgroundColor: barGradients,
+                                borderColor: colors.slice(0, labels.length),
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeInOutQuart'
+                            },
                             plugins: {
                                 legend: {
                                     display: false
                                 },
                                 tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    },
                                     callbacks: {
                                         label: function(context) {
                                             const value = context.parsed.y;
@@ -1643,9 +1803,29 @@
                                 }
                             },
                             scales: {
+                                x: {
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 11
+                                        }
+                                    }
+                                },
                                 y: {
                                     beginAtZero: true,
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
                                     ticks: {
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 11
+                                        },
                                         callback: function(value) {
                                             return new Intl.NumberFormat('es-CO', {
                                                 style: 'currency',
@@ -1653,6 +1833,15 @@
                                                 minimumFractionDigits: 0,
                                                 notation: 'compact'
                                             }).format(value);
+                                        }
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Valor (COP)',
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 12,
+                                            weight: '600'
                                         }
                                     }
                                 }
