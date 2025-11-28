@@ -145,14 +145,16 @@ document.addEventListener("DOMContentLoaded", async function () {
   rewriteAdminInstitutionSidebarLinks();
   rewriteAdminRegionalSidebarLinks();
 
-  // Initialize dashboard if we're on a dashboard page
-  if (
-    window.location.pathname.includes("/dashboard/") ||
-    window.location.pathname.includes("/admin_institution/") ||
-    window.location.pathname.includes("/admininstitution/") ||
-    window.location.pathname.includes("/admin_regional/") ||
-    window.location.pathname.includes("/superadmin/")
-  ) {
+  // Initialize dashboard only if we're on an actual dashboard page
+  const path = window.location.pathname;
+  const isDashboardPage = path.includes("/dashboard") || 
+                          path === "/admin_institution/dashboard" ||
+                          path === "/admininstitution/dashboard" ||
+                          path === "/admin_regional/dashboard" ||
+                          path === "/superadmin/dashboard" ||
+                          path === "/warehouse/dashboard";
+  
+  if (isDashboardPage) {
     initializeDashboard();
   }
 });
@@ -1257,8 +1259,19 @@ async function loadWarehouseDashboardData() {
 async function loadAdminStats() {
   try {
     const token = localStorage.getItem("jwt");
+    if (!token) {
+      console.warn("No token found, skipping admin stats load");
+      dashboardData.stats = {
+        totalUsers: 0,
+        totalInventory: 0,
+        pendingVerifications: 0,
+        reportsGenerated: 0,
+      };
+      return;
+    }
+
     const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
 
     // Use large page size to get all users for stats
     const usersResponse = await fetch("/api/v1/users?page=0&size=10000", {
@@ -1284,10 +1297,25 @@ async function loadAdminStats() {
         reportsGenerated: Math.floor(Math.random() * 50) + 10,
       };
     } else {
-      throw new Error("Failed to load admin stats");
+      // Log the error but don't throw - use fallback values
+      if (!usersResponse.ok) {
+        console.warn("Failed to load users for stats:", usersResponse.status, usersResponse.statusText);
+      }
+      if (!inventoryResponse.ok) {
+        console.warn("Failed to load inventory for stats:", inventoryResponse.status, inventoryResponse.statusText);
+      }
+      dashboardData.stats = {
+        totalUsers: 0,
+        totalInventory: 0,
+        pendingVerifications: 0,
+        reportsGenerated: 0,
+      };
     }
   } catch (error) {
-    console.error("Error loading admin stats:", error);
+    // Only log if it's not a network/CORS error to avoid console spam
+    if (error.name !== "TypeError" || !error.message.includes("Load failed")) {
+      console.error("Error loading admin stats:", error);
+    }
     dashboardData.stats = {
       totalUsers: 0,
       totalInventory: 0,

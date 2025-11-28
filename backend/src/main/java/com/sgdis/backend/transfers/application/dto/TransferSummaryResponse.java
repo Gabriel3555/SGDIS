@@ -8,6 +8,7 @@ public record TransferSummaryResponse(
         Long id,
         Long itemId,
         String itemName,
+        String itemLicencePlate,
         Long sourceInventoryId,
         String sourceInventoryName,
         Long destinationInventoryId,

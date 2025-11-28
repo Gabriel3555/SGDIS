@@ -2,11 +2,25 @@
 // This script dynamically updates the sidebar based on user role
 // For USER role, it shows only allowed menu items
 
-let sidebarObserver = null;
-let isUpdatingSidebar = false;
-let userSidebarData = null;
-let sidebarCheckInterval = null;
-let isUserRole = false;
+// Prevent duplicate execution
+if (window.userSidebarScriptLoaded) {
+    console.warn('user-sidebar.js already loaded, skipping duplicate execution');
+} else {
+    window.userSidebarScriptLoaded = true;
+
+// Prevent duplicate declarations - use window object to avoid conflicts
+var sidebarObserver = window.sidebarObserver || null;
+var isUpdatingSidebar = window.isUpdatingSidebar || false;
+var userSidebarData = window.userSidebarData || null;
+var sidebarCheckInterval = window.sidebarCheckInterval || null;
+var isUserRole = window.isUserRole || false;
+
+// Store in window for global access
+window.sidebarObserver = sidebarObserver;
+window.isUpdatingSidebar = isUpdatingSidebar;
+window.userSidebarData = userSidebarData;
+window.sidebarCheckInterval = sidebarCheckInterval;
+window.isUserRole = isUserRole;
 
 // Execute immediately to prevent other scripts from modifying sidebar
 (function() {
@@ -489,4 +503,6 @@ async function updateSidebarForUser(userData) {
         }
     }).observe(document, {subtree: true, childList: true});
 })();
+
+} // End of userSidebarScriptLoaded check
 

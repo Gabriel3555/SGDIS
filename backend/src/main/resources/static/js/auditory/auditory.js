@@ -514,10 +514,16 @@ async function loadInstitutionsByRegional(regionalId) {
 // Load users based on filters
 async function loadUsers(regionalId = null, institutionId = null) {
     const token = localStorage.getItem('jwt');
-    if (!token) return;
+    if (!token) {
+        console.warn('No token found, skipping user load');
+        return;
+    }
 
     const userSelect = document.getElementById('filterUser');
-    if (!userSelect) return;
+    if (!userSelect) {
+        // Element not found, probably not on auditory page - silently return
+        return;
+    }
 
     // Clear existing options except the first one (default)
     while (userSelect.options.length > 1) {
@@ -540,15 +546,20 @@ async function loadUsers(regionalId = null, institutionId = null) {
             }
         } else if (regionalId && regionalId !== '') {
             // Get all institution names for the selected regional
-            const institutionsResponse = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            try {
+                const institutionsResponse = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (institutionsResponse.ok) {
+                    const institutions = await institutionsResponse.json();
+                    institutionNames = institutions.map(inst => inst.name);
                 }
-            });
-            if (institutionsResponse.ok) {
-                const institutions = await institutionsResponse.json();
-                institutionNames = institutions.map(inst => inst.name);
+            } catch (instError) {
+                // Silently handle institution fetch errors
+                console.warn('Error loading institutions for filter:', instError);
             }
         }
         
@@ -573,6 +584,8 @@ async function loadUsers(regionalId = null, institutionId = null) {
                     users = usersData.users;
                 }
             }
+        } else {
+            console.warn('Failed to load users:', usersResponse.status, usersResponse.statusText);
         }
 
         // Populate user select
@@ -583,7 +596,10 @@ async function loadUsers(regionalId = null, institutionId = null) {
             userSelect.appendChild(option);
         });
     } catch (error) {
-        console.error('Error loading users:', error);
+        // Only log if it's not a network/CORS error to avoid console spam
+        if (error.name !== "TypeError" || !error.message.includes("Load failed")) {
+            console.error('Error loading users:', error);
+        }
     }
 }
 

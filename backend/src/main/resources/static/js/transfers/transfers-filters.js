@@ -125,9 +125,13 @@ async function handleTransferRegionalFilterChange(regionalId) {
     // Clear institution dropdown
     if (window.transferInstitutionSelect) {
         if (!regionalId) {
-            window.transferInstitutionSelect.disable();
+            if (window.transferInstitutionSelect && typeof window.transferInstitutionSelect.setDisabled === 'function') {
+                window.transferInstitutionSelect.setDisabled(true);
+            }
         } else {
-            window.transferInstitutionSelect.enable();
+            if (window.transferInstitutionSelect && typeof window.transferInstitutionSelect.setDisabled === 'function') {
+                window.transferInstitutionSelect.setDisabled(false);
+            }
         }
         window.transferInstitutionSelect.clear();
         window.transferInstitutionSelect.setOptions([{ value: '', label: 'Todas las instituciones' }]);
@@ -310,7 +314,9 @@ async function loadInstitutionsForTransferFilter(regionalId) {
     try {
         if (!regionalId) {
             if (window.transferInstitutionSelect) {
-                window.transferInstitutionSelect.disable();
+                if (window.transferInstitutionSelect && typeof window.transferInstitutionSelect.setDisabled === 'function') {
+                window.transferInstitutionSelect.setDisabled(true);
+            }
                 window.transferInstitutionSelect.clear();
                 window.transferInstitutionSelect.setOptions([{ value: '', label: 'Todas las instituciones' }]);
             }
