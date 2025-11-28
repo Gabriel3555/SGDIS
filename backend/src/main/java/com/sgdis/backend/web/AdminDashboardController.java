@@ -150,7 +150,7 @@ public class AdminDashboardController {
     @PreAuthorize("hasRole('SUPERADMIN')")
     @ResponseBody
     public ResponseEntity<Resource> superadminInventoryManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/inventory/inventory.html");
+        Resource resource = new ClassPathResource("static/views/inventory/inventory-superadmin.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
