@@ -274,6 +274,255 @@
             margin-left: 280px;
             transition: margin-left 0.3s ease;
         }
+
+        /* Profile image button styles */
+        .profile-image-btn {
+            position: relative;
+            border: none;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+            border-radius: 50%;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .profile-image-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .profile-image-btn.no-image .image-overlay {
+            opacity: 0.8;
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .profile-image-btn:hover .image-overlay {
+            opacity: 1;
+        }
+
+        /* Image preview styles */
+        #newUserImagePreview.has-image,
+        #editUserImagePreview.has-image {
+            border: 2px solid #10b981;
+        }
+
+        /* Header user avatar styles */
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            overflow: hidden;
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Custom Select Styles */
+        .custom-select-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .custom-select-container.select-open {
+            z-index: 10002;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.75rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 2.5rem;
+        }
+
+        .custom-select-trigger:hover {
+            border-color: #10b981;
+        }
+
+        .custom-select-trigger:focus-within {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: #10b981;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .custom-select-text {
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-placeholder {
+            color: #9ca3af;
+        }
+
+        .custom-select-arrow {
+            color: #10b981;
+            transition: transform 0.2s ease;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+        }
+
+        .custom-select-dropdown {
+            position: fixed;
+            background: white;
+            border: 2px solid #10b981;
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 10050;
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            min-width: 180px;
+        }
+
+        /* Dropdown opening upward */
+        .custom-select.dropdown-up .custom-select-dropdown {
+            border-top: 2px solid #10b981;
+            border-bottom: none;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .custom-select.dropdown-up .custom-select-trigger {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        /* Ensure filter container doesn't clip dropdowns */
+        #searchFilterContainer {
+            overflow: visible !important;
+        }
+
+        #searchFilterContainer>div {
+            overflow: visible !important;
+        }
+
+        .custom-select.open .custom-select-dropdown {
+            display: block;
+        }
+
+        /* Ensure open select container is above others */
+        .custom-select.open {
+            z-index: 10002;
+        }
+
+        .custom-select-search {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            outline: none;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-options {
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .custom-select-option {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .custom-select-option.selected {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .custom-select-option.disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .custom-select-option.disabled:hover {
+            background-color: transparent;
+        }
+
+        /* Image loading spinner */
+        .image-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 175, 0, 0.2);
+            border-top-color: #00AF00;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loan-card {
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .loan-card:hover {
+            border-color: #9333ea;
+        }
+
+        .dark .loan-card {
+            background: #1f2937;
+            border-color: #374151;
+        }
+
+        .dark .loan-card:hover {
+            border-color: #9333ea;
+        }
+
         @media (max-width: 1024px) {
             .main-content {
                 margin-left: 0;
@@ -409,12 +658,541 @@
             }
         }
 
+        // Logout function - shows confirmation modal
+        function logout() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        // Close logout modal
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Confirm logout - actually logs out
+        function confirmLogout() {
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
             loadCurrentUserInfo();
             scrollToActiveSidebarItem();
         });
     </script>
+
+    <!-- New User Modal -->
+    <div id="newUserModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Nuevo Usuario</h2>
+                <button onclick="closeNewUserModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="newUserForm">
+                <!-- Foto de Perfil - Full Width -->
+                <div class="mb-4 pb-4 border-b border-gray-200">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Perfil</label>
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-2xl"
+                            id="newUserImagePreview">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <input type="file" id="newUserPhoto" accept="image/*" class="hidden">
+                            <button type="button" onclick="document.getElementById('newUserPhoto').click()"
+                                class="px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                                <i class="fas fa-camera mr-2"></i>
+                                Seleccionar Foto
+                            </button>
+                            <p class="text-xs text-gray-500 mt-1">JPG, PNG o GIF. Máx. 2MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid de 2 columnas para los campos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
+                        <input type="text" id="newUserFullName"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Nombre completo del usuario" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                        <input type="email" id="newUserEmail"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="usuario@ejemplo.com" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Rol *</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="newUserRoleSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar rol</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar rol...">
+                                    <div class="custom-select-options" id="newUserRoleOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="newUserRole" name="role" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Contraseña *</label>
+                        <input type="password" id="newUserPassword"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Contraseña temporal" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Regional *</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="newUserRegionalSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar regional</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                    <div class="custom-select-options" id="newUserRegionalOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="newUserRegional" name="regional" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Institución *</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="newUserInstitutionSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar institución</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar institución...">
+                                    <div class="custom-select-options" id="newUserInstitutionOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="newUserInstitution" name="institution" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="newUserJobTitleSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar cargo</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar cargo...">
+                                    <div class="custom-select-options" id="newUserJobTitleOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="newUserJobTitle" name="jobTitle">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Área</label>
+                        <input type="text" id="newUserLaborDepartment"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Área o departamento">
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeNewUserModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-gray-800 dark:bg-gray-700 text-gray-100 dark:text-gray-200 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Crear Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View User Modal -->
+    <div id="viewUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Ver Usuario</h2>
+                <button onclick="closeViewUserModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div id="viewUserContent" class="space-y-4">
+                <!-- Content loaded dynamically -->
+            </div>
+
+            <div class="flex gap-3 pt-6">
+                <button onclick="closeViewUserModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Editar Usuario</h2>
+                <button onclick="closeEditUserModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="editUserForm">
+                <!-- Foto de Perfil - Full Width -->
+                <div class="mb-4 pb-4 border-b border-gray-200">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Foto de Perfil</label>
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-2xl overflow-hidden"
+                            id="editUserImagePreview">
+                            <img id="editUserCurrentImage" src="" alt="Foto actual" class="w-full h-full object-cover"
+                                style="display: none;">
+                            <i class="fas fa-user" id="editUserImageIcon"></i>
+                        </div>
+                        <div>
+                            <input type="file" id="editUserPhoto" accept="image/*" class="hidden">
+                            <button type="button" onclick="document.getElementById('editUserPhoto').click()"
+                                class="px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                                <i class="fas fa-camera mr-2"></i>
+                                Cambiar Foto
+                            </button>
+                            <p class="text-xs text-gray-500 mt-1">JPG, PNG o GIF. Máx. 2MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grid de 2 columnas para los campos -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre Completo *</label>
+                        <input type="text" id="editUserFullName"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Nombre completo del usuario" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                        <input type="email" id="editUserEmail"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="editUserRoleSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar rol</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar rol...">
+                                    <div class="custom-select-options" id="editUserRoleOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="editUserRole" name="role" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                        <select id="editUserStatus"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                            <option value="true">Activo</option>
+                            <option value="false">Inactivo</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cargo</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="editUserJobTitleSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar cargo</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar cargo...">
+                                    <div class="custom-select-options" id="editUserJobTitleOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="editUserJobTitle" name="jobTitle">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Área</label>
+                        <input type="text" id="editUserLaborDepartment"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Área o departamento">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Regional *</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="editUserRegionalSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar regional</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                    <div class="custom-select-options" id="editUserRegionalOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="editUserRegional" name="regional" required>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Institución *</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="editUserInstitutionSelect">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-text">Seleccionar institución</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar institución...">
+                                    <div class="custom-select-options" id="editUserInstitutionOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="editUserInstitution" name="institution" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeEditUserModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-gray-800 dark:bg-gray-700 text-gray-100 dark:text-gray-200 rounded-xl hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Actualizar Usuario
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeLogoutModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmLogout()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div id="deleteUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-red-600">Eliminar Usuario</h2>
+                <button onclick="closeDeleteUserModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro?</h3>
+                <p class="text-gray-600" id="deleteUserMessage">Esta acción no se puede deshacer.</p>
+            </div>
+
+            <div class="flex gap-3" id="deleteUserModalActions">
+                <button onclick="closeDeleteUserModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmDeleteUser()" id="deleteUserButton"
+                    class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors">
+                    Eliminar Usuario
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Loans Modal -->
+    <div id="userLoansModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-history text-purple-600 text-3xl"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Historial de Préstamos</h2>
+                        <p class="text-sm text-gray-600" id="userLoansUserName">Cargando...</p>
+                    </div>
+                </div>
+                <button onclick="closeUserLoansModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div id="userLoansStats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" style="display: none;">
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-purple-600 font-medium">Total Préstamos</p>
+                            <p class="text-2xl font-bold text-purple-800" id="totalLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-list text-purple-400 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-yellow-600 font-medium">Préstamos Activos</p>
+                            <p class="text-2xl font-bold text-yellow-800" id="activeLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-clock text-yellow-400 text-2xl"></i>
+                    </div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-green-600 font-medium">Préstamos Devueltos</p>
+                            <p class="text-2xl font-bold text-green-800" id="returnedLoansCount">0</p>
+                        </div>
+                        <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div id="userLoansFilters" class="flex gap-2 mb-6" style="display: none;">
+                <button onclick="filterUserLoans('all')" id="filterAll"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-purple-600 text-white">
+                    Todos
+                </button>
+                <button onclick="filterUserLoans('active')" id="filterActive"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Activos
+                </button>
+                <button onclick="filterUserLoans('returned')" id="filterReturned"
+                    class="px-4 py-2 rounded-lg font-medium transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
+                    Devueltos
+                </button>
+            </div>
+
+            <div id="userLoansLoading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-3xl text-purple-600 mb-4"></i>
+                <p class="text-gray-600">Cargando historial de préstamos...</p>
+            </div>
+
+            <div id="userLoansContent" style="display: none;">
+                <div id="userLoansList" class="space-y-4"></div>
+                <div id="userLoansEmpty" class="text-center py-12" style="display: none;">
+                    <i class="fas fa-inbox text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 text-lg">Este usuario no tiene préstamos registrados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Inventories Modal -->
+    <div id="userInventoriesModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-5xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-warehouse text-blue-600 text-3xl" id="userInventoriesIcon"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800" id="userInventoriesTitle">Inventarios</h2>
+                        <p class="text-sm text-gray-600" id="userInventoriesUserName">Cargando...</p>
+                    </div>
+                </div>
+                <button onclick="closeUserInventoriesModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div id="userInventoriesLoading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+                <p class="text-gray-600">Cargando inventarios...</p>
+            </div>
+
+            <div id="userInventoriesContent" style="display: none;">
+                <div id="userInventoriesList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                <div id="userInventoriesEmpty" class="text-center py-12" style="display: none;">
+                    <i class="fas fa-warehouse text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 text-lg">Este usuario no tiene inventarios registrados</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Application Scripts -->
     <script src="../../js/dashboard.js"></script>
