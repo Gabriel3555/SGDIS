@@ -18,7 +18,6 @@ let chartInstances = {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Warehouse Reports page DOMContentLoaded - Initializing...');
     loadUserInfoAndInventories();
     setupEventListeners();
     setupDateInputs();
@@ -26,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Also try if DOM is already loaded (for dynamic navigation)
 if (document.readyState !== 'loading') {
-    console.log('Warehouse Reports page - DOM already loaded, initializing...');
     setTimeout(function() {
         loadUserInfoAndInventories();
         setupEventListeners();

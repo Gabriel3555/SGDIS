@@ -192,7 +192,6 @@ async function loadInventories() {
                 inventories = await response.json();
             }
             verificationData.inventories = Array.isArray(inventories) ? inventories : [];
-            console.log(`Loaded ${verificationData.inventories.length} inventories for verifications`);
         } else {
             console.error('Error loading inventories:', response.status, response.statusText);
             verificationData.inventories = [];

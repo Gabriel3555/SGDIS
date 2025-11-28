@@ -1,7 +1,5 @@
 // Main verification script - Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Verification module initialized');
-    
     // Load verification data
     loadVerificationData();
     

@@ -405,11 +405,123 @@ function takeEvidencePhoto(index) {
 
 // Handle Evidence Camera Change
 function handleEvidenceCameraChange(index, file) {
-    if (file && batchVerificationState.scannedItems[index]) {
+    if (!file || !batchVerificationState.scannedItems[index]) {
+        return;
+    }
+    
+    const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to be safe (under 5MB limit)
+    
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+        showInventoryErrorToast('Tipo de archivo inválido', 'Solo se permiten imágenes');
+        return;
+    }
+    
+    // If file is small enough, use it directly
+    if (file.size <= MAX_FILE_SIZE) {
         batchVerificationState.scannedItems[index].evidence = file;
         updateScannedItemsList();
         showInventorySuccessToast('Evidencia capturada', `Evidencia capturada con la cámara para ${batchVerificationState.scannedItems[index].licencePlate}`);
+        return;
     }
+    
+    // File is too large, compress it
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const MAX_WIDTH = 1600;
+            const MAX_HEIGHT = 1600;
+            let currentWidth = img.width;
+            let currentHeight = img.height;
+            
+            // Reduce dimensions immediately if too large
+            if (currentWidth > MAX_WIDTH || currentHeight > MAX_HEIGHT) {
+                if (currentWidth > currentHeight) {
+                    currentHeight = Math.round((currentHeight * MAX_WIDTH) / currentWidth);
+                    currentWidth = MAX_WIDTH;
+                } else {
+                    currentWidth = Math.round((currentWidth * MAX_HEIGHT) / currentHeight);
+                    currentHeight = MAX_HEIGHT;
+                }
+            }
+            
+            // Function to compress with aggressive quality and size reduction
+            const compressImage = function(quality, width, height, attempt = 0) {
+                // Limit attempts to prevent infinite loop
+                if (attempt > 15) {
+                    showInventoryErrorToast('Imagen muy pesada', `La imagen para ${batchVerificationState.scannedItems[index].licencePlate} es demasiado pesada incluso después de comprimir. Por favor, intenta con otra foto.`);
+                    return;
+                }
+                
+                // Create canvas with current dimensions
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                canvas.toBlob(function(blob) {
+                    if (!blob) {
+                        showInventoryErrorToast('Error', 'No se pudo procesar la imagen');
+                        return;
+                    }
+                    
+                    // If file is within limit, use it
+                    if (blob.size <= MAX_FILE_SIZE) {
+                        const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+                        batchVerificationState.scannedItems[index].evidence = compressedFile;
+                        updateScannedItemsList();
+                        showInventorySuccessToast('Evidencia capturada', `Evidencia capturada con la cámara para ${batchVerificationState.scannedItems[index].licencePlate}`);
+                        return;
+                    }
+                    
+                    // File is still too large, try with lower quality first
+                    if (quality > 0.4) {
+                        // Reduce quality more aggressively
+                        compressImage(Math.max(0.4, quality - 0.15), width, height, attempt + 1);
+                        return;
+                    }
+                    
+                    // Quality is already low, try reducing dimensions
+                    if (width > 800 || height > 800) {
+                        const newWidth = Math.floor(width * 0.7); // Reduce 30% at a time
+                        const newHeight = Math.floor(height * 0.7);
+                        compressImage(0.5, newWidth, newHeight, attempt + 1);
+                        return;
+                    }
+                    
+                    // If still too large at small dimensions, try even lower quality
+                    if (quality > 0.3) {
+                        compressImage(0.3, width, height, attempt + 1);
+                        return;
+                    }
+                    
+                    // Last resort: reduce dimensions even more
+                    if (width > 600 || height > 600) {
+                        const newWidth = Math.floor(width * 0.6);
+                        const newHeight = Math.floor(height * 0.6);
+                        compressImage(0.3, newWidth, newHeight, attempt + 1);
+                        return;
+                    }
+                    
+                    // Can't compress more, show error
+                    showInventoryErrorToast('Imagen muy pesada', `La imagen para ${batchVerificationState.scannedItems[index].licencePlate} es demasiado pesada incluso después de comprimir. Por favor, intenta con otra foto.`);
+                }, 'image/jpeg', quality);
+            };
+            
+            // Start compression with lower initial quality (0.6)
+            compressImage(0.6, currentWidth, currentHeight, 0);
+        };
+        img.onerror = function() {
+            showInventoryErrorToast('Error', 'No se pudo cargar la imagen');
+        };
+        img.src = e.target.result;
+    };
+    reader.onerror = function() {
+        showInventoryErrorToast('Error', 'No se pudo leer el archivo');
+    };
+    reader.readAsDataURL(file);
 }
 
 // Update Scanned Items List

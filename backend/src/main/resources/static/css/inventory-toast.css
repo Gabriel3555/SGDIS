@@ -112,6 +112,20 @@
     object-fit: contain;
 }
 
+/* Estilos para iconos Font Awesome en toasts */
+.inventory-toast-icono .fas,
+.inventory-toast-icono .far,
+.inventory-toast-icono .fal,
+.inventory-toast-icono .fab {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.9);
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Texto del toast */
 .inventory-toast-texto {
     flex: 1;
@@ -157,6 +171,20 @@
 .inventory-toast-icono-cerrar svg {
     width: 100%;
     height: 100%;
+}
+
+/* Estilos para icono de cerrar Font Awesome */
+.inventory-toast-icono-cerrar .fas,
+.inventory-toast-icono-cerrar .far,
+.inventory-toast-icono-cerrar .fal,
+.inventory-toast-icono-cerrar .fab {
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 /* Animación de apertura */

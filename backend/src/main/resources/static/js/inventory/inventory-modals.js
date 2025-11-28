@@ -200,9 +200,6 @@ if (
         }
         this.optionsContainer.appendChild(optionElement);
       });
-      
-      // Debug: log options rendered
-      console.log(`CustomSelect: Rendered ${this.filteredOptions.length} options in container`, this.optionsContainer);
     }
 
     filterOptions(searchTerm) {
