@@ -128,7 +128,7 @@ export default function MeUserScreen() {
     });
   };
 
-  const styles = getStyles(colors);
+  const styles = getStyles(colors, isDarkMode);
 
   if (loading) {
     return (
@@ -246,9 +246,17 @@ export default function MeUserScreen() {
             <Ionicons name="checkmark-circle-outline" size={20} color="#28a745" />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Estado</Text>
-              <Text style={[styles.detailValue, user.status ? styles.statusActive : styles.statusInactive]}>
-                {user.status ? "Activo" : "Inactivo"}
-              </Text>
+              <View style={[
+                styles.statusContainer, 
+                user.status ? styles.statusActiveContainer : styles.statusInactiveContainer
+              ]}>
+                <Text style={[
+                  styles.statusText,
+                  user.status ? styles.statusActive : styles.statusInactive
+                ]}>
+                  {user.status ? "Activo" : "Inactivo"}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -265,7 +273,7 @@ export default function MeUserScreen() {
           </View>
         ) : loans.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="inbox-outline" size={48} color={colors.placeholder} />
+            <Ionicons name="archive-outline" size={48} color={colors.placeholder} />
             <Text style={styles.emptyText}>No tienes items prestados actualmente</Text>
           </View>
         ) : (
@@ -348,11 +356,6 @@ export default function MeUserScreen() {
             <Text style={styles.actionText}>Cambiar Contraseña</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="settings-outline" size={24} color={colors.buttonBackground} />
-            <Text style={styles.actionText}>Configuración</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={24} color="#f44336" />
             <Text style={[styles.actionText, styles.logoutText]}>Cerrar Sesión</Text>
@@ -363,7 +366,7 @@ export default function MeUserScreen() {
   );
 }
 
-const getStyles = (colors) => StyleSheet.create({
+const getStyles = (colors, isDarkMode) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -541,11 +544,29 @@ const getStyles = (colors) => StyleSheet.create({
     color: colors.text,
     fontWeight: "500",
   },
+  statusContainer: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    marginTop: 4,
+    backgroundColor: 'transparent', // Asegurar que no haya fondo por defecto
+  },
+  statusActiveContainer: {
+    backgroundColor: isDarkMode ? '#f6f6f6ff' : '#e8f5e9',
+  },
+  statusInactiveContainer: {
+    backgroundColor: isDarkMode ? '#b71c1c' : '#ffebee',
+  },
+  statusText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
   statusActive: {
-    color: colors.subtitle,
+    color: isDarkMode ? "#66bb6a" : "#062e08ff",
   },
   statusInactive: {
-    color: "#f44336",
+    color: isDarkMode ? "#ef5350" : "#c62828",
   },
   actionsSection: {
     padding: 20,
