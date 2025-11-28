@@ -32,7 +32,6 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
-    <img src="" alt="" class="icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -309,42 +308,70 @@
             <!-- Charts Row -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Chart: Usuarios por Rol -->
-                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-chart-pie text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Usuarios por Rol</h2>
+                <div class="chart-container bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg p-6 border border-blue-100 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-blue-200">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-users text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Usuarios por Rol</h2>
+                            <p class="text-xs text-gray-500">Distribución de usuarios en la regional</p>
+                        </div>
                     </div>
-                    <canvas id="usersByRoleChart" height="250"></canvas>
+                    <div class="relative h-64">
+                        <canvas id="usersByRoleChart"></canvas>
+                    </div>
                 </div>
 
                 <!-- Chart: Inventarios por Estado -->
-                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-chart-bar text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Inventarios por Estado</h2>
+                <div class="chart-container bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg p-6 border border-green-100 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-green-200">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-boxes text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Inventarios por Estado</h2>
+                            <p class="text-xs text-gray-500">Estado de los inventarios</p>
+                        </div>
                     </div>
-                    <canvas id="inventoriesByStatusChart" height="250"></canvas>
+                    <div class="relative h-64">
+                        <canvas id="inventoriesByStatusChart"></canvas>
+                    </div>
                 </div>
             </div>
 
             <!-- Charts Row 2 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Chart: Transferencias por Estado -->
-                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-chart-line text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Transferencias por Estado</h2>
+                <div class="chart-container bg-gradient-to-br from-white to-orange-50 rounded-2xl shadow-lg p-6 border border-orange-100 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-orange-200">
+                        <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-exchange-alt text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Transferencias por Estado</h2>
+                            <p class="text-xs text-gray-500">Estado de las transferencias</p>
+                        </div>
                     </div>
-                    <canvas id="transfersByStatusChart" height="250"></canvas>
+                    <div class="relative h-64">
+                        <canvas id="transfersByStatusChart"></canvas>
+                    </div>
                 </div>
 
                 <!-- Chart: Distribución de Instituciones -->
-                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-map-marked-alt text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Distribución de Instituciones</h2>
+                <div class="chart-container bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg p-6 border border-purple-100 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-purple-200">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-building text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800">Distribución de Instituciones</h2>
+                            <p class="text-xs text-gray-500">Inventarios por institución</p>
+                        </div>
                     </div>
-                    <canvas id="institutionsChart" height="250"></canvas>
+                    <div class="relative h-64">
+                        <canvas id="institutionsChart"></canvas>
+                    </div>
                 </div>
             </div>
 
@@ -404,49 +431,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Quick Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-md p-6 border border-green-200">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
-                        <div>
-                            <div class="text-sm text-gray-600">Sistema</div>
-                            <div class="text-xl font-bold text-gray-800">Operativo</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-md p-6 border border-blue-200">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-server text-blue-600 text-2xl"></i>
-                        <div>
-                            <div class="text-sm text-gray-600">APIs</div>
-                            <div class="text-xl font-bold text-gray-800" id="apiStatus">-</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-md p-6 border border-purple-200">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-database text-purple-600 text-2xl"></i>
-                        <div>
-                            <div class="text-sm text-gray-600">Base de Datos</div>
-                            <div class="text-xl font-bold text-gray-800">Conectada</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-md p-6 border border-orange-200">
-                    <div class="flex items-center gap-3 mb-2">
-                        <i class="fas fa-sync-alt text-orange-600 text-2xl"></i>
-                        <div>
-                            <div class="text-sm text-gray-600">Última actualización</div>
-                            <div class="text-lg font-bold text-gray-800" id="lastUpdate">-</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
 
@@ -456,6 +440,7 @@
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     
     <!-- Application Scripts -->
+    <script src="../../../js/dark-mode.js"></script>
     <script src="../../../js/dashboard.js"></script>
     <script src="../../../js/inactivity-monitor.js"></script>
     <script src="../../../js/websocket-client.js"></script>
@@ -479,8 +464,29 @@
         }
 
         /* Chart container styles */
-        canvas {
-            max-height: 250px;
+        .chart-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-container canvas {
+            max-height: 100%;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(0, 175, 0, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-container:hover::before {
+            opacity: 1;
         }
 
         /* Image loading spinner */
@@ -721,6 +727,14 @@
             loadCurrentUserInfo(); // Load user info for header
             scrollToActiveSidebarItem(); // Scroll to active sidebar item
             loadDashboardData(); // Load all dashboard data
+
+            // Listen for theme changes and update charts
+            document.addEventListener('themeChanged', function(event) {
+                // Reinitialize charts with new colors
+                if (Object.keys(adminRegionalDashboardData.charts).length > 0) {
+                    initializeCharts();
+                }
+            });
         });
 
         // Load all dashboard data
@@ -808,12 +822,8 @@
                 
                 // Initialize charts after data is loaded
                 initializeCharts();
-
-                // Update last update time
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-ES');
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
-                document.getElementById('apiStatus').textContent = 'Error';
             }
         }
 
@@ -1093,9 +1103,6 @@
 
             // Update recent verifications
             updateRecentVerifications();
-
-            // Set API status
-            document.getElementById('apiStatus').textContent = 'Activas';
         }
 
         // Update recent inventories display
@@ -1189,6 +1196,18 @@
             }).join('');
         }
 
+        // Get chart colors based on dark mode
+        function getChartColors() {
+            const isDark = document.documentElement.classList.contains('dark');
+            return {
+                textColor: isDark ? '#F1F5F9' : '#374151',
+                textSecondary: isDark ? '#CBD5E1' : '#6B7280',
+                gridColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                tooltipBg: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.8)',
+                tooltipBorder: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)'
+            };
+        }
+
         // Initialize charts
         function initializeCharts() {
             // Destroy existing charts if they exist
@@ -1196,6 +1215,8 @@
                 if (chart) chart.destroy();
             });
             adminRegionalDashboardData.charts = {};
+
+            const colors = getChartColors();
 
             // Chart: Users by Role (without Superadmin)
             if (adminRegionalDashboardData.userStats) {
@@ -1213,19 +1234,71 @@
                                     adminRegionalDashboardData.userStats.userCount || 0
                                 ],
                                 backgroundColor: [
-                                    '#3B82F6',
-                                    '#8B5CF6',
-                                    '#F59E0B',
-                                    '#10B981'
-                                ]
+                                    'rgba(59, 130, 246, 0.8)',
+                                    'rgba(139, 92, 246, 0.8)',
+                                    'rgba(245, 158, 11, 0.8)',
+                                    'rgba(16, 185, 129, 0.8)'
+                                ],
+                                borderColor: [
+                                    'rgb(59, 130, 246)',
+                                    'rgb(139, 92, 246)',
+                                    'rgb(245, 158, 11)',
+                                    'rgb(16, 185, 129)'
+                                ],
+                                borderWidth: 2,
+                                hoverOffset: 8
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: true,
+                            maintainAspectRatio: false,
+                            cutout: '60%',
+                            animation: {
+                                animateRotate: true,
+                                animateScale: true,
+                                duration: 1500,
+                                easing: 'easeOutQuart'
+                            },
                             plugins: {
                                 legend: {
-                                    position: 'bottom'
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        font: {
+                                            size: 12,
+                                            weight: '500',
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        color: colors.textColor
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: '600',
+                                        family: "'Inter', sans-serif"
+                                    },
+                                    bodyFont: {
+                                        size: 13,
+                                        family: "'Inter', sans-serif"
+                                    },
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    displayColors: true,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1237,6 +1310,14 @@
             if (adminRegionalDashboardData.inventoryStats) {
                 const ctx = document.getElementById('inventoriesByStatusChart');
                 if (ctx) {
+                    const gradientActive = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+                    gradientActive.addColorStop(0, 'rgba(16, 185, 129, 0.9)');
+                    gradientActive.addColorStop(1, 'rgba(16, 185, 129, 0.5)');
+
+                    const gradientInactive = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+                    gradientInactive.addColorStop(0, 'rgba(239, 68, 68, 0.9)');
+                    gradientInactive.addColorStop(1, 'rgba(239, 68, 68, 0.5)');
+
                     adminRegionalDashboardData.charts.inventoriesByStatus = new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -1247,20 +1328,71 @@
                                     adminRegionalDashboardData.inventoryStats.activeInventories || 0,
                                     adminRegionalDashboardData.inventoryStats.inactiveInventories || 0
                                 ],
-                                backgroundColor: ['#10B981', '#EF4444']
+                                backgroundColor: [gradientActive, gradientInactive],
+                                borderColor: ['rgb(16, 185, 129)', 'rgb(239, 68, 68)'],
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 1500,
+                                easing: 'easeOutQuart'
+                            },
                             plugins: {
                                 legend: {
                                     display: false
+                                },
+                                tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: '600',
+                                        family: "'Inter', sans-serif"
+                                    },
+                                    bodyFont: {
+                                        size: 13,
+                                        family: "'Inter', sans-serif"
+                                    },
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    displayColors: true
                                 }
                             },
                             scales: {
                                 y: {
-                                    beginAtZero: true
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 11,
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        color: colors.textSecondary,
+                                        padding: 10
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 12,
+                                            weight: '600',
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        color: colors.textColor,
+                                        padding: 10
+                                    }
                                 }
                             }
                         }
@@ -1282,15 +1414,69 @@
                                     adminRegionalDashboardData.transferStats.approved || 0,
                                     adminRegionalDashboardData.transferStats.rejected || 0
                                 ],
-                                backgroundColor: ['#F59E0B', '#10B981', '#EF4444']
+                                backgroundColor: [
+                                    'rgba(245, 158, 11, 0.8)',
+                                    'rgba(16, 185, 129, 0.8)',
+                                    'rgba(239, 68, 68, 0.8)'
+                                ],
+                                borderColor: [
+                                    'rgb(245, 158, 11)',
+                                    'rgb(16, 185, 129)',
+                                    'rgb(239, 68, 68)'
+                                ],
+                                borderWidth: 2,
+                                hoverOffset: 12
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                animateRotate: true,
+                                animateScale: true,
+                                duration: 1500,
+                                easing: 'easeOutQuart'
+                            },
                             plugins: {
                                 legend: {
-                                    position: 'bottom'
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        font: {
+                                            size: 12,
+                                            weight: '500',
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        color: '#374151'
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: '600',
+                                        family: "'Inter', sans-serif"
+                                    },
+                                    bodyFont: {
+                                        size: 13,
+                                        family: "'Inter', sans-serif"
+                                    },
+                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    displayColors: true,
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1323,6 +1509,11 @@
                     const labels = Object.keys(institutionCounts);
                     const data = Object.values(institutionCounts);
 
+                    // Create gradient for bars
+                    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(139, 92, 246, 0.9)');
+                    gradient.addColorStop(1, 'rgba(139, 92, 246, 0.4)');
+
                     adminRegionalDashboardData.charts.institutions = new Chart(ctx, {
                         type: 'bar',
                         data: {
@@ -1330,20 +1521,73 @@
                             datasets: [{
                                 label: 'Inventarios',
                                 data: data,
-                                backgroundColor: '#8B5CF6'
+                                backgroundColor: gradient,
+                                borderColor: 'rgb(139, 92, 246)',
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
                             }]
                         },
                         options: {
                             responsive: true,
-                            maintainAspectRatio: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 1500,
+                                easing: 'easeOutQuart'
+                            },
                             plugins: {
                                 legend: {
                                     display: false
+                                },
+                                tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: '600',
+                                        family: "'Inter', sans-serif"
+                                    },
+                                    bodyFont: {
+                                        size: 13,
+                                        family: "'Inter', sans-serif"
+                                    },
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    cornerRadius: 8,
+                                    displayColors: true
                                 }
                             },
                             scales: {
                                 y: {
-                                    beginAtZero: true
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)',
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 11,
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        color: colors.textSecondary,
+                                        padding: 10
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        display: false
+                                    },
+                                    ticks: {
+                                        font: {
+                                            size: 11,
+                                            weight: '500',
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        color: colors.textColor,
+                                        padding: 10,
+                                        maxRotation: 45,
+                                        minRotation: 0
+                                    }
                                 }
                             }
                         }

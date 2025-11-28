@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <title>Dashboard Admin Institución - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function () {
@@ -30,8 +30,8 @@
             }
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
-    <img src="" alt="" class="icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -171,166 +171,243 @@
 
         <!-- Dashboard Content -->
         <main class="p-6">
-            <!-- Welcome Section -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-1" id="dashboardTitle">Dashboard Administrador</h1>
-                    <p class="text-gray-600" id="welcomeMessage">Cargando información del usuario...</p>
-                </div>
-                <button onclick="loadDashboardData()"
-                    class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
-                    <span id="refreshText">Actualizar</span>
-                </button>
+            <!-- Page Header -->
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Dashboard Admin Institución</h1>
+                <p class="text-gray-600 dark:text-gray-400" id="welcomeMessage">Vista general de la institución</p>
             </div>
 
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="statsContainer">
-                <!-- Loading State -->
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+            <!-- Stat Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Total Inventarios -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-boxes text-green-600 dark:text-green-400 text-xl"></i>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
-                    </div>
-                    <div class="h-3 bg-gray-200 rounded w-32"></div>
-                </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalInventories">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Inventarios</div>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
                     </div>
-                    <div class="h-2 bg-gray-200 rounded w-full"></div>
-                </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
-                        </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    <div class="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                        <span><i class="fas fa-check-circle text-green-600 dark:text-green-400"></i> <span id="activeInventories">-</span> activos</span>
+                        <span><i class="fas fa-times-circle text-red-600 dark:text-red-400"></i> <span id="inactiveInventories">-</span> inactivos</span>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-32"></div>
                 </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
-                        </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
-                    </div>
-                    <div class="h-3 bg-gray-200 rounded w-20"></div>
-                </div>
-            </div>
 
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6" id="chartsContainer">
-                <!-- Loading State - Usuarios por Rol -->
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-center gap-2 mb-4">
-                        <div class="w-5 h-5 bg-gray-200 rounded"></div>
-                        <div class="h-6 bg-gray-200 rounded w-32"></div>
+                <!-- Total Usuarios -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-blue-600 dark:text-blue-400 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalUsers">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Usuarios</div>
+                        </div>
                     </div>
-                    <div class="h-4 bg-gray-200 rounded w-48 mb-4"></div>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-32"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">
+                        <span id="userRolesBreakdown">Cargando...</span>
+                    </div>
+                </div>
+
+                <!-- Total Transferencias -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exchange-alt text-orange-600 dark:text-orange-400 text-xl"></i>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-28"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalTransfers">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Transferencias</div>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-24"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                        <span id="transfersBreakdown">Cargando...</span>
+                    </div>
+                </div>
+
+                <!-- Total Verificaciones -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-teal-100 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clipboard-check text-teal-600 dark:text-teal-400 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalVerifications">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Verificaciones</div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Estadísticas Mensuales -->
-            <div class="stat-card mb-6" id="monthlyStatsContainer">
-                <div class="flex items-center gap-2 mb-4">
-                    <i class="fas fa-chart-line text-green-600 text-xl"></i>
-                    <h2 class="text-xl font-bold text-gray-800">Actividad Mensual</h2>
+                <!-- Total Préstamos -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-hand-holding text-indigo-600 dark:text-indigo-400 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalLoans">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Préstamos</div>
+                        </div>
+                    </div>
                 </div>
-                <p class="text-gray-600 text-sm mb-6">Actividad del sistema por mes</p>
 
-                <!-- Loading State -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
+                <!-- Total Items -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-box text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalItems">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Items</div>
+                        </div>
                     </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
+                    <div class="text-xs text-gray-600 dark:text-gray-400">
+                        Valor total: <span id="totalValue" class="font-semibold">$0</span>
                     </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
+                </div>
+
+                <!-- Notificaciones -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-bell text-red-600 dark:text-red-400 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="unreadNotifications">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">No leídas</div>
+                        </div>
                     </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
-                    </div>
+                    <a href="/admin_institution/notifications" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Ver todas</a>
                 </div>
             </div>
 
-            <!-- Acciones Rápidas -->
-            <div class="stat-card" id="quickActionsContainer">
-                <div class="flex items-center gap-2 mb-4">
-                    <i class="fas fa-bolt text-green-600 text-xl"></i>
-                    <h2 class="text-xl font-bold text-gray-800">Acciones Administrativas</h2>
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Chart: Usuarios por Rol -->
+                <div class="chart-container bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg p-6 border border-blue-100 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-blue-200 dark:border-gray-600">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-users text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Usuarios por Rol</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Distribución de usuarios en la institución</p>
+                        </div>
+                    </div>
+                    <div class="relative h-64">
+                        <canvas id="usersByRoleChart"></canvas>
+                    </div>
                 </div>
-                <p class="text-gray-600 text-sm mb-6">Accesos directos a funciones administrativas</p>
 
-                <!-- Loading State -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="action-card animate-pulse">
-                        <div class="w-14 h-14 bg-gray-200 rounded-full mb-4 mx-auto"></div>
-                        <div class="h-5 bg-gray-200 rounded w-24 mb-2 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-32 mx-auto"></div>
+                <!-- Chart: Inventarios por Estado -->
+                <div class="chart-container bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg p-6 border border-green-100 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-green-200 dark:border-gray-600">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-boxes text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Inventarios por Estado</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Estado de los inventarios</p>
+                        </div>
                     </div>
-                    <div class="action-card animate-pulse">
-                        <div class="w-14 h-14 bg-gray-200 rounded-full mb-4 mx-auto"></div>
-                        <div class="h-5 bg-gray-200 rounded w-28 mb-2 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-36 mx-auto"></div>
+                    <div class="relative h-64">
+                        <canvas id="inventoriesByStatusChart"></canvas>
                     </div>
-                    <div class="action-card animate-pulse">
-                        <div class="w-14 h-14 bg-gray-200 rounded-full mb-4 mx-auto"></div>
-                        <div class="h-5 bg-gray-200 rounded w-20 mb-2 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-40 mx-auto"></div>
+                </div>
+            </div>
+
+            <!-- Charts Row 2 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Chart: Transferencias por Estado -->
+                <div class="chart-container bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg p-6 border border-orange-100 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-orange-200 dark:border-gray-600">
+                        <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-exchange-alt text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Transferencias por Estado</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Estado de las transferencias</p>
+                        </div>
+                    </div>
+                    <div class="relative h-64">
+                        <canvas id="transfersByStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart: Items por Inventario -->
+                <div class="chart-container bg-gradient-to-br from-white to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg p-6 border border-purple-100 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-purple-200 dark:border-gray-600">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-box text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Items por Inventario</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Distribución de items</p>
+                        </div>
+                    </div>
+                    <div class="relative h-64">
+                        <canvas id="itemsByInventoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Recent Inventories -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-boxes text-green-600 dark:text-green-400 text-xl"></i>
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Inventarios Recientes</h2>
+                        </div>
+                        <a href="/admin_institution/inventory" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">Ver todos</a>
+                    </div>
+                    <div id="recentInventories" class="space-y-3">
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Transfers -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-exchange-alt text-green-600 dark:text-green-400 text-xl"></i>
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Transferencias Recientes</h2>
+                        </div>
+                        <a href="/admin_institution/transfers" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">Ver todas</a>
+                    </div>
+                    <div id="recentTransfers" class="space-y-3">
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Verifications -->
+                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-clipboard-check text-green-600 dark:text-green-400 text-xl"></i>
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Verificaciones Recientes</h2>
+                        </div>
+                        <a href="/admin_institution/verification" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">Ver todas</a>
+                    </div>
+                    <div id="recentVerifications" class="space-y-3">
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -343,7 +420,7 @@
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     
     <!-- Application Scripts -->
-    <script src="../../../js/dashboard.js"></script>
+    <script src="../../../js/dark-mode.js"></script>
     <script src="../../../js/inactivity-monitor.js"></script>
     <script src="../../../js/websocket-client.js"></script>
     <script src="../../../js/notifications-bell.js"></script>
@@ -353,6 +430,58 @@
         .main-content {
             margin-left: 280px;
             transition: margin-left 0.3s ease;
+        }
+
+        /* Dashboard specific styles */
+        .stat-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Chart container styles */
+        .chart-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-container canvas {
+            max-height: 100%;
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(0, 175, 0, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-container:hover::before {
+            opacity: 1;
+        }
+
+        /* Image loading spinner */
+        .image-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 175, 0, 0.2);
+            border-top-color: #00AF00;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         /* Responsive adjustments */
@@ -376,6 +505,27 @@
 
             .overlay.active {
                 display: block;
+            }
+        }
+
+        /* Responsive grid adjustments */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Loading states */
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
             }
         }
     </style>
@@ -493,9 +643,9 @@
             const headerUserRole = document.getElementById('headerUserRole');
             const headerUserAvatar = document.getElementById('headerUserAvatar');
 
-            if (headerUserName) headerUserName.textContent = userData.fullName || 'Super Admin';
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Institución';
             if (headerUserRole) {
-                const role = userData.role || 'ADMIN';
+                const role = userData.role || 'ADMIN_INSTITUTION';
                 headerUserRole.textContent = role === 'ADMIN_INSTITUTION' ? 'ADMIN INSTITUCIÓN' : role;
             }
             
@@ -507,14 +657,14 @@
                             <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
                                 <div class="image-loading-spinner"></div>
                             </div>
-                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Super Admin'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
+                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Admin Institución'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
                                  id="img-${uniqueId}"
                                  onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
                                  onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
                         </div>
                     `;
                 } else {
-                    headerUserAvatar.textContent = (userData.fullName || 'Super Admin').charAt(0).toUpperCase();
+                    headerUserAvatar.textContent = (userData.fullName || 'Admin Institución').charAt(0).toUpperCase();
                 }
             }
         }
@@ -537,34 +687,976 @@
             }
         }
 
+        // Admin Institution Dashboard Data
+        const adminInstitutionDashboardData = {
+            currentUserInstitutionId: null,
+            inventoryStats: null,
+            allInventories: [],
+            userStats: null,
+            transferStats: null,
+            recentInventories: [],
+            recentTransfers: [],
+            recentVerifications: [],
+            verificationCount: 0,
+            loansCount: 0,
+            charts: {}
+        };
+
         // Initialize mobile menu toggle when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
             loadCurrentUserInfo(); // Load user info for header
             scrollToActiveSidebarItem(); // Scroll to active sidebar item
+            loadDashboardData(); // Load all dashboard data
+
+            // Listen for theme changes and update charts
+            document.addEventListener('themeChanged', function(event) {
+                console.log('Theme changed to dark mode:', event.detail.isDarkMode);
+                // Reinitialize charts with new theme colors
+                if (Object.keys(adminInstitutionDashboardData.charts).length > 0) {
+                    initializeCharts();
+                }
+            });
         });
+
+        // Load all dashboard data
+        async function loadDashboardData() {
+            const token = localStorage.getItem('jwt');
+            if (!token) {
+                console.error('No authentication token found');
+                return;
+            }
+
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+
+            try {
+                // First, get current user to get institution ID
+                const userResponse = await fetch('/api/v1/users/me', { headers });
+                if (!userResponse.ok) {
+                    throw new Error('Failed to load user info');
+                }
+
+                const userData = await userResponse.json();
+                
+                // Get institution name (it's a string, not an object)
+                const institutionName = userData.institution;
+                
+                if (!institutionName) {
+                    throw new Error('Usuario no tiene una institución asignada');
+                }
+
+                // Fetch all institutions to find the user's institution
+                const institutionsResponse = await fetch('/api/v1/institutions', { headers });
+                if (!institutionsResponse.ok) {
+                    throw new Error('Error al cargar las instituciones');
+                }
+
+                const institutions = await institutionsResponse.json();
+                const userInstitution = institutions.find(inst => inst.name === institutionName);
+
+                if (!userInstitution) {
+                    throw new Error('Institución del usuario no encontrada: ' + institutionName);
+                }
+
+                // Get institution ID
+                const userInstitutionId = userInstitution.institutionId || userInstitution.id;
+
+                if (!userInstitutionId) {
+                    throw new Error('La institución no tiene un ID válido');
+                }
+
+                adminInstitutionDashboardData.currentUserInstitutionId = userInstitutionId;
+
+                // Update welcome message
+                document.getElementById('welcomeMessage').textContent = `Vista general de la institución ${institutionName || ''}`;
+
+                // Load all data in parallel
+                await Promise.all([
+                    loadInventoryStatistics(headers),
+                    loadUserStatistics(headers),
+                    loadTransferStatistics(headers),
+                    loadRecentInventories(headers),
+                    loadRecentTransfers(headers),
+                    loadRecentVerifications(headers),
+                    loadUnreadNotifications(headers),
+                    loadVerificationCount(headers),
+                    loadLoansCount(headers)
+                ]);
+
+                // Update UI
+                updateDashboardUI();
+                
+                // Initialize charts after data is loaded
+                initializeCharts();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load inventory statistics for institution
+        async function loadInventoryStatistics(headers) {
+            try {
+                // Get inventories for the institution - the API should filter by institution automatically
+                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Handle both paginated response and direct array
+                    let inventories = [];
+                    if (Array.isArray(data)) {
+                        inventories = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        inventories = data.content;
+                    }
+                    
+                    // Filter by institution ID if available
+                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
+                    if (institutionId) {
+                        inventories = inventories.filter(inv => 
+                            inv.institutionId === institutionId || 
+                            (inv.institution && inv.institution.institutionId === institutionId) ||
+                            (inv.institution && inv.institution.id === institutionId)
+                        );
+                    }
+                    
+                    // Store all inventories for chart calculations
+                    adminInstitutionDashboardData.allInventories = inventories;
+                    
+                    // Calculate statistics
+                    const totalInventories = inventories.length;
+                    const activeInventories = inventories.filter(inv => inv.status === true || inv.status === 'ACTIVE').length;
+                    const inactiveInventories = totalInventories - activeInventories;
+                    
+                    // Calculate total items and value
+                    let totalItems = 0;
+                    let totalValue = 0;
+                    inventories.forEach(inv => {
+                        if (inv.items) {
+                            totalItems += inv.items.length;
+                            inv.items.forEach(item => {
+                                if (item.value) {
+                                    totalValue += parseFloat(item.value) || 0;
+                                }
+                            });
+                        }
+                    });
+
+                    adminInstitutionDashboardData.inventoryStats = {
+                        totalInventories,
+                        activeInventories,
+                        inactiveInventories,
+                        totalItems,
+                        totalValue
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading inventory statistics:', error);
+            }
+        }
+
+        // Load user statistics for institution
+        async function loadUserStatistics(headers) {
+            try {
+                // Get users - the API should filter by institution automatically for admin_institution
+                const response = await fetch('/api/v1/users?page=0&size=10000', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Handle both paginated response and direct array
+                    let users = [];
+                    if (Array.isArray(data)) {
+                        users = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        users = data.content;
+                    }
+                    
+                    // Filter by institution
+                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
+                    const institutionName = document.getElementById('welcomeMessage').textContent.includes('institución') 
+                        ? document.getElementById('welcomeMessage').textContent.split('institución')[1]?.trim() 
+                        : null;
+                    
+                    if (institutionId || institutionName) {
+                        users = users.filter(u => {
+                            if (institutionId) {
+                                return u.institutionId === institutionId || 
+                                       (u.institution && (u.institution.institutionId === institutionId || u.institution.id === institutionId));
+                            }
+                            if (institutionName) {
+                                return u.institution === institutionName || 
+                                       (u.institution && u.institution.name === institutionName);
+                            }
+                            return true;
+                        });
+                    }
+                    
+                    // Calculate statistics
+                    const totalUsers = users.length;
+                    const adminInstitutionCount = users.filter(u => u.role === 'ADMIN_INSTITUTION').length;
+                    const warehouseCount = users.filter(u => u.role === 'WAREHOUSE').length;
+                    const userCount = users.filter(u => u.role === 'USER').length;
+
+                    adminInstitutionDashboardData.userStats = {
+                        totalUsers,
+                        adminInstitutionCount,
+                        warehouseCount,
+                        userCount
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading user statistics:', error);
+            }
+        }
+
+        // Load transfer statistics for institution
+        async function loadTransferStatistics(headers) {
+            try {
+                // Get transfers - the API should filter by institution automatically
+                const response = await fetch('/api/v1/transfers?page=0&size=10000', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Handle both paginated response and direct array
+                    let transfers = [];
+                    if (Array.isArray(data)) {
+                        transfers = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        transfers = data.content;
+                    }
+                    
+                    // Filter by institution if needed
+                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
+                    if (institutionId) {
+                        transfers = transfers.filter(t => 
+                            t.institutionId === institutionId ||
+                            (t.institution && (t.institution.institutionId === institutionId || t.institution.id === institutionId))
+                        );
+                    }
+                    
+                    // Calculate statistics
+                    const total = transfers.length;
+                    const pending = transfers.filter(t => t.status === 'PENDING').length;
+                    const approved = transfers.filter(t => t.status === 'APPROVED').length;
+                    const rejected = transfers.filter(t => t.status === 'REJECTED').length;
+
+                    adminInstitutionDashboardData.transferStats = {
+                        total,
+                        pending,
+                        approved,
+                        rejected
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading transfer statistics:', error);
+            }
+        }
+
+        // Load recent inventories
+        async function loadRecentInventories(headers) {
+            try {
+                const response = await fetch('/api/v1/inventory?page=0&size=5', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    let inventories = Array.isArray(data) ? data : (data.content || []);
+                    
+                    // Filter by institution
+                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
+                    if (institutionId) {
+                        inventories = inventories.filter(inv => 
+                            inv.institutionId === institutionId ||
+                            (inv.institution && (inv.institution.institutionId === institutionId || inv.institution.id === institutionId))
+                        );
+                    }
+                    
+                    adminInstitutionDashboardData.recentInventories = inventories;
+                }
+            } catch (error) {
+                console.error('Error loading recent inventories:', error);
+            }
+        }
+
+        // Load recent transfers
+        async function loadRecentTransfers(headers) {
+            try {
+                const response = await fetch('/api/v1/transfers?page=0&size=5', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    let transfers = Array.isArray(data) ? data : (data.content || []);
+                    
+                    // Filter by institution
+                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
+                    if (institutionId) {
+                        transfers = transfers.filter(t => 
+                            t.institutionId === institutionId ||
+                            (t.institution && (t.institution.institutionId === institutionId || t.institution.id === institutionId))
+                        );
+                    }
+                    
+                    adminInstitutionDashboardData.recentTransfers = transfers;
+                }
+            } catch (error) {
+                console.error('Error loading recent transfers:', error);
+            }
+        }
+
+        // Load recent verifications
+        async function loadRecentVerifications(headers) {
+            try {
+                // Admin-institution may not have direct access to /api/v1/verifications
+                // Try to get verifications through inventories of the institution
+                const inventories = adminInstitutionDashboardData.allInventories || [];
+                
+                if (inventories.length === 0) {
+                    adminInstitutionDashboardData.recentVerifications = [];
+                    return;
+                }
+
+                // Try to get verifications for each inventory (limit to first 5 inventories for performance)
+                let allVerifications = [];
+                const inventoriesToCheck = inventories.slice(0, 5);
+                
+                for (const inv of inventoriesToCheck) {
+                    try {
+                        const response = await fetch(`/api/v1/verifications/inventories/${inv.id}/verifications/latest`, { headers });
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (Array.isArray(data)) {
+                                allVerifications = allVerifications.concat(data);
+                            } else if (data) {
+                                allVerifications.push(data);
+                            }
+                        }
+                    } catch (err) {
+                        // Silently continue if this inventory doesn't have verifications endpoint
+                        continue;
+                    }
+                }
+                
+                // Sort by date and take most recent
+                allVerifications.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || a.verificationDate || 0);
+                    const dateB = new Date(b.createdAt || b.verificationDate || 0);
+                    return dateB - dateA;
+                });
+                
+                adminInstitutionDashboardData.recentVerifications = allVerifications.slice(0, 5);
+            } catch (error) {
+                // Silently handle error - admin-institution may not have direct access to verifications
+                adminInstitutionDashboardData.recentVerifications = [];
+            }
+        }
+
+        // Load unread notifications count
+        async function loadUnreadNotifications(headers) {
+            try {
+                const response = await fetch('/api/v1/notifications/my-notifications/unread/count', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('unreadNotifications').textContent = data.count || 0;
+                }
+            } catch (error) {
+                console.error('Error loading unread notifications:', error);
+                document.getElementById('unreadNotifications').textContent = '0';
+            }
+        }
+
+        // Load verification count
+        async function loadVerificationCount(headers) {
+            try {
+                // Admin-institution may not have direct access to /api/v1/verifications
+                // Count verifications through inventories (limit to avoid too many requests)
+                const inventories = adminInstitutionDashboardData.allInventories || [];
+                let totalCount = 0;
+                
+                // Limit to first 10 inventories to avoid performance issues
+                const inventoriesToCheck = inventories.slice(0, 10);
+                
+                for (const inv of inventoriesToCheck) {
+                    try {
+                        const response = await fetch(`/api/v1/verifications/inventories/${inv.id}/verifications/latest`, { headers });
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (Array.isArray(data)) {
+                                totalCount += data.length;
+                            } else if (data) {
+                                totalCount += 1;
+                            }
+                        }
+                    } catch (err) {
+                        // Silently continue if this inventory doesn't have verifications
+                        continue;
+                    }
+                }
+                
+                // If we checked limited inventories, show approximate count
+                if (inventories.length > inventoriesToCheck.length) {
+                    document.getElementById('totalVerifications').textContent = `${totalCount}+`;
+                } else {
+                    document.getElementById('totalVerifications').textContent = totalCount;
+                }
+                adminInstitutionDashboardData.verificationCount = totalCount;
+            } catch (error) {
+                // Silently handle error - admin-institution may not have direct access to verifications
+                document.getElementById('totalVerifications').textContent = '0';
+                adminInstitutionDashboardData.verificationCount = 0;
+            }
+        }
+
+        // Load loans count  
+        async function loadLoansCount(headers) {
+            try {
+                const response = await fetch('/api/v1/loan/filter', { headers });
+                if (response.ok) {
+                    const loans = await response.json();
+                    let loansArray = Array.isArray(loans) ? loans : [];
+                    
+                    // Filter by institution if needed
+                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
+                    if (institutionId) {
+                        loansArray = loansArray.filter(loan => {
+                            if (loan.inventory) {
+                                return loan.inventory.institutionId === institutionId ||
+                                       (loan.inventory.institution && (loan.inventory.institution.institutionId === institutionId || loan.inventory.institution.id === institutionId));
+                            }
+                            return true;
+                        });
+                    }
+                    
+                    const totalCount = loansArray.length;
+                    document.getElementById('totalLoans').textContent = totalCount;
+                    adminInstitutionDashboardData.loansCount = totalCount;
+                } else {
+                    document.getElementById('totalLoans').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading loans count:', error);
+                document.getElementById('totalLoans').textContent = '0';
+            }
+        }
+
+        // Update dashboard UI with loaded data
+        function updateDashboardUI() {
+            // Update inventory stats
+            if (adminInstitutionDashboardData.inventoryStats) {
+                document.getElementById('totalInventories').textContent = adminInstitutionDashboardData.inventoryStats.totalInventories || 0;
+                document.getElementById('activeInventories').textContent = adminInstitutionDashboardData.inventoryStats.activeInventories || 0;
+                document.getElementById('inactiveInventories').textContent = adminInstitutionDashboardData.inventoryStats.inactiveInventories || 0;
+                document.getElementById('totalItems').textContent = adminInstitutionDashboardData.inventoryStats.totalItems || 0;
+                
+                // Format total value
+                const totalValue = adminInstitutionDashboardData.inventoryStats.totalValue || 0;
+                document.getElementById('totalValue').textContent = new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                }).format(totalValue);
+            }
+
+            // Update user stats
+            if (adminInstitutionDashboardData.userStats) {
+                document.getElementById('totalUsers').textContent = adminInstitutionDashboardData.userStats.totalUsers || 0;
+                
+                const rolesBreakdown = [];
+                if (adminInstitutionDashboardData.userStats.adminInstitutionCount > 0) rolesBreakdown.push(`${adminInstitutionDashboardData.userStats.adminInstitutionCount} Admin Inst.`);
+                if (adminInstitutionDashboardData.userStats.warehouseCount > 0) rolesBreakdown.push(`${adminInstitutionDashboardData.userStats.warehouseCount} Warehouse`);
+                if (adminInstitutionDashboardData.userStats.userCount > 0) rolesBreakdown.push(`${adminInstitutionDashboardData.userStats.userCount} Usuarios`);
+                
+                document.getElementById('userRolesBreakdown').textContent = rolesBreakdown.slice(0, 3).join(', ') || 'Sin datos';
+            }
+
+            // Update transfer stats
+            if (adminInstitutionDashboardData.transferStats) {
+                document.getElementById('totalTransfers').textContent = adminInstitutionDashboardData.transferStats.total || 0;
+                const transfersBreakdown = [];
+                if (adminInstitutionDashboardData.transferStats.pending > 0) transfersBreakdown.push(`${adminInstitutionDashboardData.transferStats.pending} pendientes`);
+                if (adminInstitutionDashboardData.transferStats.approved > 0) transfersBreakdown.push(`${adminInstitutionDashboardData.transferStats.approved} aprobadas`);
+                if (adminInstitutionDashboardData.transferStats.rejected > 0) transfersBreakdown.push(`${adminInstitutionDashboardData.transferStats.rejected} rechazadas`);
+                document.getElementById('transfersBreakdown').innerHTML = transfersBreakdown.join(', ') || 'Sin datos';
+            }
+
+            // Update recent inventories
+            updateRecentInventories();
+            
+            // Update recent transfers
+            updateRecentTransfers();
+
+            // Update recent verifications
+            updateRecentVerifications();
+        }
+
+        // Update recent inventories display
+        function updateRecentInventories() {
+            const container = document.getElementById('recentInventories');
+            if (!adminInstitutionDashboardData.recentInventories || adminInstitutionDashboardData.recentInventories.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-sm text-center py-4">No hay inventarios recientes</p>';
+                return;
+            }
+
+            container.innerHTML = adminInstitutionDashboardData.recentInventories.slice(0, 5).map(inv => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                    <div class="flex-1">
+                        <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${inv.name || 'Sin nombre'}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">${inv.institution?.name || 'Sin institución'}</div>
+                    </div>
+                    <div class="ml-3">
+                        <span class="px-2 py-1 text-xs rounded-full ${inv.status ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}">
+                            ${inv.status ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update recent transfers display
+        function updateRecentTransfers() {
+            const container = document.getElementById('recentTransfers');
+            if (!adminInstitutionDashboardData.recentTransfers || adminInstitutionDashboardData.recentTransfers.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-sm text-center py-4">No hay transferencias recientes</p>';
+                return;
+            }
+
+            container.innerHTML = adminInstitutionDashboardData.recentTransfers.slice(0, 5).map(transfer => {
+                const statusColors = {
+                    'PENDING': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300',
+                    'APPROVED': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
+                    'REJECTED': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                };
+                // Prioritize itemLicencePlate, then itemName, then itemId as fallback
+                const itemDisplay = transfer.itemLicencePlate || transfer.itemName || (transfer.itemId ? `Item #${transfer.itemId}` : 'N/A');
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Item: ${itemDisplay}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">${new Date(transfer.requestedAt).toLocaleDateString('es-ES')}</div>
+                        </div>
+                        <div class="ml-3">
+                            <span class="px-2 py-1 text-xs rounded-full ${statusColors[transfer.status] || 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300'}">
+                                ${transfer.status || 'N/A'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update recent verifications display
+        function updateRecentVerifications() {
+            const container = document.getElementById('recentVerifications');
+            if (!adminInstitutionDashboardData.recentVerifications || adminInstitutionDashboardData.recentVerifications.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-sm text-center py-4">No hay verificaciones recientes</p>';
+                return;
+            }
+
+            container.innerHTML = adminInstitutionDashboardData.recentVerifications.slice(0, 5).map(verif => {
+                // Format date
+                let dateStr = 'N/A';
+                if (verif.createdAt) {
+                    dateStr = new Date(verif.createdAt).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                }
+                
+                // Get item identifier - prioritize itemLicencePlateNumber, then itemName, then itemId as fallback
+                const itemDisplay = verif.itemLicencePlateNumber || verif.itemName || (verif.itemId ? `Item #${verif.itemId}` : 'N/A');
+                
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Item: ${itemDisplay}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">${dateStr}</div>
+                        </div>
+                        <div class="ml-3">
+                            <span class="px-2 py-1 text-xs rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300">
+                                Verificado
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Destroy existing charts if they exist
+            Object.values(adminInstitutionDashboardData.charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            adminInstitutionDashboardData.charts = {};
+
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const colors = {
+                textColor: isDarkMode ? '#CBD5E1' : '#374151',
+                gridColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                tooltipBg: isDarkMode ? 'rgba(30, 41, 59, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                tooltipBorder: isDarkMode ? 'rgba(148, 163, 184, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+            };
+
+            // Chart: Users by Role
+            if (adminInstitutionDashboardData.userStats) {
+                const canvas = document.getElementById('usersByRoleChart');
+                if (canvas) {
+                    const ctx2d = canvas.getContext('2d');
+                    const gradient1 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient1.addColorStop(0, '#8B5CF6');
+                    gradient1.addColorStop(1, '#7C3AED');
+                    
+                    const gradient2 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient2.addColorStop(0, '#F59E0B');
+                    gradient2.addColorStop(1, '#D97706');
+                    
+                    const gradient3 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient3.addColorStop(0, '#10B981');
+                    gradient3.addColorStop(1, '#059669');
+
+                    adminInstitutionDashboardData.charts.usersByRole = new Chart(canvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Admin Inst.', 'Warehouse', 'Usuarios'],
+                            datasets: [{
+                                data: [
+                                    adminInstitutionDashboardData.userStats.adminInstitutionCount || 0,
+                                    adminInstitutionDashboardData.userStats.warehouseCount || 0,
+                                    adminInstitutionDashboardData.userStats.userCount || 0
+                                ],
+                                backgroundColor: [gradient1, gradient2, gradient3],
+                                borderWidth: 0,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '60%',
+                            borderRadius: 8,
+                            animation: {
+                                animateRotate: true,
+                                animateScale: true,
+                                duration: 1000
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        font: {
+                                            size: 12,
+                                            weight: '500'
+                                        },
+                                        color: colors.textColor
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    },
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${label}: ${value} (${percentage}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Chart: Inventories by Status
+            if (adminInstitutionDashboardData.inventoryStats) {
+                const canvas = document.getElementById('inventoriesByStatusChart');
+                if (canvas) {
+                    const ctx2d = canvas.getContext('2d');
+                    const gradient1 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient1.addColorStop(0, '#10B981');
+                    gradient1.addColorStop(1, '#059669');
+                    
+                    const gradient2 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient2.addColorStop(0, '#EF4444');
+                    gradient2.addColorStop(1, '#DC2626');
+
+                    adminInstitutionDashboardData.charts.inventoriesByStatus = new Chart(canvas, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Activos', 'Inactivos'],
+                            datasets: [{
+                                data: [
+                                    adminInstitutionDashboardData.inventoryStats.activeInventories || 0,
+                                    adminInstitutionDashboardData.inventoryStats.inactiveInventories || 0
+                                ],
+                                backgroundColor: [gradient1, gradient2],
+                                borderWidth: 0,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            borderRadius: 8,
+                            animation: {
+                                animateRotate: true,
+                                animateScale: true,
+                                duration: 1000
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        font: {
+                                            size: 12,
+                                            weight: '500'
+                                        },
+                                        color: colors.textColor
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Chart: Transfers by Status
+            if (adminInstitutionDashboardData.transferStats) {
+                const canvas = document.getElementById('transfersByStatusChart');
+                if (canvas) {
+                    const ctx2d = canvas.getContext('2d');
+                    const gradient1 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient1.addColorStop(0, '#F59E0B');
+                    gradient1.addColorStop(1, '#D97706');
+                    
+                    const gradient2 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient2.addColorStop(0, '#10B981');
+                    gradient2.addColorStop(1, '#059669');
+                    
+                    const gradient3 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient3.addColorStop(0, '#EF4444');
+                    gradient3.addColorStop(1, '#DC2626');
+
+                    adminInstitutionDashboardData.charts.transfersByStatus = new Chart(canvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Pendientes', 'Aprobadas', 'Rechazadas'],
+                            datasets: [{
+                                data: [
+                                    adminInstitutionDashboardData.transferStats.pending || 0,
+                                    adminInstitutionDashboardData.transferStats.approved || 0,
+                                    adminInstitutionDashboardData.transferStats.rejected || 0
+                                ],
+                                backgroundColor: [gradient1, gradient2, gradient3],
+                                borderWidth: 0,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '60%',
+                            borderRadius: 8,
+                            animation: {
+                                animateRotate: true,
+                                animateScale: true,
+                                duration: 1000
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        usePointStyle: true,
+                                        pointStyle: 'circle',
+                                        font: {
+                                            size: 12,
+                                            weight: '500'
+                                        },
+                                        color: colors.textColor
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Chart: Items by Inventory
+            if (adminInstitutionDashboardData.allInventories && adminInstitutionDashboardData.allInventories.length > 0) {
+                const canvas = document.getElementById('itemsByInventoryChart');
+                if (canvas) {
+                    // Group items by inventory
+                    const inventoryItems = {};
+                    adminInstitutionDashboardData.allInventories.forEach(inv => {
+                        const itemCount = inv.items ? inv.items.length : 0;
+                        if (itemCount > 0) {
+                            inventoryItems[inv.name || `Inventario ${inv.id}`] = itemCount;
+                        }
+                    });
+
+                    const labels = Object.keys(inventoryItems);
+                    const values = Object.values(inventoryItems);
+
+                    if (labels.length > 0) {
+                        const ctx2d = canvas.getContext('2d');
+                        const colorPalette = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#6366F1'];
+                        const barGradients = colorPalette.slice(0, labels.length).map((color, index) => {
+                            const gradient = ctx2d.createLinearGradient(0, 0, 0, 400);
+                            const hex = color.replace('#', '');
+                            const r = parseInt(hex.substring(0, 2), 16);
+                            const g = parseInt(hex.substring(2, 4), 16);
+                            const b = parseInt(hex.substring(4, 6), 16);
+                            gradient.addColorStop(0, color);
+                            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.7)`);
+                            return gradient;
+                        });
+
+                        adminInstitutionDashboardData.charts.itemsByInventory = new Chart(canvas, {
+                            type: 'bar',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    label: 'Items',
+                                    data: values,
+                                    backgroundColor: barGradients,
+                                    borderColor: colorPalette.slice(0, labels.length),
+                                    borderWidth: 2,
+                                    borderRadius: 8,
+                                    borderSkipped: false
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                animation: {
+                                    duration: 1000,
+                                    easing: 'easeInOutQuart'
+                                },
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        backgroundColor: colors.tooltipBg,
+                                        borderColor: colors.tooltipBorder,
+                                        borderWidth: 1,
+                                        padding: 12,
+                                        titleFont: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        },
+                                        bodyFont: {
+                                            size: 13
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        grid: {
+                                            color: colors.gridColor,
+                                            drawBorder: false
+                                        },
+                                        ticks: {
+                                            color: colors.textColor,
+                                            font: {
+                                                size: 11
+                                            }
+                                        }
+                                    },
+                                    y: {
+                                        beginAtZero: true,
+                                        grid: {
+                                            color: colors.gridColor,
+                                            drawBorder: false
+                                        },
+                                        ticks: {
+                                            color: colors.textColor,
+                                            font: {
+                                                size: 11
+                                            }
+                                        },
+                                        title: {
+                                            display: true,
+                                            text: 'Cantidad de Items',
+                                            color: colors.textColor,
+                                            font: {
+                                                size: 12,
+                                                weight: '600'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        }
     </script>
 
     <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
         style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
-                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
 
             <div class="text-center mb-6">
-                <i class="fas fa-sign-out-alt text-green-600 text-5xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
-                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
+                <i class="fas fa-sign-out-alt text-green-600 dark:text-green-400 text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600 dark:text-gray-400">Será redirigido a la página de inicio de sesión.</p>
             </div>
 
             <div class="flex gap-3">
                 <button onclick="closeLogoutModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cancelar
                 </button>
                 <button onclick="confirmLogout()"

@@ -3748,3 +3748,240 @@ html:not(.dark) #loansStatsContainer ~ .stat-card h2 {
 html:not(.dark) #loansStatsContainer ~ .stat-card h2.dark\:text-white {
     color: #1F2937 !important; /* gray-800 */
 }
+
+/* ============================================
+   ADMIN REGIONAL DASHBOARD - DARK MODE
+   ============================================ */
+
+/* Stat Cards en modo oscuro */
+.dark .stat-card {
+    background-color: var(--dark-bg-secondary) !important;
+    border-color: var(--dark-border) !important;
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .stat-card h2,
+.dark .stat-card h3,
+.dark .stat-card .text-2xl,
+.dark .stat-card .text-xl {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .stat-card .text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .stat-card .text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark .stat-card .text-gray-500 {
+    color: var(--dark-text-muted) !important;
+}
+
+/* Icon backgrounds en stat cards - modo oscuro */
+.dark .stat-card .bg-green-100 {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+}
+
+.dark .stat-card .bg-blue-100 {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.dark .stat-card .bg-purple-100 {
+    background-color: rgba(139, 92, 246, 0.2) !important;
+}
+
+.dark .stat-card .bg-orange-100 {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+.dark .stat-card .bg-teal-100 {
+    background-color: rgba(20, 184, 166, 0.2) !important;
+}
+
+.dark .stat-card .bg-indigo-100 {
+    background-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+.dark .stat-card .bg-yellow-100 {
+    background-color: rgba(234, 179, 8, 0.2) !important;
+}
+
+.dark .stat-card .bg-red-100 {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Chart Containers en modo oscuro */
+.dark .chart-container {
+    background: linear-gradient(to bottom right, var(--dark-bg-secondary), var(--dark-bg-tertiary)) !important;
+    border-color: var(--dark-border) !important;
+}
+
+.dark .chart-container.bg-gradient-to-br.from-white.to-blue-50 {
+    background: linear-gradient(to bottom right, var(--dark-bg-secondary), rgba(59, 130, 246, 0.1)) !important;
+}
+
+.dark .chart-container.bg-gradient-to-br.from-white.to-green-50 {
+    background: linear-gradient(to bottom right, var(--dark-bg-secondary), rgba(0, 175, 0, 0.1)) !important;
+}
+
+.dark .chart-container.bg-gradient-to-br.from-white.to-orange-50 {
+    background: linear-gradient(to bottom right, var(--dark-bg-secondary), rgba(245, 158, 11, 0.1)) !important;
+}
+
+.dark .chart-container.bg-gradient-to-br.from-white.to-purple-50 {
+    background: linear-gradient(to bottom right, var(--dark-bg-secondary), rgba(139, 92, 246, 0.1)) !important;
+}
+
+.dark .chart-container h2 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark .chart-container p {
+    color: var(--dark-text-secondary) !important;
+}
+
+.dark .chart-container .border-blue-200,
+.dark .chart-container .border-green-200,
+.dark .chart-container .border-orange-200,
+.dark .chart-container .border-purple-200 {
+    border-color: var(--dark-border) !important;
+}
+
+/* Recent Activity Sections en modo oscuro */
+.dark #recentInventories .bg-gray-50,
+.dark #recentTransfers .bg-gray-50,
+.dark #recentVerifications .bg-gray-50 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+.dark #recentInventories .hover\:bg-gray-100:hover,
+.dark #recentTransfers .hover\:bg-gray-100:hover,
+.dark #recentVerifications .hover\:bg-gray-100:hover {
+    background-color: var(--dark-bg-secondary) !important;
+}
+
+.dark #recentInventories .text-gray-800,
+.dark #recentTransfers .text-gray-800,
+.dark #recentVerifications .text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark #recentInventories .text-gray-600,
+.dark #recentTransfers .text-gray-600,
+.dark #recentVerifications .text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* Badges en modo oscuro */
+.dark .bg-green-100.text-green-800 {
+    background-color: rgba(0, 175, 0, 0.2) !important;
+    color: var(--dark-sena-verde) !important;
+}
+
+.dark .bg-red-100.text-red-800 {
+    background-color: rgba(239, 68, 68, 0.2) !important;
+    color: #FCA5A5 !important;
+}
+
+.dark .bg-yellow-100.text-yellow-800 {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    color: #FCD34D !important;
+}
+
+.dark .bg-teal-100.text-teal-800 {
+    background-color: rgba(20, 184, 166, 0.2) !important;
+    color: #5EEAD4 !important;
+}
+
+/* Quick Stats Grid en modo oscuro */
+.dark .stat-card.bg-gradient-to-br.from-green-50.to-green-100 {
+    background: linear-gradient(to bottom right, rgba(0, 175, 0, 0.1), rgba(0, 175, 0, 0.15)) !important;
+}
+
+.dark .stat-card.bg-gradient-to-br.from-blue-50.to-blue-100 {
+    background: linear-gradient(to bottom right, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.15)) !important;
+}
+
+.dark .stat-card.bg-gradient-to-br.from-purple-50.to-purple-100 {
+    background: linear-gradient(to bottom right, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.15)) !important;
+}
+
+.dark .stat-card.bg-gradient-to-br.from-orange-50.to-orange-100 {
+    background: linear-gradient(to bottom right, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.15)) !important;
+}
+
+.dark .stat-card .border-green-200,
+.dark .stat-card .border-blue-200,
+.dark .stat-card .border-purple-200,
+.dark .stat-card .border-orange-200 {
+    border-color: var(--dark-border) !important;
+}
+
+/* Loading states en modo oscuro */
+.dark .animate-pulse .bg-gray-200 {
+    background-color: var(--dark-bg-tertiary) !important;
+}
+
+/* Links en modo oscuro */
+.dark .text-blue-600 {
+    color: #60A5FA !important; /* blue-400 */
+}
+
+.dark .text-blue-600:hover {
+    color: #93C5FD !important; /* blue-300 */
+}
+
+/* Page Header en modo oscuro */
+.dark main h1.text-gray-800 {
+    color: var(--dark-text-primary) !important;
+}
+
+.dark main p.text-gray-600 {
+    color: var(--dark-text-secondary) !important;
+}
+
+/* ============================================
+   ADMIN REGIONAL DASHBOARD - LIGHT MODE
+   ============================================ */
+
+/* Asegurar que en modo claro los colores se mantengan correctamente */
+html:not(.dark) .stat-card {
+    background-color: #ffffff !important;
+    border-color: #E5E7EB !important; /* gray-200 */
+    color: inherit !important;
+}
+
+html:not(.dark) .stat-card .text-gray-800 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) .stat-card .text-gray-600 {
+    color: #4B5563 !important; /* gray-600 */
+}
+
+html:not(.dark) .chart-container {
+    background: linear-gradient(to bottom right, #ffffff, #f9fafb) !important;
+    border-color: #E5E7EB !important;
+}
+
+html:not(.dark) .chart-container h2 {
+    color: #1F2937 !important; /* gray-800 */
+}
+
+html:not(.dark) .chart-container p {
+    color: #6B7280 !important; /* gray-500 */
+}
+
+html:not(.dark) #recentInventories .bg-gray-50,
+html:not(.dark) #recentTransfers .bg-gray-50,
+html:not(.dark) #recentVerifications .bg-gray-50 {
+    background-color: #F9FAFB !important; /* gray-50 */
+}
+
+html:not(.dark) #recentInventories .hover\:bg-gray-100:hover,
+html:not(.dark) #recentTransfers .hover\:bg-gray-100:hover,
+html:not(.dark) #recentVerifications .hover\:bg-gray-100:hover {
+    background-color: #F3F4F6 !important; /* gray-100 */
+}
