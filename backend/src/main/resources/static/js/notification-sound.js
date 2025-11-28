@@ -2,10 +2,12 @@
 // Módulo centralizado para manejar los sonidos de notificaciones
 
 const NotificationSound = {
+    audioContext: null,
+
     /**
      * Reproduce un sonido de notificación
      */
-    play() {
+    async play() {
         // Verificar si el sonido está habilitado (por defecto sí)
         const soundEnabled = localStorage.getItem('sgdis-notification-sound') !== 'false';
         if (!soundEnabled) {
@@ -13,8 +15,24 @@ const NotificationSound = {
         }
 
         try {
-            // Crear un tono más audible y agradable usando Web Audio API
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // Crear o reutilizar el AudioContext
+            let audioContext = this.audioContext;
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.audioContext = audioContext;
+            }
+
+            // Reanudar el AudioContext si está suspendido (requerido por políticas del navegador)
+            if (audioContext.state === 'suspended') {
+                try {
+                    await audioContext.resume();
+                } catch (resumeError) {
+                    console.log('No se pudo reanudar el AudioContext:', resumeError);
+                    // Intentar crear uno nuevo si falla
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    this.audioContext = audioContext;
+                }
+            }
             
             // Crear dos osciladores para un sonido más rico (nota principal + armónico)
             const oscillator1 = audioContext.createOscillator();
@@ -52,6 +70,11 @@ const NotificationSound = {
             // Segundo tono más corto después de una breve pausa (patrón de notificación)
             setTimeout(() => {
                 try {
+                    // Verificar que el AudioContext siga disponible
+                    if (!audioContext || audioContext.state === 'closed') {
+                        return;
+                    }
+                    
                     const oscillator3 = audioContext.createOscillator();
                     const gainNode3 = audioContext.createGain();
                     
@@ -68,6 +91,7 @@ const NotificationSound = {
                     oscillator3.stop(now2 + 0.3);
                 } catch (e) {
                     // Ignorar errores en el segundo tono
+                    console.log('Error en segundo tono:', e);
                 }
             }, 200);
         } catch (error) {

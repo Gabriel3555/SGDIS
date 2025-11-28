@@ -226,10 +226,18 @@ public class InventoryService
                         inventory.setOwner(newOwner);
                         inventory = inventoryRepository.save(inventory);
                         
+                        // Enviar notificación al nuevo dueño del inventario
+                        String inventoryName = inventory.getName() != null ? inventory.getName() : "sin nombre";
+                        notificationService.sendInventoryAssignedNotification(
+                                newOwner.getId(), 
+                                inventoryName, 
+                                inventory.getId()
+                        );
+                        
                         // Registrar auditoría
                         recordActionUseCase.recordAction(new RecordActionRequest(
                                 String.format("Propietario de inventario actualizado: %s (ID: %d) - Anterior: %s (%s) → Nuevo: %s (%s)", 
-                                        inventory.getName() != null ? inventory.getName() : "sin nombre",
+                                        inventoryName,
                                         inventory.getId(),
                                         oldOwnerName,
                                         oldOwnerEmail,

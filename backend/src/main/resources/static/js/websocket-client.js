@@ -16,7 +16,7 @@ class WebSocketNotificationClient {
      */
     connect() {
         // Obtener el userId del localStorage o del token JWT
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('jwt') || localStorage.getItem('token');
         if (!token) {
             console.log('No hay token disponible, no se puede conectar al WebSocket');
             return;
@@ -202,7 +202,7 @@ window.wsNotificationClient = new WebSocketNotificationClient();
 
 // Inicializar conexión cuando el documento esté listo y haya un token
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('jwt') || localStorage.getItem('token');
     if (token) {
         // Esperar un poco para asegurar que todo está cargado
         setTimeout(() => {
