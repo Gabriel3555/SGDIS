@@ -607,6 +607,22 @@ function updateUsersTable() {
       const isCurrentUser =
         window.usersData && window.usersData.currentLoggedInUserId === user.id;
 
+      // Build delete button HTML only if not warehouse
+      const deleteButtonHtml = !isWarehouse ? `<button data-user-id="${user.id}" data-action="delete" class="user-action-btn p-2 ${
+        isAdmin
+          ? "text-gray-400 cursor-not-allowed opacity-50"
+          : "text-red-600 hover:bg-red-50"
+      } rounded-lg transition-colors" title="Eliminar" ${
+        isAdmin ? "disabled" : ""
+      } onclick="${isAdmin ? "return false" : `deleteUser('${user.id}')`}">
+                                <i class="fas fa-trash"></i>
+                            </button>` : '';
+
+      // Build edit button HTML only if not warehouse
+      const editButtonHtml = !isWarehouse ? `<button data-user-id="${user.id}" data-action="edit" class="user-action-btn p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </button>` : '';
+
       const profileImage = user.imgUrl
         ? createImageWithSpinner(
             user.imgUrl,
@@ -672,22 +688,8 @@ function updateUsersTable() {
                             }" data-action="view" class="user-action-btn p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button data-user-id="${
-                              user.id
-                            }" data-action="edit" class="user-action-btn p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button data-user-id="${
-                              user.id
-                            }" data-action="delete" class="user-action-btn p-2 ${
-        isAdmin
-          ? "text-gray-400 cursor-not-allowed opacity-50"
-          : "text-red-600 hover:bg-red-50"
-      } rounded-lg transition-colors" title="Eliminar" ${
-        isAdmin ? "disabled" : ""
-      } onclick="${isAdmin ? "return false" : `deleteUser('${user.id}')`}">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                            ${editButtonHtml}
+                            ${deleteButtonHtml}
                             <button onclick="showUserLoansModal('${
                               user.id
                             }')" class="user-action-btn p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
@@ -1382,6 +1384,22 @@ function updateUsersCards() {
       const isCurrentUser =
         window.usersData && window.usersData.currentLoggedInUserId === user.id;
 
+      // Build delete button HTML only if not warehouse
+      const deleteButtonHtmlCards = !isWarehouse ? `<button onclick="deleteUser('${user.id}')" class="${
+        isAdmin
+          ? "text-gray-400 cursor-not-allowed opacity-50"
+          : "text-red-600 hover:bg-red-50"
+      } p-2 rounded-lg transition-colors" title="Eliminar usuario" ${
+        isAdmin ? "disabled" : ""
+      }>
+                            <i class="fas fa-trash"></i>
+                        </button>` : '';
+
+      // Build edit button HTML only if not warehouse (for cards)
+      const editButtonHtmlCards = !isWarehouse ? `<button onclick="editUser('${user.id}')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar usuario">
+                            <i class="fas fa-edit"></i>
+                        </button>` : '';
+
       const profileImage = user.imgUrl
         ? createImageWithSpinner(
             user.imgUrl,
@@ -1446,20 +1464,8 @@ function updateUsersCards() {
                         }')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button onclick="editUser('${
-                          user.id
-                        }')" class="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors" title="Editar usuario">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button onclick="deleteUser('${user.id}')" class="${
-        isAdmin
-          ? "text-gray-400 cursor-not-allowed opacity-50"
-          : "text-red-600 hover:bg-red-50"
-      } p-2 rounded-lg transition-colors" title="Eliminar usuario" ${
-        isAdmin ? "disabled" : ""
-      }>
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        ${editButtonHtmlCards}
+                        ${deleteButtonHtmlCards}
                         <button onclick="showUserLoansModal('${
                           user.id
                         }')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">

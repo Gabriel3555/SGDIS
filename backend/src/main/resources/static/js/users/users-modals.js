@@ -695,6 +695,16 @@ async function showUserLoansModal(userId) {
         } else if (response.status === 404) {
             console.warn('Loans endpoint not found, trying alternative...');
             loans = [];
+        } else if (response.status === 403) {
+            // Permission denied - show friendly message
+            if (loadingElement) {
+                loadingElement.innerHTML = `
+                    <i class="fas fa-lock text-3xl text-yellow-500 mb-4"></i>
+                    <p class="text-yellow-600 font-medium">No tienes permisos para ver los préstamos de este usuario</p>
+                    <p class="text-gray-500 text-sm mt-2">Contacta al administrador si necesitas acceso</p>
+                `;
+            }
+            return;
         } else {
             throw new Error('Error al cargar los préstamos');
         }
@@ -1021,6 +1031,16 @@ async function showUserInventoriesModal(userId, type) {
             inventories = await response.json();
         } else if (response.status === 404) {
             inventories = [];
+        } else if (response.status === 403) {
+            // Permission denied - show friendly message
+            if (loadingElement) {
+                loadingElement.innerHTML = `
+                    <i class="fas fa-lock text-3xl text-yellow-500 mb-4"></i>
+                    <p class="text-yellow-600 font-medium">No tienes permisos para ver los inventarios de este usuario</p>
+                    <p class="text-gray-500 text-sm mt-2">Contacta al administrador si necesitas acceso</p>
+                `;
+            }
+            return;
         } else {
             throw new Error('Error al cargar los inventarios');
         }
@@ -1057,54 +1077,76 @@ function displayUserInventories(inventories, loadingElement, contentElement, inv
     // Si es Owner, hacer el inventario más grande ya que solo se puede poseer uno
     const isOwner = type === 'owner';
     const cardClasses = isOwner 
-        ? 'bg-white border-2 border-blue-200 rounded-xl p-8 hover:shadow-xl transition-shadow' 
-        : 'bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow';
-    const titleClasses = isOwner 
-        ? 'text-2xl font-bold text-gray-800 mb-3' 
-        : 'text-lg font-bold text-gray-800 mb-2';
-    const textClasses = isOwner 
-        ? 'text-base text-gray-600 mb-2' 
-        : 'text-sm text-gray-600 mb-1';
-    const priceClasses = isOwner 
-        ? 'text-base text-gray-600' 
-        : 'text-sm text-gray-600';
-    const statusClasses = isOwner 
-        ? 'px-4 py-2 rounded-full text-sm font-medium' 
-        : 'px-3 py-1 rounded-full text-xs font-medium';
-    const idClasses = isOwner 
-        ? 'text-sm text-gray-500' 
-        : 'text-xs text-gray-500';
-    const buttonClasses = isOwner 
-        ? 'text-blue-600 hover:text-blue-800 text-base font-medium' 
-        : 'text-blue-600 hover:text-blue-800 text-sm font-medium';
+        ? 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-2xl p-6 hover:shadow-xl transition-all duration-300' 
+        : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-lg transition-all duration-300';
 
     let inventoriesHtml = '';
     inventories.forEach(inventory => {
-        const statusColor = inventory.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+        const statusColor = inventory.status 
+            ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' 
+            : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400';
         const statusText = inventory.status ? 'Activo' : 'Inactivo';
         const totalPrice = inventory.totalPrice ? `$${inventory.totalPrice.toLocaleString('es-ES')}` : '$0';
         const location = inventory.location || 'Sin ubicación';
         const name = inventory.name || 'Sin nombre';
+        const institution = inventory.institutionName || 'Sin institución';
+        const quantityItems = inventory.quantityItems || 0;
+        const uuid = inventory.uuid ? inventory.uuid.toString() : 'N/A';
 
         inventoriesHtml += `
             <div class="${cardClasses}">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="flex-1">
-                        <h3 class="${titleClasses}">${name}</h3>
-                        <p class="${textClasses}">
-                            <i class="fas fa-map-marker-alt mr-2"></i>${location}
-                        </p>
-                        <p class="${priceClasses}">
-                            <i class="fas fa-dollar-sign mr-2"></i>${totalPrice}
-                        </p>
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 rounded-xl flex items-center justify-center text-white text-xl font-bold shadow-lg flex-shrink-0">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1 truncate">${name}</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">ID: ${inventory.id}</p>
+                        </div>
                     </div>
-                    <span class="${statusClasses} ${statusColor}">${statusText}</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusColor} flex-shrink-0 ml-2">
+                        ${statusText}
+                    </span>
                 </div>
-                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <span class="${idClasses}">ID: ${inventory.id}</span>
-                    <button onclick="window.location.href='/superadmin/inventory'" class="${buttonClasses}">
-                        Ver detalles <i class="fas fa-arrow-right ml-1"></i>
-                    </button>
+
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <i class="fas fa-map-marker-alt text-blue-500 dark:text-blue-400 w-4"></i>
+                        <span class="truncate">${location}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                        <i class="fas fa-building text-blue-500 dark:text-blue-400 w-4"></i>
+                        <span class="truncate">${institution}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <div class="w-9 h-9 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-cubes text-green-600 dark:text-green-400 text-sm"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Items</p>
+                                <p class="text-base font-bold text-gray-800 dark:text-gray-100">${quantityItems}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-9 h-9 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-dollar-sign text-emerald-600 dark:text-emerald-400 text-sm"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Valor Total</p>
+                                <p class="text-base font-bold text-gray-800 dark:text-gray-100 truncate">${totalPrice}</p>
+                            </div>
+                        </div>
+                    </div>
+                    ${uuid !== 'N/A' ? `
+                    <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-fingerprint text-gray-400 dark:text-gray-500 text-xs w-4"></i>
+                            <p class="text-xs font-mono text-gray-500 dark:text-gray-400 truncate" title="${uuid}">${uuid}</p>
+                        </div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         `;

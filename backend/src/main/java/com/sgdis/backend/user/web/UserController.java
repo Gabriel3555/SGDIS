@@ -506,7 +506,7 @@ public class UserController {
     )
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "403", description = "Access denied")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION', 'WAREHOUSE')")
     @GetMapping("/{userId}/loans")
     public ResponseEntity<List<LoanResponse>> getUserLoans(@PathVariable Long userId) {
         List<LoanResponse> loans = getMyLoansUseCase.getMyLoans(userId);
@@ -524,7 +524,7 @@ public class UserController {
     )
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "403", description = "Access denied")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION', 'WAREHOUSE')")
     @Transactional(readOnly = true)
     @GetMapping("/{userId}/inventories/owner")
     public ResponseEntity<List<InventoryResponse>> getUserOwnedInventories(@PathVariable Long userId) {
@@ -552,7 +552,7 @@ public class UserController {
     )
     @ApiResponse(responseCode = "404", description = "User not found")
     @ApiResponse(responseCode = "403", description = "Access denied")
-    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION', 'WAREHOUSE')")
     @Transactional(readOnly = true)
     @GetMapping("/{userId}/inventories/signatory")
     public ResponseEntity<List<InventoryResponse>> getUserSignatoryInventories(@PathVariable Long userId) {
