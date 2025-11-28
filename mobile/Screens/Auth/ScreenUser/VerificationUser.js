@@ -773,7 +773,15 @@ export default function Verification() {
         ) : (
           <FlatList
             data={filteredData}
-            keyExtractor={(item) => item.verificationId.toString()}
+            keyExtractor={(item, index) => {
+              // Use verificationId if available, otherwise fallback to index
+              if (item?.verificationId != null) {
+                return item.verificationId.toString();
+              }
+              // Fallback to a combination of itemId and index if verificationId is missing
+              const itemId = item?.itemId != null ? item.itemId.toString() : 'unknown';
+              return `${itemId}-${index}`;
+            }}
             renderItem={renderItem}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
