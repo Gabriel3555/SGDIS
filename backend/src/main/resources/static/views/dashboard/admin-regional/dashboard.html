@@ -30,6 +30,7 @@
             }
         }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="icon" type="image/jpeg" href="../../../svg/box.png">
     <img src="" alt="" class="icon">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -175,229 +176,274 @@
 
         <!-- Dashboard Content -->
         <main class="p-6">
-            <!-- Welcome Section -->
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800 mb-1" id="dashboardTitle">Dashboard Administrador</h1>
-                    <p class="text-gray-600" id="welcomeMessage">Cargando información del usuario...</p>
-                </div>
-                <button onclick="loadDashboardData()"
-                    class="btn-update flex items-center gap-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
-                    <span id="refreshText">Actualizar</span>
-                </button>
+            <!-- Page Header -->
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">Dashboard Admin Regional</h1>
+                <p class="text-gray-600" id="welcomeMessage">Vista general de la regional</p>
             </div>
 
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="statsContainer">
-                <!-- Loading State -->
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+            <!-- Stat Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <!-- Total Inventarios -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-boxes text-green-600 text-xl"></i>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800" id="totalInventories">-</div>
+                            <div class="text-sm text-gray-600">Inventarios</div>
+                        </div>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-32"></div>
+                    <div class="flex items-center gap-4 text-xs text-gray-600">
+                        <span><i class="fas fa-check-circle text-green-600"></i> <span id="activeInventories">-</span> activos</span>
+                        <span><i class="fas fa-times-circle text-red-600"></i> <span id="inactiveInventories">-</span> inactivos</span>
+                    </div>
                 </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+
+                <!-- Total Usuarios -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-blue-600 text-xl"></i>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800" id="totalUsers">-</div>
+                            <div class="text-sm text-gray-600">Usuarios</div>
+                        </div>
                     </div>
-                    <div class="h-2 bg-gray-200 rounded w-full"></div>
+                    <div class="text-xs text-gray-600">
+                        <span id="userRolesBreakdown">Cargando...</span>
+                    </div>
                 </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+
+                <!-- Total Centros -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-building text-purple-600 text-xl"></i>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800" id="totalCenters">-</div>
+                            <div class="text-sm text-gray-600">Centros</div>
+                        </div>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-32"></div>
+                    <div class="text-xs text-gray-600">
+                        <span id="centersBreakdown">Cargando...</span>
+                    </div>
                 </div>
-                <div class="stat-card animate-pulse">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                            <div class="h-8 bg-gray-200 rounded w-16"></div>
+
+                <!-- Total Transferencias -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exchange-alt text-orange-600 text-xl"></i>
                         </div>
-                        <div class="w-12 h-12 bg-gray-200 rounded-full"></div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800" id="totalTransfers">-</div>
+                            <div class="text-sm text-gray-600">Transferencias</div>
+                        </div>
                     </div>
-                    <div class="h-3 bg-gray-200 rounded w-20"></div>
+                    <div class="flex items-center gap-4 text-xs text-gray-600">
+                        <span id="transfersBreakdown">Cargando...</span>
+                    </div>
+                </div>
+
+                <!-- Total Verificaciones -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clipboard-check text-teal-600 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800" id="totalVerifications">-</div>
+                            <div class="text-sm text-gray-600">Verificaciones</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Préstamos -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-hand-holding text-indigo-600 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800" id="totalLoans">-</div>
+                            <div class="text-sm text-gray-600">Préstamos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Items -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-box text-yellow-600 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800" id="totalItems">-</div>
+                            <div class="text-sm text-gray-600">Items</div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600">
+                        Valor total: <span id="totalValue" class="font-semibold">$0</span>
+                    </div>
+                </div>
+
+                <!-- Notificaciones -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-bell text-red-600 text-xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-gray-800" id="unreadNotifications">-</div>
+                            <div class="text-sm text-gray-600">No leídas</div>
+                        </div>
+                    </div>
+                    <a href="/admin_regional/notifications" class="text-xs text-blue-600 hover:underline">Ver todas</a>
                 </div>
             </div>
 
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6" id="chartsContainer">
-                <!-- Loading State - Usuarios por Rol -->
-                <div class="stat-card animate-pulse">
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Chart: Usuarios por Rol -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center gap-2 mb-4">
-                        <div class="w-5 h-5 bg-gray-200 rounded"></div>
-                        <div class="h-6 bg-gray-200 rounded w-32"></div>
+                        <i class="fas fa-chart-pie text-green-600 text-xl"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Usuarios por Rol</h2>
                     </div>
-                    <div class="h-4 bg-gray-200 rounded w-48 mb-4"></div>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-32"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
+                    <canvas id="usersByRoleChart" height="250"></canvas>
+                </div>
+
+                <!-- Chart: Inventarios por Estado -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fas fa-chart-bar text-green-600 text-xl"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Inventarios por Estado</h2>
+                    </div>
+                    <canvas id="inventoriesByStatusChart" height="250"></canvas>
+                </div>
+            </div>
+
+            <!-- Charts Row 2 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Chart: Transferencias por Estado -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Transferencias por Estado</h2>
+                    </div>
+                    <canvas id="transfersByStatusChart" height="250"></canvas>
+                </div>
+
+                <!-- Chart: Distribución de Instituciones -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center gap-2 mb-4">
+                        <i class="fas fa-map-marked-alt text-green-600 text-xl"></i>
+                        <h2 class="text-xl font-bold text-gray-800">Distribución de Instituciones</h2>
+                    </div>
+                    <canvas id="institutionsChart" height="250"></canvas>
+                </div>
+            </div>
+
+            <!-- Recent Activity Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Recent Inventories -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-boxes text-green-600 text-xl"></i>
+                            <h2 class="text-lg font-bold text-gray-800">Inventarios Recientes</h2>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-28"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
+                        <a href="/admin_regional/inventory" class="text-sm text-blue-600 hover:underline">Ver todos</a>
+                    </div>
+                    <div id="recentInventories" class="space-y-3">
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-16 bg-gray-200 rounded"></div>
+                            <div class="h-16 bg-gray-200 rounded"></div>
+                            <div class="h-16 bg-gray-200 rounded"></div>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3">
-                                <div class="w-3 h-3 bg-gray-200 rounded-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-24"></div>
-                            </div>
-                            <div class="h-4 bg-gray-200 rounded w-8"></div>
+                    </div>
+                </div>
+
+                <!-- Recent Transfers -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-exchange-alt text-green-600 text-xl"></i>
+                            <h2 class="text-lg font-bold text-gray-800">Transferencias Recientes</h2>
+                        </div>
+                        <a href="/admin_regional/transfers" class="text-sm text-blue-600 hover:underline">Ver todas</a>
+                    </div>
+                    <div id="recentTransfers" class="space-y-3">
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-16 bg-gray-200 rounded"></div>
+                            <div class="h-16 bg-gray-200 rounded"></div>
+                            <div class="h-16 bg-gray-200 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Verifications -->
+                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-clipboard-check text-green-600 text-xl"></i>
+                            <h2 class="text-lg font-bold text-gray-800">Verificaciones Recientes</h2>
+                        </div>
+                        <a href="/admin_regional/verification" class="text-sm text-blue-600 hover:underline">Ver todas</a>
+                    </div>
+                    <div id="recentVerifications" class="space-y-3">
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-16 bg-gray-200 rounded"></div>
+                            <div class="h-16 bg-gray-200 rounded"></div>
+                            <div class="h-16 bg-gray-200 rounded"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Estadísticas Mensuales -->
-            <div class="stat-card mb-6" id="monthlyStatsContainer">
-                <div class="flex items-center gap-2 mb-4">
-                    <i class="fas fa-chart-line text-green-600 text-xl"></i>
-                    <h2 class="text-xl font-bold text-gray-800">Actividad Mensual</h2>
-                </div>
-                <p class="text-gray-600 text-sm mb-6">Actividad del sistema por mes</p>
-
-                <!-- Loading State -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
-                    </div>
-                    <div class="month-card animate-pulse">
-                        <div class="h-6 bg-gray-200 rounded w-8 mb-2 mx-auto"></div>
-                        <div class="h-8 bg-gray-200 rounded w-12 mb-1 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-16 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-20 mx-auto mt-2"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sección de Inventarios -->
-            <div class="stat-card mb-6" id="inventoriesContainer">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-boxes text-green-600 text-xl"></i>
-                        <h2 class="text-xl font-bold text-gray-800">Inventarios Regionales</h2>
-                    </div>
-                </div>
-                <p class="text-gray-600 text-sm mb-4">Gestión y visualización de inventarios de la regional</p>
-
-                <!-- Dropdown de Gestión -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Opciones de Gestión</label>
-                    <select id="managementDropdown" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800">
-                        <option value="">Seleccione una opción</option>
-                        <option value="all">Ver todos los inventarios</option>
-                        <option value="active">Inventarios activos</option>
-                        <option value="inactive">Inventarios inactivos</option>
-                        <option value="recent">Inventarios recientes</option>
-                    </select>
-                </div>
-
-                <!-- Filtro por Institución -->
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Centro (Institución)</label>
-                    <select id="institutionFilterSelect" 
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white text-gray-800">
-                        <option value="">Todas las instituciones</option>
-                    </select>
-                </div>
-
-                <!-- Loading State -->
-                <div id="inventoriesLoadingState" class="space-y-4">
-                    <div class="animate-pulse">
-                        <div class="h-20 bg-gray-200 rounded-lg mb-4"></div>
-                        <div class="h-20 bg-gray-200 rounded-lg mb-4"></div>
-                        <div class="h-20 bg-gray-200 rounded-lg mb-4"></div>
+            <!-- Quick Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="stat-card bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-md p-6 border border-green-200">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-check-circle text-green-600 text-2xl"></i>
+                        <div>
+                            <div class="text-sm text-gray-600">Sistema</div>
+                            <div class="text-xl font-bold text-gray-800">Operativo</div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Inventarios List -->
-                <div id="inventoriesList" class="space-y-4 hidden">
-                    <!-- Inventarios se mostrarán aquí -->
-                </div>
-
-                <!-- Empty State -->
-                <div id="inventoriesEmptyState" class="text-center py-8 hidden">
-                    <i class="fas fa-box-open text-gray-400 text-5xl mb-4"></i>
-                    <p class="text-gray-600">No se encontraron inventarios</p>
-                </div>
-
-                <!-- Error State -->
-                <div id="inventoriesErrorState" class="text-center py-8 hidden">
-                    <i class="fas fa-exclamation-triangle text-red-400 text-5xl mb-4"></i>
-                    <p class="text-red-600">Error al cargar los inventarios</p>
-                    <button onclick="loadRegionalInventories()" 
-                            class="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                        Reintentar
-                    </button>
-                </div>
-            </div>
-
-            <!-- Acciones Rápidas -->
-            <div class="stat-card" id="quickActionsContainer">
-                <div class="flex items-center gap-2 mb-4">
-                    <i class="fas fa-bolt text-green-600 text-xl"></i>
-                    <h2 class="text-xl font-bold text-gray-800">Acciones Administrativas</h2>
-                </div>
-                <p class="text-gray-600 text-sm mb-6">Accesos directos a funciones administrativas</p>
-
-                <!-- Loading State -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div class="action-card animate-pulse">
-                        <div class="w-14 h-14 bg-gray-200 rounded-full mb-4 mx-auto"></div>
-                        <div class="h-5 bg-gray-200 rounded w-24 mb-2 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-32 mx-auto"></div>
+                <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-md p-6 border border-blue-200">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-server text-blue-600 text-2xl"></i>
+                        <div>
+                            <div class="text-sm text-gray-600">APIs</div>
+                            <div class="text-xl font-bold text-gray-800" id="apiStatus">-</div>
+                        </div>
                     </div>
-                    <div class="action-card animate-pulse">
-                        <div class="w-14 h-14 bg-gray-200 rounded-full mb-4 mx-auto"></div>
-                        <div class="h-5 bg-gray-200 rounded w-28 mb-2 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-36 mx-auto"></div>
+                </div>
+
+                <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-md p-6 border border-purple-200">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-database text-purple-600 text-2xl"></i>
+                        <div>
+                            <div class="text-sm text-gray-600">Base de Datos</div>
+                            <div class="text-xl font-bold text-gray-800">Conectada</div>
+                        </div>
                     </div>
-                    <div class="action-card animate-pulse">
-                        <div class="w-14 h-14 bg-gray-200 rounded-full mb-4 mx-auto"></div>
-                        <div class="h-5 bg-gray-200 rounded w-20 mb-2 mx-auto"></div>
-                        <div class="h-3 bg-gray-200 rounded w-40 mx-auto"></div>
+                </div>
+
+                <div class="stat-card bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl shadow-md p-6 border border-orange-200">
+                    <div class="flex items-center gap-3 mb-2">
+                        <i class="fas fa-sync-alt text-orange-600 text-2xl"></i>
+                        <div>
+                            <div class="text-sm text-gray-600">Última actualización</div>
+                            <div class="text-lg font-bold text-gray-800" id="lastUpdate">-</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -422,6 +468,37 @@
             transition: margin-left 0.3s ease;
         }
 
+        /* Dashboard specific styles */
+        .stat-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Chart container styles */
+        canvas {
+            max-height: 250px;
+        }
+
+        /* Image loading spinner */
+        .image-loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 175, 0, 0.2);
+            border-top-color: #00AF00;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         /* Responsive adjustments */
         @media (max-width: 1024px) {
             .main-content {
@@ -443,6 +520,27 @@
 
             .overlay.active {
                 display: block;
+            }
+        }
+
+        /* Responsive grid adjustments */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Loading states */
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
             }
         }
     </style>
@@ -601,12 +699,696 @@
             }
         }
 
+        // Admin Regional Dashboard Data
+        const adminRegionalDashboardData = {
+            currentUserRegionalId: null,
+            inventoryStats: null,
+            allInventories: [],
+            userStats: null,
+            transferStats: null,
+            institutions: [],
+            recentInventories: [],
+            recentTransfers: [],
+            recentVerifications: [],
+            verificationCount: 0,
+            loansCount: 0,
+            charts: {}
+        };
+
         // Initialize mobile menu toggle when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
             loadCurrentUserInfo(); // Load user info for header
             scrollToActiveSidebarItem(); // Scroll to active sidebar item
+            loadDashboardData(); // Load all dashboard data
         });
+
+        // Load all dashboard data
+        async function loadDashboardData() {
+            const token = localStorage.getItem('jwt');
+            if (!token) {
+                console.error('No authentication token found');
+                return;
+            }
+
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+
+            try {
+                // First, get current user to get regional ID
+                const userResponse = await fetch('/api/v1/users/me', { headers });
+                if (!userResponse.ok) {
+                    throw new Error('Failed to load user info');
+                }
+
+                const userData = await userResponse.json();
+                
+                // Get institution name (it's a string, not an object)
+                const institutionName = userData.institution;
+                
+                if (!institutionName) {
+                    throw new Error('Usuario no tiene una institución asignada');
+                }
+
+                // Fetch all institutions to find the user's institution
+                const institutionsResponse = await fetch('/api/v1/institutions', { headers });
+                if (!institutionsResponse.ok) {
+                    throw new Error('Error al cargar las instituciones');
+                }
+
+                const institutions = await institutionsResponse.json();
+                const userInstitution = institutions.find(inst => inst.name === institutionName);
+
+                if (!userInstitution) {
+                    throw new Error('Institución del usuario no encontrada: ' + institutionName);
+                }
+
+                // Get regional ID from the institution
+                const userRegionalId = userInstitution.regionalId || userInstitution.regional?.id;
+
+                if (!userRegionalId) {
+                    throw new Error('La institución no tiene una regional asignada');
+                }
+
+                adminRegionalDashboardData.currentUserRegionalId = userRegionalId;
+
+                // Fetch regional information to get the name for welcome message
+                try {
+                    const regionalsResponse = await fetch('/api/v1/regional', { headers });
+                    if (regionalsResponse.ok) {
+                        const regionals = await regionalsResponse.json();
+                        const regional = regionals.find(reg => reg.id === userRegionalId);
+                        if (regional) {
+                            document.getElementById('welcomeMessage').textContent = `Vista general de la regional ${regional.name || ''}`;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching regional info:', error);
+                    // Continue even if we can't get the regional name
+                }
+
+                // Load all data in parallel
+                await Promise.all([
+                    loadInventoryStatistics(headers),
+                    loadUserStatistics(headers),
+                    loadTransferStatistics(headers),
+                    loadInstitutions(headers),
+                    loadRecentInventories(headers),
+                    loadRecentTransfers(headers),
+                    loadRecentVerifications(headers),
+                    loadUnreadNotifications(headers),
+                    loadVerificationCount(headers),
+                    loadLoansCount(headers)
+                ]);
+
+                // Update UI
+                updateDashboardUI();
+                
+                // Initialize charts after data is loaded
+                initializeCharts();
+
+                // Update last update time
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString('es-ES');
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                document.getElementById('apiStatus').textContent = 'Error';
+            }
+        }
+
+        // Load inventory statistics for regional
+        async function loadInventoryStatistics(headers) {
+            try {
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                const response = await fetch(`/api/v1/inventory/regionalAdminInventories/${regionalId}?page=0&size=10000`, { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Handle both paginated response and direct array
+                    let inventories = [];
+                    if (Array.isArray(data)) {
+                        inventories = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        inventories = data.content;
+                    }
+                    
+                    // Store all inventories for chart calculations
+                    adminRegionalDashboardData.allInventories = inventories;
+                    
+                    // Calculate statistics
+                    const totalInventories = inventories.length;
+                    const activeInventories = inventories.filter(inv => inv.status === true || inv.status === 'ACTIVE').length;
+                    const inactiveInventories = totalInventories - activeInventories;
+                    
+                    // Calculate total items and value
+                    let totalItems = 0;
+                    let totalValue = 0;
+                    inventories.forEach(inv => {
+                        if (inv.items) {
+                            totalItems += inv.items.length;
+                            inv.items.forEach(item => {
+                                if (item.value) {
+                                    totalValue += parseFloat(item.value) || 0;
+                                }
+                            });
+                        }
+                    });
+
+                    adminRegionalDashboardData.inventoryStats = {
+                        totalInventories,
+                        activeInventories,
+                        inactiveInventories,
+                        totalItems,
+                        totalValue
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading inventory statistics:', error);
+            }
+        }
+
+        // Load user statistics for regional
+        async function loadUserStatistics(headers) {
+            try {
+                const response = await fetch('/api/v1/users/regional?page=0&size=10000', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Handle both paginated response and direct array
+                    let users = [];
+                    if (Array.isArray(data)) {
+                        users = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        users = data.content;
+                    } else if (data && typeof data === 'object') {
+                        // Try to extract array from response
+                        users = [];
+                    }
+                    
+                    // The /api/v1/users/regional endpoint already filters by regional
+                    // So we can use all users returned
+                    const regionalUsers = Array.isArray(users) ? users : [];
+                    
+                    // Calculate statistics
+                    const totalUsers = regionalUsers.length;
+                    const adminRegionalCount = regionalUsers.filter(u => u.role === 'ADMIN_REGIONAL').length;
+                    const adminInstitutionCount = regionalUsers.filter(u => u.role === 'ADMIN_INSTITUTION').length;
+                    const warehouseCount = regionalUsers.filter(u => u.role === 'WAREHOUSE').length;
+                    const userCount = regionalUsers.filter(u => u.role === 'USER').length;
+
+                    adminRegionalDashboardData.userStats = {
+                        totalUsers,
+                        adminRegionalCount,
+                        adminInstitutionCount,
+                        warehouseCount,
+                        userCount
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading user statistics:', error);
+            }
+        }
+
+        // Load transfer statistics for regional
+        async function loadTransferStatistics(headers) {
+            try {
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                const response = await fetch(`/api/v1/transfers/regional/${regionalId}?page=0&size=10000`, { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Handle both paginated response and direct array
+                    let transfers = [];
+                    if (Array.isArray(data)) {
+                        transfers = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        transfers = data.content;
+                    }
+                    
+                    // Calculate statistics
+                    const total = transfers.length;
+                    const pending = transfers.filter(t => t.status === 'PENDING').length;
+                    const approved = transfers.filter(t => t.status === 'APPROVED').length;
+                    const rejected = transfers.filter(t => t.status === 'REJECTED').length;
+
+                    adminRegionalDashboardData.transferStats = {
+                        total,
+                        pending,
+                        approved,
+                        rejected
+                    };
+                }
+            } catch (error) {
+                console.error('Error loading transfer statistics:', error);
+            }
+        }
+
+        // Load institutions for regional
+        async function loadInstitutions(headers) {
+            try {
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    // Institutions endpoint returns an array directly
+                    adminRegionalDashboardData.institutions = Array.isArray(data) ? data : [];
+                }
+            } catch (error) {
+                console.error('Error loading institutions:', error);
+                adminRegionalDashboardData.institutions = [];
+            }
+        }
+
+        // Load recent inventories
+        async function loadRecentInventories(headers) {
+            try {
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                const response = await fetch(`/api/v1/inventory/regionalAdminInventories/${regionalId}?page=0&size=5`, { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    let inventories = [];
+                    if (Array.isArray(data)) {
+                        inventories = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        inventories = data.content;
+                    }
+                    adminRegionalDashboardData.recentInventories = inventories.slice(0, 5);
+                }
+            } catch (error) {
+                console.error('Error loading recent inventories:', error);
+                adminRegionalDashboardData.recentInventories = [];
+            }
+        }
+
+        // Load recent transfers
+        async function loadRecentTransfers(headers) {
+            try {
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                const response = await fetch(`/api/v1/transfers/regional/${regionalId}?page=0&size=5`, { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    let transfers = [];
+                    if (Array.isArray(data)) {
+                        transfers = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        transfers = data.content;
+                    }
+                    adminRegionalDashboardData.recentTransfers = transfers.slice(0, 5);
+                }
+            } catch (error) {
+                console.error('Error loading recent transfers:', error);
+                adminRegionalDashboardData.recentTransfers = [];
+            }
+        }
+
+        // Load recent verifications
+        async function loadRecentVerifications(headers) {
+            try {
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                const response = await fetch(`/api/v1/verifications/regional/${regionalId}?page=0&size=5`, { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    let verifications = [];
+                    if (Array.isArray(data)) {
+                        verifications = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        verifications = data.content;
+                    }
+                    adminRegionalDashboardData.recentVerifications = verifications.slice(0, 5);
+                } else {
+                    adminRegionalDashboardData.recentVerifications = [];
+                }
+            } catch (error) {
+                console.error('Error loading recent verifications:', error);
+                adminRegionalDashboardData.recentVerifications = [];
+            }
+        }
+
+        // Load unread notifications count
+        async function loadUnreadNotifications(headers) {
+            try {
+                const response = await fetch('/api/v1/notifications/my-notifications/unread/count', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    document.getElementById('unreadNotifications').textContent = data.count || 0;
+                }
+            } catch (error) {
+                console.error('Error loading unread notifications:', error);
+                document.getElementById('unreadNotifications').textContent = '0';
+            }
+        }
+
+        // Update dashboard UI with loaded data
+        function updateDashboardUI() {
+            // Update inventory stats
+            if (adminRegionalDashboardData.inventoryStats) {
+                document.getElementById('totalInventories').textContent = adminRegionalDashboardData.inventoryStats.totalInventories || 0;
+                document.getElementById('activeInventories').textContent = adminRegionalDashboardData.inventoryStats.activeInventories || 0;
+                document.getElementById('inactiveInventories').textContent = adminRegionalDashboardData.inventoryStats.inactiveInventories || 0;
+                document.getElementById('totalItems').textContent = adminRegionalDashboardData.inventoryStats.totalItems || 0;
+                
+                // Format total value
+                const totalValue = adminRegionalDashboardData.inventoryStats.totalValue || 0;
+                document.getElementById('totalValue').textContent = new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                }).format(totalValue);
+            }
+
+            // Update user stats
+            if (adminRegionalDashboardData.userStats) {
+                document.getElementById('totalUsers').textContent = adminRegionalDashboardData.userStats.totalUsers || 0;
+                
+                const rolesBreakdown = [];
+                if (adminRegionalDashboardData.userStats.adminRegionalCount > 0) rolesBreakdown.push(`${adminRegionalDashboardData.userStats.adminRegionalCount} Admin Regional`);
+                if (adminRegionalDashboardData.userStats.adminInstitutionCount > 0) rolesBreakdown.push(`${adminRegionalDashboardData.userStats.adminInstitutionCount} Admin Inst.`);
+                if (adminRegionalDashboardData.userStats.warehouseCount > 0) rolesBreakdown.push(`${adminRegionalDashboardData.userStats.warehouseCount} Warehouse`);
+                if (adminRegionalDashboardData.userStats.userCount > 0) rolesBreakdown.push(`${adminRegionalDashboardData.userStats.userCount} Usuarios`);
+                
+                document.getElementById('userRolesBreakdown').textContent = rolesBreakdown.slice(0, 3).join(', ') || 'Sin datos';
+            }
+
+            // Update centers stats
+            const totalInstitutions = adminRegionalDashboardData.institutions.length || 0;
+            document.getElementById('totalCenters').textContent = totalInstitutions;
+            document.getElementById('centersBreakdown').textContent = `${totalInstitutions} instituciones`;
+
+            // Update transfer stats
+            if (adminRegionalDashboardData.transferStats) {
+                document.getElementById('totalTransfers').textContent = adminRegionalDashboardData.transferStats.total || 0;
+                const transfersBreakdown = [];
+                if (adminRegionalDashboardData.transferStats.pending > 0) transfersBreakdown.push(`${adminRegionalDashboardData.transferStats.pending} pendientes`);
+                if (adminRegionalDashboardData.transferStats.approved > 0) transfersBreakdown.push(`${adminRegionalDashboardData.transferStats.approved} aprobadas`);
+                if (adminRegionalDashboardData.transferStats.rejected > 0) transfersBreakdown.push(`${adminRegionalDashboardData.transferStats.rejected} rechazadas`);
+                document.getElementById('transfersBreakdown').innerHTML = transfersBreakdown.join(', ') || 'Sin datos';
+            }
+
+            // Update recent inventories
+            updateRecentInventories();
+            
+            // Update recent transfers
+            updateRecentTransfers();
+
+            // Update recent verifications
+            updateRecentVerifications();
+
+            // Set API status
+            document.getElementById('apiStatus').textContent = 'Activas';
+        }
+
+        // Update recent inventories display
+        function updateRecentInventories() {
+            const container = document.getElementById('recentInventories');
+            if (!adminRegionalDashboardData.recentInventories || adminRegionalDashboardData.recentInventories.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">No hay inventarios recientes</p>';
+                return;
+            }
+
+            container.innerHTML = adminRegionalDashboardData.recentInventories.slice(0, 5).map(inv => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div class="flex-1">
+                        <div class="font-semibold text-gray-800 text-sm">${inv.name || 'Sin nombre'}</div>
+                        <div class="text-xs text-gray-600">${inv.institution?.name || 'Sin institución'}</div>
+                    </div>
+                    <div class="ml-3">
+                        <span class="px-2 py-1 text-xs rounded-full ${inv.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${inv.status ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update recent transfers display
+        function updateRecentTransfers() {
+            const container = document.getElementById('recentTransfers');
+            if (!adminRegionalDashboardData.recentTransfers || adminRegionalDashboardData.recentTransfers.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">No hay transferencias recientes</p>';
+                return;
+            }
+
+            container.innerHTML = adminRegionalDashboardData.recentTransfers.slice(0, 5).map(transfer => {
+                const statusColors = {
+                    'PENDING': 'bg-yellow-100 text-yellow-800',
+                    'APPROVED': 'bg-green-100 text-green-800',
+                    'REJECTED': 'bg-red-100 text-red-800'
+                };
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800 text-sm">Item: ${transfer.itemSerial || transfer.itemLicencePlate || 'N/A'}</div>
+                            <div class="text-xs text-gray-600">${new Date(transfer.requestedAt).toLocaleDateString('es-ES')}</div>
+                        </div>
+                        <div class="ml-3">
+                            <span class="px-2 py-1 text-xs rounded-full ${statusColors[transfer.status] || 'bg-gray-100 text-gray-800'}">
+                                ${transfer.status || 'N/A'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Update recent verifications display
+        function updateRecentVerifications() {
+            const container = document.getElementById('recentVerifications');
+            if (!adminRegionalDashboardData.recentVerifications || adminRegionalDashboardData.recentVerifications.length === 0) {
+                container.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">No hay verificaciones recientes</p>';
+                return;
+            }
+
+            container.innerHTML = adminRegionalDashboardData.recentVerifications.slice(0, 5).map(verif => {
+                // Format date
+                let dateStr = 'N/A';
+                if (verif.createdAt) {
+                    dateStr = new Date(verif.createdAt).toLocaleDateString('es-ES', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+                }
+                
+                // Get item identifier
+                const itemId = verif.item?.serialNumber || verif.item?.licencePlateNumber || 'N/A';
+                
+                return `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex-1">
+                            <div class="font-semibold text-gray-800 text-sm">Item: ${itemId}</div>
+                            <div class="text-xs text-gray-600">${dateStr}</div>
+                        </div>
+                        <div class="ml-3">
+                            <span class="px-2 py-1 text-xs rounded-full bg-teal-100 text-teal-800">
+                                Verificado
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            // Destroy existing charts if they exist
+            Object.values(adminRegionalDashboardData.charts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+            adminRegionalDashboardData.charts = {};
+
+            // Chart: Users by Role (without Superadmin)
+            if (adminRegionalDashboardData.userStats) {
+                const ctx = document.getElementById('usersByRoleChart');
+                if (ctx) {
+                    adminRegionalDashboardData.charts.usersByRole = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Admin Regional', 'Admin Inst.', 'Warehouse', 'Usuarios'],
+                            datasets: [{
+                                data: [
+                                    adminRegionalDashboardData.userStats.adminRegionalCount || 0,
+                                    adminRegionalDashboardData.userStats.adminInstitutionCount || 0,
+                                    adminRegionalDashboardData.userStats.warehouseCount || 0,
+                                    adminRegionalDashboardData.userStats.userCount || 0
+                                ],
+                                backgroundColor: [
+                                    '#3B82F6',
+                                    '#8B5CF6',
+                                    '#F59E0B',
+                                    '#10B981'
+                                ]
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Chart: Inventories by Status
+            if (adminRegionalDashboardData.inventoryStats) {
+                const ctx = document.getElementById('inventoriesByStatusChart');
+                if (ctx) {
+                    adminRegionalDashboardData.charts.inventoriesByStatus = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Activos', 'Inactivos'],
+                            datasets: [{
+                                label: 'Inventarios',
+                                data: [
+                                    adminRegionalDashboardData.inventoryStats.activeInventories || 0,
+                                    adminRegionalDashboardData.inventoryStats.inactiveInventories || 0
+                                ],
+                                backgroundColor: ['#10B981', '#EF4444']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Chart: Transfers by Status
+            if (adminRegionalDashboardData.transferStats) {
+                const ctx = document.getElementById('transfersByStatusChart');
+                if (ctx) {
+                    adminRegionalDashboardData.charts.transfersByStatus = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Pendientes', 'Aprobadas', 'Rechazadas'],
+                            datasets: [{
+                                data: [
+                                    adminRegionalDashboardData.transferStats.pending || 0,
+                                    adminRegionalDashboardData.transferStats.approved || 0,
+                                    adminRegionalDashboardData.transferStats.rejected || 0
+                                ],
+                                backgroundColor: ['#F59E0B', '#10B981', '#EF4444']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Chart: Institutions Distribution
+            if (adminRegionalDashboardData.institutions && adminRegionalDashboardData.institutions.length > 0) {
+                const ctx = document.getElementById('institutionsChart');
+                if (ctx) {
+                    // Count inventories per institution using all inventories
+                    const institutionCounts = {};
+                    
+                    // Initialize counts for all institutions
+                    adminRegionalDashboardData.institutions.forEach(inst => {
+                        institutionCounts[inst.name] = 0;
+                    });
+                    
+                    // Count inventories per institution
+                    if (adminRegionalDashboardData.allInventories && adminRegionalDashboardData.allInventories.length > 0) {
+                        adminRegionalDashboardData.allInventories.forEach(inv => {
+                            if (inv.institution && inv.institution.name) {
+                                institutionCounts[inv.institution.name] = (institutionCounts[inv.institution.name] || 0) + 1;
+                            }
+                        });
+                    }
+
+                    // Prepare data for chart
+                    const labels = Object.keys(institutionCounts);
+                    const data = Object.values(institutionCounts);
+
+                    adminRegionalDashboardData.charts.institutions = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Inventarios',
+                                data: data,
+                                backgroundColor: '#8B5CF6'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        // Load verification count
+        async function loadVerificationCount(headers) {
+            try {
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                const response = await fetch(`/api/v1/verifications/regional/${regionalId}?page=0&size=1`, { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    const totalCount = data.totalElements || (data.content ? data.content.length : 0) || 0;
+                    document.getElementById('totalVerifications').textContent = totalCount;
+                    adminRegionalDashboardData.verificationCount = totalCount;
+                } else {
+                    document.getElementById('totalVerifications').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading verification count:', error);
+                document.getElementById('totalVerifications').textContent = '0';
+            }
+        }
+
+        // Load loans count  
+        async function loadLoansCount(headers) {
+            try {
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                const response = await fetch(`/api/v1/loan/filter?regionalId=${regionalId}`, { headers });
+                if (response.ok) {
+                    const loans = await response.json();
+                    const totalCount = loans ? loans.length : 0;
+                    document.getElementById('totalLoans').textContent = totalCount;
+                    adminRegionalDashboardData.loansCount = totalCount;
+                } else {
+                    document.getElementById('totalLoans').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading loans count:', error);
+                document.getElementById('totalLoans').textContent = '0';
+            }
+        }
     </script>
 
     <!-- Logout Confirmation Modal -->
