@@ -237,6 +237,9 @@ async function initializeAdminRegionalImportExport() {
         await loadCurrentUserInfoForImportExport();
         await loadInstitutionsForAdminRegional();
 
+        // Setup mode toggle (Import/Export switch)
+        setupModeToggleForAdminRegional();
+
         // Setup event listeners for institution dropdowns
         const importInstitutionSelect = document.getElementById('importInstitutionSelect');
         const exportInstitutionSelect = document.getElementById('exportInstitutionSelect');
@@ -275,6 +278,50 @@ async function initializeAdminRegionalImportExport() {
         console.error('Error initializing admin regional import-export:', error);
         showError('Error al inicializar importar/exportar: ' + error.message);
     }
+}
+
+/**
+ * Setup mode toggle (Import/Export switch) for admin regional
+ */
+function setupModeToggleForAdminRegional() {
+    const importModeBtn = document.getElementById('importModeBtn');
+    const exportModeBtn = document.getElementById('exportModeBtn');
+    const importSection = document.getElementById('importSection');
+    const exportSection = document.getElementById('exportSection');
+
+    if (!importModeBtn || !exportModeBtn || !importSection || !exportSection) {
+        console.error('Mode toggle elements not found');
+        return;
+    }
+
+    importModeBtn.addEventListener('click', function() {
+        importModeBtn.classList.add('active');
+        exportModeBtn.classList.remove('active');
+        importSection.classList.remove('hidden');
+        exportSection.classList.add('hidden');
+        // Close preview when switching modes
+        if (typeof window.closePreview === 'function') {
+            window.closePreview();
+        }
+    });
+
+    exportModeBtn.addEventListener('click', function() {
+        exportModeBtn.classList.add('active');
+        importModeBtn.classList.remove('active');
+        exportSection.classList.remove('hidden');
+        importSection.classList.add('hidden');
+        // Close import preview when switching modes
+        if (typeof window.closePreview === 'function') {
+            window.closePreview();
+        }
+        // Check if there's a selected inventory and show preview
+        const inventoryId = document.getElementById('exportInventorySelect')?.value;
+        if (inventoryId && typeof window.loadExportPreview === 'function') {
+            window.loadExportPreview(inventoryId);
+        } else if (typeof window.hideExportPreview === 'function') {
+            window.hideExportPreview();
+        }
+    });
 }
 
 /**
