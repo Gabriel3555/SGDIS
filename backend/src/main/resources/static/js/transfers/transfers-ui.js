@@ -287,8 +287,8 @@ function updateTransfersSearchAndFilters() {
                         handleTransferInstitutionFilterChange(value);
                     }
                 });
-                if (!selectedRegional) {
-                    window.transferInstitutionSelect.disable();
+                if (!selectedRegional && window.transferInstitutionSelect && typeof window.transferInstitutionSelect.setDisabled === 'function') {
+                    window.transferInstitutionSelect.setDisabled(true);
                 }
             }
         }

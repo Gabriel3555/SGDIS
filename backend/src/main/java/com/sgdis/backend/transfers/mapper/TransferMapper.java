@@ -70,6 +70,7 @@ public final class TransferMapper {
                 transfer.getId(),
                 item != null ? item.getId() : null,
                 item != null ? item.getProductName() : null,
+                item != null ? item.getLicencePlateNumber() : null,
                 sourceInventory != null ? sourceInventory.getId() : null,
                 sourceInventory != null ? sourceInventory.getName() : null,
                 destinationInventory != null ? destinationInventory.getId() : null,

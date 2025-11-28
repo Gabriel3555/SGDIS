@@ -154,19 +154,29 @@
         })();
     </script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'sena-verde': '#00AF00',
-                        'sena-verde-oscuro': '#008800'
-                    }
-                }
-            }
-        }
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind after it's loaded
+        (function configureTailwind() {
+            if (typeof tailwind !== 'undefined' && tailwind.config) {
+                tailwind.config = {
+                    darkMode: 'class',
+                    theme: {
+                        extend: {
+                            colors: {
+                                'sena-verde': '#00AF00',
+                                'sena-verde-oscuro': '#008800'
+                            }
+                        }
+                    }
+                };
+            } else {
+                // Retry after a short delay if Tailwind isn't ready yet
+                setTimeout(configureTailwind, 50);
+            }
+        })();
+    </script>
     <link rel="icon" type="image/jpeg" href="../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"

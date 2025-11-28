@@ -189,7 +189,18 @@ const NotificationBell = {
                 this.updateBadge(data.count);
             }
         } catch (error) {
-            // Silently handle error
+            // Silently handle CORS and network errors
+            if (error.message && (
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('Load failed') ||
+                error.message.includes('access control checks') ||
+                error.message.includes('CORS')
+            )) {
+                // Silently fail for CORS/network errors
+                return;
+            }
+            // Only log unexpected errors
+            console.error('Error loading unread count:', error);
         }
     },
 
@@ -202,14 +213,38 @@ const NotificationBell = {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('jwt')}`
                 }
+            }).catch(err => {
+                // Silently handle CORS and network errors
+                if (err && (
+                    err.message && (
+                        err.message.includes('Failed to fetch') ||
+                        err.message.includes('Load failed') ||
+                        err.message.includes('access control checks') ||
+                        err.message.includes('CORS')
+                    ) || err.toString().includes('Failed to fetch')
+                )) {
+                    return null; // Return null to indicate failure
+                }
+                throw err; // Re-throw if it's not a CORS/network error
             });
 
-            if (response.ok) {
+            if (response && response.ok) {
                 this.notifications = await response.json();
                 this.renderNotifications();
             }
         } catch (error) {
-            // Silently handle error
+            // Silently handle CORS and network errors
+            if (!error || !error.message || (
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('Load failed') ||
+                error.message.includes('access control checks') ||
+                error.message.includes('CORS')
+            )) {
+                // Silently fail for CORS/network errors
+                return;
+            }
+            // Only log unexpected errors
+            console.error('Error loading notifications:', error);
         }
     },
 

@@ -41,6 +41,12 @@ public class SecurityConfig  {
                 .addFilterBefore(new JwtTokenValidator(jwtUtils), BasicAuthenticationFilter.class)
                 .exceptionHandling(exceptions -> exceptions
                     .authenticationEntryPoint((request, response, authException) -> {
+                        // Add CORS headers to error responses
+                        String origin = request.getHeader("Origin");
+                        if (origin != null && (origin.startsWith("http://localhost") || origin.contains("sgdis.cloud"))) {
+                            response.setHeader("Access-Control-Allow-Origin", origin);
+                            response.setHeader("Access-Control-Allow-Credentials", "true");
+                        }
                         // For API requests, return JSON error
                         if (request.getRequestURI().startsWith("/api/")) {
                             response.setContentType("application/json");
@@ -52,6 +58,12 @@ public class SecurityConfig  {
                         }
                     })
                     .accessDeniedHandler((request, response, accessDeniedException) -> {
+                        // Add CORS headers to error responses
+                        String origin = request.getHeader("Origin");
+                        if (origin != null && (origin.startsWith("http://localhost") || origin.contains("sgdis.cloud"))) {
+                            response.setHeader("Access-Control-Allow-Origin", origin);
+                            response.setHeader("Access-Control-Allow-Credentials", "true");
+                        }
                         // For API requests, return JSON error
                         if (request.getRequestURI().startsWith("/api/")) {
                             response.setContentType("application/json");
@@ -108,15 +120,23 @@ public class SecurityConfig  {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow all origins with pattern (works with credentials false)
-        configuration.addAllowedOriginPattern("*");
+        // Allow specific origins for development and production
+        // When using credentials, we must specify exact origins, not patterns with wildcards
+        configuration.addAllowedOrigin("http://localhost:8080");
+        configuration.addAllowedOrigin("http://127.0.0.1:8080");
+        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedOrigin("http://localhost:5173");
+        configuration.addAllowedOrigin("https://sgdis.cloud");
         configuration.addAllowedHeader("*");
         configuration.addAllowedMethod("*");
-        // Set credentials to false when using wildcard origin pattern
-        configuration.setAllowCredentials(false);
+        // Allow credentials for authenticated requests
+        // Note: When allowCredentials is true, you cannot use addAllowedOriginPattern("*")
+        configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        // Expose Authorization header
+        // Expose headers that the frontend might need
         configuration.addExposedHeader("Authorization");
+        configuration.addExposedHeader("Content-Type");
+        configuration.addExposedHeader("X-Total-Count");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

@@ -29,6 +29,19 @@ public class JwtTokenValidator extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        // Add CORS headers for same-origin requests (when Origin header is not present)
+        String origin = request.getHeader("Origin");
+        if (origin == null || origin.isEmpty()) {
+            // Same-origin request - add CORS headers to allow the request
+            String requestOrigin = request.getScheme() + "://" + request.getServerName() + 
+                                 (request.getServerPort() != 80 && request.getServerPort() != 443 ? 
+                                  ":" + request.getServerPort() : "");
+            if (requestOrigin.contains("localhost") || requestOrigin.contains("127.0.0.1")) {
+                response.setHeader("Access-Control-Allow-Origin", requestOrigin);
+                response.setHeader("Access-Control-Allow-Credentials", "true");
+            }
+        }
+
         if (request.getMethod().equalsIgnoreCase("OPTIONS")) {
             filterChain.doFilter(request, response);
             return;
