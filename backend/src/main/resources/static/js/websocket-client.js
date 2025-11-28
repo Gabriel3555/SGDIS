@@ -6,9 +6,12 @@ class WebSocketNotificationClient {
         this.stompClient = null;
         this.isConnected = false;
         this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
+        this.maxReconnectAttempts = Infinity; // Reintentar indefinidamente
         this.reconnectDelay = 3000;
         this.userId = null;
+        this.heartbeatInterval = null;
+        this.connectionCheckInterval = null;
+        this.subscription = null;
     }
 
     /**
@@ -57,18 +60,28 @@ class WebSocketNotificationClient {
             return;
         }
 
+        // Configurar heartbeat para mantener la conexión activa
+        const headers = {
+            heartbeat: {
+                outgoing: 10000, // Enviar ping cada 10 segundos
+                incoming: 10000  // Esperar pong cada 10 segundos
+            }
+        };
+
         // Conectar al WebSocket
         this.stompClient.connect(
-            {},
+            headers,
             (frame) => {
                 console.log('WebSocket conectado exitosamente, frame:', frame);
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
                 this.subscribeToNotifications();
+                this.startConnectionMonitoring();
             },
             (error) => {
                 console.error('Error en la conexión WebSocket:', error);
                 this.isConnected = false;
+                this.stopConnectionMonitoring();
                 this.handleReconnect();
             }
         );
@@ -94,7 +107,7 @@ class WebSocketNotificationClient {
         }
 
         // Suscribirse al canal de notificaciones personal del usuario
-        const subscription = this.stompClient.subscribe(`/user/queue/notifications`, (message) => {
+        this.subscription = this.stompClient.subscribe(`/user/queue/notifications`, (message) => {
             console.log('Mensaje recibido del WebSocket:', message);
             try {
                 const notification = JSON.parse(message.body);
@@ -105,7 +118,7 @@ class WebSocketNotificationClient {
             }
         });
 
-        if (subscription) {
+        if (this.subscription) {
             console.log(`Suscrito a notificaciones para el usuario ${this.userId} en /user/queue/notifications`);
         } else {
             console.error('No se pudo suscribir a notificaciones');
@@ -198,23 +211,84 @@ class WebSocketNotificationClient {
      * Maneja la reconexión automática
      */
     handleReconnect() {
-        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+        if (this.reconnectAttempts >= this.maxReconnectAttempts && this.maxReconnectAttempts !== Infinity) {
             console.log('Máximo de intentos de reconexión alcanzado');
             return;
         }
 
         this.reconnectAttempts++;
-        console.log(`Reintentando conexión en ${this.reconnectDelay / 1000}s (intento ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        const attemptInfo = this.maxReconnectAttempts === Infinity 
+            ? `intento ${this.reconnectAttempts}` 
+            : `intento ${this.reconnectAttempts}/${this.maxReconnectAttempts}`;
+        console.log(`Reintentando conexión en ${this.reconnectDelay / 1000}s (${attemptInfo})`);
 
         setTimeout(() => {
-            this.connect();
+            // Verificar que no esté ya conectado antes de reconectar
+            if (!this.isConnected) {
+                this.connect();
+            }
         }, this.reconnectDelay);
+    }
+
+    /**
+     * Monitorea la conexión y reconecta si se pierde
+     */
+    startConnectionMonitoring() {
+        // Limpiar cualquier intervalo anterior
+        this.stopConnectionMonitoring();
+
+        // Verificar la conexión cada 30 segundos
+        this.connectionCheckInterval = setInterval(() => {
+            if (!this.isConnected || !this.stompClient || !this.stompClient.connected) {
+                console.log('Conexión WebSocket perdida, reconectando...');
+                this.isConnected = false;
+                this.stopConnectionMonitoring();
+                // Cancelar suscripción anterior si existe
+                if (this.subscription) {
+                    try {
+                        this.subscription.unsubscribe();
+                    } catch (e) {
+                        console.log('Error al cancelar suscripción:', e);
+                    }
+                    this.subscription = null;
+                }
+                this.handleReconnect();
+            } else {
+                console.log('Conexión WebSocket activa');
+            }
+        }, 30000); // Verificar cada 30 segundos
+    }
+
+    /**
+     * Detiene el monitoreo de conexión
+     */
+    stopConnectionMonitoring() {
+        if (this.connectionCheckInterval) {
+            clearInterval(this.connectionCheckInterval);
+            this.connectionCheckInterval = null;
+        }
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
     }
 
     /**
      * Desconecta el WebSocket
      */
     disconnect() {
+        this.stopConnectionMonitoring();
+        
+        // Cancelar suscripción
+        if (this.subscription) {
+            try {
+                this.subscription.unsubscribe();
+            } catch (e) {
+                console.log('Error al cancelar suscripción:', e);
+            }
+            this.subscription = null;
+        }
+
         if (this.stompClient && this.isConnected) {
             this.stompClient.disconnect(() => {
                 console.log('WebSocket desconectado');
@@ -239,16 +313,35 @@ class WebSocketNotificationClient {
 window.wsNotificationClient = new WebSocketNotificationClient();
 
 // Inicializar conexión cuando el documento esté listo y haya un token
-document.addEventListener('DOMContentLoaded', () => {
+function initializeWebSocket() {
     const token = localStorage.getItem('jwt') || localStorage.getItem('token');
     if (token) {
+        // Verificar que las librerías estén cargadas
+        if (typeof SockJS === 'undefined' || typeof Stomp === 'undefined') {
+            console.warn('SockJS o Stomp no están disponibles, reintentando en 1 segundo...');
+            setTimeout(initializeWebSocket, 1000);
+            return;
+        }
+        
         // Esperar un poco para asegurar que todo está cargado
         setTimeout(() => {
-            window.wsNotificationClient.connect();
-            // Solicitar permiso para notificaciones del navegador
-            WebSocketNotificationClient.requestNotificationPermission();
+            if (window.wsNotificationClient && !window.wsNotificationClient.isConnected) {
+                console.log('Inicializando conexión WebSocket...');
+                window.wsNotificationClient.connect();
+                // Solicitar permiso para notificaciones del navegador
+                WebSocketNotificationClient.requestNotificationPermission();
+            }
         }, 1000);
+    } else {
+        console.log('No hay token disponible para conectar WebSocket');
     }
+}
+
+document.addEventListener('DOMContentLoaded', initializeWebSocket);
+
+// También intentar cuando la página esté completamente cargada
+window.addEventListener('load', () => {
+    setTimeout(initializeWebSocket, 2000);
 });
 
 // Desconectar cuando la página se cierre

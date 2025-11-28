@@ -414,13 +414,26 @@ const NotificationBell = {
      * Inicia el polling para actualizar notificaciones
      */
     startPolling() {
-        // Actualizar cada 30 segundos
+        // Limpiar cualquier intervalo anterior
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+        }
+        
+        // Actualizar cada 15 segundos (más frecuente para detectar notificaciones más rápido)
         this.pollInterval = setInterval(() => {
+            // Verificar si el WebSocket está conectado
+            const wsConnected = window.wsNotificationClient && window.wsNotificationClient.isConnected;
+            
+            // Si el WebSocket no está conectado, hacer polling más agresivo
+            if (!wsConnected) {
+                console.log('WebSocket desconectado, usando polling para notificaciones');
+            }
+            
             this.loadUnreadCount();
             if (this.isOpen) {
                 this.loadNotifications();
             }
-        }, 30000);
+        }, 15000); // Polling cada 15 segundos
     },
 
     /**
