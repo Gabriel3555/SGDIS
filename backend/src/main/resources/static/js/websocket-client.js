@@ -47,11 +47,21 @@ class WebSocketNotificationClient {
             }
         };
 
+        // Verificar que SockJS y Stomp estén disponibles antes de conectar
+        if (typeof SockJS === 'undefined') {
+            console.error('SockJS no está disponible. Asegúrate de incluir la librería SockJS.');
+            return;
+        }
+        if (typeof Stomp === 'undefined') {
+            console.error('Stomp no está disponible. Asegúrate de incluir la librería Stomp.');
+            return;
+        }
+
         // Conectar al WebSocket
         this.stompClient.connect(
             {},
             (frame) => {
-                console.log('WebSocket conectado exitosamente');
+                console.log('WebSocket conectado exitosamente, frame:', frame);
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
                 this.subscribeToNotifications();
@@ -73,32 +83,55 @@ class WebSocketNotificationClient {
             return;
         }
 
+        // Verificar que SockJS y Stomp estén disponibles
+        if (typeof SockJS === 'undefined') {
+            console.error('SockJS no está disponible');
+            return;
+        }
+        if (typeof Stomp === 'undefined') {
+            console.error('Stomp no está disponible');
+            return;
+        }
+
         // Suscribirse al canal de notificaciones personal del usuario
-        this.stompClient.subscribe(`/user/queue/notifications`, (message) => {
-            const notification = JSON.parse(message.body);
-            this.handleNotification(notification);
+        const subscription = this.stompClient.subscribe(`/user/queue/notifications`, (message) => {
+            console.log('Mensaje recibido del WebSocket:', message);
+            try {
+                const notification = JSON.parse(message.body);
+                console.log('Notificación parseada:', notification);
+                this.handleNotification(notification);
+            } catch (error) {
+                console.error('Error al parsear notificación:', error);
+            }
         });
 
-        console.log(`Suscrito a notificaciones para el usuario ${this.userId}`);
+        if (subscription) {
+            console.log(`Suscrito a notificaciones para el usuario ${this.userId} en /user/queue/notifications`);
+        } else {
+            console.error('No se pudo suscribir a notificaciones');
+        }
     }
 
     /**
      * Maneja las notificaciones recibidas
      */
-    handleNotification(notification) {
-        console.log('Notificación recibida:', notification);
+    async handleNotification(notification) {
+        console.log('Notificación recibida por WebSocket:', notification);
 
         // Mostrar la notificación usando el sistema de notificaciones existente
         this.showNotification(notification);
 
         // Reproducir sonido si está disponible
-        this.playNotificationSound();
+        console.log('Intentando reproducir sonido de notificación...');
+        await this.playNotificationSound();
+        console.log('Sonido de notificación procesado');
 
         // Disparar evento personalizado para que otros módulos puedan reaccionar
         const event = new CustomEvent('sgdis-notification', {
             detail: notification
         });
         window.dispatchEvent(event);
+        console.log('Evento sgdis-notification disparado');
     }
 
     /**
@@ -136,9 +169,14 @@ class WebSocketNotificationClient {
     /**
      * Reproduce un sonido de notificación
      */
-    playNotificationSound() {
+    async playNotificationSound() {
         if (window.NotificationSound) {
-            window.NotificationSound.play();
+            // Asegurar que el AudioContext esté inicializado
+            if (!window.NotificationSound.isInitialized) {
+                await window.NotificationSound.initialize();
+            }
+            // Reproducir el sonido
+            await window.NotificationSound.play();
         }
     }
 

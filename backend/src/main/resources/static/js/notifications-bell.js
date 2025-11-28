@@ -427,7 +427,9 @@ const NotificationBell = {
      * Configura el listener de WebSocket para actualizaciones en tiempo real
      */
     setupWebSocketListener() {
-        window.addEventListener('sgdis-notification', (event) => {
+        window.addEventListener('sgdis-notification', async (event) => {
+            console.log('Notificación recibida en NotificationBell:', event.detail);
+            
             // Actualizar contador y lista
             this.loadUnreadCount();
             if (this.isOpen) {
@@ -438,16 +440,23 @@ const NotificationBell = {
             this.animateBell();
             
             // Reproducir sonido de notificación
-            this.playNotificationSound();
+            console.log('NotificationBell: Intentando reproducir sonido...');
+            await this.playNotificationSound();
+            console.log('NotificationBell: Sonido procesado');
         });
     },
 
     /**
      * Reproduce un sonido de notificación
      */
-    playNotificationSound() {
+    async playNotificationSound() {
         if (window.NotificationSound) {
-            window.NotificationSound.play();
+            // Asegurar que el AudioContext esté inicializado
+            if (!window.NotificationSound.isInitialized) {
+                await window.NotificationSound.initialize();
+            }
+            // Reproducir el sonido
+            await window.NotificationSound.play();
         }
     },
 
