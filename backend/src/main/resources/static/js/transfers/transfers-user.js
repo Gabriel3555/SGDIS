@@ -796,6 +796,43 @@ async function handleUserTransferItemChange(itemId) {
             'Authorization': `Bearer ${token}`
         };
         
+        // For USER role, get user's center (institution) and filter inventories by it
+        let userInstitutionId = null;
+        const currentUserRole = window.currentUserRole || (window.currentUserData && window.currentUserData.role);
+        
+        if (currentUserRole && currentUserRole.toUpperCase() === 'USER') {
+            // Get current user to get their institution ID
+            try {
+                const userResponse = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: headers
+                });
+                
+                if (userResponse.ok) {
+                    const currentUser = await userResponse.json();
+                    const institutionName = currentUser.institution;
+                    
+                    if (institutionName) {
+                        // Get institution ID from institutions list
+                        const institutionsResponse = await fetch('/api/v1/institutions', {
+                            method: 'GET',
+                            headers: headers
+                        });
+                        
+                        if (institutionsResponse.ok) {
+                            const institutions = await institutionsResponse.json();
+                            const institution = institutions.find(inst => inst.name === institutionName);
+                            if (institution) {
+                                userInstitutionId = institution.institutionId || institution.id;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not get user institution, will use all inventories:', error);
+            }
+        }
+        
         // Load all inventories from user's institution (not just assigned ones)
         // For USER role, use institutionAdminInventories endpoint to get all institution inventories
         const endpoint = '/api/v1/inventory/institutionAdminInventories?page=0&size=1000';
@@ -814,6 +851,11 @@ async function handleUserTransferItemChange(itemId) {
                 inventories = payload;
             } else if (payload && Array.isArray(payload.content)) {
                 inventories = payload.content;
+            }
+            
+            // For USER role, filter inventories to only show those from user's center
+            if (currentUserRole && currentUserRole.toUpperCase() === 'USER' && userInstitutionId) {
+                inventories = inventories.filter(inv => inv.institutionId === userInstitutionId);
             }
             
             // Filter out source inventory
