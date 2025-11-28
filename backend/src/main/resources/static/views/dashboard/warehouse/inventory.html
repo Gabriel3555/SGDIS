@@ -446,7 +446,8 @@
     <script src="../../../js/inventory/inventory-pagination.js"></script>
     <script src="../../../js/inventory/inventory-toast.js"></script>
     <script src="../../../js/inventory/inventory-images.js"></script>
-    <script src="../../../js/inventory/inventory-ui.js"></script>
+    <script src="../../../js/inventory/inventory-tree.js"></script>
+    <script src="../../../js/inventory/warehouse/inventory-ui-warehouse.js"></script>
     <script src="../../../js/inventory/inventory.js"></script>
     <!-- Items Module Scripts -->
     <script src="../../../js/inventory/items/items-data.js"></script>
@@ -454,8 +455,7 @@
     <script src="../../../js/inventory/items/items-ui.js"></script>
     <script src="../../../js/inventory/items/items-modals.js"></script>
     <script src="../../../js/inventory/items/items-forms.js"></script>
-    <!-- Inventory Tree Script -->
-    <script src="../../../js/inventory/inventory-tree.js"></script>
+    <!-- Warehouse uses the same inventory-tree.js as super admin - no override needed -->
 
     <style>
         /* Adjust main content margin to account for fixed sidebar */
@@ -871,6 +871,28 @@
             if (typeof window !== 'undefined') {
                 window.currentUserRole = 'WAREHOUSE';
             }
+            
+            // Ensure all modal functions are available
+            function ensureWarehouseFunctions() {
+                // Wait for scripts to load and ensure functions are available
+                const checkFunctions = setInterval(() => {
+                    const hasViewInventory = typeof window.viewInventory === 'function' || typeof viewInventory === 'function';
+                    const hasShowInventoryTreeModal = typeof window.showInventoryTreeModal === 'function' || typeof showInventoryTreeModal === 'function';
+                    const hasShowAssignManagerModal = typeof window.showAssignManagerModal === 'function' || typeof showAssignManagerModal === 'function';
+                    const hasShowViewInventoryModal = typeof window.showViewInventoryModal === 'function' || typeof showViewInventoryModal === 'function';
+                    
+                    if (hasViewInventory && hasShowInventoryTreeModal && hasShowAssignManagerModal && hasShowViewInventoryModal) {
+                        clearInterval(checkFunctions);
+                        console.log('All warehouse inventory functions are available');
+                    }
+                }, 100);
+                
+                // Stop checking after 5 seconds
+                setTimeout(() => clearInterval(checkFunctions), 5000);
+            }
+            
+            // Start checking after a short delay to allow scripts to load
+            setTimeout(ensureWarehouseFunctions, 200);
         });
     </script>
 
@@ -1073,7 +1095,7 @@
                             </div>
 
                             <!-- Right Side: Image -->
-                            <div class="flex-shrink-0 flex items-start justify-end">
+                            <div class="flex-shrink-0 w-full lg:w-auto flex items-center justify-center lg:items-start lg:justify-end mt-4 lg:mt-0">
                                 <button onclick="showInventoryImageModal(); return false;"
                                     class="cursor-pointer hover:opacity-80 transition-opacity border-none bg-transparent p-0 flex items-center justify-center"
                                     id="viewInventoryImageButton" style="display: none;">
@@ -1089,23 +1111,21 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Flecha Indicadora -->
-                <div class="flex items-center justify-center">
-flex items-center justify-center">
-                    <div class="hidden lg:flex flex-col items-center gap-2">
-                        <i class="fas fa-arrow-right text-[#00AF00] text-4xl"></i>
-                        <p class="text-xs font-medium text-gray-600 dark:text-gray-400 text-center whitespace-nowrap">Pertenece a</p>
+                    <!-- Flecha Indicadora -->
+                    <div class="flex items-center justify-center flex-shrink-0">
+                        <div class="hidden lg:flex flex-col items-center gap-2">
+                            <i class="fas fa-arrow-right text-[#00AF00] text-4xl"></i>
+                            <p class="text-xs font-medium text-gray-600 dark:text-gray-400 text-center whitespace-nowrap">Pertenece a</p>
+                        </div>
+                        <div class="flex lg:hidden flex-row items-center gap-2">
+                            <i class="fas fa-arrow-down text-[#00AF00] text-3xl"></i>
+                            <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Pertenece a</p>
+                        </div>
                     </div>
-                    <div class="flex lg:hidden flex-row items-center gap-2">
-                        <i class="fas fa-arrow-down text-[#00AF00] text-3xl"></i>
-                        <p class="text-xs font-medium text-gray-600 dark:text-gray-400">Pertenece a</p>
-                    </div>
-                </div>
 
-                <!-- Owner Information -->
-                <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 flex flex-col">
+                    <!-- Owner Information -->
+                    <div class="flex-1 w-full bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl p-6 border-2 border-green-200 dark:border-green-700 flex flex-col">
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center">
                         <i class="fas fa-user-shield text-[#00AF00] mr-2"></i>
                         Información del Propietario
