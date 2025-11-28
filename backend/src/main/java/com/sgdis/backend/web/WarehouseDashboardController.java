@@ -48,7 +48,7 @@ public class WarehouseDashboardController {
     @PreAuthorize("hasRole('WAREHOUSE')")
     @ResponseBody
     public ResponseEntity<Resource> warehouseInventoryManagement() throws IOException {
-        Resource resource = new ClassPathResource("static/views/dashboard/warehouse/inventory.html");
+        Resource resource = new ClassPathResource("static/views/inventory/inventory-warehouse.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
