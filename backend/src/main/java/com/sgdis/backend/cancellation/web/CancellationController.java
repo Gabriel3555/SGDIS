@@ -4,8 +4,12 @@ import com.sgdis.backend.cancellation.application.dto.AcceptCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.AcceptCancellationResponse;
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationResponse;
+import com.sgdis.backend.cancellation.application.dto.CancellationResponse;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationResponse;
+import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
+import com.sgdis.backend.cancellation.infrastructure.repository.SpringDataCancellationRepository;
+import com.sgdis.backend.cancellation.mapper.CancellationMapper;
 import com.sgdis.backend.cancellation.application.port.AcceptCancellationUseCase;
 import com.sgdis.backend.cancellation.application.port.AskForCancellationUseCase;
 import com.sgdis.backend.cancellation.application.port.DownloadCancellationFormatFileUseCase;
@@ -24,14 +28,22 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -46,6 +58,75 @@ public class CancellationController {
     private final DownloadCancellationFormatFileUseCase downloadCancellationFormatFileUseCase;
     private final DownloadCancellationFormatExampleFileUseCase downloadCancellationFormatExampleFileUseCase;
     private final UploadFormatExampleCancellationUseCase uploadFormatExampleCancellationUseCase;
+    private final SpringDataCancellationRepository cancellationRepository;
+
+    @Operation(
+            summary = "Get all cancellations",
+            description = "Retrieves paginated cancellations (Superadmin only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Cancellations retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "403", description = "Access denied - SUPERADMIN role required")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @GetMapping
+    public ResponseEntity<Page<CancellationResponse>> getAllCancellations(
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            
+            // Get all cancellations with joins to load relationships
+            long totalCount = cancellationRepository.count();
+            List<CancellationEntity> allCancellations = cancellationRepository.findAllWithJoins();
+            
+            // Handle empty list
+            if (allCancellations == null || allCancellations.isEmpty()) {
+                Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+                return ResponseEntity.ok(emptyPage);
+            }
+            
+            // Sort by ID descending (already sorted in query, but ensure it)
+            allCancellations.sort((a, b) -> {
+                if (a.getId() == null || b.getId() == null) {
+                    return 0;
+                }
+                return Long.compare(b.getId(), a.getId());
+            });
+            
+            // Apply pagination manually
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), allCancellations.size());
+            
+            List<CancellationEntity> paginatedCancellations;
+            if (start >= allCancellations.size()) {
+                paginatedCancellations = List.of();
+            } else {
+                paginatedCancellations = allCancellations.subList(start, end);
+            }
+            
+            // Create Page manually
+            Page<CancellationEntity> cancellationPage = new PageImpl<>(paginatedCancellations, pageable, totalCount);
+            
+            Page<CancellationResponse> responsePage = cancellationPage.map(CancellationMapper::toDto);
+            
+            return ResponseEntity.ok(responsePage);
+        } catch (Exception e) {
+            // Log error and return empty page
+            System.err.println("Error fetching cancellations: " + e.getMessage());
+            e.printStackTrace();
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+            return ResponseEntity.ok(emptyPage);
+        }
+    }
 
     @Operation(
             summary = "Ask for cancellation",
@@ -68,11 +149,46 @@ public class CancellationController {
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/ask")
-    public ResponseEntity<AskForCancellationResponse> askForCancellation(
+    public ResponseEntity<?> askForCancellation(
             @Valid @RequestBody AskForCancellationRequest request
     ) {
-        var response = askForCancellationUseCase.askForCancellation(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        try {
+            var response = askForCancellationUseCase.askForCancellation(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (RuntimeException e) {
+            // Log the error
+            System.err.println("Error in askForCancellation: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Return appropriate error response with JSON body
+            java.util.Map<String, Object> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorResponse.put("error", "Internal Server Error");
+            errorResponse.put("message", e.getMessage() != null ? e.getMessage() : "Ha ocurrido un error inesperado");
+            errorResponse.put("detail", e.getMessage() != null ? e.getMessage() : "Ha ocurrido un error inesperado");
+            
+            if (e.getMessage() != null && e.getMessage().contains("Item no encontrado")) {
+                errorResponse.put("status", HttpStatus.NOT_FOUND.value());
+                errorResponse.put("error", "Not Found");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+            }
+            
+            // For other runtime exceptions, return 500
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        } catch (Exception e) {
+            // Log the error
+            System.err.println("Unexpected error in askForCancellation: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Return 500 for unexpected errors with JSON body
+            java.util.Map<String, Object> errorResponse = new java.util.HashMap<>();
+            errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorResponse.put("error", "Internal Server Error");
+            errorResponse.put("message", "Ha ocurrido un error inesperado");
+            errorResponse.put("detail", e.getMessage() != null ? e.getMessage() : "Ha ocurrido un error inesperado");
+            
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     @Operation(

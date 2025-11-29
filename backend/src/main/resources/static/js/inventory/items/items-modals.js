@@ -2431,6 +2431,130 @@ function filterItemLoans(filter) {
     displayItemLoansHistory(itemLoansData.allLoans);
 }
 
+// Cancel Item Modal Functions
+async function showCancelItemModal(itemId) {
+    const modal = document.getElementById("cancelItemModal");
+    if (!modal) return;
+
+    // Store current item ID
+    if (window.itemsData) {
+        window.itemsData.currentItemId = itemId;
+    }
+
+    // Find item to show name
+    let itemName = "Item";
+    if (window.itemsData && window.itemsData.items) {
+        const item = window.itemsData.items.find((i) => i.id === itemId);
+        if (item) {
+            itemName = item.productName || "Sin nombre";
+        }
+    }
+
+    // Set item name
+    const itemNameElement = document.getElementById("cancelItemName");
+    if (itemNameElement) {
+        itemNameElement.textContent = itemName;
+    }
+
+    // Reset form
+    const form = document.getElementById("cancelItemForm");
+    if (form) {
+        form.reset();
+    }
+
+    modal.classList.remove("hidden");
+}
+
+function closeCancelItemModal() {
+    const modal = document.getElementById("cancelItemModal");
+    if (modal) {
+        modal.classList.add("hidden");
+    }
+
+    const form = document.getElementById("cancelItemForm");
+    if (form) {
+        form.reset();
+    }
+}
+
+// Handle cancel item form submission
+async function handleCancelItemFormSubmit(event) {
+    event.preventDefault();
+
+    const itemId = window.itemsData ? window.itemsData.currentItemId : null;
+    if (!itemId) {
+        if (typeof showToast === 'function') {
+            showToast('Error: No se pudo identificar el item', 'error');
+        } else {
+            alert('Error: No se pudo identificar el item');
+        }
+        return;
+    }
+
+    const reasonElement = document.getElementById("cancelItemReason");
+    if (!reasonElement) {
+        if (typeof showToast === 'function') {
+            showToast('Error: No se pudo encontrar el campo de razón', 'error');
+        } else {
+            alert('Error: No se pudo encontrar el campo de razón');
+        }
+        return;
+    }
+
+    const reason = reasonElement.value.trim();
+    if (!reason) {
+        if (typeof showToast === 'function') {
+            showToast('Por favor ingrese la razón de la cancelación', 'error');
+        } else {
+            alert('Por favor ingrese la razón de la cancelación');
+        }
+        return;
+    }
+
+    try {
+        // Check if askForCancellation function is available
+        if (typeof askForCancellation !== 'function') {
+            throw new Error('La función askForCancellation no está disponible. Por favor, recargue la página.');
+        }
+
+        // Call the API function
+        const response = await askForCancellation([itemId], reason);
+
+        // Show success message
+        if (typeof showToast === 'function') {
+            showToast('Solicitud de cancelación creada exitosamente', 'success');
+        } else {
+            alert('Solicitud de cancelación creada exitosamente');
+        }
+
+        // Close modal
+        closeCancelItemModal();
+
+        // Optionally reload items data
+        if (window.loadItemsData) {
+            await window.loadItemsData();
+        }
+    } catch (error) {
+        console.error('Error asking for cancellation:', error);
+        const errorMessage = error.message || 'Error al crear la solicitud de cancelación';
+        if (typeof showToast === 'function') {
+            showToast(errorMessage, 'error');
+        } else {
+            alert(errorMessage);
+        }
+    }
+}
+
+// Setup cancel item form handler
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelItemForm = document.getElementById('cancelItemForm');
+    if (cancelItemForm) {
+        cancelItemForm.addEventListener('submit', handleCancelItemFormSubmit);
+    }
+});
+
+window.showCancelItemModal = showCancelItemModal;
+window.closeCancelItemModal = closeCancelItemModal;
 window.showItemLoansHistoryModal = showItemLoansHistoryModal;
 window.closeItemLoansHistoryModal = closeItemLoansHistoryModal;
 window.filterItemLoans = filterItemLoans;
