@@ -469,6 +469,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/cancellations")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminCancellations() throws IOException {
+        Resource resource = new ClassPathResource("static/views/cancellations/cancellations-superadmin.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/admin_regional/settings")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
