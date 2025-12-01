@@ -178,15 +178,62 @@ const NotificationBell = {
      */
     async loadUnreadCount() {
         try {
+            let token = null;
+            
+            // Intentar obtener un token válido usando getValidToken si está disponible
+            if (window.getValidToken && typeof window.getValidToken === 'function') {
+                try {
+                    token = await window.getValidToken();
+                } catch (error) {
+                    // Si getValidToken falla, intentar usar el token del localStorage
+                    console.debug('getValidToken falló, intentando usar token del localStorage');
+                }
+            }
+            
+            // Si no se obtuvo token de getValidToken, intentar del localStorage
+            if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+                token = localStorage.getItem('jwt');
+            }
+            
+            // Si aún no hay token válido, salir silenciosamente
+            if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+                // Solo mostrar warning si realmente no hay token (no en cada intento)
+                // Esto puede ocurrir si el usuario no está autenticado
+                return;
+            }
+            
             const response = await fetch('/api/v1/notifications/my-notifications/unread/count', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (response.ok) {
                 const data = await response.json();
                 this.updateBadge(data.count);
+            } else if (response.status === 403 || response.status === 401) {
+                // Token expirado o inválido, intentar refrescar
+                if (window.refreshJWTToken && typeof window.refreshJWTToken === 'function') {
+                    try {
+                        await window.refreshJWTToken(true);
+                        // Después de refrescar, intentar nuevamente
+                        const newToken = await window.getValidToken();
+                        if (newToken) {
+                            const retryResponse = await fetch('/api/v1/notifications/my-notifications/unread/count', {
+                                headers: {
+                                    'Authorization': `Bearer ${newToken}`
+                                }
+                            });
+                            if (retryResponse.ok) {
+                                const data = await retryResponse.json();
+                                this.updateBadge(data.count);
+                            }
+                        }
+                    } catch (refreshError) {
+                        // Si el refresh falla, el usuario probablemente necesita re-autenticarse
+                        // No hacer nada, el sistema de token-refresh manejará la redirección
+                    }
+                }
             }
         } catch (error) {
             // Silently handle CORS and network errors
@@ -209,9 +256,31 @@ const NotificationBell = {
      */
     async loadNotifications() {
         try {
+            let token = null;
+            
+            // Intentar obtener un token válido usando getValidToken si está disponible
+            if (window.getValidToken && typeof window.getValidToken === 'function') {
+                try {
+                    token = await window.getValidToken();
+                } catch (error) {
+                    // Si getValidToken falla, intentar usar el token del localStorage
+                    console.debug('getValidToken falló, intentando usar token del localStorage');
+                }
+            }
+            
+            // Si no se obtuvo token de getValidToken, intentar del localStorage
+            if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+                token = localStorage.getItem('jwt');
+            }
+            
+            // Si aún no hay token válido, salir silenciosamente
+            if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+                return;
+            }
+            
             const response = await fetch('/api/v1/notifications/my-notifications/unread', {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+                    'Authorization': `Bearer ${token}`
                 }
             }).catch(err => {
                 // Silently handle CORS and network errors
@@ -231,6 +300,15 @@ const NotificationBell = {
             if (response && response.ok) {
                 this.notifications = await response.json();
                 this.renderNotifications();
+            } else if (response && (response.status === 403 || response.status === 401)) {
+                // Token expirado o inválido, intentar refrescar
+                if (window.refreshJWTToken && typeof window.refreshJWTToken === 'function') {
+                    try {
+                        await window.refreshJWTToken(true);
+                    } catch (refreshError) {
+                        // Si el refresh falla, el usuario probablemente necesita re-autenticarse
+                    }
+                }
             }
         } catch (error) {
             // Silently handle CORS and network errors
@@ -373,16 +451,60 @@ const NotificationBell = {
      */
     async markAsRead(notificationId) {
         try {
+            let token = null;
+            
+            // Intentar obtener un token válido usando getValidToken si está disponible
+            if (window.getValidToken && typeof window.getValidToken === 'function') {
+                try {
+                    token = await window.getValidToken();
+                } catch (error) {
+                    // Si getValidToken falla, intentar usar el token del localStorage
+                    console.debug('getValidToken falló, intentando usar token del localStorage');
+                }
+            }
+            
+            // Si no se obtuvo token de getValidToken, intentar del localStorage
+            if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+                token = localStorage.getItem('jwt');
+            }
+            
+            // Si aún no hay token válido, salir silenciosamente
+            if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+                return;
+            }
+            
             const response = await fetch(`/api/v1/notifications/${notificationId}/mark-as-read`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (response.ok) {
                 await this.loadUnreadCount();
                 await this.loadNotifications();
+            } else if (response.status === 403 || response.status === 401) {
+                // Token expirado o inválido, intentar refrescar y reintentar
+                if (window.refreshJWTToken && typeof window.refreshJWTToken === 'function') {
+                    try {
+                        await window.refreshJWTToken(true);
+                        const newToken = await window.getValidToken();
+                        if (newToken) {
+                            const retryResponse = await fetch(`/api/v1/notifications/${notificationId}/mark-as-read`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${newToken}`
+                                }
+                            });
+                            if (retryResponse.ok) {
+                                await this.loadUnreadCount();
+                                await this.loadNotifications();
+                            }
+                        }
+                    } catch (refreshError) {
+                        // Si el refresh falla, el usuario probablemente necesita re-autenticarse
+                    }
+                }
             }
         } catch (error) {
             // Silently handle error
@@ -394,16 +516,60 @@ const NotificationBell = {
      */
     async markAllAsRead() {
         try {
+            let token = null;
+            
+            // Intentar obtener un token válido usando getValidToken si está disponible
+            if (window.getValidToken && typeof window.getValidToken === 'function') {
+                try {
+                    token = await window.getValidToken();
+                } catch (error) {
+                    // Si getValidToken falla, intentar usar el token del localStorage
+                    console.debug('getValidToken falló, intentando usar token del localStorage');
+                }
+            }
+            
+            // Si no se obtuvo token de getValidToken, intentar del localStorage
+            if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+                token = localStorage.getItem('jwt');
+            }
+            
+            // Si aún no hay token válido, salir silenciosamente
+            if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+                return;
+            }
+            
             const response = await fetch('/api/v1/notifications/mark-all-as-read', {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('jwt')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
 
             if (response.ok) {
                 this.updateBadge(0);
                 await this.loadNotifications();
+            } else if (response.status === 403 || response.status === 401) {
+                // Token expirado o inválido, intentar refrescar y reintentar
+                if (window.refreshJWTToken && typeof window.refreshJWTToken === 'function') {
+                    try {
+                        await window.refreshJWTToken(true);
+                        const newToken = await window.getValidToken();
+                        if (newToken) {
+                            const retryResponse = await fetch('/api/v1/notifications/mark-all-as-read', {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${newToken}`
+                                }
+                            });
+                            if (retryResponse.ok) {
+                                this.updateBadge(0);
+                                await this.loadNotifications();
+                            }
+                        }
+                    } catch (refreshError) {
+                        // Si el refresh falla, el usuario probablemente necesita re-autenticarse
+                    }
+                }
             }
         } catch (error) {
             // Silently handle error

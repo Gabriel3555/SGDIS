@@ -339,21 +339,58 @@ async function loadDashboardData() {
 // Load user information (shared across all dashboards)
 async function loadUserInfo() {
   try {
-    const token = localStorage.getItem("jwt");
-    if (!token) {
-      throw new Error("No authentication token found");
-    }
+    // Usar authenticatedFetch si está disponible, sino usar el método tradicional
+    let response;
+    if (window.authenticatedFetch && typeof window.authenticatedFetch === 'function') {
+      response = await window.authenticatedFetch("/api/v1/users/me", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    } else {
+      // Fallback al método tradicional
+      const token = window.getValidToken ? await window.getValidToken() : localStorage.getItem("jwt");
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
 
-    const response = await fetch("/api/v1/users/me", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+      response = await fetch("/api/v1/users/me", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+    }
 
     if (response.ok) {
       dashboardData.user = await response.json();
+    } else if (response.status === 401 || response.status === 403) {
+      // Si es un error de autenticación y no usamos authenticatedFetch, intentar refrescar
+      if (!window.authenticatedFetch || typeof window.authenticatedFetch !== 'function') {
+        if (window.refreshJWTToken && typeof window.refreshJWTToken === 'function') {
+          const refreshed = await window.refreshJWTToken(true);
+          if (refreshed) {
+            // Reintentar con el nuevo token
+            const newToken = await window.getValidToken();
+            if (newToken) {
+              const retryResponse = await fetch("/api/v1/users/me", {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${newToken}`,
+                  "Content-Type": "application/json",
+                },
+              });
+              if (retryResponse.ok) {
+                dashboardData.user = await retryResponse.json();
+                return;
+              }
+            }
+          }
+        }
+      }
+      throw new Error("Failed to load user info - authentication failed");
     } else {
       throw new Error("Failed to load user info");
     }

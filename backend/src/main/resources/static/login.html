@@ -641,8 +641,8 @@
                         localStorage.setItem('jwt', data.jwt);
                         
                         // Guardar JWT también en cookie para que Spring Security lo pueda leer en navegaciones de página
-                        // Expira en 24 horas (86400 segundos)
-                        document.cookie = `jwt=${data.jwt}; path=/; max-age=86400; SameSite=Strict`;
+                        // Expira en 30 segundos (para testing)
+                        document.cookie = `jwt=${data.jwt}; path=/; max-age=30; SameSite=Strict`;
                         
                         // Guardar refresh token en cookies (seguro, HttpOnly simulado con SameSite y Secure)
                         // Expira en 7 días (604800 segundos)
