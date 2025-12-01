@@ -48,46 +48,60 @@ public class CancellationService implements
     private final RecordActionUseCase recordActionUseCase;
 
     @Override
+    @Transactional
     public AskForCancellationResponse askForCancellation(AskForCancellationRequest request) {
-        List<ItemEntity> items = new ArrayList<>();
-        request.itemsId().forEach(id -> {
-            items.add(itemRepository.findById(id).orElseThrow(()->new RuntimeException("Item no encontrado")));
-        });
-
-        UserEntity requester = authService.getCurrentUser();
-
-        CancellationEntity entity = new CancellationEntity();
-        entity.setItems(items);
-        entity.setRequester(requester);
-        entity.setReason(request.reason());
-        entity.setRequestedAt(LocalDateTime.now());
-
-        CancellationEntity savedEntity = cancellationRepository.save(entity);
-
-        // Registrar auditoría
-        StringBuilder itemsInfo = new StringBuilder();
-        if (items != null && !items.isEmpty()) {
-            items.forEach(item -> {
-                String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
-                itemsInfo.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
+        try {
+            List<ItemEntity> items = new ArrayList<>();
+            request.itemsId().forEach(id -> {
+                items.add(itemRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Item no encontrado con ID: " + id)));
             });
-            if (itemsInfo.length() > 0) {
-                itemsInfo.setLength(itemsInfo.length() - 2); // Remover última coma y espacio
-            }
-        } else {
-            itemsInfo.append("N/A");
-        }
-        
-        recordActionUseCase.recordAction(new RecordActionRequest(
-                String.format("Solicitud de baja creada: ID %d - Items: %s - Solicitado por: %s (%s) - Razón: %s", 
-                        savedEntity.getId(),
-                        itemsInfo.toString(),
-                        requester.getFullName(),
-                        requester.getEmail(),
-                        request.reason() != null ? request.reason() : "N/A")
-        ));
 
-        return CancellationMapper.toResponse(savedEntity);
+            UserEntity requester = authService.getCurrentUser();
+
+            CancellationEntity entity = new CancellationEntity();
+            entity.setItems(items);
+            entity.setRequester(requester);
+            entity.setReason(request.reason());
+            entity.setRequestedAt(LocalDateTime.now());
+
+            CancellationEntity savedEntity = cancellationRepository.save(entity);
+
+            // Registrar auditoría (no crítico si falla, pero intentamos registrarlo)
+            try {
+                StringBuilder itemsInfo = new StringBuilder();
+                if (items != null && !items.isEmpty()) {
+                    items.forEach(item -> {
+                        String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+                        itemsInfo.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
+                    });
+                    if (itemsInfo.length() > 0) {
+                        itemsInfo.setLength(itemsInfo.length() - 2); // Remover última coma y espacio
+                    }
+                } else {
+                    itemsInfo.append("N/A");
+                }
+                
+                recordActionUseCase.recordAction(new RecordActionRequest(
+                        String.format("Solicitud de baja creada: ID %d - Items: %s - Solicitado por: %s (%s) - Razón: %s", 
+                                savedEntity.getId(),
+                                itemsInfo.toString(),
+                                requester.getFullName(),
+                                requester.getEmail(),
+                                request.reason() != null ? request.reason() : "N/A")
+                ));
+            } catch (Exception auditException) {
+                // Log audit error but don't fail the operation
+                System.err.println("Error al registrar auditoría: " + auditException.getMessage());
+                auditException.printStackTrace();
+            }
+
+            return CancellationMapper.toResponse(savedEntity);
+        } catch (Exception e) {
+            System.err.println("Error en askForCancellation: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 
@@ -137,6 +151,7 @@ public class CancellationService implements
         }
 
         cancellation.setApprovedAt(LocalDateTime.now());
+        cancellation.setApproved(true);
         cancellation.setComment(request.comment());
         cancellation.setChecker(checker);
 

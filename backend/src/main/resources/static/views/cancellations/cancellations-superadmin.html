@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Préstamos - Superadmin - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <title>Cancelaciones - Superadmin - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function () {
@@ -64,7 +64,7 @@
             </div>
             <div class="text-gray-800">
                 <div class="font-bold text-lg">SGDIS</div>
-                <div class="text-xs opacity-70">Préstamos</div>
+                <div class="text-xs opacity-70">Cancelaciones</div>
             </div>
         </div>
     </div>
@@ -101,12 +101,12 @@
             <i class="fas fa-clipboard-check text-lg"></i>
             <span class="font-medium">Verificación</span>
         </a>
-        <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
+        <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
            onclick="handleSidebarClick(event, '/superadmin/loans')">
             <i class="fas fa-hand-holding text-lg"></i>
             <span class="font-medium">Préstamos</span>
         </a>
-        <a href="/superadmin/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+        <a href="/superadmin/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
            onclick="handleSidebarClick(event, '/superadmin/cancellations')">
             <i class="fas fa-times-circle text-lg"></i>
             <span class="font-medium">Cancelaciones</span>
@@ -166,13 +166,12 @@
                 </button>
                 <div class="relative flex-1 max-w-xl">
                     <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                    <input type="text" id="loansSearch"
-                           placeholder="Buscar préstamos por responsable, prestador o item..." class="search-input">
+                    <input type="text" id="cancellationsSearch"
+                           placeholder="Buscar cancelaciones por solicitante, items o razón..." class="search-input">
                 </div>
             </div>
 
             <div class="flex items-center gap-4">
-
                 <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                      onclick="window.location.href='/superadmin/info-me'">
                     <div class="user-avatar" id="headerUserAvatar"></div>
@@ -186,21 +185,21 @@
         </div>
     </header>
 
-    <!-- Loans Management Content -->
+    <!-- Cancellations Management Content -->
     <main class="p-6">
         <!-- Header Section -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Préstamos</h1>
-                <p class="text-gray-600 dark:text-gray-400">Control y administración de préstamos de items</p>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Cancelaciones</h1>
+                <p class="text-gray-600 dark:text-gray-400">Control y administración de solicitudes de cancelación</p>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="openLendItemModal()"
+                <button onclick="openAskCancellationModal()"
                         class="bg-[#00AF00] hover:bg-[#008800] text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
-                    <i class="fas fa-hand-holding"></i>
-                    <span>Prestar Item</span>
+                    <i class="fas fa-times-circle"></i>
+                    <span>Solicitar Cancelación</span>
                 </button>
-                <button onclick="loadLoansData()"
+                <button onclick="loadCancellationsData()"
                         class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
                     <i class="fas fa-sync-alt" id="refreshIcon"></i>
                     <span id="refreshText">Actualizar</span>
@@ -209,7 +208,7 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="loansStatsContainer">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="cancellationsStatsContainer">
             <!-- Loading State -->
             <div class="stat-card animate-pulse">
                 <div class="flex items-start justify-between mb-3">
@@ -227,72 +226,33 @@
         <div class="stat-card mb-6">
             <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Filtros</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Regional Filter -->
+                <!-- Status Filter -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Regional</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado</label>
                     <div class="custom-select-container">
-                        <div class="custom-select" id="regionalSelect">
+                        <div class="custom-select" id="statusSelect">
                             <div class="custom-select-trigger">
-                                <span class="custom-select-text">Todas las regionales</span>
+                                <span class="custom-select-text">Todos los estados</span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar regional...">
-                                <div class="custom-select-options" id="regionalOptions">
-                                    <div class="custom-select-option" data-value="all">Todas las regionales</div>
+                                <input type="text" class="custom-select-search" placeholder="Buscar estado...">
+                                <div class="custom-select-options" id="statusOptions">
+                                    <div class="custom-select-option" data-value="all">Todos los estados</div>
+                                    <div class="custom-select-option" data-value="pending">Pendientes</div>
+                                    <div class="custom-select-option" data-value="approved">Aprobadas</div>
+                                    <div class="custom-select-option" data-value="refused">Rechazadas</div>
                                 </div>
                             </div>
                         </div>
-                        <input type="hidden" id="selectedRegionalId" value="all">
-                    </div>
-                </div>
-
-                <!-- Institution Filter -->
-                <div>
-                    <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Institución</label>
-                    <div class="custom-select-container">
-                        <div class="custom-select" id="institutionSelect">
-                            <div class="custom-select-trigger">
-                                <span class="custom-select-text">Todas las instituciones</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar institución...">
-                                <div class="custom-select-options" id="institutionOptions">
-                                    <div class="custom-select-option" data-value="all">Todas las instituciones</div>
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="selectedInstitutionId" value="all">
-                    </div>
-                </div>
-
-                <!-- Inventory Filter -->
-                <div>
-                    <label
-                            class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario</label>
-                    <div class="custom-select-container">
-                        <div class="custom-select" id="inventorySelect">
-                            <div class="custom-select-trigger">
-                                <span class="custom-select-text">Todos los inventarios</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
-                                <div class="custom-select-options" id="inventoryOptions">
-                                    <div class="custom-select-option" data-value="all">Todos los inventarios</div>
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="selectedInventoryId" value="all">
+                        <input type="hidden" id="selectedStatus" value="all">
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Loans Content -->
-        <div class="stat-card" id="loansTableContainer">
+        <!-- Cancellations Content -->
+        <div class="stat-card" id="cancellationsTableContainer">
             <!-- Dynamic content loaded by JavaScript -->
             <div class="flex items-center justify-center py-12">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AF00]"></div>
@@ -315,54 +275,54 @@
     </main>
 </div>
 
-<!-- Lend Item Modal -->
-<div id="lendItemModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+<!-- Ask for Cancellation Modal -->
+<div id="askCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Prestar Item</h2>
-            <button onclick="closeLendItemModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Solicitar Cancelación de Items</h2>
+            <button onclick="closeAskCancellationModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
         <div class="p-6">
-            <form onsubmit="event.preventDefault(); handleLendItem();" class="space-y-6">
+            <form onsubmit="event.preventDefault(); handleAskCancellation();" class="space-y-6">
                 <!-- Regional -->
-                <div id="loanRegionalContainer">
+                <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Regional <span class="text-red-500">*</span>
                     </label>
                     <div class="custom-select-container">
-                        <div class="custom-select" id="loanRegionalSelect">
+                        <div class="custom-select" id="askCancellationRegionalSelect">
                             <div class="custom-select-trigger">
                                 <span class="custom-select-text">Seleccione una regional</span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-select-dropdown">
                                 <input type="text" class="custom-select-search" placeholder="Buscar regional...">
-                                <div class="custom-select-options"></div>
+                                <div class="custom-select-options" id="askCancellationRegionalOptions"></div>
                             </div>
                         </div>
-                        <input type="hidden" id="loanSelectedRegionalId" value="">
+                        <input type="hidden" id="askCancellationSelectedRegionalId" value="">
                     </div>
                 </div>
 
                 <!-- Institution -->
-                <div id="loanInstitutionContainer">
+                <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Institución <span class="text-red-500">*</span>
                     </label>
                     <div class="custom-select-container">
-                        <div class="custom-select" id="loanInstitutionSelect">
+                        <div class="custom-select" id="askCancellationInstitutionSelect">
                             <div class="custom-select-trigger">
                                 <span class="custom-select-text">Seleccione una institución</span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-select-dropdown">
                                 <input type="text" class="custom-select-search" placeholder="Buscar institución...">
-                                <div class="custom-select-options"></div>
+                                <div class="custom-select-options" id="askCancellationInstitutionOptions"></div>
                             </div>
                         </div>
-                        <input type="hidden" id="loanSelectedInstitutionId" value="">
+                        <input type="hidden" id="askCancellationSelectedInstitutionId" value="">
                     </div>
                 </div>
 
@@ -372,79 +332,49 @@
                         Inventario <span class="text-red-500">*</span>
                     </label>
                     <div class="custom-select-container">
-                        <div class="custom-select" id="loanInventorySelect">
+                        <div class="custom-select" id="askCancellationInventorySelect">
                             <div class="custom-select-trigger">
                                 <span class="custom-select-text">Seleccione un inventario</span>
                                 <i class="fas fa-chevron-down custom-select-arrow"></i>
                             </div>
                             <div class="custom-select-dropdown">
                                 <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
-                                <div class="custom-select-options"></div>
+                                <div class="custom-select-options" id="askCancellationInventoryOptions"></div>
                             </div>
                         </div>
-                        <input type="hidden" id="loanSelectedInventoryId" value="">
+                        <input type="hidden" id="askCancellationSelectedInventoryId" value="">
                     </div>
                 </div>
 
-                <!-- Item -->
+                <!-- Items -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Item <span class="text-red-500">*</span>
+                        Items <span class="text-red-500">*</span>
                     </label>
-                    <div class="custom-select-container">
-                        <div class="custom-select" id="loanItemSelect">
-                            <div class="custom-select-trigger">
-                                <span class="custom-select-text">Seleccione un item</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar item...">
-                                <div class="custom-select-options"></div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="loanSelectedItemId" value="">
+                    <div id="askCancellationItemsContainer" class="border-2 border-gray-300 dark:border-gray-600 rounded-xl p-4 min-h-[200px] max-h-[300px] overflow-y-auto">
+                        <p class="text-gray-500 dark:text-gray-400 text-sm">Seleccione un inventario primero para ver los items disponibles</p>
                     </div>
                 </div>
 
-                <!-- Responsible -->
+                <!-- Reason -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Responsable <span class="text-red-500">*</span>
+                        Razón de la Cancelación <span class="text-red-500">*</span>
                     </label>
-                    <div class="custom-select-container">
-                        <div class="custom-select" id="loanResponsibleSelect">
-                            <div class="custom-select-trigger">
-                                <span class="custom-select-text">Seleccione un responsable</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar responsable...">
-                                <div class="custom-select-options"></div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="loanSelectedResponsibleId" value="">
-                    </div>
-                </div>
-
-                <!-- Details -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Detalles (Opcional)
-                    </label>
-                    <textarea id="loanDetails" rows="3"
+                    <textarea id="askCancellationReason" rows="4" required
                               class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white"
-                              placeholder="Ingrese detalles adicionales sobre el préstamo..."></textarea>
+                              placeholder="Ingrese la razón por la cual solicita la cancelación de estos items..."></textarea>
                 </div>
 
                 <!-- Actions -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button type="button" onclick="closeLendItemModal()"
+                    <button type="button" onclick="closeAskCancellationModal()"
                             class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         Cancelar
                     </button>
                     <button type="submit"
                             class="px-6 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                        Prestar Item
+                        Solicitar Cancelación
                     </button>
                 </div>
             </form>
@@ -452,38 +382,77 @@
     </div>
 </div>
 
-<!-- Return Item Modal -->
-<div id="returnItemModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+<!-- Accept Cancellation Modal -->
+<div id="acceptCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
         <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Devolver Item</h2>
-            <button onclick="closeReturnItemModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Aprobar Cancelación</h2>
+            <button onclick="closeAcceptCancellationModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
         <div class="p-6">
-            <form onsubmit="event.preventDefault(); submitReturnItem();" class="space-y-6">
-                <input type="hidden" id="returnLoanId" value="">
+            <form onsubmit="event.preventDefault(); handleAcceptCancellation();" class="space-y-6">
+                <input type="hidden" id="acceptCancellationId" value="">
 
-                <!-- Details -->
+                <!-- Comment -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Detalles de Devolución (Opcional)
+                        Comentario <span class="text-red-500">*</span>
                     </label>
-                    <textarea id="returnDetails" rows="3"
+                    <textarea id="acceptComment" rows="4" required
                               class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white"
-                              placeholder="Ingrese detalles sobre la devolución del item..."></textarea>
+                              placeholder="Ingrese un comentario sobre la aprobación..."></textarea>
                 </div>
 
                 <!-- Actions -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button type="button" onclick="closeReturnItemModal()"
+                    <button type="button" onclick="closeAcceptCancellationModal()"
                             class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         Cancelar
                     </button>
                     <button type="submit"
                             class="px-6 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                        Devolver Item
+                        Aprobar Cancelación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Refuse Cancellation Modal -->
+<div id="refuseCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
+        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Rechazar Cancelación</h2>
+            <button onclick="closeRefuseCancellationModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <form onsubmit="event.preventDefault(); handleRefuseCancellation();" class="space-y-6">
+                <input type="hidden" id="refuseCancellationId" value="">
+
+                <!-- Comment -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Comentario <span class="text-red-500">*</span>
+                    </label>
+                    <textarea id="refuseComment" rows="4" required
+                              class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white"
+                              placeholder="Ingrese un comentario sobre el rechazo..."></textarea>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" onclick="closeRefuseCancellationModal()"
+                            class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors">
+                        Rechazar Cancelación
                     </button>
                 </div>
             </form>
@@ -492,14 +461,13 @@
 </div>
 
 <script src="../../js/dashboard.js"></script>
-<!-- Loans Module Scripts -->
-<script src="../../js/loans/loans-data.js"></script>
-<script src="../../js/loans/loans-api.js"></script>
-<script src="../../js/loans/loans-ui.js"></script>
-<script src="../../js/loans/loans-filters.js"></script>
-<script src="../../js/loans/loan-actions.js"></script>
+<!-- Cancellations Module Scripts -->
+<script src="../../js/cancellations/cancellations-data.js"></script>
+<script src="../../js/cancellations/cancellations-api.js"></script>
+<script src="../../js/cancellations/cancellations-ui.js"></script>
+<script src="../../js/cancellations/cancellations-forms.js"></script>
 <script src="../../js/inventory/inventory-toast.js"></script>
-<script src="../../js/users/users-api.js"></script>
+<script src="../../js/centers/centers.js"></script>
 <script src="../../js/notifications-bell.js"></script>
 <script>
     // Handle sidebar click with debounce
@@ -509,10 +477,8 @@
             return;
         }
 
-        // Prevent default to avoid immediate navigation
         event.preventDefault();
 
-        // Close sidebar on mobile after click
         if (window.innerWidth <= 1024) {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('overlay');
@@ -520,12 +486,10 @@
             if (overlay) overlay.classList.remove('active');
         }
 
-        // Navigate to the link with debounce
         if (link.startsWith('/')) {
             if (typeof debouncedNavigate === 'function') {
                 debouncedNavigate(link);
             } else {
-                // Fallback if debouncedNavigate is not available
                 window.location.href = link;
             }
         }
@@ -549,54 +513,24 @@
                     overlay.style.display = 'none';
                 }
             });
+
+            overlay.addEventListener('click', function () {
+                sidebar.style.transform = 'translateX(-100%)';
+                overlay.style.display = 'none';
+            });
         }
     }
 
-    // Logout function - shows confirmation modal
+    // Initialize mobile menu toggle when DOM is ready
+    document.addEventListener('DOMContentLoaded', function () {
+        setupMobileMenuToggle();
+    });
+
+    // Logout function
     function logout() {
-        const modal = document.getElementById('logoutModal');
-        if (modal) {
-            modal.classList.remove('hidden');
-        }
-    }
-
-    // Close logout modal
-    function closeLogoutModal() {
-        const modal = document.getElementById('logoutModal');
-        if (modal) {
-            modal.classList.add('hidden');
-        }
-    }
-
-    // Confirm logout - actually logs out
-    function confirmLogout() {
         localStorage.removeItem('jwt');
         window.location.href = '/';
     }
-
-    // Scroll to active sidebar item
-    function scrollToActiveSidebarItem() {
-        const sidebarNav = document.querySelector('#sidebar nav');
-        if (sidebarNav) {
-            const activeItem = sidebarNav.querySelector('.sidebar-item.active');
-            if (activeItem) {
-                setTimeout(() => {
-                    activeItem.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                        inline: 'nearest'
-                    });
-                }, 100);
-            }
-        }
-    }
-
-    // Initialize loan selects when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        setupMobileMenuToggle();
-        initializeLoanSelects();
-        scrollToActiveSidebarItem();
-    });
 </script>
 
 <style>
@@ -606,222 +540,32 @@
         transition: margin-left 0.3s ease;
     }
 
-    /* Header user avatar styles */
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 14px;
-        overflow: hidden;
-    }
-
-    .user-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    /* Custom Select Styles - Asegurar alineación y tamaño consistente */
-    .custom-select-container {
-        position: relative;
-        width: 100%;
-    }
-
-    .custom-select {
-        position: relative;
-        width: 100%;
-    }
-
-    .custom-select-trigger {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0.625rem 0.875rem;
-        border: 2px solid #d1d5db;
-        border-radius: 0.75rem;
-        background: white;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        min-height: 2.75rem;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .dark .custom-select-trigger {
-        background-color: #1f2937;
-        border-color: #374151;
-        color: #f3f4f6;
-    }
-
-    .custom-select-trigger:hover {
-        border-color: #10b981;
-    }
-
-    .custom-select-trigger:focus-within {
-        border-color: #10b981;
-        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    }
-
-    .custom-select.open .custom-select-trigger {
-        border-color: #10b981;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-    }
-
-    .custom-select-text {
-        color: #374151;
-        font-size: 0.875rem;
-        flex: 1;
-        text-align: left;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .dark .custom-select-text {
-        color: #f3f4f6;
-    }
-
-    .custom-select-arrow {
-        color: #10b981;
-        transition: transform 0.2s ease;
-        margin-left: 0.5rem;
-        flex-shrink: 0;
-    }
-
-    .custom-select.open .custom-select-arrow {
-        transform: rotate(180deg);
-    }
-
-    .custom-select-dropdown {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 2px solid #10b981;
-        border-top: none;
-        border-bottom-left-radius: 0.75rem;
-        border-bottom-right-radius: 0.75rem;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
-        max-height: 300px;
-        overflow: hidden;
-        display: none;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .dark .custom-select-dropdown {
-        background-color: #1f2937;
-        border-color: #10b981;
-    }
-
-    .custom-select.open .custom-select-dropdown {
-        display: block;
-    }
-
-    .custom-select-search {
-        width: 100%;
-        padding: 0.625rem 0.875rem;
-        border: none;
-        border-bottom: 1px solid #e5e7eb;
-        outline: none;
-        font-size: 0.875rem;
-        background: white;
-        box-sizing: border-box;
-    }
-
-    .dark .custom-select-search {
-        background-color: #1f2937;
-        color: #f3f4f6;
-        border-bottom-color: #374151;
-    }
-
-    .custom-select-options {
-        max-height: 240px;
-        overflow-y: auto;
-    }
-
-    .custom-select-option {
-        padding: 0.625rem 0.875rem;
-        cursor: pointer;
-        transition: background-color 0.2s ease;
-        font-size: 0.875rem;
-        color: #374151;
-    }
-
-    .dark .custom-select-option {
-        color: #f3f4f6;
-    }
-
-    .custom-select-option:hover {
-        background-color: #f3f4f6;
-    }
-
-    .dark .custom-select-option:hover {
-        background-color: #374151;
-    }
-
-    .custom-select-option.selected {
-        background-color: #10b981;
-        color: white;
-    }
-
-    /* Asegurar que los labels tengan el mismo estilo */
-    .stat-card label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        font-size: 0.875rem;
-    }
-
-    /* Asegurar que los contenedores de filtros tengan el mismo ancho */
-    .stat-card .grid>div {
-        display: flex;
-        flex-direction: column;
-    }
-
-    @media (max-width: 768px) {
+    /* Responsive adjustments */
+    @media (max-width: 1024px) {
         .main-content {
             margin-left: 0;
+        }
+
+        .sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .overlay {
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
         }
     }
 </style>
 
-<!-- Logout Confirmation Modal -->
-<div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
-    style="z-index: 9999;">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
-        <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Confirmar Cierre de Sesión</h2>
-            <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                <i class="fas fa-times text-2xl"></i>
-            </button>
-        </div>
-
-        <div class="text-center mb-6">
-            <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">¿Está seguro que desea cerrar sesión?</h3>
-            <p class="text-gray-600 dark:text-gray-400">Será redirigido a la página de inicio de sesión.</p>
-        </div>
-
-        <div class="flex gap-3">
-            <button onclick="closeLogoutModal()"
-                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                Cancelar
-            </button>
-            <button onclick="confirmLogout()"
-                class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                Cerrar Sesión
-            </button>
-        </div>
-    </div>
-</div>
 </body>
 
 </html>
+
