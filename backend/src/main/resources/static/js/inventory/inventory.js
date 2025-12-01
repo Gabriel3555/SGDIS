@@ -152,6 +152,10 @@ function logout() {
     if (typeof localStorage !== 'undefined') {
         localStorage.removeItem('jwt');
     }
+    // Clear JWT cookie
+    document.cookie = 'jwt=; path=/; max-age=0';
+    // Clear refresh token from cookies
+    document.cookie = 'refreshToken=; path=/; max-age=0';
     window.location.href = '/';
 }
 

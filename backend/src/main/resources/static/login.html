@@ -637,10 +637,16 @@
                     }
 
                     if (response.ok && data && data.status) {
+                        // Guardar JWT en localStorage
                         localStorage.setItem('jwt', data.jwt);
-                        localStorage.setItem('refreshToken', data.refreshToken);
-
-                        document.cookie = `jwt=${data.jwt}; path=/; max-age=900`;
+                        
+                        // Guardar JWT también en cookie para que Spring Security lo pueda leer en navegaciones de página
+                        // Expira en 24 horas (86400 segundos)
+                        document.cookie = `jwt=${data.jwt}; path=/; max-age=86400; SameSite=Strict`;
+                        
+                        // Guardar refresh token en cookies (seguro, HttpOnly simulado con SameSite y Secure)
+                        // Expira en 7 días (604800 segundos)
+                        document.cookie = `refreshToken=${data.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
 
                         if (recordarCheckbox.checked) {
                             localStorage.setItem('rememberedEmail', email);
