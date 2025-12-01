@@ -545,6 +545,7 @@ class InactivityMonitor {
         // Limpiar tokens
         try {
             localStorage.removeItem('jwt');
+            document.cookie = 'jwt=; path=/; max-age=0';
             document.cookie = 'refreshToken=; path=/; max-age=0';
         } catch (error) {
             // Error al limpiar tokens

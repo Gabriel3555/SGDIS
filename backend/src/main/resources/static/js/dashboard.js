@@ -120,27 +120,23 @@ let dashboardData = {
 
 // Logout function
 function logout() {
-  // Limpiar tokens - JWT en localStorage, refresh token en cookies
+  // Limpiar tokens - JWT en localStorage y cookies, refresh token en cookies
   localStorage.removeItem("jwt");
-  // Clear refresh token from cookies (no JWT cookies to clear)
+  // Clear JWT cookie
+  document.cookie = "jwt=; path=/; max-age=0";
+  // Clear refresh token from cookies
   document.cookie = "refreshToken=; path=/; max-age=0";
-  window.location.href = "/index.html";
+  window.location.href = "/login.html";
 }
 
-// Auto-refresh token every 5 minutes or when needed
-setInterval(async () => {
-  if (isTokenExpired()) {
-    console.log("Token expired or about to expire, refreshing...");
-    await refreshToken();
-  }
-}, 5 * 60 * 1000); // Check every 5 minutes
+// Nota: El auto-refresh de tokens ahora es manejado por token-refresh.js
+// que se ejecuta en todas las vistas y refresca el token cada 5 minutos.
+// Las funciones getCookie(), isTokenExpired() y refreshToken() se mantienen
+// aquí por compatibilidad con código existente que pueda usarlas.
 
 // Initialize dashboard when page loads
 document.addEventListener("DOMContentLoaded", async function () {
-  if (isTokenExpired()) {
-    console.log("Token expired on page load, refreshing...");
-    await refreshToken();
-  }
+  // La verificación inicial de token ahora es manejada por token-refresh.js
 
   rewriteAdminInstitutionSidebarLinks();
   rewriteAdminRegionalSidebarLinks();
