@@ -42,7 +42,7 @@ public class JwtUtils {
                 .withClaim("role", role)
                 .withIssuer(userGenerator)
                 .withIssuedAt(new Date())
-                .withExpiresAt(new Date(System.currentTimeMillis() + (1000*60*15)))
+                .withExpiresAt(new Date(System.currentTimeMillis() + (1000*30))) // 30 segundos para testing
                 .sign(getAlgorithm());
     }
 
