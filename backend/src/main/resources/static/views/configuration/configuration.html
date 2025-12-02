@@ -972,6 +972,101 @@
         // Inicializar
         initWhenReady();
 
+        // Load current user information for header
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                // Set default values for admin
+                updateHeaderUserInfo({
+                    fullName: 'Super Admin',
+                    role: 'SUPERADMIN',
+                    email: 'admin@sena.edu.co'
+                });
+            }
+        }
+
+        // Update user info display in header
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+            if (headerUserName) {
+                headerUserName.textContent = userData.fullName || 'Super Admin';
+            }
+
+            if (headerUserRole) {
+                const roleText = {
+                    'SUPERADMIN': 'Super Administrador',
+                    'ADMIN_INSTITUTIONAL': 'Admin Institucional',
+                    'ADMIN_INSTITUTION': 'Admin Institucional',
+                    'ADMIN_REGIONAL': 'Admin Regional',
+                    'WAREHOUSE': 'Almacén',
+                    'USER': 'Usuario'
+                }[userData.role] || userData.role || 'Super Admin';
+                headerUserRole.textContent = roleText;
+            }
+
+            if (headerUserAvatar) {
+                if (userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl) {
+                    const imgUrl = userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl;
+                    
+                    // Try to use createImageWithSpinner from dashboard.js if available
+                    if (typeof createImageWithSpinner === 'function') {
+                        const spinnerHtml = createImageWithSpinner(
+                            imgUrl,
+                            userData.fullName || 'Usuario',
+                            'w-full h-full object-cover',
+                            'w-full h-full',
+                            'rounded-full'
+                        );
+                        if (spinnerHtml) {
+                            headerUserAvatar.innerHTML = spinnerHtml;
+                        } else {
+                            const initials = (userData.fullName || 'Super Admin').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            headerUserAvatar.textContent = initials;
+                            headerUserAvatar.style.backgroundImage = 'none';
+                        }
+                    } else {
+                        // Fallback: use background image approach
+                        headerUserAvatar.style.backgroundImage = `url(${imgUrl})`;
+                        headerUserAvatar.style.backgroundSize = 'cover';
+                        headerUserAvatar.style.backgroundPosition = 'center';
+                        headerUserAvatar.textContent = '';
+                    }
+                } else {
+                    const initials = (userData.fullName || 'Super Admin').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    headerUserAvatar.textContent = initials;
+                    headerUserAvatar.style.backgroundImage = 'none';
+                }
+            }
+        }
+
+        // Load user info when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentUserInfo();
+        });
+
         // Después de que la página se carga completamente, permitir transiciones
         // Modificar estilos inline para que solo establezcan transiciones, no colores
         // Esto permite que las clases de Tailwind establezcan los colores y las transiciones animen el cambio

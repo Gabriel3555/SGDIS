@@ -2,6 +2,8 @@ let verificationData = {
     verifications: [],
     filteredVerifications: [],
     inventories: [],
+    regionals: [],
+    institutions: [],
     currentPage: 1,
     itemsPerPage: 6,
     totalPages: 0,
@@ -36,6 +38,72 @@ function getStatusColor(status) {
         case 'VERIFIED': return 'bg-green-100 text-green-800';
         case 'REJECTED': return 'bg-red-100 text-red-800';
         default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+async function setRegionalFilter(regionalId) {
+    verificationData.selectedRegional = regionalId || '';
+    verificationData.selectedInstitution = ''; // Reset institution when regional changes
+    verificationData.selectedInventory = 'all'; // Reset inventory filter
+    
+    // Load institutions for selected regional
+    if (regionalId) {
+        if (window.loadInstitutionsByRegional) {
+            await window.loadInstitutionsByRegional(regionalId);
+        }
+    } else {
+        verificationData.institutions = [];
+    }
+    
+    // Reload inventories based on new institution filter (empty now)
+    if (window.loadInventories) {
+        await window.loadInventories();
+    }
+    
+    // Update filters UI
+    if (typeof updateFilters === 'function') {
+        updateFilters();
+    }
+    
+    // Reload verifications
+    verificationData.currentPage = 1;
+    if (verificationData.useBackendPagination) {
+        if (window.loadVerificationsFromBackend) {
+            await window.loadVerificationsFromBackend(0);
+        }
+    } else {
+        if (window.loadLatestVerifications) {
+            await window.loadLatestVerifications();
+        }
+        filterVerifications();
+    }
+}
+
+async function setInstitutionFilter(institutionId) {
+    verificationData.selectedInstitution = institutionId || '';
+    verificationData.selectedInventory = 'all'; // Reset inventory filter
+    
+    // Reload inventories based on selected institution
+    if (window.loadInventories) {
+        await window.loadInventories();
+    }
+    
+    // Update filters UI
+    if (typeof updateFilters === 'function') {
+        updateFilters();
+    }
+    
+    // Reload verifications
+    verificationData.currentPage = 1;
+    if (verificationData.useBackendPagination) {
+        if (window.loadVerificationsFromBackend) {
+            await window.loadVerificationsFromBackend(0);
+        }
+    } else {
+        if (window.loadLatestVerifications) {
+            await window.loadLatestVerifications();
+        }
+        filterVerifications();
     }
 }
 
@@ -86,6 +154,8 @@ async function changePage(page) {
 }
 
 window.verificationData = verificationData;
+window.setRegionalFilter = setRegionalFilter;
+window.setInstitutionFilter = setInstitutionFilter;
 window.setInventoryFilter = setInventoryFilter;
 window.setStatusFilter = setStatusFilter;
 window.changePage = changePage;

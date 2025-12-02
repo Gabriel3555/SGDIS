@@ -15,6 +15,11 @@ async function loadVerificationData() {
         if (isSuperAdmin) {
             // Use backend pagination for superadmin
             verificationData.useBackendPagination = true;
+            await loadRegionals();
+            // Load institutions only if a regional is selected
+            if (verificationData.selectedRegional) {
+                await loadInstitutionsByRegional(verificationData.selectedRegional);
+            }
             await loadInventories();
             await loadVerificationsFromBackend(0); // Load first page
         } else {
@@ -137,6 +142,52 @@ async function loadCurrentUserInfo() {
     }
 }
 
+async function loadRegionals() {
+    try {
+        const response = await fetch('/api/v1/regional', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            verificationData.regionals = await response.json();
+        } else {
+            console.error('Error loading regionals:', response.status, response.statusText);
+            verificationData.regionals = [];
+        }
+    } catch (error) {
+        console.error('Error loading regionals:', error);
+        verificationData.regionals = [];
+    }
+}
+
+async function loadInstitutionsByRegional(regionalId) {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            verificationData.institutions = await response.json();
+        } else {
+            console.error('Error loading institutions:', response.status, response.statusText);
+            verificationData.institutions = [];
+        }
+    } catch (error) {
+        console.error('Error loading institutions:', error);
+        verificationData.institutions = [];
+    }
+}
+
 async function loadInventories() {
     try {
         const token = localStorage.getItem('jwt');
@@ -195,6 +246,16 @@ async function loadInventories() {
                 // Handle non-paginated response
                 inventories = await response.json();
             }
+            
+            // Filter by institution if selected (for superadmin)
+            if (verificationData.selectedInstitution && verificationData.selectedInstitution !== '') {
+                inventories = inventories.filter(inv => {
+                    const invInstitutionId = inv.institutionId || inv.institution?.id || 
+                                           (inv.institution && inv.institution.id ? inv.institution.id.toString() : null);
+                    return invInstitutionId && invInstitutionId.toString() === verificationData.selectedInstitution.toString();
+                });
+            }
+            
             verificationData.inventories = Array.isArray(inventories) ? inventories : [];
         } else {
             console.error('Error loading inventories:', response.status, response.statusText);
@@ -598,6 +659,8 @@ async function fetchAllVerifications(page = 0, size = 6, filters = {}) {
 window.loadVerificationData = loadVerificationData;
 window.loadVerificationsFromBackend = loadVerificationsFromBackend;
 window.loadCurrentUserInfo = loadCurrentUserInfo;
+window.loadRegionals = loadRegionals;
+window.loadInstitutionsByRegional = loadInstitutionsByRegional;
 window.loadInventories = loadInventories;
 window.loadLatestVerifications = loadLatestVerifications;
 window.getLatestVerifications = getLatestVerifications;
