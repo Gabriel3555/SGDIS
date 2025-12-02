@@ -755,19 +755,49 @@ function updateUserInfoDisplay(userData) {
             'SUPERADMIN': 'Super Administrador',
             'ADMIN_REGIONAL': 'Administrador Regional',
             'ADMIN_INSTITUTION': 'Administrador de Institución',
+            'ADMIN_INSTITUTIONAL': 'Admin Institucional',
             'WAREHOUSE': 'Almacén',
             'USER': 'Usuario'
         };
         headerUserRole.textContent = roleNames[userData.role] || userData.role || 'Usuario';
     }
 
-    if (headerUserAvatar && userData.profileImageUrl) {
-        headerUserAvatar.innerHTML = `<img src="${userData.profileImageUrl}" alt="Avatar">`;
-    } else if (headerUserAvatar) {
-        const initials = (userData.fullName || 'U').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
-        headerUserAvatar.textContent = initials;
-        headerUserAvatar.style.backgroundColor = '#00AF00';
-        headerUserAvatar.style.color = 'white';
+    if (headerUserAvatar) {
+        if (userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl) {
+            const imgUrl = userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl;
+            
+            // Try to use createImageWithSpinner from dashboard.js if available
+            if (typeof createImageWithSpinner === 'function') {
+                const spinnerHtml = createImageWithSpinner(
+                    imgUrl,
+                    userData.fullName || 'Usuario',
+                    'w-full h-full object-cover',
+                    'w-full h-full',
+                    'rounded-full'
+                );
+                if (spinnerHtml) {
+                    headerUserAvatar.innerHTML = spinnerHtml;
+                } else {
+                    const initials = (userData.fullName || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    headerUserAvatar.textContent = initials;
+                    headerUserAvatar.style.backgroundColor = '#00AF00';
+                    headerUserAvatar.style.color = 'white';
+                    headerUserAvatar.style.backgroundImage = 'none';
+                }
+            } else {
+                // Fallback: use background image approach
+                headerUserAvatar.style.backgroundImage = `url(${imgUrl})`;
+                headerUserAvatar.style.backgroundSize = 'cover';
+                headerUserAvatar.style.backgroundPosition = 'center';
+                headerUserAvatar.textContent = '';
+            }
+        } else {
+            const initials = (userData.fullName || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            headerUserAvatar.textContent = initials;
+            headerUserAvatar.style.backgroundColor = '#00AF00';
+            headerUserAvatar.style.color = 'white';
+            headerUserAvatar.style.backgroundImage = 'none';
+        }
     }
 }
 
