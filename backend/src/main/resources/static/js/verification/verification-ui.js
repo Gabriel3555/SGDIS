@@ -183,38 +183,221 @@ function updateFilters() {
     if (isSuperAdmin) {
         filtersHTML += `
             <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Regional</label>
-                <select id="regionalFilter" onchange="setRegionalFilter(this.value)"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
-                    <option value="">Todas las regionales</option>
-                    ${regionalOptions}
-                </select>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Regional</label>
+                <div class="custom-select-container">
+                    <div class="custom-select" id="verificationRegionalFilterSelect">
+                        <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                            <span class="custom-select-text custom-select-placeholder">Todas las regionales</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-select-dropdown">
+                            <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                            <div class="custom-select-options" id="verificationRegionalFilterOptions">
+                                <!-- Options loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="regionalFilter" value="${currentRegionalValue}">
+                </div>
             </div>
             <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Centro</label>
-                <select id="institutionFilter" onchange="setInstitutionFilter(this.value)"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
-                    ${!currentRegionalValue ? 'disabled' : ''}>
-                    <option value="">Todos los centros</option>
-                    ${institutionOptions}
-                </select>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Centro</label>
+                <div class="custom-select-container">
+                    <div class="custom-select" id="verificationInstitutionFilterSelect">
+                        <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                            <span class="custom-select-text custom-select-placeholder">Todos los centros</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-select-dropdown">
+                            <input type="text" class="custom-select-search" placeholder="Buscar centro...">
+                            <div class="custom-select-options" id="verificationInstitutionFilterOptions">
+                                <!-- Options loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="institutionFilter" value="${currentInstitutionValue}">
+                </div>
             </div>
         `;
     }
 
     filtersHTML += `
         <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Inventario</label>
-            <select id="inventoryFilter" onchange="setInventoryFilter(this.value)"
-                class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
-                ${!currentInstitutionValue && isSuperAdmin ? 'disabled' : ''}>
-                <option value="all" ${currentInventoryValue === 'all' ? 'selected' : ''}>Todos los Inventarios</option>
-                ${inventoryOptions}
-            </select>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Inventario</label>
+            <div class="custom-select-container">
+                <div class="custom-select" id="verificationInventoryFilterSelect">
+                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                        <span class="custom-select-text custom-select-placeholder">Todos los Inventarios</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-select-dropdown">
+                        <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
+                        <div class="custom-select-options" id="verificationInventoryFilterOptions">
+                            <!-- Options loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="inventoryFilter" value="${currentInventoryValue}">
+            </div>
         </div>
     `;
 
     container.innerHTML = filtersHTML;
+
+    // Reset custom select instances since HTML was regenerated
+    verificationRegionalCustomSelect = null;
+    verificationInstitutionCustomSelect = null;
+    verificationInventoryCustomSelect = null;
+
+    // Initialize Custom Selects after HTML is inserted
+    setTimeout(() => {
+        initializeVerificationCustomSelects();
+    }, 50);
+}
+
+// Custom Select instances for verification filters
+let verificationRegionalCustomSelect = null;
+let verificationInstitutionCustomSelect = null;
+let verificationInventoryCustomSelect = null;
+
+function initializeVerificationCustomSelects() {
+    if (typeof CustomSelect === 'undefined') {
+        console.warn('CustomSelect class not available for verification filters');
+        return;
+    }
+
+    // Initialize Regional Filter Custom Select (only for superadmin)
+    const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    
+    if (isSuperAdmin) {
+        const regionalSelect = document.getElementById('verificationRegionalFilterSelect');
+        if (regionalSelect && !verificationRegionalCustomSelect) {
+            verificationRegionalCustomSelect = new CustomSelect('verificationRegionalFilterSelect', {
+                placeholder: 'Todas las regionales',
+                onChange: (option) => {
+                    const value = option.value || '';
+                    document.getElementById('regionalFilter').value = value;
+                    setRegionalFilter(value);
+                }
+            });
+        }
+
+        const institutionSelect = document.getElementById('verificationInstitutionFilterSelect');
+        if (institutionSelect && !verificationInstitutionCustomSelect) {
+            verificationInstitutionCustomSelect = new CustomSelect('verificationInstitutionFilterSelect', {
+                placeholder: 'Todos los centros',
+                disabled: !verificationData.selectedRegional,
+                onChange: (option) => {
+                    const value = option.value || '';
+                    document.getElementById('institutionFilter').value = value;
+                    setInstitutionFilter(value);
+                }
+            });
+        }
+    }
+
+    // Initialize Inventory Filter Custom Select
+    const inventorySelect = document.getElementById('verificationInventoryFilterSelect');
+    if (inventorySelect && !verificationInventoryCustomSelect) {
+        verificationInventoryCustomSelect = new CustomSelect('verificationInventoryFilterSelect', {
+            placeholder: 'Todos los Inventarios',
+            disabled: isSuperAdmin && !verificationData.selectedInstitution,
+            onChange: (option) => {
+                const value = option.value || '';
+                document.getElementById('inventoryFilter').value = value;
+                setInventoryFilter(value);
+            }
+        });
+    }
+
+    // Populate custom selects with options
+    populateVerificationCustomSelects();
+}
+
+function populateVerificationCustomSelects() {
+    const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
+
+    // Populate Regional Filter
+    if (isSuperAdmin && verificationRegionalCustomSelect) {
+        const options = [
+            { value: '', label: 'Todas las regionales' },
+            ...(verificationData.regionals || []).map(regional => ({
+                value: regional.id.toString(),
+                label: regional.name
+            }))
+        ];
+        verificationRegionalCustomSelect.setOptions(options);
+        
+        if (verificationData.selectedRegional) {
+            const selectedOption = options.find(opt => opt.value === verificationData.selectedRegional.toString());
+            if (selectedOption) {
+                verificationRegionalCustomSelect.selectOption(selectedOption);
+            }
+        } else {
+            verificationRegionalCustomSelect.clear();
+        }
+    }
+
+    // Populate Institution Filter
+    if (isSuperAdmin && verificationInstitutionCustomSelect) {
+        if (!verificationData.selectedRegional) {
+            verificationInstitutionCustomSelect.setDisabled(true);
+            verificationInstitutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
+            verificationInstitutionCustomSelect.clear();
+        } else {
+            verificationInstitutionCustomSelect.setDisabled(false);
+            const options = [
+                { value: '', label: 'Todos los centros' },
+                ...(verificationData.institutions || []).map(institution => ({
+                    value: (institution.institutionId || institution.id).toString(),
+                    label: institution.name
+                }))
+            ];
+            verificationInstitutionCustomSelect.setOptions(options);
+            
+            if (verificationData.selectedInstitution) {
+                const selectedOption = options.find(opt => opt.value === verificationData.selectedInstitution.toString());
+                if (selectedOption) {
+                    verificationInstitutionCustomSelect.selectOption(selectedOption);
+                }
+            } else {
+                verificationInstitutionCustomSelect.clear();
+            }
+        }
+    }
+
+    // Populate Inventory Filter
+    if (verificationInventoryCustomSelect) {
+        if (isSuperAdmin && !verificationData.selectedInstitution) {
+            verificationInventoryCustomSelect.setDisabled(true);
+        } else {
+            verificationInventoryCustomSelect.setDisabled(false);
+        }
+
+        const options = [
+            { value: 'all', label: 'Todos los Inventarios' },
+            ...(verificationData.inventories || []).map(inv => ({
+                value: inv.id.toString(),
+                label: inv.name || `Inventario ${inv.id}`
+            }))
+        ];
+        verificationInventoryCustomSelect.setOptions(options);
+        
+        if (verificationData.selectedInventory && verificationData.selectedInventory !== 'all') {
+            const selectedOption = options.find(opt => opt.value === verificationData.selectedInventory.toString());
+            if (selectedOption) {
+                verificationInventoryCustomSelect.selectOption(selectedOption);
+            }
+        } else {
+            // Select "all" option
+            const allOption = options.find(opt => opt.value === 'all');
+            if (allOption) {
+                verificationInventoryCustomSelect.selectOption(allOption);
+            }
+        }
+    }
 }
 
 function updateVerificationTable() {
@@ -330,4 +513,9 @@ window.updateUserInfoDisplay = updateUserInfoDisplay;
 window.updateStatsCards = updateStatsCards;
 window.updateFilters = updateFilters;
 window.updateVerificationTable = updateVerificationTable;
+window.verificationRegionalCustomSelect = verificationRegionalCustomSelect;
+window.verificationInstitutionCustomSelect = verificationInstitutionCustomSelect;
+window.verificationInventoryCustomSelect = verificationInventoryCustomSelect;
+window.populateVerificationCustomSelects = populateVerificationCustomSelects;
+window.initializeVerificationCustomSelects = initializeVerificationCustomSelects;
 

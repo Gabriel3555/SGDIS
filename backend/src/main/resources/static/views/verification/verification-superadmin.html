@@ -675,6 +675,8 @@
     <script src="../../js/token-refresh.js"></script>
     <script src="../../js/dashboard.js"></script>
     <script src="../../js/user-sidebar.js"></script>
+    <!-- Custom Select Component (needed for filter dropdowns) -->
+    <script src="../../js/inventory/inventory-modals.js"></script>
     <!-- Verification Module Scripts -->
     <script src="../../js/verification/verification-data.js"></script>
     <script src="../../js/verification/verification-api.js"></script>
@@ -710,6 +712,214 @@
             border-color: #00AF00 !important;
             background-color: rgb(240, 253, 244) !important;
             color: #00AF00 !important;
+        }
+
+        /* Custom Select Styles */
+        .custom-select-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .custom-select-container.select-open {
+            z-index: 10002;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border-color: #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger:hover {
+            border-color: #e5e7eb;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-arrow {
+            color: #d1d5db;
+        }
+
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.75rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 2.5rem;
+        }
+
+        .custom-select-trigger:hover {
+            border-color: #00AF00;
+        }
+
+        .custom-select-trigger:focus-within {
+            border-color: #00AF00;
+            box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: #00AF00;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .custom-select-text {
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-placeholder {
+            color: #9ca3af;
+        }
+
+        .custom-select-arrow {
+            color: #00AF00;
+            transition: transform 0.2s ease;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+        }
+
+        .custom-select-dropdown {
+            position: fixed;
+            background: white;
+            border: 2px solid #00AF00;
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 10050;
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            min-width: 180px;
+        }
+
+        /* Dropdown opening upward */
+        .custom-select.dropdown-up .custom-select-dropdown {
+            border-top: 2px solid #00AF00;
+            border-bottom: none;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .custom-select.dropdown-up .custom-select-trigger {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        .custom-select.dropdown-up .custom-select-arrow {
+            transform: rotate(0deg);
+        }
+
+        .custom-select.open .custom-select-dropdown {
+            display: block;
+        }
+
+        .custom-select.open {
+            z-index: 10002;
+        }
+
+        #searchFilterContainer {
+            overflow: visible !important;
+        }
+
+        #searchFilterContainer > div {
+            overflow: visible !important;
+        }
+
+        .custom-select-search {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            outline: none;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-options {
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .custom-select-option {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .custom-select-option.selected {
+            background-color: #00AF00;
+            color: white;
+        }
+
+        .custom-select-option.disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .custom-select-option.disabled:hover {
+            background-color: transparent;
+        }
+
+        /* Dark mode support */
+        .dark .custom-select-trigger {
+            background: #1f2937;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-text {
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-placeholder {
+            color: #9ca3af;
+        }
+
+        .dark .custom-select-dropdown {
+            background: #1f2937;
+            border-color: #00AF00;
+        }
+
+        .dark .custom-select-search {
+            background: #1f2937;
+            color: #f3f4f6;
+            border-bottom-color: #4b5563;
+        }
+
+        .dark .custom-select-option {
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-option:hover {
+            background-color: #374151;
+        }
+
+        .dark .custom-select.custom-select-disabled .custom-select-trigger {
+            background: #374151;
+            color: #6b7280;
+            border-color: #4b5563;
         }
 
         /* Responsive adjustments */
