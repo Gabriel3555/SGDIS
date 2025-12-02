@@ -10,22 +10,103 @@ async function fetchItemsByInventory(inventoryId, page = 0, size = 6) {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(
-      `/api/v1/items/inventory/${inventoryId}?page=${page}&size=${size}`,
-      {
-        method: "GET",
-        headers: headers,
-      }
-    );
+    const url = `/api/v1/items/inventory/${inventoryId}?page=${page}&size=${size}`;
+    console.debug(`Fetching items from: ${url}`);
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: headers,
+    });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      let errorMessage = `Error al cargar los items (Código: ${response.status})`;
+      let errorDetails = null;
+      
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          errorDetails = errorData;
+          
+          // Try to get a more descriptive error message
+          errorMessage = errorData.message || 
+                        errorData.detail || 
+                        errorData.error || 
+                        errorData.exception ||
+                        errorMessage;
+          
+          // If it's a generic error message, try to add more context
+          if (errorMessage === "Ha ocurrido un error inesperado" || 
+              errorMessage === "An unexpected error occurred" ||
+              errorMessage.includes("unexpected")) {
+            // Try to get more details
+            if (errorData.trace) {
+              console.error("Full error trace:", errorData.trace);
+            }
+            if (errorData.path) {
+              errorMessage += ` (Endpoint: ${errorData.path})`;
+            }
+            if (errorData.timestamp) {
+              console.error("Error timestamp:", errorData.timestamp);
+            }
+          }
+          
+          // Log full error details for debugging
+          console.error("Error response from backend:", {
+            status: response.status,
+            statusText: response.statusText,
+            url: url,
+            errorData: errorData,
+            errorDataString: JSON.stringify(errorData, null, 2)
+          });
+          
+          // Log each property of errorData separately for better visibility
+          if (errorData) {
+            console.error("Error details breakdown:", {
+              message: errorData.message,
+              detail: errorData.detail,
+              error: errorData.error,
+              timestamp: errorData.timestamp,
+              path: errorData.path,
+              status: errorData.status,
+              trace: errorData.trace,
+              allKeys: Object.keys(errorData)
+            });
+          }
+        } else {
+          const errorText = await response.text();
+          if (errorText) {
+            errorMessage = errorText;
+            console.error("Error response text:", errorText);
+          }
+        }
+      } catch (parseError) {
+        console.error("Error parsing error response:", parseError);
+      }
+      
+      const finalError = new Error(errorMessage);
+      finalError.status = response.status;
+      finalError.details = errorDetails;
+      throw finalError;
     }
 
     const data = await response.json();
+    console.debug(`Successfully fetched items:`, {
+      totalElements: data.totalElements,
+      totalPages: data.totalPages,
+      itemsCount: data.content?.length || 0
+    });
     return data;
   } catch (error) {
-    console.error("Error fetching items:", error);
+    console.error("Error fetching items:", {
+      error: error,
+      message: error.message,
+      status: error.status,
+      details: error.details,
+      inventoryId: inventoryId,
+      page: page,
+      size: size
+    });
     throw error;
   }
 }
@@ -170,8 +251,6 @@ async function getItemById(itemId, silent = false) {
     // Only log as error if not silent (when we have a fallback)
     if (!silent) {
       console.error("Error fetching item by ID:", error);
-    } else {
-      console.debug("Error fetching item by ID (silent, using fallback):", error);
     }
     throw error;
   }

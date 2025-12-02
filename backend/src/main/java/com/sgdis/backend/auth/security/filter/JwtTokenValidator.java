@@ -76,11 +76,37 @@ public class JwtTokenValidator extends OncePerRequestFilter {
                 Claim roleClaim = decodedJWT.getClaim("role");
 
                 if (userIdClaim != null && roleClaim != null) {
-                    Long userId = userIdClaim.asLong();
-                    String roleString = roleClaim.asString();
-                    GrantedAuthority role = new SimpleGrantedAuthority(roleString);
-
-                    SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of(role)));
+                    Long userId = null;
+                    // Try to get userId as Long first
+                    if (!userIdClaim.isNull()) {
+                        try {
+                            userId = userIdClaim.asLong();
+                        } catch (Exception e) {
+                            // If asLong() fails, try as String and parse
+                            try {
+                                String userIdStr = userIdClaim.asString();
+                                if (userIdStr != null) {
+                                    userId = Long.parseLong(userIdStr);
+                                }
+                            } catch (Exception e2) {
+                                // If both fail, try as Number
+                                try {
+                                    Number userIdNum = userIdClaim.as(Number.class);
+                                    if (userIdNum != null) {
+                                        userId = userIdNum.longValue();
+                                    }
+                                } catch (Exception e3) {
+                                    // Log but continue - will be handled by AuthService
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (userId != null) {
+                        String roleString = roleClaim.asString();
+                        GrantedAuthority role = new SimpleGrantedAuthority(roleString);
+                        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of(role)));
+                    }
                 }
             } catch (Exception e) {
                 // Invalid token, do nothing

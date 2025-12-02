@@ -9,6 +9,9 @@ import com.sgdis.backend.cancellation.mapper.CancellationMapper;
 import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
+import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 // Auditoría
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
@@ -43,51 +46,112 @@ public class CancellationService implements
 
     private final SpringDataCancellationRepository cancellationRepository;
     private final SpringDataItemRepository itemRepository;
+    private final SpringDataInventoryRepository inventoryRepository;
     private final FileUploadService fileUploadService;
     private final AuthService authService;
     private final RecordActionUseCase recordActionUseCase;
 
     @Override
+    @Transactional
     public AskForCancellationResponse askForCancellation(AskForCancellationRequest request) {
-        List<ItemEntity> items = new ArrayList<>();
-        request.itemsId().forEach(id -> {
-            items.add(itemRepository.findById(id).orElseThrow(()->new RuntimeException("Item no encontrado")));
-        });
-
-        UserEntity requester = authService.getCurrentUser();
-
-        CancellationEntity entity = new CancellationEntity();
-        entity.setItems(items);
-        entity.setRequester(requester);
-        entity.setReason(request.reason());
-        entity.setRequestedAt(LocalDateTime.now());
-
-        CancellationEntity savedEntity = cancellationRepository.save(entity);
-
-        // Registrar auditoría
-        StringBuilder itemsInfo = new StringBuilder();
-        if (items != null && !items.isEmpty()) {
-            items.forEach(item -> {
-                String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
-                itemsInfo.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
-            });
-            if (itemsInfo.length() > 0) {
-                itemsInfo.setLength(itemsInfo.length() - 2); // Remover última coma y espacio
+        try {
+            List<ItemEntity> items = new ArrayList<>();
+            // Ensure all IDs are Long (handle potential String to Long conversion)
+            for (Object idObj : request.itemsId()) {
+                Long id;
+                if (idObj instanceof Long) {
+                    id = (Long) idObj;
+                } else if (idObj instanceof String) {
+                    try {
+                        id = Long.parseLong((String) idObj);
+                    } catch (NumberFormatException e) {
+                        throw new RuntimeException("ID de item inválido: " + idObj);
+                    }
+                } else if (idObj instanceof Number) {
+                    id = ((Number) idObj).longValue();
+                } else {
+                    throw new RuntimeException("Tipo de ID de item no soportado: " + idObj.getClass().getName());
+                }
+                items.add(itemRepository.findById(id)
+                        .orElseThrow(() -> new RuntimeException("Item no encontrado con ID: " + id)));
             }
-        } else {
-            itemsInfo.append("N/A");
-        }
-        
-        recordActionUseCase.recordAction(new RecordActionRequest(
-                String.format("Solicitud de baja creada: ID %d - Items: %s - Solicitado por: %s (%s) - Razón: %s", 
-                        savedEntity.getId(),
-                        itemsInfo.toString(),
-                        requester.getFullName(),
-                        requester.getEmail(),
-                        request.reason() != null ? request.reason() : "N/A")
-        ));
 
-        return CancellationMapper.toResponse(savedEntity);
+            UserEntity requester = authService.getCurrentUser();
+
+            // Validaciones según el rol del usuario
+            validateCancellationPermissions(requester, items);
+
+            CancellationEntity entity = new CancellationEntity();
+            entity.setItems(items);
+            entity.setRequester(requester);
+            entity.setReason(request.reason());
+            entity.setRequestedAt(LocalDateTime.now());
+
+            // Si el usuario es SUPERADMIN, ADMIN_REGIONAL, ADMIN_INSTITUTION o WAREHOUSE, aprobar automáticamente la cancelación
+            if (requester.getRole() == Role.SUPERADMIN || 
+                requester.getRole() == Role.ADMIN_REGIONAL || 
+                requester.getRole() == Role.ADMIN_INSTITUTION ||
+                requester.getRole() == Role.WAREHOUSE) {
+                entity.setApprovedAt(LocalDateTime.now());
+                entity.setApproved(true);
+                entity.setChecker(requester);
+                String roleName = requester.getRole().name();
+                entity.setComment("Aprobación automática por " + roleName);
+                
+                // Restar valores del inventario cuando se aprueba automáticamente
+                subtractInventoryValuesForCancellation(items);
+            }
+
+            CancellationEntity savedEntity = cancellationRepository.save(entity);
+
+            // Registrar auditoría (no crítico si falla, pero intentamos registrarlo)
+            try {
+                StringBuilder itemsInfo = new StringBuilder();
+                if (items != null && !items.isEmpty()) {
+                    items.forEach(item -> {
+                        String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+                        itemsInfo.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
+                    });
+                    if (itemsInfo.length() > 0) {
+                        itemsInfo.setLength(itemsInfo.length() - 2); // Remover última coma y espacio
+                    }
+                } else {
+                    itemsInfo.append("N/A");
+                }
+                
+                boolean isAutoApproved = requester.getRole() == Role.SUPERADMIN || 
+                                        requester.getRole() == Role.ADMIN_REGIONAL || 
+                                        requester.getRole() == Role.ADMIN_INSTITUTION ||
+                                        requester.getRole() == Role.WAREHOUSE;
+                
+                String auditMessage = isAutoApproved
+                        ? String.format("Solicitud de baja creada y aprobada automáticamente: ID %d - Items: %s - Solicitado/Aprobado por: %s (%s) - Rol: %s - Razón: %s",
+                                savedEntity.getId(),
+                                itemsInfo.toString(),
+                                requester.getFullName(),
+                                requester.getEmail(),
+                                requester.getRole().name(),
+                                request.reason() != null ? request.reason() : "N/A")
+                        : String.format("Solicitud de baja creada: ID %d - Items: %s - Solicitado por: %s (%s) - Razón: %s",
+                                savedEntity.getId(),
+                                itemsInfo.toString(),
+                                requester.getFullName(),
+                                requester.getEmail(),
+                                request.reason() != null ? request.reason() : "N/A");
+                
+                recordActionUseCase.recordAction(new RecordActionRequest(auditMessage));
+            } catch (Exception auditException) {
+                // Log audit error but don't fail the operation
+                System.err.println("Error al registrar auditoría: " + auditException.getMessage());
+                auditException.printStackTrace();
+            }
+
+            return CancellationMapper.toResponse(savedEntity);
+        } catch (Exception e) {
+            System.err.println("Error en askForCancellation: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
 
@@ -117,6 +181,7 @@ public class CancellationService implements
     }
 
     @Override
+    @Transactional
     public AcceptCancellationResponse acceptCancellation(AcceptCancellationRequest request) {
         CancellationEntity cancellation = cancellationRepository.getReferenceById(request.cancellationId());
         UserEntity checker = authService.getCurrentUser();
@@ -137,8 +202,15 @@ public class CancellationService implements
         }
 
         cancellation.setApprovedAt(LocalDateTime.now());
+        cancellation.setApproved(true);
         cancellation.setComment(request.comment());
         cancellation.setChecker(checker);
+
+        // Restar valores del inventario cuando se aprueba la cancelación
+        List<ItemEntity> items = cancellation.getItems();
+        if (items != null && !items.isEmpty()) {
+            subtractInventoryValuesForCancellation(items);
+        }
 
         cancellationRepository.save(cancellation);
 
@@ -293,5 +365,186 @@ public class CancellationService implements
             case "txt" -> MediaType.TEXT_PLAIN;
             default -> MediaType.APPLICATION_OCTET_STREAM;
         };
+    }
+
+    /**
+     * Valida los permisos para crear cancelaciones según el rol del usuario
+     * @param requester Usuario que solicita la cancelación
+     * @param items Lista de items a cancelar
+     * @throws RuntimeException Si el usuario no tiene permisos para cancelar los items
+     */
+    private void validateCancellationPermissions(UserEntity requester, List<ItemEntity> items) {
+        if (requester == null || items == null || items.isEmpty()) {
+            return; // Las validaciones básicas ya se hacen en otros lugares
+        }
+
+        Role userRole = requester.getRole();
+        
+        // SUPERADMIN no tiene restricciones
+        if (userRole == Role.SUPERADMIN) {
+            return;
+        }
+
+        // ADMIN_REGIONAL no tiene restricciones (puede cancelar de cualquier regional)
+        if (userRole == Role.ADMIN_REGIONAL) {
+            return;
+        }
+
+        // ADMIN_INSTITUTION: Solo puede cancelar items de su propia institución y regional
+        if (userRole == Role.ADMIN_INSTITUTION) {
+            if (requester.getInstitution() == null) {
+                throw new RuntimeException("El usuario ADMIN_INSTITUTION no tiene una institución asignada");
+            }
+
+            Long userInstitutionId = requester.getInstitution().getId();
+            Long userRegionalId = requester.getInstitution().getRegional() != null 
+                    ? requester.getInstitution().getRegional().getId() 
+                    : null;
+
+            if (userRegionalId == null) {
+                throw new RuntimeException("La institución del usuario no tiene una regional asignada");
+            }
+
+            for (ItemEntity item : items) {
+                if (item.getInventory() == null) {
+                    throw new RuntimeException("El item con ID " + item.getId() + " no pertenece a ningún inventario");
+                }
+
+                if (item.getInventory().getInstitution() == null) {
+                    throw new RuntimeException("El inventario del item con ID " + item.getId() + " no tiene una institución asignada");
+                }
+
+                Long itemInstitutionId = item.getInventory().getInstitution().getId();
+                Long itemRegionalId = item.getInventory().getInstitution().getRegional() != null
+                        ? item.getInventory().getInstitution().getRegional().getId()
+                        : null;
+
+                if (itemRegionalId == null) {
+                    throw new RuntimeException("La institución del inventario del item con ID " + item.getId() + " no tiene una regional asignada");
+                }
+
+                // Validar que el item pertenezca a la misma institución
+                if (!itemInstitutionId.equals(userInstitutionId)) {
+                    String itemInstitutionName = item.getInventory().getInstitution().getName() != null
+                            ? item.getInventory().getInstitution().getName()
+                            : "sin nombre";
+                    String userInstitutionName = requester.getInstitution().getName() != null
+                            ? requester.getInstitution().getName()
+                            : "sin nombre";
+                    throw new RuntimeException(
+                            String.format("No puedes cancelar items de otras instituciones. Item pertenece a: %s, Tu institución: %s",
+                                    itemInstitutionName, userInstitutionName)
+                    );
+                }
+
+                // Validar que el item pertenezca a la misma regional
+                if (!itemRegionalId.equals(userRegionalId)) {
+                    throw new RuntimeException("No puedes cancelar items de otras regionales. Solo puedes cancelar items de tu propia regional");
+                }
+            }
+            return;
+        }
+
+        // WAREHOUSE: Solo puede cancelar items de su propia institución y regional
+        if (userRole == Role.WAREHOUSE) {
+            if (requester.getInstitution() == null) {
+                throw new RuntimeException("El usuario WAREHOUSE no tiene una institución asignada");
+            }
+
+            Long userInstitutionId = requester.getInstitution().getId();
+            Long userRegionalId = requester.getInstitution().getRegional() != null
+                    ? requester.getInstitution().getRegional().getId()
+                    : null;
+
+            if (userRegionalId == null) {
+                throw new RuntimeException("La institución del usuario WAREHOUSE no tiene una regional asignada");
+            }
+
+            for (ItemEntity item : items) {
+                if (item.getInventory() == null) {
+                    throw new RuntimeException("El item con ID " + item.getId() + " no pertenece a ningún inventario");
+                }
+
+                if (item.getInventory().getInstitution() == null) {
+                    throw new RuntimeException("El inventario del item con ID " + item.getId() + " no tiene una institución asignada");
+                }
+
+                Long itemInstitutionId = item.getInventory().getInstitution().getId();
+                Long itemRegionalId = item.getInventory().getInstitution().getRegional() != null
+                        ? item.getInventory().getInstitution().getRegional().getId()
+                        : null;
+
+                if (itemRegionalId == null) {
+                    throw new RuntimeException("La institución del inventario del item con ID " + item.getId() + " no tiene una regional asignada");
+                }
+
+                // Validar que el item pertenezca a la misma institución
+                if (!itemInstitutionId.equals(userInstitutionId)) {
+                    String itemInstitutionName = item.getInventory().getInstitution().getName() != null
+                            ? item.getInventory().getInstitution().getName()
+                            : "sin nombre";
+                    String userInstitutionName = requester.getInstitution().getName() != null
+                            ? requester.getInstitution().getName()
+                            : "sin nombre";
+                    throw new RuntimeException(
+                            String.format("No puedes cancelar items de otras instituciones. Item pertenece a: %s, Tu institución: %s",
+                                    itemInstitutionName, userInstitutionName)
+                    );
+                }
+
+                // Validar que el item pertenezca a la misma regional
+                if (!itemRegionalId.equals(userRegionalId)) {
+                    throw new RuntimeException("No puedes cancelar items de otras regionales. Solo puedes cancelar items de tu propia regional");
+                }
+            }
+            return;
+        }
+
+        // USER: No tiene restricciones de validación, pero no se aprueba automáticamente
+        // (ya está manejado en el código principal)
+    }
+
+    /**
+     * Resta los valores de los items del inventario cuando se aprueba una cancelación.
+     * Agrupa los items por inventario y resta el total de cada inventario.
+     * 
+     * @param items Lista de items a cancelar
+     */
+    private void subtractInventoryValuesForCancellation(List<ItemEntity> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+
+        // Agrupar items por inventario y sumar sus valores
+        java.util.Map<Long, Double> inventoryTotals = new java.util.HashMap<>();
+        
+        for (ItemEntity item : items) {
+            if (item.getInventory() == null) {
+                continue; // Skip items without inventory
+            }
+            
+            Long inventoryId = item.getInventory().getId();
+            Double itemValue = item.getAcquisitionValue();
+            
+            if (itemValue != null && itemValue > 0) {
+                inventoryTotals.merge(inventoryId, itemValue, Double::sum);
+            }
+        }
+
+        // Restar el total de cada inventario
+        for (java.util.Map.Entry<Long, Double> entry : inventoryTotals.entrySet()) {
+            Long inventoryId = entry.getKey();
+            Double totalValue = entry.getValue();
+            
+            if (totalValue != null && totalValue > 0) {
+                try {
+                    inventoryRepository.subtractFromTotalPrice(inventoryId, totalValue);
+                } catch (Exception e) {
+                    // Log error but don't fail the cancellation
+                    System.err.println("Error al restar valor del inventario " + inventoryId + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

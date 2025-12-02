@@ -252,6 +252,11 @@
                 <i class="fas fa-hand-holding text-lg"></i>
                 <span class="font-medium">Préstamos</span>
             </a>
+            <a href="/superadmin/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/cancellations')">
+                <i class="fas fa-times-circle text-lg"></i>
+                <span class="font-medium">Cancelaciones</span>
+            </a>
             <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
@@ -983,7 +988,6 @@
 
             // Listen for theme changes and update charts
             document.addEventListener('themeChanged', function(event) {
-                console.log('Theme changed to dark mode:', event.detail.isDarkMode);
                 // Reinitialize charts with new theme colors
                 if (Object.keys(superadminDashboardData.charts).length > 0) {
                     initializeCharts();
@@ -1428,7 +1432,6 @@
                 }
                 
                 superadminDashboardData.allAuditories = allAuditories;
-                console.log('Total auditories loaded:', allAuditories.length);
             } catch (error) {
                 console.error('Error loading all auditories:', error);
                 superadminDashboardData.allAuditories = [];
@@ -1784,8 +1787,6 @@
             if (superadminDashboardData.allAuditories && superadminDashboardData.regionals) {
                 const canvas = document.getElementById('activityHeatmapByRegionalChart');
                 if (canvas) {
-                    console.log('Processing auditories for heatmap. Total:', superadminDashboardData.allAuditories.length);
-                    
                     // Create a map of institutionId -> regionalId from institutions data
                     const institutionToRegional = {};
                     superadminDashboardData.institutions.forEach(inst => {
@@ -1833,10 +1834,6 @@
                             auditoriesWithoutRegional++;
                         }
                     });
-                    
-                    console.log('Auditories with regional:', auditoriesWithRegional);
-                    console.log('Auditories without regional:', auditoriesWithoutRegional);
-                    console.log('Regional activity map:', regionalActivity);
 
                     // Create a map of regionalId -> regionalName for all regionals (only for name lookup)
                     const regionalMap = {};

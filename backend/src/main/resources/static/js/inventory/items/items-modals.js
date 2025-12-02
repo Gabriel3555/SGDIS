@@ -36,12 +36,43 @@ async function loadItemsData() {
     }
   } catch (error) {
     console.error("Error loading items:", error);
+    
+    // Determine error message
+    let errorMessage = "No se pudieron cargar los items del inventario";
+    let errorTitle = "Error";
+    
+    if (error.status === 500) {
+      errorTitle = "Error del Servidor";
+      errorMessage = "El servidor encontró un error al procesar la solicitud. Por favor, contacta al administrador del sistema.";
+    } else if (error.status === 404) {
+      errorTitle = "No Encontrado";
+      errorMessage = "No se pudo encontrar el inventario solicitado.";
+    } else if (error.status === 403) {
+      errorTitle = "Sin Permisos";
+      errorMessage = "No tienes permisos para ver los items de este inventario.";
+    } else if (error.status === 401) {
+      errorTitle = "Sesión Expirada";
+      errorMessage = "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     if (container) {
       container.innerHTML = `
                 <div class="text-center py-12">
                     <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
-                    <p class="text-red-600">Error al cargar los items</p>
+                    <p class="text-red-600 dark:text-red-400 font-semibold text-lg mb-2">${errorTitle}</p>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">${errorMessage}</p>
+                    ${error.status === 500 ? `
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-4 max-w-md mx-auto">
+                        <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Si el problema persiste, verifica los logs del servidor o contacta al administrador.
+                        </p>
+                    </div>
+                    ` : ''}
                     <button onclick="loadItemsData()" class="mt-4 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                        <i class="fas fa-redo mr-2"></i>
                         Reintentar
                     </button>
                 </div>
@@ -49,8 +80,8 @@ async function loadItemsData() {
     }
     if (window.showErrorToast) {
       window.showErrorToast(
-        "Error",
-        "No se pudieron cargar los items del inventario"
+        errorTitle,
+        errorMessage
       );
     }
   }
@@ -913,7 +944,7 @@ async function loadTransferInventories() {
         useInstitutionEndpoint = currentUser.role !== "SUPERADMIN";
       }
     } catch (e) {
-      console.warn("Could not determine user role, using institution endpoint");
+      // Could not determine user role, using institution endpoint
     }
 
     // Use institution inventories endpoint to show only inventories from the same center
@@ -1155,7 +1186,7 @@ async function loadUsersForLendModal() {
         currentUserId = currentUser.id;
       }
     } catch (userError) {
-      console.warn("Could not get current user info:", userError);
+      // Could not get current user info, continue without filtering
     }
 
     // Fetch all users from institution endpoint - load all pages
@@ -1193,10 +1224,6 @@ async function loadUsersForLendModal() {
 
       const data = await response.json();
       const users = data.users || (Array.isArray(data) ? data : []);
-      
-      // Debug: Log to see what we're getting
-      console.log(`Page ${page}: Received ${users.length} users, total so far: ${allUsers.length + users.length}`);
-      console.log(`Total users in response: ${data.totalUsers || 'unknown'}, Last page: ${data.last}`);
       
       if (users.length > 0) {
         allUsers = allUsers.concat(users);
@@ -1271,20 +1298,17 @@ let isProcessingLoan = false;
 async function confirmLendItem() {
   // Prevent multiple submissions - check FIRST before anything else
   if (isProcessingLoan) {
-    console.log("Ya hay un préstamo en proceso, ignorando solicitud duplicada");
     return;
   }
 
   // Get submit button and check if already disabled
   const submitButton = document.querySelector("#lendItemForm button[type='submit']");
   if (submitButton && submitButton.disabled) {
-    console.log("Botón ya deshabilitado, ignorando solicitud duplicada");
     return;
   }
 
   // Do all validations BEFORE setting processing flag
   if (!window.itemsData || !window.itemsData.currentItemId) {
-    console.warn("No hay item seleccionado");
     if (window.showErrorToast) {
       window.showErrorToast("Error", "No se ha seleccionado un item para prestar");
     }
@@ -1378,9 +1402,8 @@ async function confirmLendItem() {
       try {
         window.showErrorToast(errorTitle, errorMessage);
         toastShown = true;
-        console.log("Toast mostrado usando showErrorToast");
       } catch (toastError) {
-        console.error("Error al mostrar toast:", toastError);
+        // Error showing toast, continue to next method
       }
     }
     
@@ -1388,9 +1411,8 @@ async function confirmLendItem() {
       try {
         window.showInventoryErrorToast(errorTitle, errorMessage);
         toastShown = true;
-        console.log("Toast mostrado usando showInventoryErrorToast");
       } catch (toastError) {
-        console.error("Error al mostrar toast:", toastError);
+        // Error showing toast, continue to next method
       }
     }
     
@@ -1402,15 +1424,13 @@ async function confirmLendItem() {
           descripcion: errorMessage 
         });
         toastShown = true;
-        console.log("Toast mostrado usando showInventoryToast");
       } catch (toastError) {
-        console.error("Error al mostrar toast:", toastError);
+        // Error showing toast, continue to next method
       }
     }
     
     // Fallback final: alert si no se pudo mostrar toast
     if (!toastShown) {
-      console.warn("No se pudo mostrar toast, usando alert como fallback");
       alert(`${errorTitle}: ${errorMessage}`);
     }
   } finally {
@@ -1438,7 +1458,6 @@ async function checkAndRemoveDuplicateLoans(itemId) {
     });
 
     if (!response.ok) {
-      console.warn('No se pudieron obtener los préstamos para verificar duplicados');
       return;
     }
 
@@ -1469,8 +1488,6 @@ async function checkAndRemoveDuplicateLoans(itemId) {
 
       if (timeDiff < 5) {
         // They are duplicates, delete the most recent one (lastLoan)
-        console.log('Préstamos duplicados detectados, eliminando el más reciente...');
-        
         const deleteResponse = await fetch(`/api/v1/loan/${lastLoan.id}`, {
           method: 'DELETE',
           headers: {
@@ -1478,12 +1495,7 @@ async function checkAndRemoveDuplicateLoans(itemId) {
             'Content-Type': 'application/json'
           }
         });
-
-        if (deleteResponse.ok) {
-          console.log('Préstamo duplicado eliminado exitosamente');
-        } else {
-          console.warn('No se pudo eliminar el préstamo duplicado');
-        }
+        // Silently handle result
       }
     }
   } catch (error) {
@@ -2431,6 +2443,130 @@ function filterItemLoans(filter) {
     displayItemLoansHistory(itemLoansData.allLoans);
 }
 
+// Cancel Item Modal Functions
+async function showCancelItemModal(itemId) {
+    const modal = document.getElementById("cancelItemModal");
+    if (!modal) return;
+
+    // Store current item ID
+    if (window.itemsData) {
+        window.itemsData.currentItemId = itemId;
+    }
+
+    // Find item to show name
+    let itemName = "Item";
+    if (window.itemsData && window.itemsData.items) {
+        const item = window.itemsData.items.find((i) => i.id === itemId);
+        if (item) {
+            itemName = item.productName || "Sin nombre";
+        }
+    }
+
+    // Set item name
+    const itemNameElement = document.getElementById("cancelItemName");
+    if (itemNameElement) {
+        itemNameElement.textContent = itemName;
+    }
+
+    // Reset form
+    const form = document.getElementById("cancelItemForm");
+    if (form) {
+        form.reset();
+    }
+
+    modal.classList.remove("hidden");
+}
+
+function closeCancelItemModal() {
+    const modal = document.getElementById("cancelItemModal");
+    if (modal) {
+        modal.classList.add("hidden");
+    }
+
+    const form = document.getElementById("cancelItemForm");
+    if (form) {
+        form.reset();
+    }
+}
+
+// Handle cancel item form submission
+async function handleCancelItemFormSubmit(event) {
+    event.preventDefault();
+
+    const itemId = window.itemsData ? window.itemsData.currentItemId : null;
+    if (!itemId) {
+        if (typeof showToast === 'function') {
+            showToast('Error: No se pudo identificar el item', 'error');
+        } else {
+            alert('Error: No se pudo identificar el item');
+        }
+        return;
+    }
+
+    const reasonElement = document.getElementById("cancelItemReason");
+    if (!reasonElement) {
+        if (typeof showToast === 'function') {
+            showToast('Error: No se pudo encontrar el campo de razón', 'error');
+        } else {
+            alert('Error: No se pudo encontrar el campo de razón');
+        }
+        return;
+    }
+
+    const reason = reasonElement.value.trim();
+    if (!reason) {
+        if (typeof showToast === 'function') {
+            showToast('Por favor ingrese la razón de la cancelación', 'error');
+        } else {
+            alert('Por favor ingrese la razón de la cancelación');
+        }
+        return;
+    }
+
+    try {
+        // Check if askForCancellation function is available
+        if (typeof askForCancellation !== 'function') {
+            throw new Error('La función askForCancellation no está disponible. Por favor, recargue la página.');
+        }
+
+        // Call the API function
+        const response = await askForCancellation([itemId], reason);
+
+        // Show success message
+        if (typeof showToast === 'function') {
+            showToast('Solicitud de cancelación creada exitosamente', 'success');
+        } else {
+            alert('Solicitud de cancelación creada exitosamente');
+        }
+
+        // Close modal
+        closeCancelItemModal();
+
+        // Optionally reload items data
+        if (window.loadItemsData) {
+            await window.loadItemsData();
+        }
+    } catch (error) {
+        console.error('Error asking for cancellation:', error);
+        const errorMessage = error.message || 'Error al crear la solicitud de cancelación';
+        if (typeof showToast === 'function') {
+            showToast(errorMessage, 'error');
+        } else {
+            alert(errorMessage);
+        }
+    }
+}
+
+// Setup cancel item form handler
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelItemForm = document.getElementById('cancelItemForm');
+    if (cancelItemForm) {
+        cancelItemForm.addEventListener('submit', handleCancelItemFormSubmit);
+    }
+});
+
+window.showCancelItemModal = showCancelItemModal;
+window.closeCancelItemModal = closeCancelItemModal;
 window.showItemLoansHistoryModal = showItemLoansHistoryModal;
 window.closeItemLoansHistoryModal = closeItemLoansHistoryModal;
 window.filterItemLoans = filterItemLoans;

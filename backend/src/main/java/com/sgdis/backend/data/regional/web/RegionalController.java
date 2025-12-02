@@ -1,5 +1,6 @@
 package com.sgdis.backend.data.regional.web;
 
+import com.sgdis.backend.data.regional.dto.RegionalMapResponse;
 import com.sgdis.backend.data.regional.dto.RegionalResponse;
 import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.data.regional.mapper.RegionalMapper;
@@ -7,9 +8,12 @@ import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -58,5 +62,33 @@ public class RegionalController {
         RegionalEntity regional = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Regional not found with id: " + id));
         return RegionalMapper.toResponse(regional);
+    }
+
+    @Operation(
+            summary = "Get regionals for map",
+            description = "Retrieves all regionals with their geographic coordinates for map visualization"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Regionals retrieved successfully",
+            content = @Content(schema = @Schema(implementation = RegionalMapResponse.class))
+    )
+    @GetMapping("/map")
+    public ResponseEntity<List<RegionalMapResponse>> getRegionalsForMap() {
+        var regionals = repository.findAll();
+        var mapResponses = regionals.stream()
+                .map(regional -> RegionalMapResponse.builder()
+                        .id(regional.getId())
+                        .name(regional.getName())
+                        .regionalCode(regional.getRegionalCode())
+                        .latitude(regional.getLatitude())
+                        .longitude(regional.getLongitude())
+                        .departamentName(regional.getDepartament() != null ? 
+                                regional.getDepartament().getDepartament() : null)
+                        .institutionsCount(regional.getInstitutions() != null ? 
+                                regional.getInstitutions().size() : 0)
+                        .build())
+                .toList();
+        return ResponseEntity.ok(mapResponses);
     }
 }

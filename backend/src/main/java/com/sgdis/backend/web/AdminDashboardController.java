@@ -469,6 +469,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/cancellations")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminCancellations() throws IOException {
+        Resource resource = new ClassPathResource("static/views/cancellations/cancellations-superadmin.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/admin_regional/settings")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
@@ -726,6 +740,20 @@ public class AdminDashboardController {
     @ResponseBody
     public ResponseEntity<Resource> superadminCenters() throws IOException {
         Resource resource = new ClassPathResource("static/views/centers/centers.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/superadmin/centers/map")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminCentersMap() throws IOException {
+        Resource resource = new ClassPathResource("static/views/centers/centers-map-pro.html");
         if (resource.exists()) {
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)

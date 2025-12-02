@@ -21,7 +21,6 @@ class WebSocketNotificationClient {
         // Obtener el userId del localStorage o del token JWT
         const token = localStorage.getItem('jwt') || localStorage.getItem('token');
         if (!token) {
-            console.log('No hay token disponible, no se puede conectar al WebSocket');
             return;
         }
 
@@ -35,8 +34,6 @@ class WebSocketNotificationClient {
         const protocol = window.location.protocol === 'https:' ? 'https://' : 'http://';
         const host = window.location.host;
         const socketUrl = `${protocol}${host}/ws`;
-
-        console.log('Conectando al WebSocket:', socketUrl);
 
         // Usar SockJS y STOMP para la conexión
         const socket = new SockJS(socketUrl);
@@ -72,7 +69,6 @@ class WebSocketNotificationClient {
         this.stompClient.connect(
             headers,
             (frame) => {
-                console.log('WebSocket conectado exitosamente, frame:', frame);
                 this.isConnected = true;
                 this.reconnectAttempts = 0;
                 this.subscribeToNotifications();
@@ -108,19 +104,15 @@ class WebSocketNotificationClient {
 
         // Suscribirse al canal de notificaciones personal del usuario
         this.subscription = this.stompClient.subscribe(`/user/queue/notifications`, (message) => {
-            console.log('Mensaje recibido del WebSocket:', message);
             try {
                 const notification = JSON.parse(message.body);
-                console.log('Notificación parseada:', notification);
                 this.handleNotification(notification);
             } catch (error) {
                 console.error('Error al parsear notificación:', error);
             }
         });
 
-        if (this.subscription) {
-            console.log(`Suscrito a notificaciones para el usuario ${this.userId} en /user/queue/notifications`);
-        } else {
+        if (!this.subscription) {
             console.error('No se pudo suscribir a notificaciones');
         }
     }
@@ -129,22 +121,17 @@ class WebSocketNotificationClient {
      * Maneja las notificaciones recibidas
      */
     async handleNotification(notification) {
-        console.log('Notificación recibida por WebSocket:', notification);
-
         // Mostrar la notificación usando el sistema de notificaciones existente
         this.showNotification(notification);
 
         // Reproducir sonido si está disponible
-        console.log('Intentando reproducir sonido de notificación...');
         await this.playNotificationSound();
-        console.log('Sonido de notificación procesado');
 
         // Disparar evento personalizado para que otros módulos puedan reaccionar
         const event = new CustomEvent('sgdis-notification', {
             detail: notification
         });
         window.dispatchEvent(event);
-        console.log('Evento sgdis-notification disparado');
     }
 
     /**
@@ -212,15 +199,10 @@ class WebSocketNotificationClient {
      */
     handleReconnect() {
         if (this.reconnectAttempts >= this.maxReconnectAttempts && this.maxReconnectAttempts !== Infinity) {
-            console.log('Máximo de intentos de reconexión alcanzado');
             return;
         }
 
         this.reconnectAttempts++;
-        const attemptInfo = this.maxReconnectAttempts === Infinity 
-            ? `intento ${this.reconnectAttempts}` 
-            : `intento ${this.reconnectAttempts}/${this.maxReconnectAttempts}`;
-        console.log(`Reintentando conexión en ${this.reconnectDelay / 1000}s (${attemptInfo})`);
 
         setTimeout(() => {
             // Verificar que no esté ya conectado antes de reconectar
@@ -240,7 +222,6 @@ class WebSocketNotificationClient {
         // Verificar la conexión cada 30 segundos
         this.connectionCheckInterval = setInterval(() => {
             if (!this.isConnected || !this.stompClient || !this.stompClient.connected) {
-                console.log('Conexión WebSocket perdida, reconectando...');
                 this.isConnected = false;
                 this.stopConnectionMonitoring();
                 // Cancelar suscripción anterior si existe
@@ -248,13 +229,11 @@ class WebSocketNotificationClient {
                     try {
                         this.subscription.unsubscribe();
                     } catch (e) {
-                        console.log('Error al cancelar suscripción:', e);
+                        // Error al cancelar suscripción, continuar
                     }
                     this.subscription = null;
                 }
                 this.handleReconnect();
-            } else {
-                console.log('Conexión WebSocket activa');
             }
         }, 30000); // Verificar cada 30 segundos
     }
@@ -284,14 +263,13 @@ class WebSocketNotificationClient {
             try {
                 this.subscription.unsubscribe();
             } catch (e) {
-                console.log('Error al cancelar suscripción:', e);
+                // Error al cancelar suscripción, continuar
             }
             this.subscription = null;
         }
 
         if (this.stompClient && this.isConnected) {
             this.stompClient.disconnect(() => {
-                console.log('WebSocket desconectado');
                 this.isConnected = false;
             });
         }
@@ -302,9 +280,7 @@ class WebSocketNotificationClient {
      */
     static requestNotificationPermission() {
         if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission().then(permission => {
-                console.log('Permiso de notificaciones:', permission);
-            });
+            Notification.requestPermission();
         }
     }
 }
@@ -337,14 +313,11 @@ function initializeWebSocket() {
         // Esperar un poco para asegurar que todo está cargado
         setTimeout(() => {
             if (window.wsNotificationClient && !window.wsNotificationClient.isConnected) {
-                console.log('Inicializando conexión WebSocket...');
                 window.wsNotificationClient.connect();
                 // Solicitar permiso para notificaciones del navegador
                 WebSocketNotificationClient.requestNotificationPermission();
             }
         }, 1000);
-    } else {
-        console.log('No hay token disponible para conectar WebSocket');
     }
 }
 
