@@ -17,4 +17,9 @@ public interface SpringDataCancellationRepository extends JpaRepository<Cancella
            "LEFT JOIN FETCH c.items " +
            "ORDER BY c.id DESC")
     List<CancellationEntity> findAllWithJoins();
+    
+    @Query("SELECT c FROM CancellationEntity c " +
+           "JOIN c.items i " +
+           "WHERE i.id = :itemId AND c.approved = true")
+    List<CancellationEntity> findApprovedCancellationsByItemId(Long itemId);
 }
