@@ -534,25 +534,37 @@ function updateUsersTable() {
                      (window.location.pathname && window.location.pathname.includes('/warehouse'));
   const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION' || currentRole === 'WAREHOUSE') && currentUserId;
 
-  // Filter out current user and SUPERADMIN users if needed
+  // Start with filtered users from backend
+  // Note: Backend already filters SUPERADMIN users in loadUsers() for most cases
   let usersToDisplay = window.usersData.filteredUsers;
   
-  // For superadmin, exclude all SUPERADMIN users
-  if (isSuperAdmin) {
-    usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
-  }
-  
-  // For warehouse, exclude all SUPERADMIN users (only in warehouse/users view)
-  if (isWarehouse) {
-    usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
-  }
-  
-  if (shouldExcludeCurrentUser) {
-    usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
-    // Limit to itemsPerPage to ensure consistent page size (especially for first page)
-    if (!hasFilters && window.usersData.currentPage === 1) {
+  // Only apply additional filtering when we have local filters active
+  // When using backend pagination without filters, trust the backend's pagination
+  if (hasFilters) {
+    // For superadmin, exclude all SUPERADMIN users when filtering locally
+    if (isSuperAdmin) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+    }
+    
+    // For warehouse, exclude all SUPERADMIN users when filtering locally
+    if (isWarehouse) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+    }
+    
+    // Exclude current user when filtering locally
+    if (shouldExcludeCurrentUser) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+    }
+  } else {
+    // No filters - using backend pagination
+    // Only exclude current user on first page (backend handles other pages)
+    // The backend already requested one extra user for first page if needed
+    if (shouldExcludeCurrentUser && window.usersData.currentPage === 1) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+      // Limit to itemsPerPage to ensure consistent page size for first page
       usersToDisplay = usersToDisplay.slice(0, window.usersData.itemsPerPage);
     }
+    // For pages > 1, don't filter - backend pagination handles it correctly
   }
 
   let paginatedUsers;
@@ -563,7 +575,8 @@ function updateUsersTable() {
     const endIndex = startIndex + window.usersData.itemsPerPage;
     paginatedUsers = usersToDisplay.slice(startIndex, endIndex);
   } else {
-    // Users are already paginated from backend
+    // Users are already paginated from backend - use them as-is
+    // Backend pagination ensures correct number of users per page
     paginatedUsers = usersToDisplay;
   }
 
@@ -1303,24 +1316,43 @@ function updateUsersCards() {
   // Get current user role and ID to filter out current user for SUPERADMIN, ADMIN_INSTITUTION, and WAREHOUSE
   const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
   const currentUserId = window.usersData ? window.usersData.currentLoggedInUserId : null;
+  const isSuperAdmin = (currentRole === 'SUPERADMIN') || 
+                      (window.location.pathname && window.location.pathname.includes('/superadmin'));
   const isWarehouse = (currentRole === 'WAREHOUSE') ||
                      (window.location.pathname && window.location.pathname.includes('/warehouse'));
   const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION' || currentRole === 'WAREHOUSE') && currentUserId;
 
-  // Filter out current user and SUPERADMIN users if needed
+  // Start with filtered users from backend
+  // Note: Backend already filters SUPERADMIN users in loadUsers() for most cases
   let usersToDisplay = window.usersData.filteredUsers;
   
-  // For warehouse, exclude all SUPERADMIN users (only in warehouse/users view)
-  if (isWarehouse) {
-    usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
-  }
-  
-  if (shouldExcludeCurrentUser) {
-    usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
-    // Limit to itemsPerPage to ensure consistent page size
-    if (!hasFilters && window.usersData.currentPage === 1) {
+  // Only apply additional filtering when we have local filters active
+  // When using backend pagination without filters, trust the backend's pagination
+  if (hasFilters) {
+    // For superadmin, exclude all SUPERADMIN users when filtering locally
+    if (isSuperAdmin) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+    }
+    
+    // For warehouse, exclude all SUPERADMIN users when filtering locally
+    if (isWarehouse) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+    }
+    
+    // Exclude current user when filtering locally
+    if (shouldExcludeCurrentUser) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+    }
+  } else {
+    // No filters - using backend pagination
+    // Only exclude current user on first page (backend handles other pages)
+    // The backend already requested one extra user for first page if needed
+    if (shouldExcludeCurrentUser && window.usersData.currentPage === 1) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+      // Limit to itemsPerPage to ensure consistent page size for first page
       usersToDisplay = usersToDisplay.slice(0, window.usersData.itemsPerPage);
     }
+    // For pages > 1, don't filter - backend pagination handles it correctly
   }
 
   let paginatedUsers;
@@ -1331,7 +1363,8 @@ function updateUsersCards() {
     const endIndex = startIndex + window.usersData.itemsPerPage;
     paginatedUsers = usersToDisplay.slice(startIndex, endIndex);
   } else {
-    // Users are already paginated from backend
+    // Users are already paginated from backend - use them as-is
+    // Backend pagination ensures correct number of users per page
     paginatedUsers = usersToDisplay;
   }
 

@@ -147,9 +147,15 @@ async function loadUsers(page = 0) {
                                                  usersData.currentLoggedInUserRole === 'ADMIN_INSTITUTION' ||
                                                  usersData.currentLoggedInUserRole === 'WAREHOUSE') && 
                                                  usersData.currentLoggedInUserId;
-                const pageSize = (isFirstPage && shouldExcludeCurrentUser) ? 
-                                (usersData.itemsPerPage + 1) : 
-                                usersData.itemsPerPage;
+                // Request extra users if we need to exclude current user (first page) or if we're filtering SUPERADMIN
+                // For pages > 1, request a few extra in case there are SUPERADMIN users to filter
+                let pageSize = usersData.itemsPerPage;
+                if (isFirstPage && shouldExcludeCurrentUser) {
+                    pageSize = usersData.itemsPerPage + 1;
+                } else if (page > 0 && isSuperAdmin) {
+                    // Request a few extra users for pages > 1 to compensate for potential SUPERADMIN filtering
+                    pageSize = usersData.itemsPerPage + 3; // Request 3 extra to handle up to 3 SUPERADMIN users
+                }
                 url = `/api/v1/users/institution?page=${page}&size=${pageSize}`;
             }
         } else if (isAdminRegional) {
@@ -163,9 +169,14 @@ async function loadUsers(page = 0) {
                 const shouldExcludeCurrentUser = (usersData.currentLoggedInUserRole === 'SUPERADMIN' || 
                                                  usersData.currentLoggedInUserRole === 'ADMIN_INSTITUTION') && 
                                                  usersData.currentLoggedInUserId;
-                const pageSize = (isFirstPage && shouldExcludeCurrentUser) ? 
-                                (usersData.itemsPerPage + 1) : 
-                                usersData.itemsPerPage;
+                // Request extra users if we need to exclude current user (first page) or if we're filtering SUPERADMIN
+                let pageSize = usersData.itemsPerPage;
+                if (isFirstPage && shouldExcludeCurrentUser) {
+                    pageSize = usersData.itemsPerPage + 1;
+                } else if (page > 0 && isSuperAdmin) {
+                    // Request a few extra users for pages > 1 to compensate for potential SUPERADMIN filtering
+                    pageSize = usersData.itemsPerPage + 3; // Request 3 extra to handle up to 3 SUPERADMIN users
+                }
                 url = `/api/v1/users/regional?page=${page}&size=${pageSize}`;
             }
         } else {
@@ -179,9 +190,14 @@ async function loadUsers(page = 0) {
                 const shouldExcludeCurrentUser = (usersData.currentLoggedInUserRole === 'SUPERADMIN' || 
                                                  usersData.currentLoggedInUserRole === 'ADMIN_INSTITUTION') && 
                                                  usersData.currentLoggedInUserId;
-                const pageSize = (isFirstPage && shouldExcludeCurrentUser) ? 
-                                (usersData.itemsPerPage + 1) : 
-                                usersData.itemsPerPage;
+                // Request extra users if we need to exclude current user (first page) or if we're filtering SUPERADMIN
+                let pageSize = usersData.itemsPerPage;
+                if (isFirstPage && shouldExcludeCurrentUser) {
+                    pageSize = usersData.itemsPerPage + 1;
+                } else if (page > 0 && isSuperAdmin) {
+                    // Request a few extra users for pages > 1 to compensate for potential SUPERADMIN filtering
+                    pageSize = usersData.itemsPerPage + 3; // Request 3 extra to handle up to 3 SUPERADMIN users
+                }
                 url = `/api/v1/users?page=${page}&size=${pageSize}`;
             }
         }
@@ -207,6 +223,12 @@ async function loadUsers(page = 0) {
                                (window.location.pathname && window.location.pathname.includes('/warehouse'));
             if (isWarehouse) {
                 loadedUsers = loadedUsers.filter(user => user && user.role !== 'SUPERADMIN');
+            }
+            
+            // Limit to itemsPerPage after filtering to ensure consistent page size
+            // We requested extra users to compensate for filtering, so now limit to the expected size
+            if (!hasFilters && loadedUsers.length > usersData.itemsPerPage) {
+                loadedUsers = loadedUsers.slice(0, usersData.itemsPerPage);
             }
             
             usersData.users = loadedUsers;
