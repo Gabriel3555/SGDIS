@@ -17,6 +17,9 @@ import com.sgdis.backend.cancellation.application.port.DownloadCancellationForma
 import com.sgdis.backend.cancellation.application.port.RefuseCancellationUseCase;
 import com.sgdis.backend.cancellation.application.port.UploadFormatCancellationUseCase;
 import com.sgdis.backend.cancellation.application.port.UploadFormatExampleCancellationUseCase;
+import com.sgdis.backend.auth.application.service.AuthService;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -59,6 +62,8 @@ public class CancellationController {
     private final DownloadCancellationFormatExampleFileUseCase downloadCancellationFormatExampleFileUseCase;
     private final UploadFormatExampleCancellationUseCase uploadFormatExampleCancellationUseCase;
     private final SpringDataCancellationRepository cancellationRepository;
+    private final AuthService authService;
+    private final SpringDataUserRepository userRepository;
 
     @Operation(
             summary = "Get all cancellations",
@@ -121,6 +126,90 @@ public class CancellationController {
         } catch (Exception e) {
             // Log error and return empty page
             System.err.println("Error fetching cancellations: " + e.getMessage());
+            e.printStackTrace();
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+            return ResponseEntity.ok(emptyPage);
+        }
+    }
+
+    @Operation(
+            summary = "Get cancellations by current user's institution",
+            description = "Retrieves paginated cancellations for the current user's institution (Warehouse only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Cancellations retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "403", description = "Access denied - WAREHOUSE role required")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @GetMapping("/my-institution")
+    public ResponseEntity<Page<CancellationResponse>> getCancellationsByMyInstitution(
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            // Get current warehouse user
+            UserEntity currentUser = authService.getCurrentUser();
+            Long userId = currentUser.getId();
+            
+            // Load user with institution to avoid LazyInitializationException
+            UserEntity userWithInstitution = userRepository.findByIdWithInstitution(userId)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Get user's institution
+            var userInstitution = userWithInstitution.getInstitution();
+            if (userInstitution == null || userInstitution.getName() == null || userInstitution.getName().isEmpty()) {
+                Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+                Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+                return ResponseEntity.ok(emptyPage);
+            }
+            
+            String institutionName = userInstitution.getName();
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            
+            // Use the repository method to get cancellations filtered by institution name
+            List<CancellationEntity> filteredCancellations = cancellationRepository.findAllByInstitutionNameWithJoins(institutionName);
+            
+            // Handle empty list
+            if (filteredCancellations.isEmpty()) {
+                Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+                return ResponseEntity.ok(emptyPage);
+            }
+            
+            // Sort by ID descending (already sorted in query, but ensure it)
+            filteredCancellations.sort((a, b) -> {
+                if (a.getId() == null || b.getId() == null) {
+                    return 0;
+                }
+                return Long.compare(b.getId(), a.getId());
+            });
+            
+            // Apply pagination manually
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), filteredCancellations.size());
+            
+            List<CancellationEntity> paginatedCancellations;
+            if (start >= filteredCancellations.size()) {
+                paginatedCancellations = List.of();
+            } else {
+                paginatedCancellations = filteredCancellations.subList(start, end);
+            }
+            
+            // Create Page manually
+            Page<CancellationEntity> cancellationPage = new PageImpl<>(paginatedCancellations, pageable, filteredCancellations.size());
+            
+            Page<CancellationResponse> responsePage = cancellationPage.map(CancellationMapper::toDto);
+            
+            return ResponseEntity.ok(responsePage);
+        } catch (Exception e) {
+            // Log error and return empty page
+            System.err.println("Error fetching cancellations by institution: " + e.getMessage());
             e.printStackTrace();
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
             Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);

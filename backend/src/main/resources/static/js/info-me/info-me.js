@@ -265,21 +265,48 @@ function updateHeaderInfo(userData) {
     if (headerUserRole) headerUserRole.textContent = getRoleDisplayName(userData.role);
 
     if (headerUserAvatar) {
-        if (userData.imgUrl) {
-            const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
-            headerUserAvatar.innerHTML = `
-                <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
-                    <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
-                        <div class="image-loading-spinner"></div>
-                    </div>
-                    <img src="${userData.imgUrl}" alt="${userData.fullName || 'Usuario'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
-                         id="img-${uniqueId}"
-                         onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
-                         onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
-                </div>
-            `;
+        // Try multiple image URL fields
+        const imgUrl = userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl;
+        
+        // Ensure the container has the correct class
+        headerUserAvatar.className = 'user-avatar';
+        
+        if (imgUrl) {
+            // Try to use createImageWithSpinner from dashboard.js if available
+            if (typeof createImageWithSpinner === 'function') {
+                const spinnerHtml = createImageWithSpinner(
+                    imgUrl,
+                    userData.fullName || 'Usuario',
+                    'w-full h-full object-cover',
+                    'w-full h-full',
+                    'rounded-full'
+                );
+                if (spinnerHtml) {
+                    // Clear any existing styles that might interfere
+                    headerUserAvatar.style.backgroundImage = '';
+                    headerUserAvatar.style.backgroundSize = '';
+                    headerUserAvatar.style.backgroundPosition = '';
+                    headerUserAvatar.style.backgroundRepeat = '';
+                    headerUserAvatar.innerHTML = spinnerHtml;
+                } else {
+                    // Fallback to initials if createImageWithSpinner returns null
+                    const initials = (userData.fullName || 'Usuario').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    headerUserAvatar.textContent = initials;
+                    headerUserAvatar.style.backgroundImage = '';
+                }
+            } else {
+                // Fallback: use background image approach
+                headerUserAvatar.style.backgroundImage = `url(${imgUrl})`;
+                headerUserAvatar.style.backgroundSize = 'cover';
+                headerUserAvatar.style.backgroundPosition = 'center';
+                headerUserAvatar.style.backgroundRepeat = 'no-repeat';
+                headerUserAvatar.textContent = '';
+            }
         } else {
-            headerUserAvatar.textContent = (userData.fullName || 'Usuario').charAt(0).toUpperCase();
+            // No image URL - show initials
+            const initials = (userData.fullName || 'Usuario').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            headerUserAvatar.textContent = initials;
+            headerUserAvatar.style.backgroundImage = '';
         }
     }
 }

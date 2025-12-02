@@ -53,4 +53,7 @@ public interface SpringDataUserRepository extends JpaRepository<UserEntity, Long
     
     @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.institution.regional.id = :regionalId AND u.role = :role")
     long countByRegionalIdAndRole(@Param("regionalId") Long regionalId, @Param("role") Role role);
+    
+    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.institution WHERE u.id = :userId")
+    Optional<UserEntity> findByIdWithInstitution(@Param("userId") Long userId);
 }

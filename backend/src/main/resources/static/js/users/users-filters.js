@@ -42,6 +42,8 @@ async function filterUsers() {
     // Check if filters are active (including regional and institution for super admin)
     const isSuperAdmin = (data.currentLoggedInUserRole && data.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const isAdminRegional = (data.currentLoggedInUserRole && data.currentLoggedInUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
     const hasFilters = data.searchTerm || 
                       data.selectedRole !== 'all' || 
                       data.selectedStatus !== 'all' ||

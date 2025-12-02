@@ -795,9 +795,6 @@ function updateViewModeButtons() {
         <div class="flex items-center gap-2 mb-4">
             <i class="fas fa-boxes text-[#00AF00] text-xl"></i>
             <h2 class="text-xl font-bold text-gray-800">Inventarios del Sistema</h2>
-            <span class="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">${
-              inventoryData ? inventoryData.filteredInventories.length : 0
-            } inventarios</span>
             <div class="flex items-center gap-2 ml-auto">
                 <button onclick="setViewMode('table')" class="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                   isTableActive
@@ -984,7 +981,10 @@ function updateUserInfoDisplay(userData) {
 
   if (headerUserName)
     headerUserName.textContent = userData.fullName || "Super Admin";
-  if (headerUserRole) headerUserRole.textContent = userData.role || "ADMIN";
+  if (headerUserRole) {
+    const roleText = userData.role === 'WAREHOUSE' ? 'Encargado de Almacén' : (userData.role || 'Encargado de Almacén');
+    headerUserRole.textContent = roleText;
+  }
 
   if (headerUserAvatar) {
     if (userData.imgUrl) {

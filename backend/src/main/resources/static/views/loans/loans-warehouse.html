@@ -91,6 +91,11 @@
                 <i class="fas fa-hand-holding text-lg"></i>
                 <span class="font-medium">Préstamos</span>
             </a>
+            <a href="/warehouse/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/cancellations')">
+                <i class="fas fa-times-circle text-lg"></i>
+                <span class="font-medium">Bajas</span>
+            </a>
             <a href="/warehouse/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/warehouse/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
@@ -159,11 +164,18 @@
                     <h1 class="text-3xl font-bold text-gray-800 mb-1">Préstamos - Almacén</h1>
                     <p class="text-gray-600" id="loansWelcomeMessage">Administración de préstamos del almacén</p>
                 </div>
-                <button onclick="loadLoans()"
-                    class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
-                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
-                    <span id="refreshText">Actualizar</span>
-                </button>
+                <div class="flex items-center gap-3">
+                    <button onclick="showNewLoanModal()"
+                        class="bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
+                        <i class="fas fa-hand-holding"></i>
+                        <span>Realizar Préstamo</span>
+                    </button>
+                    <button onclick="loadLoans()"
+                        class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                        <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                        <span id="refreshText">Actualizar</span>
+                    </button>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6" id="loansStatsContainer">
@@ -298,7 +310,10 @@
             const headerUserRole = document.getElementById('headerUserRole');
             const headerUserAvatar = document.getElementById('headerUserAvatar');
             if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Warehouse';
-            if (headerUserRole) headerUserRole.textContent = userData.role || 'WAREHOUSE';
+            if (headerUserRole) {
+                const roleText = userData.role === 'WAREHOUSE' ? 'Encargado de Almacén' : (userData.role || 'Encargado de Almacén');
+                headerUserRole.textContent = roleText;
+            }
             if (headerUserAvatar) {
                 if (userData.imgUrl) {
                     const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
@@ -343,13 +358,230 @@
         });
     </script>
 
+    <!-- New Loan Modal -->
+    <div id="newLoanModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 9999;">
+        <style>
+            /* Custom Select Styles for modal */
+            .custom-select-container {
+                position: relative;
+                z-index: 1;
+            }
+
+            .custom-select-container.select-open {
+                z-index: 10001;
+            }
+
+            .custom-select {
+                position: relative;
+            }
+
+            .custom-select-trigger {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0.625rem 0.875rem;
+                border: 2px solid #d1d5db;
+                border-radius: 0.75rem;
+                background: white;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                min-height: 2.75rem;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            .custom-select-trigger:hover {
+                border-color: #00AF00;
+            }
+
+            .custom-select.open .custom-select-trigger,
+            .custom-select.active .custom-select-trigger {
+                border-color: #00AF00;
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+
+            .custom-select-text {
+                color: #374151;
+                font-size: 0.875rem;
+                flex: 1;
+                text-align: left;
+            }
+
+            .custom-select-placeholder {
+                color: #9ca3af;
+            }
+
+            .custom-select-arrow {
+                color: #6b7280;
+                transition: transform 0.2s ease;
+            }
+
+            .custom-select.open .custom-select-arrow,
+            .custom-select.active .custom-select-arrow {
+                transform: rotate(180deg);
+            }
+
+            .custom-select-dropdown {
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                border: 2px solid #d1d5db;
+                border-top: none;
+                border-radius: 0 0 0.75rem 0.75rem;
+                box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                margin-top: -2px;
+                z-index: 10002;
+                display: none;
+                overflow: hidden;
+            }
+
+            .custom-select.open .custom-select-dropdown,
+            .custom-select.active .custom-select-dropdown {
+                display: block;
+            }
+
+            .custom-select-search {
+                width: 100%;
+                padding: 0.625rem 0.875rem;
+                border: none;
+                border-bottom: 1px solid #e5e7eb;
+                outline: none;
+                font-size: 0.875rem;
+                background: white;
+                box-sizing: border-box;
+            }
+
+            .custom-select-search:focus {
+                outline: none;
+            }
+
+            .custom-select-options {
+                max-height: 240px;
+                overflow-y: auto;
+            }
+
+            .custom-select-option {
+                padding: 0.625rem 0.875rem;
+                cursor: pointer;
+                transition: background-color 0.2s ease;
+                font-size: 0.875rem;
+                color: #374151;
+            }
+
+            .custom-select-option:hover {
+                background-color: #f3f4f6;
+            }
+
+            .custom-select-option.selected {
+                background-color: #00AF00;
+                color: white;
+            }
+
+            .custom-select-option.disabled {
+                color: #9ca3af;
+                cursor: not-allowed;
+            }
+        </style>
+        <div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 my-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Realizar Préstamo</h2>
+                <button onclick="closeNewLoanModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="newLoanForm">
+                <!-- Search Type Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Buscar por</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="searchType" value="plate" checked class="form-radio text-[#00AF00]">
+                            <span>Número de Placa</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="searchType" value="serial" class="form-radio text-[#00AF00]">
+                            <span>Número de Serie</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Item Search -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2" id="itemSearchLabel">Número de Placa *</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="itemSearchInput"
+                            class="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Ingrese el número de placa o serie">
+                        <button type="button" onclick="searchItemForLoan()"
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl transition-colors">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div id="itemSearchResult" class="mt-2"></div>
+                    <input type="hidden" id="selectedItemId" name="itemId">
+                </div>
+
+                <!-- Responsible User Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Responsable *</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="newLoanResponsibleSelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Seleccionar responsable...</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
+                                <div class="custom-select-options" id="newLoanResponsibleOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="newLoanResponsibleId" name="responsibleId" required>
+                    </div>
+                    <div id="usersLoading" class="mt-2 text-sm text-gray-500" style="display: none;">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Cargando usuarios...
+                    </div>
+                </div>
+
+                <!-- Details -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Detalles (opcional)</label>
+                    <textarea id="newLoanDetails" name="details" rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                        placeholder="Información adicional sobre el préstamo"></textarea>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeNewLoanModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        <i class="fas fa-hand-holding mr-2"></i>Crear Préstamo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="../../js/token-refresh.js"></script>
     <script src="../../js/websocket-client.js"></script>
     <script src="../../js/notifications-bell.js"></script>
+    <!-- Load CustomSelect from users-modals.js -->
+    <script src="../../js/users/users-modals.js"></script>
     <script src="../../js/loans/loans-data.js"></script>
     <script src="../../js/loans/loans-api.js"></script>
     <script src="../../js/loans/loans-filters.js"></script>
     <script src="../../js/loans/loans-ui.js"></script>
+    <script src="../../js/loans/loans-warehouse.js"></script>
 </body>
 
 </html>

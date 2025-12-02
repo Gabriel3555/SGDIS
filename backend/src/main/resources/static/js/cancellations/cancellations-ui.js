@@ -12,7 +12,23 @@ async function loadCancellationsData() {
     showLoadingState();
 
     try {
+        // Detect role from URL first (warehouse view)
+        if (window.location.pathname.includes('/warehouse/')) {
+            cancellationsData.userRole = 'WAREHOUSE';
+            console.log('Detected WAREHOUSE role from URL');
+        }
+        
         await loadCurrentUserInfo();
+        
+        // Ensure userRole is set before loading cancellations
+        if (!cancellationsData.userRole) {
+            console.warn('User role not set, attempting to get from window');
+            cancellationsData.userRole = window.currentUserRole || 
+                                        window.usersData?.currentLoggedInUserRole || 
+                                        (window.location.pathname.includes('/warehouse/') ? 'WAREHOUSE' : 'SUPERADMIN');
+        }
+        
+        console.log('Loading cancellations with role:', cancellationsData.userRole);
         await loadCancellations();
         cancellationsData.isLoading = false;
         hideLoadingState();
@@ -48,19 +64,23 @@ async function loadCurrentUserInfo() {
 
         if (response.ok) {
             const userData = await response.json();
-            cancellationsData.userRole = userData.role;
+            cancellationsData.userRole = userData.role || 'SUPERADMIN';
+            console.log('User role detected:', cancellationsData.userRole);
             updateUserInfoDisplay(userData);
         } else {
             throw new Error('Failed to load user info');
         }
     } catch (error) {
         console.error('Error loading current user info:', error);
+        // Try to get role from window if available
+        const fallbackRole = window.currentUserRole || window.usersData?.currentLoggedInUserRole || 'SUPERADMIN';
         updateUserInfoDisplay({
             fullName: 'Super Admin',
-            role: 'SUPERADMIN',
+            role: fallbackRole,
             email: 'admin@sena.edu.co'
         });
-        cancellationsData.userRole = 'SUPERADMIN';
+        cancellationsData.userRole = fallbackRole;
+        console.log('Using fallback role:', cancellationsData.userRole);
     }
 }
 
@@ -69,9 +89,16 @@ async function loadCurrentUserInfo() {
  */
 async function loadCancellations() {
     try {
+        // Ensure userRole is set, default to WAREHOUSE if in warehouse view
+        const userRole = cancellationsData.userRole || 
+                        (window.location.pathname.includes('/warehouse/') ? 'WAREHOUSE' : 'SUPERADMIN');
+        
+        console.log('Loading cancellations with role:', userRole);
+        
         const pageData = await fetchAllCancellations(
             cancellationsData.currentPage,
-            cancellationsData.pageSize
+            cancellationsData.pageSize,
+            userRole
         );
 
         console.log('Cancellations page data:', pageData);

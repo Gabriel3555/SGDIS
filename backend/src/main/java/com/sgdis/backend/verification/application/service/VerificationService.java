@@ -10,6 +10,7 @@ import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.file.service.FileUploadService;
 import com.sgdis.backend.verification.application.dto.BatchVerificationItemRequest;
 import com.sgdis.backend.verification.application.dto.BatchVerificationItemResponse;
@@ -53,6 +54,7 @@ public class VerificationService implements
     private final SpringDataVerificationRepository verificationRepository;
     private final SpringDataItemRepository itemRepository;
     private final SpringDataInventoryRepository inventoryRepository;
+    private final SpringDataUserRepository userRepository;
     private final FileUploadService fileUploadService;
 
     @Override
@@ -160,6 +162,7 @@ public class VerificationService implements
      * - Es manager del inventario al que pertenece el ítem
      * - Es owner del inventario al que pertenece el ítem
      * - Es signatario del inventario al que pertenece el ítem
+     * - Es WAREHOUSE y pertenece a la misma institución que el inventario
      */
     private void validateUserAuthorization(UserEntity user, ItemEntity item) {
         // SUPERADMIN puede verificar cualquier ítem
@@ -186,6 +189,21 @@ public class VerificationService implements
         // Verificar si el usuario es signatario del inventario
         if (inventory.getSignatories() != null && inventory.getSignatories().contains(user)) {
             return;
+        }
+
+        // Verificar si el usuario es WAREHOUSE y pertenece a la misma institución que el inventario
+        if (user.getRole() == Role.WAREHOUSE) {
+            // Load user with institution to avoid LazyInitializationException
+            UserEntity userWithInstitution = userRepository.findByIdWithInstitution(user.getId())
+                    .orElse(user);
+            
+            // The inventory should already have its institution loaded from the item query
+            // But if it's null, try to access it (will trigger lazy load if in transaction)
+            if (userWithInstitution.getInstitution() != null && inventory.getInstitution() != null) {
+                if (userWithInstitution.getInstitution().getId().equals(inventory.getInstitution().getId())) {
+                    return;
+                }
+            }
         }
 
         // Si no cumple ninguna condición, lanzar excepción

@@ -1,4 +1,4 @@
-const DEFAULT_INSTITUTION_PAGE_SIZE = 10;
+const DEFAULT_INSTITUTION_PAGE_SIZE = 6;
 const DEFAULT_ADMIN_REGIONAL_PAGE_SIZE = 6;
 
 async function loadInventoryData() {
@@ -230,12 +230,14 @@ async function loadInventories(options = {}) {
                                (window.location.pathname && window.location.pathname.includes('/admin_regional'));
         const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                             (window.location.pathname && window.location.pathname.includes('/superadmin'));
-        // Use default size of 6 for admin regional and superadmin, otherwise use the configured size or default
-        const defaultSize = (isAdminRegional || isSuperAdmin) ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : DEFAULT_INSTITUTION_PAGE_SIZE;
+        const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') || 
+                           (window.location.pathname && window.location.pathname.includes('/warehouse'));
+        // Use default size of 6 for admin regional, superadmin, and warehouse, otherwise use the configured size or default
+        const defaultSize = (isAdminRegional || isSuperAdmin || isWarehouse) ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : DEFAULT_INSTITUTION_PAGE_SIZE;
         
-        // For admin regional and superadmin, always use 6 unless explicitly overridden
+        // For admin regional, superadmin, and warehouse, always use 6 unless explicitly overridden
         let size;
-        if (isAdminRegional || isSuperAdmin) {
+        if (isAdminRegional || isSuperAdmin || isWarehouse) {
             size = typeof options.size === 'number' ? options.size : DEFAULT_ADMIN_REGIONAL_PAGE_SIZE;
         } else {
             size = typeof options.size === 'number' ? options.size : (inventoryData?.serverPageSize || defaultSize);
@@ -245,8 +247,8 @@ async function loadInventories(options = {}) {
         const endpoint = buildInventoryEndpoint(page, size);
 
         if (inventoryData) {
-            // For admin regional and superadmin, ensure serverPageSize is 6
-            if (isAdminRegional || isSuperAdmin) {
+            // For admin regional, superadmin, and warehouse, ensure serverPageSize is 6
+            if (isAdminRegional || isSuperAdmin || isWarehouse) {
                 inventoryData.serverPageSize = DEFAULT_ADMIN_REGIONAL_PAGE_SIZE;
             } else {
                 inventoryData.serverPageSize = size;

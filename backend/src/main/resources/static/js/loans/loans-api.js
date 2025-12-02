@@ -756,7 +756,7 @@ function updateUserInfoDisplay(userData) {
             'ADMIN_REGIONAL': 'Administrador Regional',
             'ADMIN_INSTITUTION': 'Administrador de Institución',
             'ADMIN_INSTITUTIONAL': 'Admin Institucional',
-            'WAREHOUSE': 'Almacén',
+            'WAREHOUSE': 'Encargado de Almacén',
             'USER': 'Usuario'
         };
         headerUserRole.textContent = roleNames[userData.role] || userData.role || 'Usuario';
@@ -1345,5 +1345,6 @@ window.updateLoansUIForUserRole = updateLoansUIForUserRole;
 window.showNewLoanModal = showNewLoanModal;
 window.closeNewLoanModal = closeNewLoanModal;
 window.loadItemsForLoan = loadItemsForLoan;
+window.loadUsersForLoan = loadUsersForLoan;
 window.returnLoanItem = returnLoanItem;
 
