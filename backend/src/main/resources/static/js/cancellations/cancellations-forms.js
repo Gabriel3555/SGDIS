@@ -294,7 +294,6 @@ async function loadRegionalsForCancellation() {
         if (response.ok) {
             const data = await response.json();
             askCancellationData.regionals = Array.isArray(data) ? data : [];
-            console.log('Regionals loaded:', askCancellationData.regionals.length);
             populateRegionalSelectForCancellation();
         } else {
             console.error('Failed to load regionals:', response.status, response.statusText);
@@ -348,8 +347,6 @@ function populateRegionalSelectForCancellation() {
 
     if (CustomSelectClass) {
         try {
-            console.log('Attempting to initialize CustomSelect for regionals');
-            
             // Verify container exists before initializing
             const container = document.getElementById('askCancellationRegionalSelect');
             if (!container) {
@@ -360,7 +357,6 @@ function populateRegionalSelectForCancellation() {
             const customSelect = new CustomSelectClass('askCancellationRegionalSelect', {
                 placeholder: 'Seleccione una regional',
                 onChange: async (option) => {
-                    console.log('Regional selected:', option);
                     const value = option.value;
                     const hiddenInput = document.getElementById('askCancellationSelectedRegionalId');
                     if (hiddenInput) {
@@ -385,30 +381,24 @@ function populateRegionalSelectForCancellation() {
                 throw new Error('CustomSelect initialization failed');
             }
             
-            console.log('CustomSelect initialized, setting options:', regionalOptions.length);
             customSelect.setOptions(regionalOptions);
             
             // Verify options were rendered
             const renderedOptions = customSelect.optionsContainer.querySelectorAll('.custom-select-option');
-            console.log(`Options rendered: ${renderedOptions.length} out of ${regionalOptions.length}`);
             
             if (renderedOptions.length === 0) {
                 console.warn('No options were rendered, using fallback');
                 throw new Error('No options rendered');
             }
             
-            console.log('Options set successfully');
             return;
         } catch (e) {
             console.warn('Could not initialize CustomSelect for regionals, using fallback', e);
             console.error('CustomSelect error details:', e.message, e.stack);
         }
-    } else {
-        console.log('CustomSelect not available, using fallback method');
     }
 
     // Fallback: manual setup - add options directly to DOM
-    console.log('Using fallback method to populate regional select');
     askCancellationData.regionals.forEach(regional => {
         const option = document.createElement('div');
         option.className = 'custom-select-option';
@@ -487,8 +477,6 @@ function populateRegionalSelectForCancellation() {
             }
         });
     }
-    
-    console.log(`Added ${askCancellationData.regionals.length} regional options to dropdown`);
 }
 
 /**
@@ -998,9 +986,9 @@ window.removeItemFromPlateSelection = removeItemFromPlateSelection;
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('Cancellations forms module loaded');
+        // Module loaded
     });
 } else {
-    console.log('Cancellations forms module loaded');
+    // Module loaded
 }
 
