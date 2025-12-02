@@ -285,7 +285,24 @@
             </button>
         </div>
         <div class="p-6">
+            <!-- Mode Toggle -->
+            <div class="mb-6 flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Modo de selección:</span>
+                <div class="flex gap-2">
+                    <button type="button" id="modeInventoryBtn" onclick="switchCancellationMode('inventory')" 
+                            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-[#00AF00] text-white">
+                        <i class="fas fa-boxes mr-2"></i>Por Inventario
+                    </button>
+                    <button type="button" id="modePlateBtn" onclick="switchCancellationMode('plate')" 
+                            class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500">
+                        <i class="fas fa-search mr-2"></i>Por Placa
+                    </button>
+                </div>
+            </div>
+
             <form onsubmit="event.preventDefault(); handleAskCancellation();" class="space-y-6">
+                <!-- Inventory Mode Content -->
+                <div id="inventoryModeContent">
                 <!-- Regional -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -355,6 +372,46 @@
                         <p class="text-gray-500 dark:text-gray-400 text-sm">Seleccione un inventario primero para ver los items disponibles</p>
                     </div>
                 </div>
+
+                </div>
+                <!-- End Inventory Mode Content -->
+
+                <!-- Plate Search Mode Content -->
+                <div id="plateModeContent" class="hidden">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Buscar Item por Placa <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="text" id="plateSearchInput" 
+                                   placeholder="Ingrese el número de placa..."
+                                   class="flex-1 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white"
+                                   onkeypress="if(event.key === 'Enter') { event.preventDefault(); searchItemByPlate(); }">
+                            <button type="button" onclick="searchItemByPlate()"
+                                    class="px-6 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                                <i class="fas fa-search mr-2"></i>Buscar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Selected Items from Plate Search -->
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Items Seleccionados <span class="text-red-500">*</span>
+                            </label>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">
+                                Total: <span id="plateSelectedCount" class="font-semibold text-[#00AF00]">0</span>
+                            </span>
+                        </div>
+                        <div id="plateSelectedItemsContainer" class="border-2 border-gray-300 dark:border-gray-600 rounded-xl p-4 min-h-[200px] max-h-[300px] overflow-y-auto">
+                            <p class="text-gray-500 dark:text-gray-400 text-sm text-center py-8">
+                                Busque items por placa para agregarlos a la lista
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Plate Search Mode Content -->
 
                 <!-- Reason -->
                 <div>

@@ -176,6 +176,7 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
         open() {
             if (this.isDisabled) return;
             this.container.classList.add("open");
+            this.container.classList.add("active"); // Also add active class for CSS compatibility
             
             const container = this.container.closest('.custom-select-container');
             if (container) {
@@ -233,6 +234,7 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
 
         close() {
             this.container.classList.remove("open");
+            this.container.classList.remove("active"); // Also remove active class
             const container = this.container.closest('.custom-select-container');
             if (container) {
                 container.classList.remove('select-open');

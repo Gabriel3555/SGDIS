@@ -225,13 +225,28 @@ async function askForCancellation(itemsIds, reason) {
             headers["Authorization"] = `Bearer ${token}`;
         }
 
+        // Ensure all item IDs are numbers, not strings
+        const numericItemsIds = itemsIds.map(id => {
+            if (typeof id === 'string') {
+                const parsed = parseInt(id, 10);
+                if (isNaN(parsed)) {
+                    throw new Error(`ID de item inválido: ${id}`);
+                }
+                return parsed;
+            } else if (typeof id === 'number') {
+                return id;
+            } else {
+                throw new Error(`Tipo de ID no soportado: ${typeof id}`);
+            }
+        });
+
         const response = await fetch(
             `/api/v1/cancellations/ask`,
             {
                 method: "POST",
                 headers: headers,
                 body: JSON.stringify({
-                    itemsId: itemsIds,
+                    itemsId: numericItemsIds,
                     reason: reason
                 }),
             }
@@ -243,7 +258,14 @@ async function askForCancellation(itemsIds, reason) {
                 const contentType = response.headers.get("content-type");
                 if (contentType && contentType.includes("application/json")) {
                     const errorData = await response.json();
-                    errorMessage = errorData.message || errorData.detail || errorMessage;
+                    errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+                    
+                    // Check for authentication errors
+                    if (response.status === 401 || errorMessage.includes("no autenticado") || errorMessage.includes("anonymousUser")) {
+                        errorMessage = "No estás autenticado. Por favor, inicia sesión nuevamente.";
+                        // Optionally clear invalid token
+                        localStorage.removeItem('jwt');
+                    }
                 } else {
                     const errorText = await response.text();
                     errorMessage = errorText || errorMessage;
@@ -251,6 +273,15 @@ async function askForCancellation(itemsIds, reason) {
             } catch (e) {
                 console.error("Error parsing error response:", e);
             }
+            
+            // Handle specific status codes
+            if (response.status === 401) {
+                errorMessage = "No estás autenticado. Por favor, inicia sesión nuevamente.";
+                localStorage.removeItem('jwt');
+            } else if (response.status === 403) {
+                errorMessage = "No tienes permisos para realizar esta acción.";
+            }
+            
             throw new Error(errorMessage);
         }
 
