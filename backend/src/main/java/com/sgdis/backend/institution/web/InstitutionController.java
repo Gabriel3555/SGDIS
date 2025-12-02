@@ -6,6 +6,7 @@ import com.sgdis.backend.institution.application.port.in.GetAllInstitutionUseCas
 import com.sgdis.backend.institution.application.port.in.GetAllInstitutionsByRegionalIdUseCase;
 import com.sgdis.backend.institution.application.port.in.GetByIdInstitutionUseCase;
 import com.sgdis.backend.institution.application.port.in.UpdateInstitutionUseCase;
+import com.sgdis.backend.institution.infrastructure.repository.SpringDataInstitutionRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -33,6 +34,7 @@ public class InstitutionController {
     private final GetAllInstitutionsByRegionalIdUseCase getAllInstitutionsByRegionalIdUseCase;
     private final GetByIdInstitutionUseCase getByIdInstitutionUseCase;
     private final UpdateInstitutionUseCase updateInstitutionUseCase;
+    private final SpringDataInstitutionRepository institutionRepository;
 
     // Crear institución
     @Operation(
@@ -145,5 +147,35 @@ public class InstitutionController {
     public ResponseEntity<List<InstitutionResponseWithoutRegionalResponse>> getAllInstitutionsByRegionalId(@PathVariable Long id){
         List<InstitutionResponseWithoutRegionalResponse> list = getAllInstitutionsByRegionalIdUseCase.getAllInstitutionsByRegionalId(id);
         return ResponseEntity.ok(list);
+    }
+
+    @Operation(
+            summary = "Get institutions for map",
+            description = "Retrieves all institutions with their geographic coordinates for map visualization"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Institutions retrieved successfully",
+            content = @Content(schema = @Schema(implementation = InstitutionMapResponse.class))
+    )
+    @GetMapping("/map")
+    public ResponseEntity<List<InstitutionMapResponse>> getInstitutionsForMap() {
+        var institutions = institutionRepository.findAll();
+        var mapResponses = institutions.stream()
+                .map(institution -> InstitutionMapResponse.builder()
+                        .id(institution.getId())
+                        .name(institution.getName())
+                        .codeInstitution(institution.getCodeInstitution())
+                        .latitude(institution.getLatitude())
+                        .longitude(institution.getLongitude())
+                        .cityName(institution.getCity() != null ? institution.getCity().getCity() : null)
+                        .regionalName(institution.getRegional() != null ? institution.getRegional().getName() : null)
+                        .regionalId(institution.getRegional() != null ? institution.getRegional().getId() : null)
+                        .departamentName(institution.getRegional() != null && 
+                                institution.getRegional().getDepartament() != null ? 
+                                institution.getRegional().getDepartament().getDepartament() : null)
+                        .build())
+                .toList();
+        return ResponseEntity.ok(mapResponses);
     }
 }

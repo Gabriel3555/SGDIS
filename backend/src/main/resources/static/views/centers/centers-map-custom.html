@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa SENA Colombia - SGDIS</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
+    
+    <style>
+        :root {
+            --sena-verde: #00AF00;
+            --sena-verde-oscuro: #008800;
+            --sena-verde-claro: #39B54A;
+            --sena-verde-muy-claro: #E8F5E9;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        .map-container {
+            width: 100%;
+            height: calc(100vh - 200px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #f5f5f5 0%, var(--sena-verde-muy-claro) 100%);
+            border-radius: 16px;
+            border: 4px solid var(--sena-verde);
+            box-shadow: 0 10px 40px rgba(0, 175, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #colombiaMap {
+            width: 90%;
+            height: 90%;
+            max-width: 800px;
+            max-height: 900px;
+            filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.15));
+        }
+
+        /* Estilos para las regionales */
+        .regional-path {
+            fill: #a0c4ff;
+            stroke: var(--sena-verde);
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .regional-path:hover {
+            fill: var(--sena-verde-claro);
+            stroke: var(--sena-verde-oscuro);
+            stroke-width: 3;
+            filter: drop-shadow(0 0 10px rgba(0, 175, 0, 0.6));
+        }
+
+        .regional-path.active {
+            fill: var(--sena-verde);
+            stroke: var(--sena-verde-oscuro);
+            stroke-width: 3;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Marcadores de centros */
+        .center-marker {
+            fill: #0078d4;
+            stroke: white;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .center-marker:hover {
+            fill: #005a9e;
+            r: 8;
+            filter: drop-shadow(0 0 8px rgba(0, 120, 212, 0.8));
+        }
+
+        /* Marcadores de regionales */
+        .regional-marker {
+            fill: var(--sena-verde);
+            stroke: white;
+            stroke-width: 3;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .regional-marker:hover {
+            fill: var(--sena-verde-oscuro);
+            r: 10;
+            filter: drop-shadow(0 0 10px rgba(0, 175, 0, 0.8));
+        }
+
+        /* Panel lateral */
+        .info-panel {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            bottom: 20px;
+            width: 350px;
+            background: white;
+            border-radius: 16px;
+            border: 3px solid var(--sena-verde);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            overflow-y: auto;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .dark .info-panel {
+            background: #1f2937;
+            color: white;
+        }
+
+        .info-panel h3 {
+            color: var(--sena-verde);
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--sena-verde-claro);
+        }
+
+        .info-item {
+            background: var(--sena-verde-muy-claro);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--sena-verde);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dark .info-item {
+            background: #374151;
+        }
+
+        .info-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 175, 0, 0.3);
+        }
+
+        .info-item h4 {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--sena-verde-oscuro);
+        }
+
+        .dark .info-item h4 {
+            color: var(--sena-verde-claro);
+        }
+
+        .info-item p {
+            font-size: 13px;
+            color: #666;
+            margin: 0;
+        }
+
+        .dark .info-item p {
+            color: #d1d5db;
+        }
+
+        /* Leyenda */
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            border: 3px solid var(--sena-verde);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .dark .legend {
+            background: #1f2937;
+            color: white;
+        }
+
+        .legend h4 {
+            color: var(--sena-verde);
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-item svg {
+            margin-right: 10px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: absolute;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 2px solid var(--sena-verde);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .dark .tooltip {
+            background: #1f2937;
+            color: white;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        /* Controles */
+        .controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .control-btn {
+            background: var(--sena-verde);
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 175, 0, 0.4);
+        }
+
+        .control-btn:hover {
+            background: var(--sena-verde-oscuro);
+            transform: scale(1.1);
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--sena-verde-muy-claro);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid var(--sena-verde-claro);
+        }
+
+        .dark .stat-card {
+            background: #374151;
+            border-color: var(--sena-verde);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--sena-verde);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .dark .stat-label {
+            color: #d1d5db;
+        }
+
+        /* Loading */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--sena-verde);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .info-panel {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .info-panel {
+                position: fixed;
+                right: 0;
+                top: auto;
+                bottom: 0;
+                width: 100%;
+                height: 40%;
+                border-radius: 16px 16px 0 0;
+            }
+
+            .map-container {
+                height: calc(100vh - 300px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay" style="display: none;"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                    <img src="../../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                </div>
+                <div class="text-gray-800">
+                    <div class="font-bold text-lg">SGDIS</div>
+                    <div class="text-xs opacity-70">Mapa SENA</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>
+            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2">
+                <i class="fas fa-building text-lg"></i>
+                <span class="font-medium">Centros</span>
+            </a>
+            <a href="/superadmin/centers/map" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active">
+                <i class="fas fa-map-marked-alt text-lg"></i>
+                <span class="font-medium">Mapa Interactivo</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <div class="main-content min-h-screen">
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 flex-1">
+                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
+                        <i class="fas fa-map text-[#00AF00] mr-2"></i>
+                        Mapa Interactivo SENA Colombia
+                    </h1>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='/superadmin/info-me'">
+                        <div class="user-avatar" id="headerUserAvatar"></div>
+                        <div class="hidden sm:block">
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500" id="headerUserRole"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6">
+            <!-- Stats -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalRegionals">0</div>
+                    <div class="stat-label">Regionales</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCenters">0</div>
+                    <div class="stat-label">Centros</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="selectedRegional">-</div>
+                    <div class="stat-label">Regional Seleccionada</div>
+                </div>
+            </div>
+
+            <!-- Mapa Container -->
+            <div class="map-container">
+                <!-- Loading -->
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p style="color: var(--sena-verde); font-weight: bold;">Cargando mapa de Colombia...</p>
+                </div>
+
+                <!-- Controles -->
+                <div class="controls">
+                    <button class="control-btn" onclick="resetMap()" title="Reiniciar vista">
+                        <i class="fas fa-home"></i>
+                    </button>
+                    <button class="control-btn" onclick="toggleView()" title="Cambiar vista">
+                        <i class="fas fa-layer-group"></i>
+                    </button>
+                </div>
+
+                <!-- Mapa SVG -->
+                <svg id="colombiaMap" viewBox="0 0 800 1000" xmlns="http://www.w3.org/2000/svg">
+                    <!-- El mapa se generará dinámicamente -->
+                </svg>
+
+                <!-- Panel de información -->
+                <div class="info-panel" id="infoPanel">
+                    <h3><i class="fas fa-info-circle mr-2"></i>Información</h3>
+                    <p style="color: #666; font-size: 14px;">Haz clic en una región para ver sus centros de formación.</p>
+                    <div id="infoContent" style="margin-top: 20px;">
+                        <!-- Contenido dinámico -->
+                    </div>
+                </div>
+
+                <!-- Leyenda -->
+                <div class="legend">
+                    <h4><i class="fas fa-list mr-2"></i>Leyenda</h4>
+                    <div class="legend-item">
+                        <svg width="24" height="24">
+                            <circle cx="12" cy="12" r="8" fill="#00AF00" stroke="white" stroke-width="2"/>
+                        </svg>
+                        <span>Regional</span>
+                    </div>
+                    <div class="legend-item">
+                        <svg width="24" height="24">
+                            <circle cx="12" cy="12" r="6" fill="#0078d4" stroke="white" stroke-width="2"/>
+                        </svg>
+                        <span>Centro</span>
+                    </div>
+                </div>
+
+                <!-- Tooltip -->
+                <div class="tooltip" id="tooltip"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../../../js/token-refresh.js"></script>
+    <script src="../../../js/dashboard.js"></script>
+    <script src="../../../js/websocket-client.js"></script>
+    <script src="../../../js/notifications-bell.js"></script>
+    <script src="../../../js/notification-sound.js"></script>
+    <script src="../../js/centers/centers-map-custom.js"></script>
+
+    <style>
+        .main-content { margin-left: 280px; transition: margin-left 0.3s ease; }
+        @media (max-width: 1024px) {
+            .main-content { margin-left: 0; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+            .sidebar.active { transform: translateX(0); }
+        }
+    </style>
+
+    <script>
+        function logout() {
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
+        }
+
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    sidebar.classList.toggle('active');
+                    overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', setupMobileMenuToggle);
+    </script>
+</body>
+</html>
+

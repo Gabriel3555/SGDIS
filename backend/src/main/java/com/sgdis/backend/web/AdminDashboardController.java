@@ -749,6 +749,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/superadmin/centers/map")
+    @PreAuthorize("hasRole('SUPERADMIN')")
+    @ResponseBody
+    public ResponseEntity<Resource> superadminCentersMap() throws IOException {
+        Resource resource = new ClassPathResource("static/views/centers/centers-map-pro.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     // User routes
     @GetMapping("/user/dashboard")
     @PreAuthorize("hasRole('USER')")
