@@ -69,7 +69,6 @@ public class JwtTokenValidator extends OncePerRequestFilter {
         }
 
         if (token != null) {
-
             try {
                 DecodedJWT decodedJWT = jwtUtils.verifyToken(token);
                 Claim userIdClaim = decodedJWT.getClaim("userId");
@@ -96,7 +95,7 @@ public class JwtTokenValidator extends OncePerRequestFilter {
                                         userId = userIdNum.longValue();
                                     }
                                 } catch (Exception e3) {
-                                    // Log but continue - will be handled by AuthService
+                                    System.err.println("JwtTokenValidator: Error parsing userId from token: " + e3.getMessage());
                                 }
                             }
                         }
@@ -104,13 +103,25 @@ public class JwtTokenValidator extends OncePerRequestFilter {
                     
                     if (userId != null) {
                         String roleString = roleClaim.asString();
-                        GrantedAuthority role = new SimpleGrantedAuthority(roleString);
+                        // Spring Security requires roles to have "ROLE_" prefix when using hasRole()
+                        // But when setting in SecurityContext, we use the full "ROLE_" prefix
+                        String roleWithPrefix = roleString.startsWith("ROLE_") ? roleString : "ROLE_" + roleString;
+                        GrantedAuthority role = new SimpleGrantedAuthority(roleWithPrefix);
                         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(userId, null, Set.of(role)));
+                        System.out.println("JwtTokenValidator: Authentication set for userId=" + userId + ", role=" + roleWithPrefix);
+                    } else {
+                        System.err.println("JwtTokenValidator: userId is null after parsing token");
                     }
+                } else {
+                    System.err.println("JwtTokenValidator: userIdClaim or roleClaim is null");
                 }
             } catch (Exception e) {
-                // Invalid token, do nothing
+                // Invalid token - log for debugging
+                System.err.println("JwtTokenValidator: Error validating token: " + e.getMessage());
+                e.printStackTrace();
             }
+        } else {
+            System.err.println("JwtTokenValidator: No token found in request");
         }
 
         filterChain.doFilter(request, response);
