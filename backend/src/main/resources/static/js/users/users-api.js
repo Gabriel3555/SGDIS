@@ -63,9 +63,11 @@ async function loadCurrentUserInfo() {
             if (window.usersData) {
                 window.usersData.currentLoggedInUserId = userData.id;
                 window.usersData.currentLoggedInUserRole = userData.role;
+                window.usersData.currentLoggedInUser = userData; // Store full user data
             }
             // Also store in window for easy access
             window.currentUserRole = userData.role;
+            window.currentUserData = userData; // Store full user data globally
             // Call updateUserInfoDisplay if available (may not be available on items page)
             if (typeof updateUserInfoDisplay === 'function') {
                 updateUserInfoDisplay(userData);
@@ -550,6 +552,7 @@ async function loadInstitutionsByRegional(regionalId) {
 
 window.loadRegionalsForNewUser = loadRegionalsForNewUser;
 window.loadInstitutionsByRegional = loadInstitutionsByRegional;
+window.loadInstitutionsForAdminRegional = loadInstitutionsForAdminRegional;
 
 // Load regionals for filter dropdown (super admin only)
 async function loadRegionalsForUserFilter() {
@@ -628,17 +631,79 @@ async function loadRegionalsForUserFilter() {
     }
 }
 
-// Load institutions for filter dropdown based on selected regional (super admin only)
-async function loadInstitutionsForUserFilter(regionalId) {
+// Load institutions for admin regional (loads institutions from admin regional's regional)
+async function loadInstitutionsForAdminRegional() {
     try {
-        if (!regionalId) {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            console.error('No authentication token found');
             return;
         }
 
-        const token = localStorage.getItem('jwt');
         const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        headers['Authorization'] = `Bearer ${token}`;
 
+        // First, get current user info to find their institution
+        let institutionName = null;
+        
+        // Try to get from cached user data first
+        const currentUser = window.currentUserData || window.usersData?.currentLoggedInUser || 
+                           (window.usersData && window.usersData.user) || null;
+        if (currentUser && currentUser.institution) {
+            institutionName = currentUser.institution;
+        } else {
+            // If not available, fetch from API
+            try {
+                const userResponse = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: headers
+                });
+
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    // Store user data globally for future use
+                    window.currentUserData = userData;
+                    if (window.usersData) {
+                        window.usersData.currentLoggedInUser = userData;
+                    }
+                    institutionName = userData.institution;
+                } else {
+                    console.error('Failed to fetch current user info');
+                    return;
+                }
+            } catch (error) {
+                console.error('Error fetching current user info:', error);
+                return;
+            }
+        }
+
+        if (!institutionName) {
+            console.error('Institution name not found for admin regional');
+            return;
+        }
+
+        // Fetch all institutions to find the user's institution
+        const institutionsResponse = await fetch('/api/v1/institutions', {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (!institutionsResponse.ok) {
+            console.error('Failed to fetch institutions');
+            return;
+        }
+
+        const allInstitutions = await institutionsResponse.json();
+        const userInstitution = allInstitutions.find(inst => inst.name === institutionName);
+
+        if (!userInstitution || !userInstitution.regionalId) {
+            console.error('User institution or regional not found:', institutionName);
+            return;
+        }
+
+        const regionalId = userInstitution.regionalId;
+
+        // Load institutions for this regional
         const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
             method: 'GET',
             headers: headers
@@ -685,6 +750,103 @@ async function loadInstitutionsForUserFilter(regionalId) {
                 }
             };
 
+            // Validate institutions is an array
+            if (!Array.isArray(institutions)) {
+                console.error('Invalid institutions response:', institutions);
+                if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+                    window.filterInstitutionSelect.setOptions([
+                        { value: '', label: 'Error al cargar instituciones', disabled: true }
+                    ]);
+                }
+                return;
+            }
+
+            // Use CustomSelect if available and ready
+            const currentInstitution = (window.usersData || usersData)?.selectedInstitution || '';
+            const loadInstitutionsToCustomSelect = () => {
+                if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+                    if (institutions && institutions.length > 0) {
+                        const options = [
+                            { value: '', label: 'Todos los centros' },
+                            ...institutions.map(institution => ({
+                                value: institution.id.toString(),
+                                label: institution.name || `Institución ${institution.id}`
+                            }))
+                        ];
+                        window.filterInstitutionSelect.setOptions(options);
+                        if (currentInstitution) {
+                            setTimeout(() => {
+                                if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setValue === 'function') {
+                                    window.filterInstitutionSelect.setValue(currentInstitution);
+                                }
+                            }, 50);
+                        } else {
+                            // Clear selection if no current institution
+                            window.filterInstitutionSelect.clear();
+                        }
+                    } else {
+                        window.filterInstitutionSelect.setOptions([
+                            { value: '', label: 'No hay centros disponibles', disabled: true }
+                        ]);
+                        window.filterInstitutionSelect.clear();
+                    }
+                    return true;
+                }
+                return false;
+            };
+
+            // Try to load immediately
+            if (!loadInstitutionsToCustomSelect()) {
+                // Wait and retry if CustomSelect is not ready yet
+                const retryLoadInstitutions = (retries = 0, maxRetries = 15) => {
+                    if (loadInstitutionsToCustomSelect()) {
+                        return; // Success
+                    } else if (retries < maxRetries) {
+                        setTimeout(() => retryLoadInstitutions(retries + 1, maxRetries), 100);
+                    }
+                };
+                retryLoadInstitutions();
+            }
+        } else {
+            const errorText = await response.text();
+            console.error('Error loading institutions:', response.status, errorText);
+            if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+                window.filterInstitutionSelect.setOptions([
+                    { value: '', label: 'Error al cargar centros', disabled: true }
+                ]);
+                window.filterInstitutionSelect.clear();
+            }
+        }
+    } catch (error) {
+        console.error('Error loading institutions for admin regional:', error);
+        if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+            window.filterInstitutionSelect.setOptions([
+                { value: '', label: 'Error al cargar centros', disabled: true }
+            ]);
+            window.filterInstitutionSelect.clear();
+        }
+    }
+}
+
+// Load institutions for filter dropdown based on selected regional (super admin only)
+async function loadInstitutionsForUserFilter(regionalId) {
+    try {
+        if (!regionalId) {
+            return;
+        }
+
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const institutions = await response.json();
+            
             // Validate institutions is an array
             if (!Array.isArray(institutions)) {
                 console.error('Invalid institutions response:', institutions);

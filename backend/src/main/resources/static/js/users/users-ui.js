@@ -153,10 +153,12 @@ function updateSearchAndFilters() {
   const container = document.getElementById("searchFilterContainer");
   if (!container) return;
 
-  // Check if user is super admin
+  // Check if user is super admin or admin regional
   const path = window.location.pathname || '';
   const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                        path.includes('/superadmin');
+  const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                          path.includes('/admin_regional');
 
   const existingInput = document.getElementById("filterUserSearch");
   const currentSearchTerm = window.usersData ? window.usersData.searchTerm : "";
@@ -184,7 +186,24 @@ function updateSearchAndFilters() {
     }
   }
 
-  if (existingInput && existingInput.value === currentSearchTerm && !isSuperAdmin) {
+  // For admin regional, check if institution filter already exists
+  if (isAdminRegional) {
+    const existingInstitutionSelect = document.getElementById('filterInstitutionSelect');
+    if (existingInstitutionSelect) {
+      // Just update the search input if needed
+      if (existingInput && existingInput.value !== currentSearchTerm) {
+        existingInput.value = currentSearchTerm;
+      }
+      // Update selected value if it changed
+      const currentInstitution = window.usersData?.selectedInstitution || '';
+      if (window.filterInstitutionSelect && currentInstitution) {
+        window.filterInstitutionSelect.setValue(currentInstitution);
+      }
+      return;
+    }
+  }
+
+  if (existingInput && existingInput.value === currentSearchTerm && !isSuperAdmin && !isAdminRegional) {
     return;
   }
 
@@ -218,6 +237,27 @@ function updateSearchAndFilters() {
           </div>
           <div class="custom-select-dropdown">
             <input type="text" class="custom-select-search" placeholder="Buscar institución...">
+            <div class="custom-select-options" id="filterInstitutionOptions">
+              <!-- Options loaded dynamically -->
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="userInstitutionFilter" name="institution">
+      </div>
+    `;
+  } else if (isAdminRegional) {
+    // Build institution filter HTML for admin regional
+    const selectedInstitution = window.usersData?.selectedInstitution || '';
+    
+    regionalInstitutionFilters = `
+      <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
+        <div class="custom-select" id="filterInstitutionSelect">
+          <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+            <span class="custom-select-text">Todos los centros</span>
+            <i class="fas fa-chevron-down custom-select-arrow"></i>
+          </div>
+          <div class="custom-select-dropdown">
+            <input type="text" class="custom-select-search" placeholder="Buscar centro...">
             <div class="custom-select-options" id="filterInstitutionOptions">
               <!-- Options loaded dynamically -->
             </div>
@@ -278,6 +318,8 @@ function updateSearchAndFilters() {
     // Load regionals and institutions after CustomSelects are initialized
     const isSuperAdmin = (window.usersData?.currentLoggedInUserRole && window.usersData.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const isAdminRegional = (window.usersData?.currentLoggedInUserRole && window.usersData.currentLoggedInUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
     
     if (isSuperAdmin) {
       // Wait a bit more to ensure CustomSelects are fully ready
@@ -301,6 +343,21 @@ function updateSearchAndFilters() {
           if (regionalReady) {
             loadRegionalsForUserFilter();
           }
+        }
+      };
+      
+      waitForCustomSelects();
+    } else if (isAdminRegional) {
+      // Load institutions for admin regional
+      const waitForCustomSelects = (retries = 0, maxRetries = 10) => {
+        const institutionReady = window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function';
+        
+        if (institutionReady) {
+          // Load institutions for admin regional's regional
+          loadInstitutionsForAdminRegional();
+        } else if (retries < maxRetries) {
+          // Not ready yet, retry after a short delay
+          setTimeout(() => waitForCustomSelects(retries + 1, maxRetries), 100);
         }
       };
       
@@ -530,6 +587,8 @@ function updateUsersTable() {
   const currentUserId = window.usersData ? window.usersData.currentLoggedInUserId : null;
   const isSuperAdmin = (currentRole === 'SUPERADMIN') || 
                       (window.location.pathname && window.location.pathname.includes('/superadmin'));
+  const isAdminRegional = (currentRole === 'ADMIN_REGIONAL') || 
+                         (window.location.pathname && window.location.pathname.includes('/admin_regional'));
   const isWarehouse = (currentRole === 'WAREHOUSE') ||
                      (window.location.pathname && window.location.pathname.includes('/warehouse'));
   const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION' || currentRole === 'WAREHOUSE') && currentUserId;
@@ -690,6 +749,7 @@ function updateUsersTable() {
                             </button>
                             ${editButtonHtml}
                             ${deleteButtonHtml}
+                            ${!isAdminRegional ? `
                             <button onclick="showUserLoansModal('${
                               user.id
                             }')" class="user-action-btn p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
@@ -710,6 +770,7 @@ function updateUsersTable() {
                             }', 'manager')" class="user-action-btn p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Inventarios como Manager">
                                 <i class="fas fa-user-cog"></i>
                             </button>
+                            ` : ''}
                         </div>
                     </td>
                 </tr>
@@ -1238,9 +1299,14 @@ function initializeFilterSelects() {
     }
   }
 
-  // Institution filter select (super admin only)
+  // Institution filter select (super admin and admin regional)
   const institutionSelectContainer = document.getElementById("filterInstitutionSelect");
   if (institutionSelectContainer) {
+    // Determine placeholder based on user role
+    const isAdminRegional = (window.usersData?.currentLoggedInUserRole && window.usersData.currentLoggedInUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    const placeholder = isAdminRegional ? "Todos los centros" : "Todas las instituciones";
+    
     if (!window.filterInstitutionSelect) {
       try {
         // Check if CustomSelectClass is available
@@ -1253,7 +1319,7 @@ function initializeFilterSelects() {
         }
         
         window.filterInstitutionSelect = new CustomSelectClass("filterInstitutionSelect", {
-          placeholder: "Todas las instituciones",
+          placeholder: placeholder,
           onChange: function (option) {
             if (typeof handleUserInstitutionFilterChange === 'function') {
               handleUserInstitutionFilterChange(option.value);
@@ -1261,10 +1327,11 @@ function initializeFilterSelects() {
           },
         });
         
-        // Initialize with empty options - will be populated by loadInstitutionsForUserFilter
+        // Initialize with empty options - will be populated by loadInstitutionsForUserFilter or loadInstitutionsForAdminRegional
         if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+          const defaultLabel = isAdminRegional ? 'Todos los centros' : 'Todas las instituciones';
           window.filterInstitutionSelect.setOptions([
-            { value: '', label: 'Todas las instituciones', disabled: true }
+            { value: '', label: defaultLabel, disabled: true }
           ]);
         }
       } catch (error) {
@@ -1279,8 +1346,9 @@ function initializeFilterSelects() {
           const retryContainer = document.getElementById("filterInstitutionSelect");
           if (retryContainer && !window.filterInstitutionSelect) {
             try {
+              const retryPlaceholder = isAdminRegional ? "Todos los centros" : "Todas las instituciones";
               window.filterInstitutionSelect = new CustomSelectClass("filterInstitutionSelect", {
-                placeholder: "Todas las instituciones",
+                placeholder: retryPlaceholder,
                 onChange: function (option) {
                   if (typeof handleUserInstitutionFilterChange === 'function') {
                     handleUserInstitutionFilterChange(option.value);
@@ -1288,8 +1356,9 @@ function initializeFilterSelects() {
                 },
               });
               if (window.filterInstitutionSelect && typeof window.filterInstitutionSelect.setOptions === 'function') {
+                const retryDefaultLabel = isAdminRegional ? 'Todos los centros' : 'Todas las instituciones';
                 window.filterInstitutionSelect.setOptions([
-                  { value: '', label: 'Todas las instituciones', disabled: true }
+                  { value: '', label: retryDefaultLabel, disabled: true }
                 ]);
               }
               } catch (error) {
@@ -1333,6 +1402,8 @@ function updateUsersCards() {
   // Get current user role and ID to filter out current user for SUPERADMIN, ADMIN_INSTITUTION, and WAREHOUSE
   const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
   const currentUserId = window.usersData ? window.usersData.currentLoggedInUserId : null;
+  const isAdminRegional = (currentRole === 'ADMIN_REGIONAL') || 
+                         (window.location.pathname && window.location.pathname.includes('/admin_regional'));
   const isWarehouse = (currentRole === 'WAREHOUSE') ||
                      (window.location.pathname && window.location.pathname.includes('/warehouse'));
   const shouldExcludeCurrentUser = (currentRole === 'SUPERADMIN' || currentRole === 'ADMIN_INSTITUTION' || currentRole === 'WAREHOUSE') && currentUserId;
@@ -1476,6 +1547,7 @@ function updateUsersCards() {
                         </button>
                         ${editButtonHtmlCards}
                         ${deleteButtonHtmlCards}
+                        ${!isAdminRegional ? `
                         <button onclick="showUserLoansModal('${
                           user.id
                         }')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
@@ -1496,6 +1568,7 @@ function updateUsersCards() {
                         }', 'manager')" class="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Inventarios como Manager">
                             <i class="fas fa-user-cog"></i>
                         </button>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -1544,17 +1617,8 @@ window.showNewUserModal = function () {
   // Placeholder - should be implemented in users-modals.js
 };
 
-window.closeNewUserModal = function () {
-  // Placeholder - should be implemented in users-modals.js
-};
-
-window.closeViewUserModal = function () {
-  // Placeholder - should be implemented in users-modals.js
-};
-
-window.closeEditUserModal = function () {
-  // Placeholder - should be implemented in users-modals.js
-};
+// closeNewUserModal, closeViewUserModal, and closeEditUserModal are implemented in users-modals.js
+// Don't override them here to avoid conflicts
 
 // loadUsersData is implemented in users-api.js
 
