@@ -7,8 +7,14 @@ import java.util.Map;
 
 public record ItemDTO(
         Long id,
+        String irId,
+        String ivId,
         String productName,
+        String wareHouseDescription,
         String licencePlateNumber,
+        String consecutiveNumber,
+        String skuDescription,
+        String descriptionElement,
         LocalDate acquisitionDate,
         Double acquisitionValue,
         Map<Attribute, String> attributes,

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.List;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
 import com.sgdis.backend.item.application.port.DeleteItemUseCase;
+import com.sgdis.backend.item.application.port.GetItemByIdUseCase;
 import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
 import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
@@ -40,6 +41,7 @@ public class ItemService implements
         UpdateItemUseCase,
         DeleteItemUseCase,
         GetItemsByInventoryUseCase,
+        GetItemByIdUseCase,
         GetItemByLicencePlateNumberUseCase,
         GetItemBySerialUseCase {
 
@@ -171,6 +173,13 @@ public class ItemService implements
         Pageable pageable = PageRequest.of(page, size);
         Page<ItemEntity> itemEntities = itemRepository.findByInventoryId(inventoryId, pageable);
         return itemEntities.map(ItemMapper::toDTO);
+    }
+
+    @Override
+    public ItemDTO getItemById(Long itemId) {
+        ItemEntity item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new DomainNotFoundException("Item not found with id: " + itemId));
+        return ItemMapper.toDTO(item);
     }
 
     @Override

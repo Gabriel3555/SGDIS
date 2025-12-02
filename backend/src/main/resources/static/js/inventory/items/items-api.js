@@ -251,8 +251,6 @@ async function getItemById(itemId, silent = false) {
     // Only log as error if not silent (when we have a fallback)
     if (!silent) {
       console.error("Error fetching item by ID:", error);
-    } else {
-      console.debug("Error fetching item by ID (silent, using fallback):", error);
     }
     throw error;
   }

@@ -12,6 +12,7 @@ import com.sgdis.backend.item.application.service.ExcelItemService;
 import com.sgdis.backend.item.application.service.ExcelExportService;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
 import com.sgdis.backend.item.application.port.DeleteItemUseCase;
+import com.sgdis.backend.item.application.port.GetItemByIdUseCase;
 import com.sgdis.backend.item.application.port.GetItemByLicencePlateNumberUseCase;
 import com.sgdis.backend.item.application.port.GetItemBySerialUseCase;
 import com.sgdis.backend.item.application.port.GetItemsByInventoryUseCase;
@@ -52,6 +53,7 @@ public class ItemController {
     private final UpdateItemUseCase updateItemUseCase;
     private final DeleteItemUseCase deleteItemUseCase;
     private final GetItemsByInventoryUseCase getItemsByInventoryUseCase;
+    private final GetItemByIdUseCase getItemByIdUseCase;
     private final GetItemByLicencePlateNumberUseCase getItemByLicencePlateNumberUseCase;
     private final GetItemBySerialUseCase getItemBySerialUseCase;
     private final GetItemVerificationsUseCase getItemVerificationsUseCase;
@@ -335,6 +337,70 @@ public class ItemController {
     }
 
     @Operation(
+            summary = "Export inventory items to Excel",
+            description = "Exports all items from a specific inventory to an Excel file (.xlsx). " +
+                    "The file includes: ir_id, Cód. regional, Cód. Centro, Desc. Almacen, " +
+                    "No. de placa, Consecutivo, Desc. SKU, Descripción elemento, Atributos, " +
+                    "Fecha adq, Valor adq, iv_id, and Ubicación."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Excel file generated successfully",
+            content = @Content(mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @GetMapping(value = "/inventory/{inventoryId}/export", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    public ResponseEntity<Resource> exportInventoryItemsToExcel(
+            @Parameter(description = "Inventory ID to export items from", required = true)
+            @PathVariable Long inventoryId
+    ) {
+        try {
+            byte[] excelData = excelExportService.exportInventoryItemsToExcel(inventoryId);
+            ByteArrayResource resource = new ByteArrayResource(excelData);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=items_inventario_" + inventoryId + ".xlsx");
+            headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentLength(excelData.length)
+                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @Operation(
+            summary = "Get item by ID",
+            description = "Retrieves a single item by its ID. This endpoint should be called last as it matches any path.",
+            parameters = {
+                    @io.swagger.v3.oas.annotations.Parameter(
+                            name = "id",
+                            description = "ID of the item",
+                            required = true,
+                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
+                    )
+            }
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Item retrieved successfully",
+            content = @Content(schema = @Schema(implementation = ItemDTO.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Item not found")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @GetMapping("/{id}")
+    public ResponseEntity<ItemDTO> getItemById(
+            @Parameter(description = "ID of the item to retrieve", required = true)
+            @PathVariable Long id
+    ) {
+        ItemDTO item = getItemByIdUseCase.getItemById(id);
+        return ResponseEntity.ok(item);
+    }
+
+    @Operation(
             summary = "Delete an image from an item",
             description = "Deletes a specific image from an item by its URL path. Both the file and the URL reference will be removed."
     )
@@ -422,42 +488,6 @@ public class ItemController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new BulkUploadResponse(0, 0, 0, List.of("Error: " + e.getMessage())));
-        }
-    }
-
-    @Operation(
-            summary = "Export inventory items to Excel",
-            description = "Exports all items from a specific inventory to an Excel file (.xlsx). " +
-                    "The file includes: ir_id, Cód. regional, Cód. Centro, Desc. Almacen, " +
-                    "No. de placa, Consecutivo, Desc. SKU, Descripción elemento, Atributos, " +
-                    "Fecha adq, Valor adq, iv_id, and Ubicación."
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Excel file generated successfully",
-            content = @Content(mediaType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    )
-    @ApiResponse(responseCode = "404", description = "Inventory not found")
-    @GetMapping(value = "/inventory/{inventoryId}/export", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    public ResponseEntity<Resource> exportInventoryItemsToExcel(
-            @Parameter(description = "Inventory ID to export items from", required = true)
-            @PathVariable Long inventoryId
-    ) {
-        try {
-            byte[] excelData = excelExportService.exportInventoryItemsToExcel(inventoryId);
-            ByteArrayResource resource = new ByteArrayResource(excelData);
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=items_inventario_" + inventoryId + ".xlsx");
-            headers.add(HttpHeaders.CONTENT_TYPE, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-
-            return ResponseEntity.ok()
-                    .headers(headers)
-                    .contentLength(excelData.length)
-                    .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                    .body(resource);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

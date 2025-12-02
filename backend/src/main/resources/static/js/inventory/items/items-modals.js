@@ -944,7 +944,7 @@ async function loadTransferInventories() {
         useInstitutionEndpoint = currentUser.role !== "SUPERADMIN";
       }
     } catch (e) {
-      console.warn("Could not determine user role, using institution endpoint");
+      // Could not determine user role, using institution endpoint
     }
 
     // Use institution inventories endpoint to show only inventories from the same center
@@ -1186,7 +1186,7 @@ async function loadUsersForLendModal() {
         currentUserId = currentUser.id;
       }
     } catch (userError) {
-      console.warn("Could not get current user info:", userError);
+      // Could not get current user info, continue without filtering
     }
 
     // Fetch all users from institution endpoint - load all pages
@@ -1224,10 +1224,6 @@ async function loadUsersForLendModal() {
 
       const data = await response.json();
       const users = data.users || (Array.isArray(data) ? data : []);
-      
-      // Debug: Log to see what we're getting
-      console.log(`Page ${page}: Received ${users.length} users, total so far: ${allUsers.length + users.length}`);
-      console.log(`Total users in response: ${data.totalUsers || 'unknown'}, Last page: ${data.last}`);
       
       if (users.length > 0) {
         allUsers = allUsers.concat(users);
@@ -1302,20 +1298,17 @@ let isProcessingLoan = false;
 async function confirmLendItem() {
   // Prevent multiple submissions - check FIRST before anything else
   if (isProcessingLoan) {
-    console.log("Ya hay un préstamo en proceso, ignorando solicitud duplicada");
     return;
   }
 
   // Get submit button and check if already disabled
   const submitButton = document.querySelector("#lendItemForm button[type='submit']");
   if (submitButton && submitButton.disabled) {
-    console.log("Botón ya deshabilitado, ignorando solicitud duplicada");
     return;
   }
 
   // Do all validations BEFORE setting processing flag
   if (!window.itemsData || !window.itemsData.currentItemId) {
-    console.warn("No hay item seleccionado");
     if (window.showErrorToast) {
       window.showErrorToast("Error", "No se ha seleccionado un item para prestar");
     }
@@ -1409,9 +1402,8 @@ async function confirmLendItem() {
       try {
         window.showErrorToast(errorTitle, errorMessage);
         toastShown = true;
-        console.log("Toast mostrado usando showErrorToast");
       } catch (toastError) {
-        console.error("Error al mostrar toast:", toastError);
+        // Error showing toast, continue to next method
       }
     }
     
@@ -1419,9 +1411,8 @@ async function confirmLendItem() {
       try {
         window.showInventoryErrorToast(errorTitle, errorMessage);
         toastShown = true;
-        console.log("Toast mostrado usando showInventoryErrorToast");
       } catch (toastError) {
-        console.error("Error al mostrar toast:", toastError);
+        // Error showing toast, continue to next method
       }
     }
     
@@ -1433,15 +1424,13 @@ async function confirmLendItem() {
           descripcion: errorMessage 
         });
         toastShown = true;
-        console.log("Toast mostrado usando showInventoryToast");
       } catch (toastError) {
-        console.error("Error al mostrar toast:", toastError);
+        // Error showing toast, continue to next method
       }
     }
     
     // Fallback final: alert si no se pudo mostrar toast
     if (!toastShown) {
-      console.warn("No se pudo mostrar toast, usando alert como fallback");
       alert(`${errorTitle}: ${errorMessage}`);
     }
   } finally {
@@ -1469,7 +1458,6 @@ async function checkAndRemoveDuplicateLoans(itemId) {
     });
 
     if (!response.ok) {
-      console.warn('No se pudieron obtener los préstamos para verificar duplicados');
       return;
     }
 
@@ -1500,8 +1488,6 @@ async function checkAndRemoveDuplicateLoans(itemId) {
 
       if (timeDiff < 5) {
         // They are duplicates, delete the most recent one (lastLoan)
-        console.log('Préstamos duplicados detectados, eliminando el más reciente...');
-        
         const deleteResponse = await fetch(`/api/v1/loan/${lastLoan.id}`, {
           method: 'DELETE',
           headers: {
@@ -1509,12 +1495,7 @@ async function checkAndRemoveDuplicateLoans(itemId) {
             'Content-Type': 'application/json'
           }
         });
-
-        if (deleteResponse.ok) {
-          console.log('Préstamo duplicado eliminado exitosamente');
-        } else {
-          console.warn('No se pudo eliminar el préstamo duplicado');
-        }
+        // Silently handle result
       }
     }
   } catch (error) {
