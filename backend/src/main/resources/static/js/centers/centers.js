@@ -52,8 +52,15 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
                 return;
             }
             
-            this.textElement.textContent = this.placeholder;
-            this.textElement.classList.add("custom-select-placeholder");
+            // Only set placeholder if textElement is empty or shows default placeholder
+            const currentText = this.textElement.textContent.trim();
+            if (!currentText || currentText === 'Seleccionar...' || currentText === this.placeholder) {
+                this.textElement.textContent = this.placeholder;
+                this.textElement.classList.add("custom-select-placeholder");
+            } else {
+                // If there's already text (like "Todos los períodos"), keep it
+                this.textElement.classList.remove("custom-select-placeholder");
+            }
 
             if (this.trigger) {
                 this.trigger.addEventListener("click", (event) => {
@@ -192,32 +199,110 @@ if (typeof CustomSelect === "undefined" && typeof window.CustomSelect === "undef
                     if (isInModal) {
                         // Use fixed positioning for modals
                         const triggerRect = this.trigger.getBoundingClientRect();
+                        const containerRect = this.container.getBoundingClientRect();
+                        const viewportHeight = window.innerHeight;
+                        const spaceBelow = viewportHeight - triggerRect.bottom;
+                        const spaceAbove = triggerRect.top;
+                        const dropdownHeight = 250; // Approximate max height
+                        
+                        // Check if should open upward
+                        const shouldOpenUp = spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
+                        
                         this.dropdown.style.position = 'fixed';
                         this.dropdown.style.width = `${triggerRect.width}px`;
-                        this.dropdown.style.top = `${triggerRect.bottom}px`;
-                        this.dropdown.style.left = `${triggerRect.left}px`;
-                    } else {
-                        // Use absolute positioning for normal pages
-                        const containerElement = this.container.closest('.custom-select-container');
-                        if (containerElement) {
-                            const containerRect = containerElement.getBoundingClientRect();
-                            const triggerRect = this.trigger.getBoundingClientRect();
-                            
-                            const top = triggerRect.bottom - containerRect.top;
-                            const left = triggerRect.left - containerRect.left;
-                            const width = triggerRect.width;
-                            
-                            this.dropdown.style.position = 'absolute';
-                            this.dropdown.style.top = `${top}px`;
-                            this.dropdown.style.left = `${left}px`;
-                            this.dropdown.style.width = `${width}px`;
+                        this.dropdown.style.minWidth = `${triggerRect.width}px`;
+                        this.dropdown.style.maxWidth = `${triggerRect.width}px`;
+                        
+                        // Eliminar inset primero para evitar conflictos
+                        this.dropdown.style.inset = 'auto';
+                        this.dropdown.style.top = 'auto';
+                        this.dropdown.style.bottom = 'auto';
+                        this.dropdown.style.left = 'auto';
+                        this.dropdown.style.right = 'auto';
+                        
+                        if (shouldOpenUp) {
+                            // Open upward
+                            this.container.classList.add('dropdown-up');
+                            this.dropdown.style.bottom = `${viewportHeight - triggerRect.top}px`;
+                            this.dropdown.style.top = 'auto';
                         } else {
-                            // Fallback: use fixed positioning
-                            const rect = this.trigger.getBoundingClientRect();
+                            // Open downward
+                            this.container.classList.remove('dropdown-up');
+                            this.dropdown.style.top = `${triggerRect.bottom}px`;
+                            this.dropdown.style.bottom = 'auto';
+                        }
+                        
+                        // Establecer left después de limpiar inset
+                        this.dropdown.style.left = `${triggerRect.left}px`;
+                        this.dropdown.style.right = 'auto';
+                        this.dropdown.style.transform = 'none';
+                        this.dropdown.style.marginLeft = '0';
+                        this.dropdown.style.marginRight = '0';
+                    } else {
+                        // Use fixed positioning for filter selects (inside stat-card) or absolute for others
+                        const isInStatCard = this.container.closest('.stat-card') !== null;
+                        
+                        if (isInStatCard) {
+                            // Use fixed positioning for filter selects to avoid overflow issues
+                            const triggerRect = this.trigger.getBoundingClientRect();
+                            const viewportHeight = window.innerHeight;
+                            const spaceBelow = viewportHeight - triggerRect.bottom;
+                            const spaceAbove = triggerRect.top;
+                            const dropdownHeight = 250;
+                            
+                            const shouldOpenUp = spaceBelow < dropdownHeight && spaceAbove > dropdownHeight;
+                            
+                            // Eliminar inset primero
+                            this.dropdown.style.inset = 'auto';
+                            this.dropdown.style.top = 'auto';
+                            this.dropdown.style.bottom = 'auto';
+                            this.dropdown.style.left = 'auto';
+                            this.dropdown.style.right = 'auto';
+                            
                             this.dropdown.style.position = 'fixed';
-                            this.dropdown.style.width = `${rect.width}px`;
-                            this.dropdown.style.top = `${rect.bottom}px`;
-                            this.dropdown.style.left = `${rect.left}px`;
+                            this.dropdown.style.width = `${triggerRect.width}px`;
+                            this.dropdown.style.minWidth = `${triggerRect.width}px`;
+                            this.dropdown.style.maxWidth = `${triggerRect.width}px`;
+                            this.dropdown.style.zIndex = '10000'; // Z-index muy alto para estar sobre la tabla
+                            
+                            if (shouldOpenUp) {
+                                this.container.classList.add('dropdown-up');
+                                this.dropdown.style.bottom = `${viewportHeight - triggerRect.top}px`;
+                                this.dropdown.style.top = 'auto';
+                            } else {
+                                this.container.classList.remove('dropdown-up');
+                                this.dropdown.style.top = `${triggerRect.bottom}px`;
+                                this.dropdown.style.bottom = 'auto';
+                            }
+                            
+                            this.dropdown.style.left = `${triggerRect.left}px`;
+                            this.dropdown.style.right = 'auto';
+                            this.dropdown.style.transform = 'none';
+                            this.dropdown.style.marginLeft = '0';
+                            this.dropdown.style.marginRight = '0';
+                        } else {
+                            // Use absolute positioning for normal pages
+                            const containerElement = this.container.closest('.custom-select-container');
+                            if (containerElement) {
+                                const containerRect = containerElement.getBoundingClientRect();
+                                const triggerRect = this.trigger.getBoundingClientRect();
+                                
+                                const top = triggerRect.bottom - containerRect.top;
+                                const left = triggerRect.left - containerRect.left;
+                                const width = triggerRect.width;
+                                
+                                this.dropdown.style.position = 'absolute';
+                                this.dropdown.style.top = `${top}px`;
+                                this.dropdown.style.left = `${left}px`;
+                                this.dropdown.style.width = `${width}px`;
+                            } else {
+                                // Fallback: use fixed positioning
+                                const rect = this.trigger.getBoundingClientRect();
+                                this.dropdown.style.position = 'fixed';
+                                this.dropdown.style.width = `${rect.width}px`;
+                                this.dropdown.style.top = `${rect.bottom}px`;
+                                this.dropdown.style.left = `${rect.left}px`;
+                            }
                         }
                     }
                 }
