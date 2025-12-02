@@ -515,7 +515,7 @@ public class InventoryController {
             @Parameter(description = "Page number (0-indexed)", required = false)
             @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size", required = false)
-            @RequestParam(defaultValue = "3") int size
+            @RequestParam(defaultValue = "6") int size
     ) {
         var currentUser = authService.getCurrentUser();
         if (currentUser.getInstitution() == null) {

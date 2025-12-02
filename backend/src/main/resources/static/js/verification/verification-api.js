@@ -212,7 +212,7 @@ async function loadInventories() {
                 const currentRole = userData.role || '';
                 
                 // Determine endpoint based on role
-                if (currentRole === 'ADMIN_INSTITUTION') {
+                if (currentRole === 'ADMIN_INSTITUTION' || currentRole === 'WAREHOUSE') {
                     // Use paginated endpoint for institution inventories
                     endpoint = '/api/v1/inventory/institutionAdminInventories?page=0&size=1000';
                     isPaginated = true;
@@ -333,7 +333,7 @@ async function getLatestVerifications(inventoryId) {
         const response = await fetch(`/api/v1/verifications/inventories/${inventoryId}/verifications/latest`, {
             method: 'GET',
             headers: headers,
-            credentials: 'same-origin'
+            credentials: 'include'
         });
 
         if (response.ok) {
@@ -410,24 +410,35 @@ async function createVerificationBySerial(serialNumber) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Note: The API endpoint seems incomplete in the documentation
-        // Assuming it should be: POST /api/v1/verifications/by-serial
+        // Note: The API endpoint expects "serial" not "serialNumber"
         const response = await fetch(`/api/v1/verifications/by-serial`, {
             method: 'POST',
             headers: headers,
-            body: JSON.stringify({ serialNumber: serialNumber })
+            body: JSON.stringify({ serial: serialNumber })
         });
 
         if (response.ok) {
             const verification = await response.json();
             return verification;
-        } else if (response.status === 404) {
-            throw new Error('No se encontró un item con ese número de serie');
-        } else if (response.status === 400) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Datos de verificación inválidos');
         } else {
-            throw new Error('Error al crear la verificación');
+            // Try to get error message from response
+            let errorMessage = 'Error al crear la verificación';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch (e) {
+                // If response is not JSON, use status-based message
+                if (response.status === 404) {
+                    errorMessage = 'No se encontró un item con ese número de serie';
+                } else if (response.status === 400) {
+                    errorMessage = 'Datos de verificación inválidos';
+                } else if (response.status === 403) {
+                    errorMessage = 'No tienes permisos para verificar este item';
+                } else if (response.status === 401) {
+                    errorMessage = 'Sesión expirada. Por favor inicia sesión nuevamente';
+                }
+            }
+            throw new Error(errorMessage);
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {
@@ -452,13 +463,25 @@ async function createVerificationByPlate(licensePlate) {
         if (response.ok) {
             const verification = await response.json();
             return verification;
-        } else if (response.status === 404) {
-            throw new Error('No se encontró un item con esa placa');
-        } else if (response.status === 400) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Datos de verificación inválidos');
         } else {
-            throw new Error('Error al crear la verificación');
+            // Try to get error message from response
+            let errorMessage = 'Error al crear la verificación';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch (e) {
+                // If response is not JSON, use status-based message
+                if (response.status === 404) {
+                    errorMessage = 'No se encontró un item con esa placa';
+                } else if (response.status === 400) {
+                    errorMessage = 'Datos de verificación inválidos';
+                } else if (response.status === 403) {
+                    errorMessage = 'No tienes permisos para verificar este item';
+                } else if (response.status === 401) {
+                    errorMessage = 'Sesión expirada. Por favor inicia sesión nuevamente';
+                }
+            }
+            throw new Error(errorMessage);
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {

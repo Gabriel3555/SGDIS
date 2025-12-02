@@ -440,9 +440,23 @@
             const isWarehouse = currentPath.includes('/warehouse/');
             
             if (isWarehouse) {
-                // Actualizar todos los enlaces del sidebar
+                // Obtener todos los enlaces del sidebar
                 const sidebarLinks = document.querySelectorAll('nav a.sidebar-item');
-                sidebarLinks.forEach(link => {
+                
+                // Primero: Eliminar Centros si es warehouse (warehouse no tiene acceso a centers)
+                const centersLink = Array.from(sidebarLinks).find(link => {
+                    const href = link.getAttribute('href');
+                    const text = link.textContent || link.innerText || '';
+                    return (href && (href.includes('/centers') || href.includes('centers'))) ||
+                           (text.trim().includes('Centros'));
+                });
+                if (centersLink) {
+                    centersLink.remove(); // Eliminar completamente del DOM
+                }
+                
+                // Segundo: Actualizar todos los demás enlaces del sidebar
+                const updatedSidebarLinks = document.querySelectorAll('nav a.sidebar-item');
+                updatedSidebarLinks.forEach(link => {
                     const href = link.getAttribute('href');
                     const onclick = link.getAttribute('onclick');
                     
@@ -463,12 +477,16 @@
                     headerUserInfo.setAttribute('onclick', "window.location.href='/warehouse/info-me'");
                 }
                 
-                // Ocultar Centros si es warehouse (warehouse no tiene acceso a centers)
-                const centersLink = Array.from(sidebarLinks).find(link => 
-                    link.getAttribute('href') && link.getAttribute('href').includes('/centers')
-                );
-                if (centersLink) {
-                    centersLink.style.display = 'none';
+                // Cambiar "Cancelaciones" a "Bajas" cuando es warehouse
+                const cancellationsLink = Array.from(sidebarLinks).find(link => {
+                    const href = link.getAttribute('href');
+                    return href && href.includes('/cancellations');
+                });
+                if (cancellationsLink) {
+                    const span = cancellationsLink.querySelector('span.font-medium');
+                    if (span && span.textContent.includes('Cancelaciones')) {
+                        span.textContent = 'Bajas';
+                    }
                 }
             }
         });

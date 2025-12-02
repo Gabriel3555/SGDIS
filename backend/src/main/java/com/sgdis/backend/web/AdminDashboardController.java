@@ -876,6 +876,20 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping("/warehouse/cancellations")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @ResponseBody
+    public ResponseEntity<Resource> warehouseCancellations() throws IOException {
+        Resource resource = new ClassPathResource("static/views/cancellations/cancellations-warehouse.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/user/transfers")
     @PreAuthorize("hasRole('USER')")
     @ResponseBody

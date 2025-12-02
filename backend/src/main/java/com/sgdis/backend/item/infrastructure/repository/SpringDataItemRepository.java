@@ -18,10 +18,10 @@ public interface SpringDataItemRepository extends JpaRepository<ItemEntity, Long
     @Query("SELECT i FROM ItemEntity i WHERE i.inventory.id = :inventoryId")
     Page<ItemEntity> findByInventoryId(@Param("inventoryId") Long inventoryId, Pageable pageable);
 
-    @Query("SELECT i FROM ItemEntity i LEFT JOIN FETCH i.inventory WHERE i.licencePlateNumber = :licencePlateNumber")
+    @Query("SELECT i FROM ItemEntity i LEFT JOIN FETCH i.inventory inv LEFT JOIN FETCH inv.institution WHERE i.licencePlateNumber = :licencePlateNumber")
     Optional<ItemEntity> findByLicencePlateNumber(@Param("licencePlateNumber") String licencePlateNumber);
 
-    @Query("SELECT DISTINCT i FROM ItemEntity i, IN(i.attributes) a WHERE KEY(a) = :attributeKey AND VALUE(a) = :attributeValue")
+    @Query("SELECT DISTINCT i FROM ItemEntity i LEFT JOIN FETCH i.inventory inv LEFT JOIN FETCH inv.institution, IN(i.attributes) a WHERE KEY(a) = :attributeKey AND VALUE(a) = :attributeValue")
     Optional<ItemEntity> findByAttribute(@Param("attributeKey") Attribute attributeKey, @Param("attributeValue") String attributeValue);
 
     @Query("SELECT i FROM ItemEntity i WHERE i.inventory.id = :inventoryId")

@@ -628,7 +628,7 @@ function updateHeaderProfile(userName, userRole) {
       'ADMIN_INSTITUTIONAL': 'Admin Institucional',
       'ADMIN_INSTITUTION': 'Admin Institucional',
       'ADMIN_REGIONAL': 'Admin Regional',
-      'WAREHOUSE': 'Almacén',
+      'WAREHOUSE': 'Encargado de Almacén',
       'USER': 'Usuario'
     }[userRole] || userRole || 'Super Administrador';
     headerUserRole.textContent = roleText;

@@ -94,6 +94,11 @@
                 <i class="fas fa-hand-holding text-lg"></i>
                 <span class="font-medium">Préstamos</span>
             </a>
+            <a href="/warehouse/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/warehouse/cancellations')">
+                <i class="fas fa-times-circle text-lg"></i>
+                <span class="font-medium">Bajas</span>
+            </a>
             <a href="/warehouse/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/warehouse/reports')">
                 <i class="fas fa-chart-bar text-lg"></i>
@@ -388,8 +393,8 @@
             const headerUserAvatar = document.getElementById('headerUserAvatar');
             if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Warehouse';
             if (headerUserRole) {
-                const role = userData.role || 'ADMIN_INSTITUTION';
-                headerUserRole.textContent = role === 'WAREHOUSE' ? 'WAREHOUSE' : role;
+                const role = userData.role || 'WAREHOUSE';
+                headerUserRole.textContent = role === 'WAREHOUSE' ? 'Encargado de Almacén' : role;
             }
             if (headerUserAvatar) {
                 if (userData.imgUrl) {

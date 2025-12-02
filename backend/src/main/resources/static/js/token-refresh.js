@@ -4,6 +4,10 @@
  * Se ejecuta al cargar la página y cada 5 minutos.
  */
 
+// Guardar la función fetch original ANTES de que sea sobrescrita por cualquier interceptor
+// Esto permite que refreshJWTToken use el fetch nativo sin pasar por interceptores
+const originalNativeFetch = window.fetch;
+
 // Variable global para controlar si hay un refresh en progreso
 let isRefreshing = false;
 let refreshPromise = null;
@@ -91,11 +95,17 @@ async function refreshJWTToken(force = false) {
   // Crear la promesa de refresh
   refreshPromise = (async () => {
     try {
-      const response = await fetch("/api/v1/auth/token/refresh", {
+      // Usar el fetch nativo original (guardado antes del interceptor) para evitar loops
+      // Esto asegura que el refresh token no pase por el interceptor que podría causar problemas de CORS
+      // originalNativeFetch está definido al inicio del archivo, antes del interceptor
+      const fetchFunction = originalNativeFetch || window.originalNativeFetch || window.fetch;
+      
+      const response = await fetchFunction("/api/v1/auth/token/refresh", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include',
         body: JSON.stringify({
           refreshToken: refreshTokenValue,
         }),
@@ -357,10 +367,14 @@ async function authenticatedFetch(url, options = {}) {
   return response;
 }
 
+// Variable para guardar originalFetch fuera de la IIFE
+let originalFetchForExport = null;
+
 // Interceptor global para fetch que maneja automáticamente el refresh de tokens
 (function() {
   // Guardar la función fetch original
   const originalFetch = window.fetch;
+  originalFetchForExport = originalFetch; // Guardar para exportar
   
   // Función helper para obtener el token del header
   function getTokenFromHeaders(headers) {
@@ -450,7 +464,9 @@ async function authenticatedFetch(url, options = {}) {
       // Asegurarse de que las opciones estén correctamente formateadas
       const fetchOptions = {
         ...options,
-        headers: options.headers || {}
+        headers: options.headers || {},
+        // Preserve credentials setting
+        credentials: options.credentials || 'include'
       };
       
       // Verificar si el body es FormData ANTES de agregar Content-Type
@@ -516,10 +532,19 @@ async function authenticatedFetch(url, options = {}) {
       return response;
     }
     
-    // Para peticiones que no son a la API, usar fetch normal
-    return originalFetch(url, options);
+    // Para peticiones que no son a la API o son al endpoint de refresh, usar fetch normal
+    // Asegurarse de que las opciones incluyan credentials para CORS
+    const finalOptions = {
+      ...options,
+      credentials: options.credentials || 'include'
+    };
+    return originalFetch(url, finalOptions);
   };
 })();
+
+// Exponer originalFetch globalmente para que pueda ser usado por refreshJWTToken
+window.originalFetch = originalFetchForExport;
+window.originalNativeFetch = originalNativeFetch;
 
 // Exponer funciones globalmente por si se necesitan en otros scripts
 window.refreshJWTToken = refreshJWTToken;

@@ -69,12 +69,14 @@ async function changePage(page) {
         }
         
         try {
-            // Determine correct page size - use 6 for admin regional and superadmin, otherwise use server size or default
+            // Determine correct page size - use 6 for admin regional, superadmin, and warehouse, otherwise use server size or default
             const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
                                    (window.location.pathname && window.location.pathname.includes('/admin_regional'));
             const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                                 (window.location.pathname && window.location.pathname.includes('/superadmin'));
-            const pageSize = (isAdminRegional || isSuperAdmin) ? 6 : (serverPagination.size || data.serverPageSize || 50);
+            const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') || 
+                               (window.location.pathname && window.location.pathname.includes('/warehouse'));
+            const pageSize = (isAdminRegional || isSuperAdmin || isWarehouse) ? 6 : (serverPagination.size || data.serverPageSize || 50);
             
             // Load inventories for the requested page
             await loadInventories({ page: apiPage, size: pageSize });

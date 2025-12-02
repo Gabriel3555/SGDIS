@@ -1,14 +1,13 @@
 // Cancellations API Functions
 
 /**
- * Fetches all cancellations (for SUPERADMIN)
- * Note: This assumes there's a GET endpoint at /api/v1/cancellations
- * If it doesn't exist, you'll need to add it to the backend
+ * Fetches all cancellations (for SUPERADMIN) or by institution (for WAREHOUSE)
  * @param {number} page - Page number (0-indexed)
  * @param {number} size - Page size
+ * @param {string} userRole - User role (SUPERADMIN or WAREHOUSE)
  * @returns {Promise<Object>} Page object with cancellations
  */
-async function fetchAllCancellations(page = 0, size = 10) {
+async function fetchAllCancellations(page = 0, size = 10, userRole = 'SUPERADMIN') {
     try {
         const token = localStorage.getItem("jwt");
         const headers = {
@@ -18,13 +17,17 @@ async function fetchAllCancellations(page = 0, size = 10) {
             headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch(
-            `/api/v1/cancellations?page=${page}&size=${size}`,
-            {
-                method: "GET",
-                headers: headers,
-            }
-        );
+        // Use different endpoint for warehouse
+        const endpoint = (userRole === 'WAREHOUSE' || userRole === 'warehouse') 
+            ? `/api/v1/cancellations/my-institution?page=${page}&size=${size}`
+            : `/api/v1/cancellations?page=${page}&size=${size}`;
+
+        console.log('Fetching cancellations with role:', userRole, 'from endpoint:', endpoint);
+
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: headers,
+        });
 
         if (!response.ok) {
             if (response.status === 404 || response.status === 500) {

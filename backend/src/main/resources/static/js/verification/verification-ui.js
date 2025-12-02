@@ -20,7 +20,7 @@ function updateUserInfoDisplay(userData) {
             'ADMIN_INSTITUTIONAL': 'Admin Institucional',
             'ADMIN_INSTITUTION': 'Admin Institucional',
             'ADMIN_REGIONAL': 'Admin Regional',
-            'WAREHOUSE': 'Almacén',
+            'WAREHOUSE': 'Encargado de Almacén',
             'USER': 'Usuario'
         }[userData.role] || userData.role || 'Usuario';
         headerUserRole.textContent = roleText;

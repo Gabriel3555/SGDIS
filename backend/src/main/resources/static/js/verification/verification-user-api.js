@@ -194,6 +194,7 @@ async function getLatestVerifications(inventoryId) {
         };
 
         const response = await fetch(`/api/v1/verifications/inventories/${inventoryId}/verifications/latest`, {
+            credentials: 'include',
             method: 'GET',
             headers: headers,
             credentials: 'same-origin'
