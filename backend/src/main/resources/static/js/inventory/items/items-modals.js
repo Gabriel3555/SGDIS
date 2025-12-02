@@ -36,12 +36,43 @@ async function loadItemsData() {
     }
   } catch (error) {
     console.error("Error loading items:", error);
+    
+    // Determine error message
+    let errorMessage = "No se pudieron cargar los items del inventario";
+    let errorTitle = "Error";
+    
+    if (error.status === 500) {
+      errorTitle = "Error del Servidor";
+      errorMessage = "El servidor encontró un error al procesar la solicitud. Por favor, contacta al administrador del sistema.";
+    } else if (error.status === 404) {
+      errorTitle = "No Encontrado";
+      errorMessage = "No se pudo encontrar el inventario solicitado.";
+    } else if (error.status === 403) {
+      errorTitle = "Sin Permisos";
+      errorMessage = "No tienes permisos para ver los items de este inventario.";
+    } else if (error.status === 401) {
+      errorTitle = "Sesión Expirada";
+      errorMessage = "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.";
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
     if (container) {
       container.innerHTML = `
                 <div class="text-center py-12">
                     <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
-                    <p class="text-red-600">Error al cargar los items</p>
+                    <p class="text-red-600 dark:text-red-400 font-semibold text-lg mb-2">${errorTitle}</p>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">${errorMessage}</p>
+                    ${error.status === 500 ? `
+                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-4 max-w-md mx-auto">
+                        <p class="text-sm text-yellow-800 dark:text-yellow-300">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Si el problema persiste, verifica los logs del servidor o contacta al administrador.
+                        </p>
+                    </div>
+                    ` : ''}
                     <button onclick="loadItemsData()" class="mt-4 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                        <i class="fas fa-redo mr-2"></i>
                         Reintentar
                     </button>
                 </div>
@@ -49,8 +80,8 @@ async function loadItemsData() {
     }
     if (window.showErrorToast) {
       window.showErrorToast(
-        "Error",
-        "No se pudieron cargar los items del inventario"
+        errorTitle,
+        errorMessage
       );
     }
   }

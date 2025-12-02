@@ -196,65 +196,45 @@ async function populateEditItemForm() {
         // Fetch complete item data from API
         let item = null;
         
-        // NOTE: The endpoint GET /api/v1/items/{id} is currently returning 500 error
-        // Using fallback method directly until backend is fixed
-        // Try to get item from API first (only if endpoint is working)
-        // Temporarily disabled to avoid 500 errors in console
-        /*
+        // Try to get item from API first (preferred method)
         if (window.getItemById) {
             try {
-                // Try with silent mode to avoid noisy error logs when fallback is available
-                item = await window.getItemById(window.itemsData.currentItemId, true);
+                item = await window.getItemById(window.itemsData.currentItemId, false);
+                console.debug('Item loaded from API endpoint GET /api/v1/items/{id}:', item);
+                console.debug('Item fields:', {
+                    itemId: item?.itemId || item?.id,
+                    irId: item?.irId,
+                    ivId: item?.ivId,
+                    productName: item?.productName,
+                    wareHouseDescription: item?.wareHouseDescription,
+                    licencePlateNumber: item?.licencePlateNumber,
+                    consecutiveNumber: item?.consecutiveNumber,
+                    skuDescription: item?.skuDescription,
+                    descriptionElement: item?.descriptionElement,
+                    brand: item?.brand,
+                    serial: item?.serial,
+                    model: item?.model,
+                    observations: item?.observations,
+                    acquisitionDate: item?.acquisitionDate,
+                    acquisitionValue: item?.acquisitionValue,
+                    status: item?.status
+                });
             } catch (apiError) {
                 // Silently handle error, we have fallback strategies
-                console.debug('Endpoint GET /api/v1/items/{id} not available, using fallback method');
+                console.debug('Endpoint GET /api/v1/items/{id} not available, using fallback method:', apiError.message);
                 item = null;
             }
         }
-        */
         
         // Use fallback method: try to find in current items list or fetch all items from inventory
-        // This method works reliably and avoids 500 errors
-        console.debug('Using fallback method to load item data');
-        console.debug(`Looking for item with ID: ${window.itemsData.currentItemId}`);
-        
-        // First try current items list
-        if (window.itemsData && window.itemsData.items) {
-            console.debug(`Searching in current items list (${window.itemsData.items.length} items)`);
-            item = window.itemsData.items.find(i => {
-                const matches = i.id === window.itemsData.currentItemId || 
-                               i.itemId === window.itemsData.currentItemId ||
-                               String(i.id) === String(window.itemsData.currentItemId) ||
-                               String(i.itemId) === String(window.itemsData.currentItemId);
-                return matches;
-            });
+        if (!item) {
+            console.debug('Using fallback method to load item data');
+            console.debug(`Looking for item with ID: ${window.itemsData.currentItemId}`);
             
-            if (item) {
-                console.debug('Item found in current items list');
-            } else {
-                console.debug('Item not found in current items list');
-            }
-        }
-        
-        // If not found, try to fetch all items from inventory and find the specific one
-        if (!item && window.itemsData && window.itemsData.currentInventoryId && window.fetchItemsByInventory) {
-            try {
-                console.debug(`Fetching all items from inventory ${window.itemsData.currentInventoryId}`);
-                // Fetch all items from inventory (with a large page size)
-                const response = await window.fetchItemsByInventory(
-                    window.itemsData.currentInventoryId,
-                    0,
-                    1000 // Large page size to get all items
-                );
-                
-                const allItems = response.content || response.items || response || [];
-                
-                // Ensure allItems is an array
-                const itemsArray = Array.isArray(allItems) ? allItems : [];
-                console.debug(`Fetched ${itemsArray.length} items from inventory`);
-                
-                item = itemsArray.find(i => {
-                    // Try different ID field names
+            // First try current items list
+            if (window.itemsData && window.itemsData.items) {
+                console.debug(`Searching in current items list (${window.itemsData.items.length} items)`);
+                item = window.itemsData.items.find(i => {
                     const matches = i.id === window.itemsData.currentItemId || 
                                    i.itemId === window.itemsData.currentItemId ||
                                    String(i.id) === String(window.itemsData.currentItemId) ||
@@ -263,12 +243,46 @@ async function populateEditItemForm() {
                 });
                 
                 if (item) {
-                    console.debug('Item found in inventory items list');
+                    console.debug('Item found in current items list');
                 } else {
-                    console.warn(`Item with ID ${window.itemsData.currentItemId} not found in ${itemsArray.length} items`);
+                    console.debug('Item not found in current items list');
                 }
-            } catch (fetchError) {
-                console.warn('Error fetching items from inventory:', fetchError);
+            }
+            
+            // If not found, try to fetch all items from inventory and find the specific one
+            if (!item && window.itemsData && window.itemsData.currentInventoryId && window.fetchItemsByInventory) {
+                try {
+                    console.debug(`Fetching all items from inventory ${window.itemsData.currentInventoryId}`);
+                    // Fetch all items from inventory (with a large page size)
+                    const response = await window.fetchItemsByInventory(
+                        window.itemsData.currentInventoryId,
+                        0,
+                        1000 // Large page size to get all items
+                    );
+                    
+                    const allItems = response.content || response.items || response || [];
+                    
+                    // Ensure allItems is an array
+                    const itemsArray = Array.isArray(allItems) ? allItems : [];
+                    console.debug(`Fetched ${itemsArray.length} items from inventory`);
+                    
+                    item = itemsArray.find(i => {
+                        // Try different ID field names
+                        const matches = i.id === window.itemsData.currentItemId || 
+                                       i.itemId === window.itemsData.currentItemId ||
+                                       String(i.id) === String(window.itemsData.currentItemId) ||
+                                       String(i.itemId) === String(window.itemsData.currentItemId);
+                        return matches;
+                    });
+                    
+                    if (item) {
+                        console.debug('Item found in inventory items list');
+                    } else {
+                        console.warn(`Item with ID ${window.itemsData.currentItemId} not found in ${itemsArray.length} items`);
+                    }
+                } catch (fetchError) {
+                    console.warn('Error fetching items from inventory:', fetchError);
+                }
             }
         }
         
@@ -283,17 +297,22 @@ async function populateEditItemForm() {
         }
         
         console.debug('Item found successfully:', item);
+        console.debug('Item complete structure:', JSON.stringify(item, null, 2));
         
         // Extract values from item, handling different possible structures
         // Use direct properties first, then fallback to attributes if needed
         // Helper function to escape HTML
         const escapeHtml = (text) => {
-            if (!text) return '';
+            if (text === null || text === undefined) return '';
             const div = document.createElement('div');
-            div.textContent = text;
+            div.textContent = String(text);
             return div.innerHTML;
         };
         
+        // Extract all fields according to the API schema
+        // itemId, irId, productName, wareHouseDescription, licencePlateNumber,
+        // consecutiveNumber, skuDescription, descriptionElement, brand, serial, model,
+        // observations, acquisitionDate, acquisitionValue, ivId, status
         const irId = escapeHtml(String(item.irId || ''));
         const ivId = escapeHtml(String(item.ivId || ''));
         const productName = escapeHtml(String(item.productName || ''));
@@ -316,8 +335,14 @@ async function populateEditItemForm() {
             }
         }
         
-        const acquisitionValue = item.acquisitionValue || '';
-        const status = item.status !== undefined ? item.status : true;
+        // Handle acquisitionValue - ensure it's a number
+        let acquisitionValue = '';
+        if (item.acquisitionValue !== null && item.acquisitionValue !== undefined) {
+            acquisitionValue = parseFloat(item.acquisitionValue) || '';
+        }
+        
+        // Handle status - default to true if not defined
+        const status = item.status !== undefined && item.status !== null ? item.status : true;
     
     form.innerHTML = `
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
