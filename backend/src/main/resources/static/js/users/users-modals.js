@@ -286,6 +286,20 @@ async function showViewUserModal(userId) {
                     </div>
                     ` : ''}
                 </div>
+                <div class="flex items-center justify-center gap-3 mt-6 pt-6 border-t border-gray-200">
+                    <button onclick="showUserLoansModal('${user.id}')" class="p-3 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
+                        <i class="fas fa-hand-holding"></i>
+                    </button>
+                    <button onclick="showUserInventoriesModal('${user.id}', 'owner')" class="p-3 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Inventarios como Owner">
+                        <i class="fas fa-crown"></i>
+                    </button>
+                    <button onclick="showUserInventoriesModal('${user.id}', 'signatory')" class="p-3 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Inventarios como Signatory">
+                        <i class="fas fa-signature"></i>
+                    </button>
+                    <button onclick="showUserInventoriesModal('${user.id}', 'manager')" class="p-3 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors" title="Inventarios como Manager">
+                        <i class="fas fa-user-cog"></i>
+                    </button>
+                </div>
             `;
         }
 
