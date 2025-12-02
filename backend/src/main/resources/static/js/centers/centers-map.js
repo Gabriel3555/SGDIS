@@ -6,6 +6,9 @@ let regionalsData = [];
 let markersLayer;
 let regionalsLayer;
 let colombiaBorderLayer;
+let isFullscreen = false;
+let selectedSuggestionIndex = -1;
+let currentSearchTimeout = null;
 
 // Coordenadas de Colombia (centro aproximado)
 const COLOMBIA_CENTER = [4.570868, -74.297333];
@@ -24,7 +27,7 @@ const createCustomIcon = (color, size = 'normal') => {
     
     return L.divIcon({
         html: `
-            <svg width="${iconSize[0]}" height="${iconSize[1]}" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+            <svg width="${iconSize[0]}" height="${iconSize[1]}" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg" class="marker-animate-in">
                 <path d="M12.5 0C5.6 0 0 5.6 0 12.5c0 8.4 12.5 28.5 12.5 28.5S25 20.9 25 12.5C25 5.6 19.4 0 12.5 0z" 
                       fill="${color}" stroke="#fff" stroke-width="1.5"/>
                 <circle cx="12.5" cy="12.5" r="5" fill="#fff"/>
@@ -47,6 +50,9 @@ document.addEventListener('DOMContentLoaded', function() {
     loadMapData();
     loadCurrentUserInfo();
     setupFilters();
+    setupFloatingControls();
+    setupKeyboardShortcuts();
+    setupSearchSuggestions();
 });
 
 async function loadCurrentUserInfo() {
@@ -127,6 +133,23 @@ function initMap() {
 
     // Añadir leyenda
     addLegend();
+    
+    // Update location indicator on map move
+    map.on('moveend', () => {
+        const center = map.getCenter();
+        updateLocationIndicator(center.lat, center.lng);
+    });
+    
+    // Handle popup open for smooth experience
+    map.on('popupopen', (e) => {
+        const popup = e.popup;
+        const marker = popup._source;
+        if (marker) {
+            const latlng = marker.getLatLng();
+            // Smooth pan to center popup
+            map.panTo(latlng, { animate: true, duration: 0.5 });
+        }
+    });
 }
 
 // Función para agregar el contorno de Colombia
@@ -211,6 +234,8 @@ function addLegend() {
 }
 
 async function loadMapData() {
+    showLoadingOverlay();
+    
     try {
         const token = localStorage.getItem('jwt');
         
@@ -242,11 +267,14 @@ async function loadMapData() {
             updateStats();
             populateRegionalFilter();
             renderMarkers();
+            hideLoadingOverlay();
         } else {
+            hideLoadingOverlay();
             showError('Error al cargar los datos del mapa');
         }
     } catch (error) {
         console.error('Error loading map data:', error);
+        hideLoadingOverlay();
         showError('Error al cargar los datos del mapa: ' + error.message);
     }
 }
@@ -259,21 +287,53 @@ function renderMarkers(filteredCenters = null, filteredRegionals = null) {
     const centersToRender = filteredCenters || centersData;
     const regionalsToRender = filteredRegionals || regionalsData;
 
-    // Añadir marcadores de regionales
-    regionalsToRender.forEach(regional => {
+    // Añadir marcadores de regionales con animación escalonada
+    regionalsToRender.forEach((regional, index) => {
         if (regional.latitude && regional.longitude) {
-            const marker = L.marker([regional.latitude, regional.longitude], { icon: regionalIcon })
-                .bindPopup(createRegionalPopup(regional));
-            regionalsLayer.addLayer(marker);
+            setTimeout(() => {
+                const marker = L.marker([regional.latitude, regional.longitude], { 
+                    icon: regionalIcon,
+                    riseOnHover: true
+                })
+                .bindPopup(createRegionalPopup(regional))
+                .bindTooltip(regional.name, {
+                    direction: 'top',
+                    offset: [0, -45],
+                    className: 'custom-tooltip'
+                });
+                
+                // Click en regional muestra sus centros
+                marker.on('click', () => {
+                    const relatedCenters = centersData.filter(c => 
+                        c.regionalId && c.regionalId.toString() === regional.id.toString()
+                    );
+                    if (relatedCenters.length > 0) {
+                        updateFilterBadge(relatedCenters.length);
+                    }
+                });
+                
+                regionalsLayer.addLayer(marker);
+            }, index * 30); // Stagger animation
         }
     });
 
-    // Añadir marcadores de centros
-    centersToRender.forEach(center => {
+    // Añadir marcadores de centros con animación escalonada
+    centersToRender.forEach((center, index) => {
         if (center.latitude && center.longitude) {
-            const marker = L.marker([center.latitude, center.longitude], { icon: centerIcon })
-                .bindPopup(createCenterPopup(center));
-            markersLayer.addLayer(marker);
+            setTimeout(() => {
+                const marker = L.marker([center.latitude, center.longitude], { 
+                    icon: centerIcon,
+                    riseOnHover: true
+                })
+                .bindPopup(createCenterPopup(center))
+                .bindTooltip(center.name, {
+                    direction: 'top',
+                    offset: [0, -38],
+                    className: 'custom-tooltip'
+                });
+                
+                markersLayer.addLayer(marker);
+            }, Math.min(index * 15, 500)); // Stagger animation, max 500ms delay
         }
     });
 
@@ -281,8 +341,52 @@ function renderMarkers(filteredCenters = null, filteredRegionals = null) {
     map.addLayer(regionalsLayer);
     map.addLayer(markersLayer);
 
-    // Actualizar contador de visibles
-    document.getElementById('visibleCenters').textContent = centersToRender.length;
+    // Actualizar contador de visibles con animación
+    animateNumber('visibleCenters', centersToRender.length);
+}
+
+// Animate number changes
+function animateNumber(elementId, targetValue) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const currentValue = parseInt(element.textContent) || 0;
+    const difference = targetValue - currentValue;
+    const duration = 500;
+    const steps = 20;
+    const stepValue = difference / steps;
+    const stepDuration = duration / steps;
+    
+    let current = currentValue;
+    let step = 0;
+    
+    const interval = setInterval(() => {
+        step++;
+        current += stepValue;
+        element.textContent = Math.round(current);
+        
+        if (step >= steps) {
+            element.textContent = targetValue;
+            clearInterval(interval);
+        }
+    }, stepDuration);
+}
+
+// Update filter badge
+function updateFilterBadge(count) {
+    // Remove existing badge
+    const existingBadge = document.querySelector('.filter-active-badge');
+    if (existingBadge) existingBadge.remove();
+    
+    if (count > 0) {
+        const filterLabel = document.querySelector('.filter-card label');
+        if (filterLabel) {
+            const badge = document.createElement('span');
+            badge.className = 'filter-active-badge';
+            badge.textContent = `${count} centros`;
+            filterLabel.appendChild(badge);
+        }
+    }
 }
 
 function createCenterPopup(center) {
@@ -373,9 +477,9 @@ function createRegionalPopup(regional) {
 }
 
 function updateStats() {
-    document.getElementById('totalCenters').textContent = centersData.length;
-    document.getElementById('totalRegionals').textContent = regionalsData.length;
-    document.getElementById('visibleCenters').textContent = centersData.length;
+    animateNumber('totalCenters', centersData.length);
+    animateNumber('totalRegionals', regionalsData.length);
+    animateNumber('visibleCenters', centersData.length);
 }
 
 function populateRegionalFilter() {
@@ -410,6 +514,8 @@ function applyFilters() {
 
     let filteredCenters = [...centersData];
     let filteredRegionals = [...regionalsData];
+    
+    const hasFilters = selectedRegionalId || searchTerm;
 
     // Filtrar por regional
     if (selectedRegionalId) {
@@ -432,8 +538,17 @@ function applyFilters() {
     }
 
     renderMarkers(filteredCenters, filteredRegionals);
+    
+    // Update filter badge
+    const existingBadge = document.querySelector('.filter-active-badge');
+    if (existingBadge) existingBadge.remove();
+    
+    if (hasFilters && filteredCenters.length < centersData.length) {
+        updateFilterBadge(filteredCenters.length);
+        showInfo(`Mostrando ${filteredCenters.length} de ${centersData.length} centros`);
+    }
 
-    // Ajustar el mapa para mostrar todos los marcadores filtrados
+    // Ajustar el mapa para mostrar todos los marcadores filtrados con animación suave
     if (filteredCenters.length > 0 || filteredRegionals.length > 0) {
         const bounds = L.latLngBounds();
         filteredCenters.forEach(c => {
@@ -447,7 +562,10 @@ function applyFilters() {
             }
         });
         if (bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [50, 50] });
+            map.flyToBounds(bounds, { 
+                padding: [50, 50],
+                duration: 0.8
+            });
         }
     }
 }
@@ -455,12 +573,30 @@ function applyFilters() {
 function clearFilters() {
     document.getElementById('regionalFilter').value = '';
     document.getElementById('searchInput').value = '';
-    applyFilters();
+    
+    // Remove filter badge
+    const existingBadge = document.querySelector('.filter-active-badge');
+    if (existingBadge) existingBadge.remove();
+    
+    // Hide suggestions
+    hideSuggestions();
+    
+    renderMarkers();
     centerMapOnColombia();
+    
+    showSuccess('Filtros limpiados');
 }
 
 function centerMapOnColombia() {
-    map.setView(COLOMBIA_CENTER, COLOMBIA_ZOOM);
+    map.flyTo(COLOMBIA_CENTER, COLOMBIA_ZOOM, {
+        duration: 1
+    });
+    
+    // Update location indicator
+    const indicator = document.getElementById('locationText');
+    if (indicator) {
+        indicator.textContent = 'Colombia';
+    }
 }
 
 function reloadMap() {
@@ -476,23 +612,455 @@ function reloadMap() {
     });
 }
 
-function showSuccess(message) {
+// ============================================
+// TOAST NOTIFICATIONS (Improved)
+// ============================================
+
+function showToast(message, type = 'success', duration = 3000) {
+    // Remove existing toasts
+    document.querySelectorAll('.toast-notification').forEach(t => t.remove());
+    
     const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-[10000]';
-    toast.innerHTML = `<i class="fas fa-check-circle mr-2"></i>${message}`;
+    toast.className = `toast-notification ${type}`;
+    
+    const icons = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+    };
+    
+    toast.innerHTML = `
+        <i class="fas ${icons[type]} toast-icon"></i>
+        <span>${message}</span>
+        <i class="fas fa-times toast-close" onclick="this.parentElement.remove()"></i>
+    `;
+    
     document.body.appendChild(toast);
+    
     setTimeout(() => {
-        toast.remove();
-    }, 3000);
+        toast.classList.add('hiding');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+function showSuccess(message) {
+    showToast(message, 'success');
 }
 
 function showError(message) {
-    const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-[10000]';
-    toast.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
-    document.body.appendChild(toast);
+    showToast(message, 'error');
+}
+
+function showInfo(message) {
+    showToast(message, 'info');
+}
+
+// ============================================
+// LOADING STATE
+// ============================================
+
+function showLoadingOverlay() {
+    const overlay = document.getElementById('mapLoadingOverlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('mapLoadingOverlay');
+    if (overlay) {
+        // Small delay for smoother UX
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 500);
+    }
+}
+
+// ============================================
+// FLOATING CONTROLS
+// ============================================
+
+function setupFloatingControls() {
+    // Fullscreen button
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    if (btnFullscreen) {
+        btnFullscreen.addEventListener('click', toggleFullscreen);
+    }
+    
+    // My location button
+    const btnMyLocation = document.getElementById('btnMyLocation');
+    if (btnMyLocation) {
+        btnMyLocation.addEventListener('click', goToMyLocation);
+    }
+    
+    // Show all button
+    const btnShowAll = document.getElementById('btnShowAll');
+    if (btnShowAll) {
+        btnShowAll.addEventListener('click', showAllMarkers);
+    }
+    
+    // Keyboard help button
+    const btnKeyboardHelp = document.getElementById('btnKeyboardHelp');
+    if (btnKeyboardHelp) {
+        btnKeyboardHelp.addEventListener('click', toggleKeyboardHints);
+    }
+}
+
+function toggleFullscreen() {
+    const mapWrapper = document.getElementById('mapWrapper');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    
+    isFullscreen = !isFullscreen;
+    
+    if (isFullscreen) {
+        mapWrapper.classList.add('fullscreen');
+        btnFullscreen.innerHTML = '<i class="fas fa-compress"></i>';
+        btnFullscreen.classList.add('active');
+        showInfo('Presiona Esc para salir de pantalla completa');
+    } else {
+        mapWrapper.classList.remove('fullscreen');
+        btnFullscreen.innerHTML = '<i class="fas fa-expand"></i>';
+        btnFullscreen.classList.remove('active');
+    }
+    
+    // Refresh map size
     setTimeout(() => {
-        toast.remove();
-    }, 3000);
+        map.invalidateSize();
+    }, 300);
+}
+
+function goToMyLocation() {
+    if (!navigator.geolocation) {
+        showError('Tu navegador no soporta geolocalización');
+        return;
+    }
+    
+    showInfo('Obteniendo tu ubicación...');
+    
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const { latitude, longitude } = position.coords;
+            map.flyTo([latitude, longitude], 12, {
+                duration: 1.5
+            });
+            
+            // Add temporary marker
+            const userMarker = L.marker([latitude, longitude], {
+                icon: L.divIcon({
+                    html: `
+                        <div style="
+                            width: 20px;
+                            height: 20px;
+                            background: #3b82f6;
+                            border: 3px solid white;
+                            border-radius: 50%;
+                            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3);
+                            animation: pulse-blue 2s infinite;
+                        "></div>
+                    `,
+                    className: '',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                })
+            }).addTo(map);
+            
+            userMarker.bindPopup('<strong>Tu ubicación</strong>').openPopup();
+            
+            // Remove after 10 seconds
+            setTimeout(() => {
+                map.removeLayer(userMarker);
+            }, 10000);
+            
+            showSuccess('Ubicación encontrada');
+            updateLocationIndicator(latitude, longitude);
+        },
+        (error) => {
+            showError('No se pudo obtener tu ubicación');
+        },
+        { enableHighAccuracy: true }
+    );
+}
+
+function showAllMarkers() {
+    if (centersData.length === 0 && regionalsData.length === 0) {
+        showInfo('No hay marcadores para mostrar');
+        return;
+    }
+    
+    const bounds = L.latLngBounds();
+    
+    centersData.forEach(c => {
+        if (c.latitude && c.longitude) {
+            bounds.extend([c.latitude, c.longitude]);
+        }
+    });
+    
+    regionalsData.forEach(r => {
+        if (r.latitude && r.longitude) {
+            bounds.extend([r.latitude, r.longitude]);
+        }
+    });
+    
+    if (bounds.isValid()) {
+        map.flyToBounds(bounds, {
+            padding: [50, 50],
+            duration: 1
+        });
+    }
+}
+
+function toggleKeyboardHints() {
+    const hints = document.getElementById('keyboardHints');
+    const btn = document.getElementById('btnKeyboardHelp');
+    
+    if (hints) {
+        hints.classList.toggle('visible');
+        btn.classList.toggle('active');
+        
+        // Auto-hide after 5 seconds
+        if (hints.classList.contains('visible')) {
+            setTimeout(() => {
+                hints.classList.remove('visible');
+                btn.classList.remove('active');
+            }, 5000);
+        }
+    }
+}
+
+// ============================================
+// KEYBOARD SHORTCUTS
+// ============================================
+
+function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+        // Don't trigger when typing in inputs
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+        }
+        
+        switch(e.key.toLowerCase()) {
+            case 'f':
+                e.preventDefault();
+                toggleFullscreen();
+                break;
+            case 'l':
+                e.preventDefault();
+                goToMyLocation();
+                break;
+            case 'a':
+                e.preventDefault();
+                showAllMarkers();
+                break;
+            case 'r':
+                e.preventDefault();
+                reloadMap();
+                break;
+            case 'escape':
+                if (isFullscreen) {
+                    toggleFullscreen();
+                }
+                break;
+            case '?':
+                e.preventDefault();
+                toggleKeyboardHints();
+                break;
+        }
+    });
+}
+
+// ============================================
+// SEARCH SUGGESTIONS
+// ============================================
+
+function setupSearchSuggestions() {
+    const searchInput = document.getElementById('searchInput');
+    const suggestionsContainer = document.getElementById('searchSuggestions');
+    
+    if (!searchInput || !suggestionsContainer) return;
+    
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        
+        if (currentSearchTimeout) {
+            clearTimeout(currentSearchTimeout);
+        }
+        
+        if (query.length < 2) {
+            hideSuggestions();
+            return;
+        }
+        
+        currentSearchTimeout = setTimeout(() => {
+            showSearchSuggestions(query);
+        }, 150);
+    });
+    
+    searchInput.addEventListener('keydown', (e) => {
+        const suggestions = suggestionsContainer.querySelectorAll('.suggestion-item');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, suggestions.length - 1);
+            updateSelectedSuggestion(suggestions);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+            updateSelectedSuggestion(suggestions);
+        } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+            e.preventDefault();
+            suggestions[selectedSuggestionIndex].click();
+        } else if (e.key === 'Escape') {
+            hideSuggestions();
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+            hideSuggestions();
+        }
+    });
+    
+    searchInput.addEventListener('focus', () => {
+        if (searchInput.value.trim().length >= 2) {
+            showSearchSuggestions(searchInput.value.trim().toLowerCase());
+        }
+    });
+}
+
+function showSearchSuggestions(query) {
+    const container = document.getElementById('searchSuggestions');
+    if (!container) return;
+    
+    const matchingCenters = centersData.filter(c => 
+        (c.name && c.name.toLowerCase().includes(query)) ||
+        (c.codeInstitution && c.codeInstitution.toLowerCase().includes(query)) ||
+        (c.cityName && c.cityName.toLowerCase().includes(query))
+    ).slice(0, 5);
+    
+    const matchingRegionals = regionalsData.filter(r =>
+        (r.name && r.name.toLowerCase().includes(query))
+    ).slice(0, 3);
+    
+    if (matchingCenters.length === 0 && matchingRegionals.length === 0) {
+        container.innerHTML = `
+            <div class="suggestion-item" style="justify-content: center; color: #888;">
+                <i class="fas fa-search"></i>
+                <span>No se encontraron resultados</span>
+            </div>
+        `;
+        container.classList.add('visible');
+        return;
+    }
+    
+    let html = '';
+    
+    matchingRegionals.forEach((r, i) => {
+        html += `
+            <div class="suggestion-item" data-type="regional" data-id="${r.id}" data-lat="${r.latitude}" data-lng="${r.longitude}">
+                <i class="fas fa-map-marked-alt" style="color: ${SENA_GREEN};"></i>
+                <div class="suggestion-text">
+                    <div class="suggestion-name">${highlightMatch(r.name, query)}</div>
+                    <div class="suggestion-detail">Regional • ${r.departamentName || ''}</div>
+                </div>
+            </div>
+        `;
+    });
+    
+    matchingCenters.forEach((c, i) => {
+        html += `
+            <div class="suggestion-item" data-type="center" data-id="${c.id}" data-lat="${c.latitude}" data-lng="${c.longitude}">
+                <i class="fas fa-building" style="color: #0078d4;"></i>
+                <div class="suggestion-text">
+                    <div class="suggestion-name">${highlightMatch(c.name, query)}</div>
+                    <div class="suggestion-detail">${c.regionalName || ''} • ${c.cityName || ''}</div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    container.classList.add('visible');
+    selectedSuggestionIndex = -1;
+    
+    // Add click listeners
+    container.querySelectorAll('.suggestion-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const lat = parseFloat(item.dataset.lat);
+            const lng = parseFloat(item.dataset.lng);
+            const type = item.dataset.type;
+            
+            if (!isNaN(lat) && !isNaN(lng)) {
+                map.flyTo([lat, lng], 15, { duration: 1 });
+                
+                // Find and open the popup
+                setTimeout(() => {
+                    const layers = type === 'regional' ? regionalsLayer : markersLayer;
+                    layers.eachLayer(layer => {
+                        const latlng = layer.getLatLng();
+                        if (Math.abs(latlng.lat - lat) < 0.0001 && Math.abs(latlng.lng - lng) < 0.0001) {
+                            layer.openPopup();
+                        }
+                    });
+                }, 1200);
+                
+                updateLocationIndicator(lat, lng);
+            }
+            
+            hideSuggestions();
+            document.getElementById('searchInput').value = item.querySelector('.suggestion-name').textContent;
+        });
+    });
+}
+
+function highlightMatch(text, query) {
+    const regex = new RegExp(`(${query})`, 'gi');
+    return text.replace(regex, '<strong style="color: ' + SENA_GREEN + ';">$1</strong>');
+}
+
+function updateSelectedSuggestion(suggestions) {
+    suggestions.forEach((s, i) => {
+        s.classList.toggle('active', i === selectedSuggestionIndex);
+    });
+}
+
+function hideSuggestions() {
+    const container = document.getElementById('searchSuggestions');
+    if (container) {
+        container.classList.remove('visible');
+        selectedSuggestionIndex = -1;
+    }
+}
+
+// ============================================
+// LOCATION INDICATOR
+// ============================================
+
+function updateLocationIndicator(lat, lng) {
+    const indicator = document.getElementById('locationText');
+    if (!indicator) return;
+    
+    // Try to find nearest center or regional
+    let nearest = null;
+    let minDistance = Infinity;
+    
+    [...centersData, ...regionalsData].forEach(item => {
+        if (item.latitude && item.longitude) {
+            const distance = Math.sqrt(
+                Math.pow(item.latitude - lat, 2) + 
+                Math.pow(item.longitude - lng, 2)
+            );
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearest = item;
+            }
+        }
+    });
+    
+    if (nearest && minDistance < 0.5) {
+        indicator.textContent = nearest.cityName || nearest.departamentName || 'Colombia';
+    } else {
+        indicator.textContent = 'Colombia';
+    }
 }
 
