@@ -46,6 +46,11 @@ async function setRegionalFilter(regionalId) {
     verificationData.selectedInstitution = ''; // Reset institution when regional changes
     verificationData.selectedInventory = 'all'; // Reset inventory filter
     
+    // Clear institution custom select if available
+    if (window.verificationInstitutionCustomSelect) {
+        window.verificationInstitutionCustomSelect.clear();
+    }
+    
     // Load institutions for selected regional
     if (regionalId) {
         if (window.loadInstitutionsByRegional) {
@@ -63,6 +68,9 @@ async function setRegionalFilter(regionalId) {
     // Update filters UI
     if (typeof updateFilters === 'function') {
         updateFilters();
+    } else if (typeof populateVerificationCustomSelects === 'function') {
+        // If custom selects are already initialized, just populate them
+        populateVerificationCustomSelects();
     }
     
     // Reload verifications
@@ -91,6 +99,9 @@ async function setInstitutionFilter(institutionId) {
     // Update filters UI
     if (typeof updateFilters === 'function') {
         updateFilters();
+    } else if (typeof populateVerificationCustomSelects === 'function') {
+        // If custom selects are already initialized, just populate them
+        populateVerificationCustomSelects();
     }
     
     // Reload verifications

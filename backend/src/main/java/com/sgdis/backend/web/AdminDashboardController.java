@@ -483,6 +483,34 @@ public class AdminDashboardController {
         }
     }
 
+    @GetMapping({"/admin_institution/cancellations", "/admininstitution/cancellations"})
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminInstitutionCancellations() throws IOException {
+        Resource resource = new ClassPathResource("static/views/cancellations/cancellations-admin-institution.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/admin_regional/cancellations")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @ResponseBody
+    public ResponseEntity<Resource> adminRegionalCancellations() throws IOException {
+        Resource resource = new ClassPathResource("static/views/cancellations/cancellations-admin-regional.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @GetMapping("/admin_regional/settings")
     @PreAuthorize("hasRole('ADMIN_REGIONAL')")
     @ResponseBody
