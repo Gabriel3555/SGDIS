@@ -14,53 +14,74 @@ document.addEventListener('DOMContentLoaded', function() {
 // Setup event listeners
 function setupEventListeners() {
     // Import dropdowns
-    document.getElementById('importRegionalSelect').addEventListener('change', function() {
-        const regionalId = this.value;
-        loadInstitutionsForImport(regionalId);
-        resetImportDropdowns(['institution', 'inventory']);
-        updateImportButtonState();
-    });
+    const importRegionalSelect = document.getElementById('importRegionalSelect');
+    if (importRegionalSelect) {
+        importRegionalSelect.addEventListener('change', function() {
+            const regionalId = this.value;
+            loadInstitutionsForImport(regionalId);
+            resetImportDropdowns(['institution', 'inventory']);
+            updateImportButtonState();
+        });
+    }
 
-    document.getElementById('importInstitutionSelect').addEventListener('change', function() {
-        const institutionId = this.value;
-        loadInventoriesForImport(institutionId);
-        resetImportDropdowns(['inventory']);
-        updateImportButtonState();
-    });
+    const importInstitutionSelect = document.getElementById('importInstitutionSelect');
+    if (importInstitutionSelect) {
+        importInstitutionSelect.addEventListener('change', function() {
+            const institutionId = this.value;
+            loadInventoriesForImport(institutionId);
+            resetImportDropdowns(['inventory']);
+            updateImportButtonState();
+        });
+    }
 
-    document.getElementById('importInventorySelect').addEventListener('change', function() {
-        updateImportButtonState();
-    });
+    const importInventorySelect = document.getElementById('importInventorySelect');
+    if (importInventorySelect) {
+        importInventorySelect.addEventListener('change', function() {
+            updateImportButtonState();
+        });
+    }
 
     // Export dropdowns
-    document.getElementById('exportRegionalSelect').addEventListener('change', function() {
-        const regionalId = this.value;
-        loadInstitutionsForExport(regionalId);
-        resetExportDropdowns(['institution', 'inventory']);
-        updateExportButtonState();
-    });
+    const exportRegionalSelect = document.getElementById('exportRegionalSelect');
+    if (exportRegionalSelect) {
+        exportRegionalSelect.addEventListener('change', function() {
+            const regionalId = this.value;
+            loadInstitutionsForExport(regionalId);
+            resetExportDropdowns(['institution', 'inventory']);
+            updateExportButtonState();
+        });
+    }
 
-    document.getElementById('exportInstitutionSelect').addEventListener('change', function() {
-        const institutionId = this.value;
-        loadInventoriesForExport(institutionId);
-        resetExportDropdowns(['inventory']);
-        updateExportButtonState();
-    });
+    const exportInstitutionSelect = document.getElementById('exportInstitutionSelect');
+    if (exportInstitutionSelect) {
+        exportInstitutionSelect.addEventListener('change', function() {
+            const institutionId = this.value;
+            loadInventoriesForExport(institutionId);
+            resetExportDropdowns(['inventory']);
+            updateExportButtonState();
+        });
+    }
 
-    document.getElementById('exportInventorySelect').addEventListener('change', function() {
-        updateExportButtonState();
-        const inventoryId = this.value;
-        if (inventoryId) {
-            loadExportPreview(inventoryId);
-        } else {
-            hideExportPreview();
-        }
-    });
+    const exportInventorySelect = document.getElementById('exportInventorySelect');
+    if (exportInventorySelect) {
+        exportInventorySelect.addEventListener('change', function() {
+            updateExportButtonState();
+            const inventoryId = this.value;
+            if (inventoryId) {
+                loadExportPreview(inventoryId);
+            } else {
+                hideExportPreview();
+            }
+        });
+    }
 
     // File input
-    document.getElementById('importFileInput').addEventListener('change', function(e) {
-        handleFileSelection(e.target.files[0]);
-    });
+    const importFileInput = document.getElementById('importFileInput');
+    if (importFileInput) {
+        importFileInput.addEventListener('change', function(e) {
+            handleFileSelection(e.target.files[0]);
+        });
+    }
 
     // Drag and drop support
     const fileUploadArea = document.getElementById('fileUploadArea');
@@ -141,10 +162,16 @@ function setupEventListeners() {
     }
 
     // Import button
-    document.getElementById('importButton').addEventListener('click', handleImport);
+    const importButton = document.getElementById('importButton');
+    if (importButton) {
+        importButton.addEventListener('click', handleImport);
+    }
 
     // Export button
-    document.getElementById('exportButton').addEventListener('click', handleExport);
+    const exportButton = document.getElementById('exportButton');
+    if (exportButton) {
+        exportButton.addEventListener('click', handleExport);
+    }
 }
 
 // Setup mode toggle (Import/Export switch)
@@ -209,6 +236,11 @@ async function loadRegionals() {
 function populateRegionalDropdowns() {
     const importSelect = document.getElementById('importRegionalSelect');
     const exportSelect = document.getElementById('exportRegionalSelect');
+
+    if (!importSelect || !exportSelect) {
+        // Elements don't exist (e.g., on admin-institution page)
+        return;
+    }
 
     // Clear existing options (except first)
     importSelect.innerHTML = '<option value="">Seleccionar regional...</option>';
