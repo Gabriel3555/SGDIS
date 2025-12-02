@@ -14,16 +14,17 @@ async function loadCancellationsData() {
     try {
         await loadCurrentUserInfo();
         await loadCancellations();
+        cancellationsData.isLoading = false;
+        hideLoadingState();
         updateCancellationsUI();
     } catch (error) {
         console.error('Error loading cancellations data:', error);
+        cancellationsData.isLoading = false;
+        hideLoadingState();
         showErrorState('Error al cargar los datos de cancelaciones: ' + error.message);
         cancellationsData.cancellations = [];
         cancellationsData.filteredCancellations = [];
         updateCancellationsUI();
-    } finally {
-        cancellationsData.isLoading = false;
-        hideLoadingState();
     }
 }
 

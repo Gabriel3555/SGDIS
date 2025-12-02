@@ -2,6 +2,8 @@
 
 const askCancellationData = {
     selectedItems: [],
+    selectedItemsByPlate: [], // Items seleccionados por placa (con toda la info del item)
+    currentMode: 'inventory', // 'inventory' or 'plate'
     regionals: [],
     institutions: [],
     inventories: [],
@@ -9,15 +11,219 @@ const askCancellationData = {
 };
 
 /**
+ * Switch cancellation mode
+ */
+function switchCancellationMode(mode) {
+    askCancellationData.currentMode = mode;
+    
+    const inventoryModeContent = document.getElementById('inventoryModeContent');
+    const plateModeContent = document.getElementById('plateModeContent');
+    const modeInventoryBtn = document.getElementById('modeInventoryBtn');
+    const modePlateBtn = document.getElementById('modePlateBtn');
+    
+    if (mode === 'inventory') {
+        if (inventoryModeContent) inventoryModeContent.classList.remove('hidden');
+        if (plateModeContent) plateModeContent.classList.add('hidden');
+        if (modeInventoryBtn) {
+            modeInventoryBtn.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+            modeInventoryBtn.classList.add('bg-[#00AF00]', 'text-white');
+        }
+        if (modePlateBtn) {
+            modePlateBtn.classList.remove('bg-[#00AF00]', 'text-white');
+            modePlateBtn.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+        }
+    } else {
+        if (inventoryModeContent) inventoryModeContent.classList.add('hidden');
+        if (plateModeContent) plateModeContent.classList.remove('hidden');
+        if (modeInventoryBtn) {
+            modeInventoryBtn.classList.remove('bg-[#00AF00]', 'text-white');
+            modeInventoryBtn.classList.add('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+        }
+        if (modePlateBtn) {
+            modePlateBtn.classList.remove('bg-gray-200', 'dark:bg-gray-600', 'text-gray-700', 'dark:text-gray-300');
+            modePlateBtn.classList.add('bg-[#00AF00]', 'text-white');
+        }
+    }
+    
+    updateSelectedItemsDisplay();
+}
+
+/**
+ * Search item by plate and add to selection
+ */
+async function searchItemByPlate() {
+    const plateInput = document.getElementById('plateSearchInput');
+    if (!plateInput) return;
+    
+    const licencePlate = plateInput.value.trim();
+    if (!licencePlate) {
+        if (typeof showToast === 'function') {
+            showToast('Por favor ingrese un número de placa', 'error');
+        } else {
+            alert('Por favor ingrese un número de placa');
+        }
+        return;
+    }
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        
+        const response = await fetch(`/api/v1/items/licence-plate/${encodeURIComponent(licencePlate)}`, {
+            method: 'GET',
+            headers: headers
+        });
+        
+        if (response.ok) {
+            const item = await response.json();
+            const itemId = item.itemId || item.id;
+            
+            // Check if item is already selected
+            if (askCancellationData.selectedItems.includes(itemId)) {
+                if (typeof showToast === 'function') {
+                    showToast('Este item ya está seleccionado', 'warning');
+                } else {
+                    alert('Este item ya está seleccionado');
+                }
+                plateInput.value = '';
+                return;
+            }
+            
+            // Add item to selection
+            askCancellationData.selectedItems.push(itemId);
+            askCancellationData.selectedItemsByPlate.push(item);
+            
+            // Clear input
+            plateInput.value = '';
+            plateInput.focus();
+            
+            // Update display
+            updateSelectedItemsDisplay();
+            
+            if (typeof showToast === 'function') {
+                showToast('Item agregado correctamente', 'success');
+            }
+        } else if (response.status === 404) {
+            if (typeof showToast === 'function') {
+                showToast('No se encontró un item con esa placa', 'error');
+            } else {
+                alert('No se encontró un item con esa placa');
+            }
+        } else if (response.status === 401 || response.status === 403) {
+            const errorMsg = 'No estás autenticado. Por favor, inicia sesión nuevamente.';
+            if (typeof showToast === 'function') {
+                showToast(errorMsg, 'error');
+            } else {
+                alert(errorMsg);
+            }
+            // Optionally redirect to login
+            // window.location.href = '/login';
+        } else {
+            let errorMsg = 'Error al buscar el item';
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.message || errorData.error || errorMsg;
+            } catch (e) {
+                // If response is not JSON, use default message
+            }
+            throw new Error(errorMsg);
+        }
+    } catch (error) {
+        console.error('Error searching item by plate:', error);
+        if (typeof showToast === 'function') {
+            showToast('Error al buscar el item: ' + error.message, 'error');
+        } else {
+            alert('Error al buscar el item: ' + error.message);
+        }
+    }
+}
+
+/**
+ * Remove item from plate selection
+ */
+function removeItemFromPlateSelection(itemId) {
+    const index = askCancellationData.selectedItems.indexOf(itemId);
+    if (index > -1) {
+        askCancellationData.selectedItems.splice(index, 1);
+    }
+    
+    const plateIndex = askCancellationData.selectedItemsByPlate.findIndex(item => (item.itemId || item.id) === itemId);
+    if (plateIndex > -1) {
+        askCancellationData.selectedItemsByPlate.splice(plateIndex, 1);
+    }
+    
+    updateSelectedItemsDisplay();
+}
+
+/**
+ * Update selected items display for both modes
+ */
+function updateSelectedItemsDisplay() {
+    const count = askCancellationData.selectedItems.length;
+    const plateCountElement = document.getElementById('plateSelectedCount');
+    if (plateCountElement) {
+        plateCountElement.textContent = count;
+    }
+    
+    // Update plate mode display
+    const plateContainer = document.getElementById('plateSelectedItemsContainer');
+    if (plateContainer && askCancellationData.currentMode === 'plate') {
+        if (askCancellationData.selectedItemsByPlate.length === 0) {
+            plateContainer.innerHTML = '<p class="text-gray-500 dark:text-gray-400 text-sm text-center py-8">Busque items por placa para agregarlos a la lista</p>';
+        } else {
+            let html = '<div class="space-y-2">';
+            askCancellationData.selectedItemsByPlate.forEach(item => {
+                const itemId = item.itemId || item.id;
+                const itemName = item.productName || item.wareHouseDescription || `Item #${itemId}`;
+                const licencePlate = item.licencePlateNumber || 'N/A';
+                
+                html += `
+                    <div class="flex items-center gap-3 p-3 border-2 border-[#00AF00] bg-green-50 dark:bg-green-900/20 rounded-xl">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800 dark:text-gray-200">${itemName}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Placa: ${licencePlate}</div>
+                        </div>
+                        <button onclick="removeItemFromPlateSelection(${itemId})" 
+                                class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-medium transition-colors">
+                            <i class="fas fa-times"></i> Quitar
+                        </button>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            plateContainer.innerHTML = html;
+        }
+    }
+    
+    // Update inventory mode display if needed
+    if (askCancellationData.currentMode === 'inventory') {
+        populateItemsForCancellation();
+    }
+}
+
+/**
  * Open ask cancellation modal
  */
 function openAskCancellationModal() {
     // Reset form
     askCancellationData.selectedItems = [];
-    document.getElementById('askCancellationSelectedRegionalId').value = '';
-    document.getElementById('askCancellationSelectedInstitutionId').value = '';
-    document.getElementById('askCancellationSelectedInventoryId').value = '';
-    document.getElementById('askCancellationReason').value = '';
+    askCancellationData.selectedItemsByPlate = [];
+    askCancellationData.currentMode = 'inventory';
+    askCancellationData.regionals = [];
+    askCancellationData.institutions = [];
+    askCancellationData.inventories = [];
+    askCancellationData.items = [];
+    
+    const regionalIdInput = document.getElementById('askCancellationSelectedRegionalId');
+    const institutionIdInput = document.getElementById('askCancellationSelectedInstitutionId');
+    const inventoryIdInput = document.getElementById('askCancellationSelectedInventoryId');
+    const reasonTextarea = document.getElementById('askCancellationReason');
+    
+    if (regionalIdInput) regionalIdInput.value = '';
+    if (institutionIdInput) institutionIdInput.value = '';
+    if (inventoryIdInput) inventoryIdInput.value = '';
+    if (reasonTextarea) reasonTextarea.value = '';
     
     // Reset selects
     updateSelectText('askCancellationRegionalSelect', 'Seleccione una regional');
@@ -31,10 +237,24 @@ function openAskCancellationModal() {
     }
     
     // Show modal
-    document.getElementById('askCancellationModal').classList.remove('hidden');
+    const modal = document.getElementById('askCancellationModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
     
-    // Load regionals
-    loadRegionalsForCancellation();
+    // Reset mode to inventory
+    switchCancellationMode('inventory');
+    
+    // Clear plate search input
+    const plateInput = document.getElementById('plateSearchInput');
+    if (plateInput) {
+        plateInput.value = '';
+    }
+    
+    // Load regionals after a short delay to ensure DOM is ready
+    setTimeout(() => {
+        loadRegionalsForCancellation();
+    }, 100);
 }
 
 /**
@@ -74,14 +294,17 @@ async function loadRegionalsForCancellation() {
         if (response.ok) {
             const data = await response.json();
             askCancellationData.regionals = Array.isArray(data) ? data : [];
+            console.log('Regionals loaded:', askCancellationData.regionals.length);
             populateRegionalSelectForCancellation();
         } else {
-            console.error('Failed to load regionals');
+            console.error('Failed to load regionals:', response.status, response.statusText);
             askCancellationData.regionals = [];
+            populateRegionalSelectForCancellation();
         }
     } catch (error) {
         console.error('Error loading regionals:', error);
         askCancellationData.regionals = [];
+        populateRegionalSelectForCancellation();
     }
 }
 
@@ -90,10 +313,21 @@ async function loadRegionalsForCancellation() {
  */
 function populateRegionalSelectForCancellation() {
     const optionsContainer = document.getElementById('askCancellationRegionalOptions');
-    if (!optionsContainer) return;
+    if (!optionsContainer) {
+        console.warn('askCancellationRegionalOptions container not found');
+        return;
+    }
 
     // Clear existing options
     optionsContainer.innerHTML = '';
+
+    if (!askCancellationData.regionals || askCancellationData.regionals.length === 0) {
+        const noDataOption = document.createElement('div');
+        noDataOption.className = 'custom-select-option disabled';
+        noDataOption.textContent = 'No hay regionales disponibles';
+        optionsContainer.appendChild(noDataOption);
+        return;
+    }
 
     // Add placeholder option
     const placeholderOption = document.createElement('div');
@@ -108,11 +342,25 @@ function populateRegionalSelectForCancellation() {
         label: regional.name || `Regional ${regional.id}`
     }));
 
-    // Use CustomSelect if available
-    if (typeof CustomSelect !== 'undefined') {
+    // Try to use CustomSelect if available (from centers.js or window)
+    const CustomSelectClass = typeof CustomSelect !== 'undefined' ? CustomSelect : 
+                              (typeof window.CustomSelect !== 'undefined' ? window.CustomSelect : null);
+
+    if (CustomSelectClass) {
         try {
-            const customSelect = new CustomSelect('askCancellationRegionalSelect', {
+            console.log('Attempting to initialize CustomSelect for regionals');
+            
+            // Verify container exists before initializing
+            const container = document.getElementById('askCancellationRegionalSelect');
+            if (!container) {
+                console.error('Container askCancellationRegionalSelect not found');
+                throw new Error('Container not found');
+            }
+            
+            const customSelect = new CustomSelectClass('askCancellationRegionalSelect', {
+                placeholder: 'Seleccione una regional',
                 onChange: async (option) => {
+                    console.log('Regional selected:', option);
                     const value = option.value;
                     const hiddenInput = document.getElementById('askCancellationSelectedRegionalId');
                     if (hiddenInput) {
@@ -120,35 +368,127 @@ function populateRegionalSelectForCancellation() {
                     }
                     if (value) {
                         await loadInstitutionsForCancellation(value);
+                    } else {
+                        // Reset institutions and inventories when regional is cleared
+                        askCancellationData.institutions = [];
+                        askCancellationData.inventories = [];
+                        askCancellationData.items = [];
+                        populateInstitutionSelectForCancellation();
+                        populateInventorySelectForCancellation();
                     }
                 }
             });
+            
+            // Verify customSelect was created successfully
+            if (!customSelect || !customSelect.optionsContainer) {
+                console.error('CustomSelect initialization failed - optionsContainer not found');
+                throw new Error('CustomSelect initialization failed');
+            }
+            
+            console.log('CustomSelect initialized, setting options:', regionalOptions.length);
             customSelect.setOptions(regionalOptions);
+            
+            // Verify options were rendered
+            const renderedOptions = customSelect.optionsContainer.querySelectorAll('.custom-select-option');
+            console.log(`Options rendered: ${renderedOptions.length} out of ${regionalOptions.length}`);
+            
+            if (renderedOptions.length === 0) {
+                console.warn('No options were rendered, using fallback');
+                throw new Error('No options rendered');
+            }
+            
+            console.log('Options set successfully');
             return;
         } catch (e) {
             console.warn('Could not initialize CustomSelect for regionals, using fallback', e);
+            console.error('CustomSelect error details:', e.message, e.stack);
         }
+    } else {
+        console.log('CustomSelect not available, using fallback method');
     }
 
-    // Fallback: manual setup (only if CustomSelect failed)
-    if (typeof CustomSelect === 'undefined') {
-        askCancellationData.regionals.forEach(regional => {
-            const option = document.createElement('div');
-            option.className = 'custom-select-option';
-            option.dataset.value = regional.id;
-            option.textContent = regional.name || `Regional ${regional.id}`;
-            optionsContainer.appendChild(option);
+    // Fallback: manual setup - add options directly to DOM
+    console.log('Using fallback method to populate regional select');
+    askCancellationData.regionals.forEach(regional => {
+        const option = document.createElement('div');
+        option.className = 'custom-select-option';
+        option.dataset.value = regional.id.toString();
+        option.textContent = regional.name || `Regional ${regional.id}`;
+        option.style.cursor = 'pointer';
+        option.style.padding = '8px 12px';
+        option.addEventListener('mouseenter', () => {
+            option.style.backgroundColor = 'rgba(0, 175, 0, 0.1)';
         });
+        option.addEventListener('mouseleave', () => {
+            option.style.backgroundColor = '';
+        });
+        option.addEventListener('click', async () => {
+            const value = option.dataset.value;
+            const hiddenInput = document.getElementById('askCancellationSelectedRegionalId');
+            const textElement = document.querySelector('#askCancellationRegionalSelect .custom-select-text');
+            const dropdown = document.querySelector('#askCancellationRegionalSelect .custom-select-dropdown');
+            
+            if (hiddenInput) {
+                hiddenInput.value = value;
+            }
+            if (textElement) {
+                textElement.textContent = option.textContent;
+                textElement.classList.remove('custom-select-placeholder');
+            }
+            if (dropdown) {
+                dropdown.classList.remove('open');
+            }
+            
+            if (value) {
+                await loadInstitutionsForCancellation(value);
+            } else {
+                askCancellationData.institutions = [];
+                askCancellationData.inventories = [];
+                askCancellationData.items = [];
+                populateInstitutionSelectForCancellation();
+                populateInventorySelectForCancellation();
+            }
+        });
+        optionsContainer.appendChild(option);
+    });
 
-        // Setup select handler - wait a bit for DOM to be ready
-        setTimeout(() => {
-            setupCustomSelect('askCancellationRegionalSelect', 'askCancellationSelectedRegionalId', async (regionalId) => {
-                if (regionalId) {
-                    await loadInstitutionsForCancellation(regionalId);
-                }
-            });
-        }, 100);
+    // Setup trigger click handler
+    const selectContainer = document.getElementById('askCancellationRegionalSelect');
+    const trigger = selectContainer?.querySelector('.custom-select-trigger');
+    const dropdown = selectContainer?.querySelector('.custom-select-dropdown');
+    
+    if (trigger && dropdown && selectContainer) {
+        // Remove any existing listeners by cloning
+        const newTrigger = trigger.cloneNode(true);
+        trigger.parentNode.replaceChild(newTrigger, trigger);
+        
+        newTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            // Toggle open class on the container (not just dropdown)
+            selectContainer.classList.toggle('open');
+            selectContainer.classList.toggle('active');
+            
+            // Also ensure dropdown is visible
+            if (selectContainer.classList.contains('open')) {
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.style.display = 'none';
+            }
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!selectContainer.contains(e.target)) {
+                selectContainer.classList.remove('open');
+                selectContainer.classList.remove('active');
+                dropdown.style.display = 'none';
+            }
+        });
     }
+    
+    console.log(`Added ${askCancellationData.regionals.length} regional options to dropdown`);
 }
 
 /**
@@ -166,7 +506,7 @@ async function loadInstitutionsForCancellation(regionalId) {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch(`/api/v1/institutions/regional/${regionalId}`, {
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
             method: 'GET',
             headers: headers
         });
@@ -431,7 +771,18 @@ function populateItemsForCancellation() {
         return;
     }
 
-    let html = '<div class="space-y-2">';
+    const selectedCount = askCancellationData.selectedItems.length;
+    let html = `
+        <div class="mb-3 flex items-center justify-between">
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Items disponibles: <span class="text-[#00AF00]">${askCancellationData.items.length}</span>
+            </p>
+            <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Seleccionados: <span class="text-[#00AF00]">${selectedCount}</span>
+            </p>
+        </div>
+        <div class="space-y-2 max-h-[250px] overflow-y-auto">`;
+    
     askCancellationData.items.forEach(item => {
         const isSelected = askCancellationData.selectedItems.includes(item.id);
         const itemName = item.productName || item.wareHouseDescription || `Item #${item.id}`;
@@ -452,6 +803,7 @@ function populateItemsForCancellation() {
                     <div class="font-medium text-gray-800 dark:text-gray-200">${itemName}</div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">Placa: ${licencePlate}</div>
                 </div>
+                ${isSelected ? '<i class="fas fa-check-circle text-[#00AF00]"></i>' : ''}
             </label>
         `;
     });
@@ -464,11 +816,13 @@ function populateItemsForCancellation() {
  * Toggle item selection
  */
 function toggleCancellationItem(itemId) {
-    const index = askCancellationData.selectedItems.indexOf(itemId);
+    // Ensure itemId is a number
+    const numericId = typeof itemId === 'string' ? parseInt(itemId, 10) : itemId;
+    const index = askCancellationData.selectedItems.indexOf(numericId);
     if (index > -1) {
         askCancellationData.selectedItems.splice(index, 1);
     } else {
-        askCancellationData.selectedItems.push(itemId);
+        askCancellationData.selectedItems.push(numericId);
     }
     populateItemsForCancellation();
 }
@@ -499,8 +853,36 @@ async function handleAskCancellation() {
         return;
     }
 
+    // Validate inventory mode requirements (only if in inventory mode)
+    if (askCancellationData.currentMode === 'inventory') {
+        const regionalId = document.getElementById('askCancellationSelectedRegionalId')?.value;
+        const institutionId = document.getElementById('askCancellationSelectedInstitutionId')?.value;
+        const inventoryId = document.getElementById('askCancellationSelectedInventoryId')?.value;
+        
+        if (!regionalId || !institutionId || !inventoryId) {
+            if (typeof showToast === 'function') {
+                showToast('Por favor complete todos los campos requeridos (Regional, Institución e Inventario)', 'error');
+            } else {
+                alert('Por favor complete todos los campos requeridos');
+            }
+            return;
+        }
+    }
+
     try {
-        const response = await askForCancellation(itemsIds, reason);
+        // Ensure all item IDs are numbers, not strings
+        const numericItemsIds = itemsIds.map(id => {
+            if (typeof id === 'string') {
+                const parsed = parseInt(id, 10);
+                if (isNaN(parsed)) {
+                    throw new Error(`ID de item inválido: ${id}`);
+                }
+                return parsed;
+            }
+            return id;
+        });
+        
+        const response = await askForCancellation(numericItemsIds, reason);
         
         if (typeof showToast === 'function') {
             showToast('Solicitud de cancelación creada exitosamente', 'success');
@@ -587,4 +969,16 @@ window.openAskCancellationModal = openAskCancellationModal;
 window.closeAskCancellationModal = closeAskCancellationModal;
 window.toggleCancellationItem = toggleCancellationItem;
 window.handleAskCancellation = handleAskCancellation;
+window.switchCancellationMode = switchCancellationMode;
+window.searchItemByPlate = searchItemByPlate;
+window.removeItemFromPlateSelection = removeItemFromPlateSelection;
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Cancellations forms module loaded');
+    });
+} else {
+    console.log('Cancellations forms module loaded');
+}
 
