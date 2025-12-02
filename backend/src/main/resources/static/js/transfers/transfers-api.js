@@ -172,6 +172,56 @@ async function approveTransfer(transferId, approvalData = {}) {
 }
 
 /**
+ * Rejects a transfer
+ * @param {number} transferId - Transfer ID to reject
+ * @param {Object} rejectionData - Rejection data
+ * @param {string} rejectionData.rejectionNotes - Optional rejection notes
+ * @returns {Promise<RejectTransferResponse>}
+ */
+async function rejectTransfer(transferId, rejectionData = {}) {
+    try {
+        const token = localStorage.getItem("jwt");
+        const headers = {
+            "Content-Type": "application/json",
+        };
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`/api/v1/transfers/${transferId}/reject`, {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify(rejectionData),
+        });
+
+        if (!response.ok) {
+            let errorMessage = "Error al rechazar la transferencia";
+            try {
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.includes("application/json")) {
+                    const errorData = await response.json();
+                    errorMessage =
+                        errorData.message ||
+                        errorData.detail ||
+                        errorData.error ||
+                        errorMessage;
+                } else {
+                    const errorText = await response.text();
+                    errorMessage = errorText || errorMessage;
+                }
+            } catch (parseError) {
+                // Error al parsear respuesta
+            }
+            throw new Error(errorMessage);
+        }
+
+        return await response.json();
+    } catch (error) {
+        throw error;
+    }
+}
+
+/**
  * Fetches all transfers with pagination (for superadmin)
  * @param {number} page - Page number (0-indexed)
  * @param {number} size - Page size
@@ -221,13 +271,21 @@ async function fetchTransferStatistics() {
             headers["Authorization"] = `Bearer ${token}`;
         }
 
-        const response = await fetch(
-            `/api/v1/transfers/statistics`,
-            {
-                method: "GET",
-                headers: headers,
-            }
-        );
+        // Determine endpoint based on user role
+        const currentRole = window.currentUserRole || '';
+        const isSuperAdmin = currentRole === 'SUPERADMIN';
+        const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        
+        let endpoint = '/api/v1/transfers/statistics';
+        if (isAdminRegional) {
+            endpoint = '/api/v1/transfers/regional/statistics';
+        }
+
+        const response = await fetch(endpoint, {
+            method: "GET",
+            headers: headers,
+        });
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -246,6 +304,7 @@ window.fetchTransfersByInventory = fetchTransfersByInventory;
 window.fetchTransfersByItem = fetchTransfersByItem;
 window.requestTransfer = requestTransfer;
 window.approveTransfer = approveTransfer;
+window.rejectTransfer = rejectTransfer;
 window.fetchAllTransfers = fetchAllTransfers;
 window.fetchTransferStatistics = fetchTransferStatistics;
 

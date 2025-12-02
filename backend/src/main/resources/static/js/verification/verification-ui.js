@@ -43,9 +43,30 @@ function updateStatsCards() {
     const container = document.getElementById('verificationStatsContainer');
     if (!container) return;
 
-    const total = verificationData.verifications.length;
-    const completed = verificationData.verifications.filter(v => v.status === 'COMPLETED' || v.status === 'VERIFIED').length;
-    const withEvidence = verificationData.verifications.filter(v => v.hasEvidence).length;
+    // Check if user is admin regional and has statistics from endpoint
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    
+    let total, completed, withEvidence;
+    
+    if (isAdminRegional && window.verificationData && window.verificationData.statistics) {
+        // Use total statistics from endpoint
+        const stats = window.verificationData.statistics;
+        total = stats.totalVerifications || 0;
+        completed = stats.completedVerifications || 0;
+        withEvidence = stats.withEvidence || 0;
+    } else {
+        // Fallback to local calculation from current page data
+        total = verificationData.verifications.length;
+        completed = verificationData.verifications.filter(v => {
+            const status = v.status || '';
+            const hasPhoto = v.photoUrl && v.photoUrl.trim() !== '';
+            return status === 'COMPLETED' || status === 'VERIFIED' || hasPhoto;
+        }).length;
+        withEvidence = verificationData.verifications.filter(v => {
+            return v.hasEvidence || (v.photoUrl && v.photoUrl.trim() !== '');
+        }).length;
+    }
 
     container.innerHTML = `
         <div class="stat-card">

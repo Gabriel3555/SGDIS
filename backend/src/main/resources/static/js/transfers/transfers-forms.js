@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (approveTransferForm) {
         approveTransferForm.addEventListener('submit', handleApproveTransferSubmit);
     }
+    
+    const rejectTransferForm = document.getElementById('rejectTransferForm');
+    if (rejectTransferForm) {
+        rejectTransferForm.addEventListener('submit', handleRejectTransferSubmit);
+    }
 });
 
 function populateNewTransferForm(itemId = null) {
@@ -1232,6 +1237,87 @@ async function handleApproveTransferSubmit(event) {
     }
 }
 
+function populateRejectTransferForm(transferId) {
+    const form = document.getElementById('rejectTransferForm');
+    if (!form) return;
+    
+    form.innerHTML = `
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notas de Rechazo</label>
+                <textarea id="rejectTransferNotes" 
+                    rows="4" 
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500" 
+                    placeholder="Razón del rechazo (opcional, máximo 500 caracteres)"
+                    maxlength="500"></textarea>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Información adicional sobre el rechazo</p>
+            </div>
+        </div>
+
+        <div class="flex gap-3 pt-4">
+            <button type="button" onclick="closeRejectTransferModal()" 
+                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancelar
+            </button>
+            <button type="submit" 
+                class="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors">
+                Rechazar Transferencia
+            </button>
+        </div>
+    `;
+}
+
+async function handleRejectTransferSubmit(event) {
+    event.preventDefault();
+    
+    if (!window.transfersData || !window.transfersData.currentTransferId) {
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se ha seleccionado una transferencia');
+        }
+        return;
+    }
+    
+    const transferId = window.transfersData.currentTransferId;
+    const rejectionNotes = document.getElementById('rejectTransferNotes')?.value?.trim() || '';
+    
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton ? submitButton.innerHTML : '';
+    
+    try {
+        if (submitButton) {
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
+            submitButton.disabled = true;
+        }
+        
+        const rejectionData = {
+            rejectionNotes: rejectionNotes
+        };
+        
+        const response = await window.rejectTransfer(transferId, rejectionData);
+        
+        if (window.showSuccessToast) {
+            window.showSuccessToast('Transferencia Rechazada', response.message || 'La transferencia ha sido rechazada exitosamente');
+        }
+        
+        closeRejectTransferModal();
+        
+        // Reload transfers data
+        if (window.loadTransfersData) {
+            await window.loadTransfersData();
+        }
+    } catch (error) {
+        console.error('Error rejecting transfer:', error);
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', error.message || 'No se pudo rechazar la transferencia');
+        }
+    } finally {
+        if (submitButton) {
+            submitButton.innerHTML = originalButtonText;
+            submitButton.disabled = false;
+        }
+    }
+}
+
 // Variables for transfer form selects
 let newTransferRegionalSelect = null;
 let newTransferInstitutionSelect = null;
@@ -1605,6 +1691,8 @@ window.populateNewTransferForm = populateNewTransferForm;
 window.handleNewTransferSubmit = handleNewTransferSubmit;
 window.populateApproveTransferForm = populateApproveTransferForm;
 window.handleApproveTransferSubmit = handleApproveTransferSubmit;
+window.populateRejectTransferForm = populateRejectTransferForm;
+window.handleRejectTransferSubmit = handleRejectTransferSubmit;
 window.verifyItemByLicencePlate = verifyItemByLicencePlate;
 window.initializeTransferFormSelects = initializeTransferFormSelects;
 window.loadRegionalsForTransferForm = loadRegionalsForTransferForm;

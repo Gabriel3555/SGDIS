@@ -70,4 +70,24 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
     
     @Query("SELECT COALESCE(SUM(i.totalPrice), 0) FROM InventoryEntity i")
     Double sumTotalPrice();
+    
+    // Regional statistics queries
+    @Query("SELECT COUNT(i) FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId")
+    long countByRegionalId(@Param("regionalId") Long regionalId);
+    
+    @Query("SELECT COUNT(i) FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId AND i.status = :status")
+    long countByRegionalIdAndStatus(@Param("regionalId") Long regionalId, @Param("status") boolean status);
+    
+    @Query("SELECT COALESCE(SUM(i.totalPrice), 0) FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId")
+    Double sumTotalPriceByRegionalId(@Param("regionalId") Long regionalId);
+    
+    // Regional and Institution statistics queries
+    @Query("SELECT COUNT(i) FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId AND i.institution.id = :institutionId")
+    long countByRegionalIdAndInstitutionId(@Param("regionalId") Long regionalId, @Param("institutionId") Long institutionId);
+    
+    @Query("SELECT COUNT(i) FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId AND i.institution.id = :institutionId AND i.status = :status")
+    long countByRegionalIdAndInstitutionIdAndStatus(@Param("regionalId") Long regionalId, @Param("institutionId") Long institutionId, @Param("status") boolean status);
+    
+    @Query("SELECT COALESCE(SUM(i.totalPrice), 0) FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId AND i.institution.id = :institutionId")
+    Double sumTotalPriceByRegionalIdAndInstitutionId(@Param("regionalId") Long regionalId, @Param("institutionId") Long institutionId);
 }

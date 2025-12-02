@@ -165,6 +165,10 @@ async function loadInventories() {
                     // Use paginated endpoint for institution inventories
                     endpoint = '/api/v1/inventory/institutionAdminInventories?page=0&size=1000';
                     isPaginated = true;
+                } else if (currentRole === 'ADMIN_REGIONAL') {
+                    // Use paginated endpoint for regional inventories
+                    endpoint = '/api/v1/inventory/regionalAdminInventories?page=0&size=1000';
+                    isPaginated = true;
                 } else if (currentRole === 'SUPERADMIN') {
                     // Use paginated endpoint for superadmin (all inventories)
                     endpoint = '/api/v1/inventory?page=0&size=1000';

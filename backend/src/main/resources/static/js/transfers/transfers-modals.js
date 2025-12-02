@@ -40,8 +40,26 @@ async function loadTransfersData() {
     }
     
     if (!inventoryId) {
-        // Check for inventories with pending transfers
-        await checkPendingTransfers();
+        // Check if user is admin regional - don't show pending transfers check for admin regional
+        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        
+        if (!isAdminRegional) {
+            // Check for inventories with pending transfers (only for non-admin-regional users)
+            await checkPendingTransfers();
+        } else {
+            // For admin regional, show message to use filters
+            const container = document.getElementById('transferTableContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 text-4xl mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-400 text-lg mb-2">Usa los filtros para ver las transferencias</p>
+                        <p class="text-gray-500 dark:text-gray-500 text-sm">Las transferencias se cargan automáticamente para tu regional</p>
+                    </div>
+                `;
+            }
+        }
         return;
     }
     
@@ -642,6 +660,39 @@ function closeApproveTransferModal() {
     }
 }
 
+function showRejectTransferModal(transferId) {
+    const modal = document.getElementById('rejectTransferModal');
+    if (!modal) return;
+    
+    if (window.transfersData) {
+        window.transfersData.currentTransferId = transferId;
+    }
+    
+    modal.classList.remove('hidden');
+    
+    // Populate form
+    if (window.populateRejectTransferForm) {
+        window.populateRejectTransferForm(transferId);
+    }
+}
+
+function closeRejectTransferModal() {
+    const modal = document.getElementById('rejectTransferModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    // Clear form
+    const form = document.getElementById('rejectTransferForm');
+    if (form) {
+        form.innerHTML = '';
+    }
+    
+    if (window.transfersData) {
+        window.transfersData.currentTransferId = null;
+    }
+}
+
 // Helper function
 function getTransferStatusBadge(status) {
     const badges = {
@@ -662,4 +713,6 @@ window.showViewTransferModal = showViewTransferModal;
 window.closeViewTransferModal = closeViewTransferModal;
 window.showApproveTransferModal = showApproveTransferModal;
 window.closeApproveTransferModal = closeApproveTransferModal;
+window.showRejectTransferModal = showRejectTransferModal;
+window.closeRejectTransferModal = closeRejectTransferModal;
 

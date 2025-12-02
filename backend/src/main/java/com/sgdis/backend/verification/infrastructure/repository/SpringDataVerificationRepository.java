@@ -46,6 +46,14 @@ public interface SpringDataVerificationRepository extends JpaRepository<Verifica
     @Query("SELECT COUNT(v) FROM VerificationEntity v WHERE v.item.inventory.institution.regional.id = :regionalId")
     long countByRegionalId(@Param("regionalId") Long regionalId);
     
+    // Query for counting completed verifications by regional (those with photoUrl)
+    @Query("SELECT COUNT(v) FROM VerificationEntity v WHERE v.item.inventory.institution.regional.id = :regionalId AND v.photoUrl IS NOT NULL AND v.photoUrl != ''")
+    long countCompletedByRegionalId(@Param("regionalId") Long regionalId);
+    
+    // Query for counting verifications with evidence by regional (those with photoUrl)
+    @Query("SELECT COUNT(v) FROM VerificationEntity v WHERE v.item.inventory.institution.regional.id = :regionalId AND v.photoUrl IS NOT NULL AND v.photoUrl != ''")
+    long countWithEvidenceByRegionalId(@Param("regionalId") Long regionalId);
+    
     // Query to get all verifications with JOIN FETCH for loading relationships
     @Query("SELECT DISTINCT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory ORDER BY v.id DESC")
     List<VerificationEntity> findAllWithJoins();

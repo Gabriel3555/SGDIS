@@ -14,21 +14,33 @@ function updateUserStatsForAdminRegional() {
     return;
   }
 
-  // Calculate statistics from current page data
-  if (!window.usersData.users || !Array.isArray(window.usersData.users)) {
-    return;
-  }
+  // Use statistics from endpoint if available, otherwise calculate from current page data
+  let totalUsers, adminInstitutionCount, warehouseCount, userCount;
 
-  const adminInstitutionCount = window.usersData.users.filter(
-    (u) => u && u.role === "ADMIN_INSTITUTION"
-  ).length;
-  const warehouseCount = window.usersData.users.filter(
-    (u) => u && u.role === "WAREHOUSE"
-  ).length;
-  const userCount = window.usersData.users.filter(
-    (u) => u && u.role === "USER"
-  ).length;
-  const totalUsers = window.usersData.users.length;
+  if (window.usersData.statistics) {
+    // Use total statistics from endpoint
+    const stats = window.usersData.statistics;
+    totalUsers = stats.totalUsers || 0;
+    adminInstitutionCount = stats.adminInstitutionCount || 0;
+    warehouseCount = stats.warehouseCount || 0;
+    userCount = stats.userCount || 0;
+  } else {
+    // Fallback to local calculation from current page data
+    if (!window.usersData.users || !Array.isArray(window.usersData.users)) {
+      return;
+    }
+
+    adminInstitutionCount = window.usersData.users.filter(
+      (u) => u && u.role === "ADMIN_INSTITUTION"
+    ).length;
+    warehouseCount = window.usersData.users.filter(
+      (u) => u && u.role === "WAREHOUSE"
+    ).length;
+    userCount = window.usersData.users.filter(
+      (u) => u && u.role === "USER"
+    ).length;
+    totalUsers = window.usersData.users.length;
+  }
   
   container.innerHTML = `
         <div class="stat-card">

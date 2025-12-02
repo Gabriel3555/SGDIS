@@ -645,4 +645,63 @@ public class InventoryController {
                 .build();
     }
 
+    @Operation(
+            summary = "Get regional inventory statistics",
+            description = "Retrieves total statistics of inventories in the current user's regional. " +
+                    "Optionally filters by institution if institutionId is provided. " +
+                    "The regional is obtained from the current user's institution."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = GeneralInventoryStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution or regional not found")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/regional/statistics")
+    public GeneralInventoryStatisticsResponse getRegionalInventoryStatistics(
+            @Parameter(description = "Institution ID to filter by (optional)")
+            @RequestParam(required = false) Long institutionId
+    ) {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+            throw new ResourceNotFoundException("User institution or regional not found");
+        }
+        Long regionalId = currentUser.getInstitution().getRegional().getId();
+        
+        long totalInventories;
+        long activeInventories;
+        long inactiveInventories;
+        Double totalValue;
+        long totalItems;
+        
+        if (institutionId != null) {
+            // Filter by both regional and institution
+            totalInventories = inventoryRepository.countByRegionalIdAndInstitutionId(regionalId, institutionId);
+            activeInventories = inventoryRepository.countByRegionalIdAndInstitutionIdAndStatus(regionalId, institutionId, true);
+            inactiveInventories = inventoryRepository.countByRegionalIdAndInstitutionIdAndStatus(regionalId, institutionId, false);
+            totalValue = inventoryRepository.sumTotalPriceByRegionalIdAndInstitutionId(regionalId, institutionId);
+            totalItems = itemRepository.countByRegionalIdAndInstitutionId(regionalId, institutionId);
+        } else {
+            // Filter by regional only
+            totalInventories = inventoryRepository.countByRegionalId(regionalId);
+            activeInventories = inventoryRepository.countByRegionalIdAndStatus(regionalId, true);
+            inactiveInventories = inventoryRepository.countByRegionalIdAndStatus(regionalId, false);
+            totalValue = inventoryRepository.sumTotalPriceByRegionalId(regionalId);
+            totalItems = itemRepository.countByRegionalId(regionalId);
+        }
+        
+        if (totalValue == null) {
+            totalValue = 0.0;
+        }
+        
+        return GeneralInventoryStatisticsResponse.builder()
+                .totalInventories(totalInventories)
+                .activeInventories(activeInventories)
+                .inactiveInventories(inactiveInventories)
+                .totalItems(totalItems)
+                .totalValue(totalValue)
+                .build();
+    }
+
 }

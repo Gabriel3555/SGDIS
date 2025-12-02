@@ -4,8 +4,11 @@ import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.loan.application.dto.LendItemRequest;
 import com.sgdis.backend.loan.application.dto.LendItemResponse;
 import com.sgdis.backend.loan.application.dto.LoanResponse;
+import com.sgdis.backend.loan.application.dto.LoanStatisticsResponse;
 import com.sgdis.backend.loan.application.dto.ReturnItemRequest;
 import com.sgdis.backend.loan.application.dto.ReturnItemResponse;
+import com.sgdis.backend.auth.application.service.AuthService;
+import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.loan.application.port.GetLastLoanByItemUseCase;
 import com.sgdis.backend.loan.application.port.GetLoansByItemUseCase;
 import com.sgdis.backend.loan.application.port.LendItemUseCase;
@@ -36,6 +39,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.access.prepost.PreAuthorize;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -55,6 +60,7 @@ public class LoanController {
     private final GetLastLoanByItemUseCase getLastLoanByItemUseCase;
     private final SpringDataLoanRepository loanRepository;
     private final FileUploadService fileUploadService;
+    private final AuthService authService;
 
     @PostMapping("/lend")
     @Operation(
@@ -286,6 +292,36 @@ public class LoanController {
 
         loanRepository.delete(loan);
         return ResponseEntity.ok("Loan deleted successfully");
+    }
+
+    @Operation(
+            summary = "Get regional loan statistics",
+            description = "Retrieves total statistics of loans in the current user's regional. " +
+                    "The regional is obtained from the current user's institution."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = LoanStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution or regional not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/regional/statistics")
+    public ResponseEntity<LoanStatisticsResponse> getRegionalLoanStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+            throw new ResourceNotFoundException("User institution or regional not found");
+        }
+        Long regionalId = currentUser.getInstitution().getRegional().getId();
+        
+        Long total = loanRepository.countByRegionalId(regionalId);
+        Long active = loanRepository.countActiveByRegionalId(regionalId);
+        Long returned = loanRepository.countReturnedByRegionalId(regionalId);
+        
+        LoanStatisticsResponse statistics = new LoanStatisticsResponse(total, active, returned);
+        
+        return ResponseEntity.ok(statistics);
     }
 
 }

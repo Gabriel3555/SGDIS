@@ -17,70 +17,70 @@ function setupEventListeners() {
     const importRegionalSelect = document.getElementById('importRegionalSelect');
     if (importRegionalSelect) {
         importRegionalSelect.addEventListener('change', function() {
-            const regionalId = this.value;
-            loadInstitutionsForImport(regionalId);
-            resetImportDropdowns(['institution', 'inventory']);
-            updateImportButtonState();
-        });
+        const regionalId = this.value;
+        loadInstitutionsForImport(regionalId);
+        resetImportDropdowns(['institution', 'inventory']);
+        updateImportButtonState();
+    });
     }
 
     const importInstitutionSelect = document.getElementById('importInstitutionSelect');
     if (importInstitutionSelect) {
         importInstitutionSelect.addEventListener('change', function() {
-            const institutionId = this.value;
-            loadInventoriesForImport(institutionId);
-            resetImportDropdowns(['inventory']);
-            updateImportButtonState();
-        });
+        const institutionId = this.value;
+        loadInventoriesForImport(institutionId);
+        resetImportDropdowns(['inventory']);
+        updateImportButtonState();
+    });
     }
 
     const importInventorySelect = document.getElementById('importInventorySelect');
     if (importInventorySelect) {
         importInventorySelect.addEventListener('change', function() {
-            updateImportButtonState();
-        });
+        updateImportButtonState();
+    });
     }
 
     // Export dropdowns
     const exportRegionalSelect = document.getElementById('exportRegionalSelect');
     if (exportRegionalSelect) {
         exportRegionalSelect.addEventListener('change', function() {
-            const regionalId = this.value;
-            loadInstitutionsForExport(regionalId);
-            resetExportDropdowns(['institution', 'inventory']);
-            updateExportButtonState();
-        });
+        const regionalId = this.value;
+        loadInstitutionsForExport(regionalId);
+        resetExportDropdowns(['institution', 'inventory']);
+        updateExportButtonState();
+    });
     }
 
     const exportInstitutionSelect = document.getElementById('exportInstitutionSelect');
     if (exportInstitutionSelect) {
         exportInstitutionSelect.addEventListener('change', function() {
-            const institutionId = this.value;
-            loadInventoriesForExport(institutionId);
-            resetExportDropdowns(['inventory']);
-            updateExportButtonState();
-        });
+        const institutionId = this.value;
+        loadInventoriesForExport(institutionId);
+        resetExportDropdowns(['inventory']);
+        updateExportButtonState();
+    });
     }
 
     const exportInventorySelect = document.getElementById('exportInventorySelect');
     if (exportInventorySelect) {
         exportInventorySelect.addEventListener('change', function() {
-            updateExportButtonState();
-            const inventoryId = this.value;
-            if (inventoryId) {
-                loadExportPreview(inventoryId);
-            } else {
-                hideExportPreview();
-            }
-        });
+        updateExportButtonState();
+        const inventoryId = this.value;
+        if (inventoryId) {
+            loadExportPreview(inventoryId);
+        } else {
+            hideExportPreview();
+        }
+    });
     }
 
     // File input
     const importFileInput = document.getElementById('importFileInput');
     if (importFileInput) {
         importFileInput.addEventListener('change', function(e) {
-            handleFileSelection(e.target.files[0]);
-        });
+        handleFileSelection(e.target.files[0]);
+    });
     }
 
     // Drag and drop support

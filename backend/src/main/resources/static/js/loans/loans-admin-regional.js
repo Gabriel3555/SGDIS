@@ -202,7 +202,7 @@ async function loadLoansForAdminRegional(page = 0) {
             window.loansData.selectedStatus = loansDataAdminRegional.filters.status;
             
             // Update UI
-            updateLoansUIForAdminRegional();
+            await updateLoansUIForAdminRegional();
         } else {
             throw new Error('Error al cargar los préstamos');
         }
@@ -294,9 +294,50 @@ function filterLoansForAdminRegional() {
 }
 
 /**
+ * Load loan statistics for admin regional
+ */
+async function loadLoanStatisticsForAdminRegional() {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            return null;
+        }
+
+        const response = await fetch('/api/v1/loan/regional/statistics', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const statistics = await response.json();
+            // Store statistics in loansData
+            if (window.loansData) {
+                window.loansData.statistics = statistics;
+            }
+            if (loansDataAdminRegional) {
+                loansDataAdminRegional.statistics = statistics;
+            }
+            return statistics;
+        } else {
+            console.warn('Failed to load loan statistics, falling back to local calculation');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error loading loan statistics:', error);
+        return null;
+    }
+}
+
+/**
  * Update loans UI for admin regional
  */
-function updateLoansUIForAdminRegional() {
+async function updateLoansUIForAdminRegional() {
+    // Load statistics first (for ADMIN_REGIONAL, this will use the regional endpoint)
+    await loadLoanStatisticsForAdminRegional();
+    
     // Update stats
     if (window.updateLoansStats) {
         window.updateLoansStats();
@@ -423,6 +464,7 @@ if (document.readyState === 'loading') {
 
 // Export functions
 window.loadLoansForAdminRegional = loadLoansForAdminRegional;
+window.loadLoanStatisticsForAdminRegional = loadLoanStatisticsForAdminRegional;
 window.handleLoansSearchForAdminRegional = handleLoansSearchForAdminRegional;
 window.handleLoansStatusFilterForAdminRegional = handleLoansStatusFilterForAdminRegional;
 window.initializeAdminRegionalLoans = initializeAdminRegionalLoans;

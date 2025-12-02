@@ -313,15 +313,26 @@ class WebSocketNotificationClient {
 window.wsNotificationClient = new WebSocketNotificationClient();
 
 // Inicializar conexión cuando el documento esté listo y haya un token
+let wsInitAttempts = 0;
+const MAX_WS_INIT_ATTEMPTS = 5; // Máximo de 5 intentos
+
 function initializeWebSocket() {
     const token = localStorage.getItem('jwt') || localStorage.getItem('token');
     if (token) {
         // Verificar que las librerías estén cargadas
         if (typeof SockJS === 'undefined' || typeof Stomp === 'undefined') {
-            console.warn('SockJS o Stomp no están disponibles, reintentando en 1 segundo...');
+            wsInitAttempts++;
+            if (wsInitAttempts >= MAX_WS_INIT_ATTEMPTS) {
+                console.warn('SockJS o Stomp no están disponibles después de ' + MAX_WS_INIT_ATTEMPTS + ' intentos. WebSocket no se inicializará.');
+                return;
+            }
+            console.warn('SockJS o Stomp no están disponibles, reintentando en 1 segundo... (intento ' + wsInitAttempts + '/' + MAX_WS_INIT_ATTEMPTS + ')');
             setTimeout(initializeWebSocket, 1000);
             return;
         }
+        
+        // Resetear contador si las librerías están disponibles
+        wsInitAttempts = 0;
         
         // Esperar un poco para asegurar que todo está cargado
         setTimeout(() => {

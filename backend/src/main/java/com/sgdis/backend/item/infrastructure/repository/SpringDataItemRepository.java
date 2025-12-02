@@ -26,4 +26,11 @@ public interface SpringDataItemRepository extends JpaRepository<ItemEntity, Long
 
     @Query("SELECT i FROM ItemEntity i WHERE i.inventory.id = :inventoryId")
     List<ItemEntity> findAllByInventoryId(@Param("inventoryId") Long inventoryId);
+    
+    // Statistics queries
+    @Query("SELECT COUNT(i) FROM ItemEntity i WHERE i.inventory.institution.regional.id = :regionalId")
+    long countByRegionalId(@Param("regionalId") Long regionalId);
+    
+    @Query("SELECT COUNT(i) FROM ItemEntity i WHERE i.inventory.institution.regional.id = :regionalId AND i.inventory.institution.id = :institutionId")
+    long countByRegionalIdAndInstitutionId(@Param("regionalId") Long regionalId, @Param("institutionId") Long institutionId);
 }

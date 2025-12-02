@@ -36,16 +36,18 @@ async function updateTransfersStats() {
     `;
     
     try {
-        // Check if user is superadmin or warehouse
+        // Check if user is superadmin, admin regional, or warehouse
         const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                              (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
         const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
                            (window.location.pathname && window.location.pathname.includes('/warehouse'));
         
         let totalTransfers, pendingTransfers, approvedTransfers, rejectedTransfers;
         
-        if (isSuperAdmin && window.fetchTransferStatistics) {
-            // Fetch statistics from API for superadmin
+        if ((isSuperAdmin || isAdminRegional) && window.fetchTransferStatistics) {
+            // Fetch statistics from API for superadmin or admin regional
             const stats = await window.fetchTransferStatistics();
             totalTransfers = stats.totalTransfers || 0;
             pendingTransfers = stats.pendingTransfers || 0;
@@ -442,6 +444,11 @@ function updateTransfersTable() {
                                 title="Aprobar">
                                 <i class="fas fa-check"></i>
                             </button>
+                            <button onclick="showRejectTransferModal(${transfer.id})" 
+                                class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" 
+                                title="Rechazar">
+                                <i class="fas fa-times"></i>
+                            </button>
                         ` : ''}
                     </div>
                 </td>
@@ -526,6 +533,11 @@ function updateTransfersCards() {
                             class="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors">
                             <i class="fas fa-check mr-1"></i>
                             Aprobar
+                        </button>
+                        <button onclick="showRejectTransferModal(${transfer.id})" 
+                            class="flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors">
+                            <i class="fas fa-times mr-1"></i>
+                            Rechazar
                         </button>
                     ` : ''}
                 </div>

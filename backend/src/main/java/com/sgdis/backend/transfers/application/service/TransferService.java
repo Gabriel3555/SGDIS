@@ -9,11 +9,14 @@ import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import com.sgdis.backend.transfers.application.dto.ApproveTransferRequest;
 import com.sgdis.backend.transfers.application.dto.ApproveTransferResponse;
+import com.sgdis.backend.transfers.application.dto.RejectTransferRequest;
+import com.sgdis.backend.transfers.application.dto.RejectTransferResponse;
 import com.sgdis.backend.transfers.application.dto.RequestTransferRequest;
 import com.sgdis.backend.transfers.application.dto.RequestTransferResponse;
 import com.sgdis.backend.transfers.application.dto.TransferSummaryResponse;
 import com.sgdis.backend.transfers.application.dto.TransferStatisticsResponse;
 import com.sgdis.backend.transfers.application.port.in.ApproveTransferUseCase;
+import com.sgdis.backend.transfers.application.port.in.RejectTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetAllTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
@@ -41,7 +44,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class TransferService implements ApproveTransferUseCase, RequestTransferUseCase, GetInventoryTransfersUseCase,
+public class TransferService implements ApproveTransferUseCase, RejectTransferUseCase, RequestTransferUseCase, GetInventoryTransfersUseCase,
         GetItemTransfersUseCase, GetAllTransfersUseCase, GetRegionalTransfersUseCase, GetTransferStatisticsUseCase {
 
     private final AuthService authService;
@@ -278,6 +281,76 @@ public class TransferService implements ApproveTransferUseCase, RequestTransferU
         ));
 
         return TransferMapper.toApproveResponse(transfer);
+    }
+
+    @Override
+    @Transactional
+    public RejectTransferResponse rejectTransfer(Long transferId, RejectTransferRequest request) {
+        TransferEntity transfer = transferRepository.findByIdWithRelations(transferId)
+                .orElseThrow(() -> new ResourceNotFoundException("Transfer not found with id: " + transferId));
+
+        if (transfer.getApprovalStatus() == TransferStatus.APPROVED) {
+            throw new DomainValidationException("La transferencia ya fue aprobada");
+        }
+
+        if (transfer.getApprovalStatus() == TransferStatus.REJECTED) {
+            throw new DomainValidationException("La transferencia ya fue rechazada");
+        }
+
+        ItemEntity item = transfer.getItem();
+        if (item == null) {
+            throw new DomainValidationException("La transferencia no tiene un ítem asociado");
+        }
+
+        InventoryEntity destinationInventory = transfer.getInventory();
+        if (destinationInventory == null) {
+            throw new DomainValidationException("La transferencia no tiene un inventario de destino asignado");
+        }
+
+        InventoryEntity sourceInventory = transfer.getSourceInventory();
+        if (sourceInventory == null) {
+            sourceInventory = item.getInventory();
+        }
+        if (sourceInventory == null) {
+            throw new DomainValidationException("El ítem no pertenece a ningún inventario");
+        }
+
+        UserEntity rejecter = authService.getCurrentUser();
+        if (!isAuthorizedToApprove(rejecter, sourceInventory, destinationInventory)
+                && !hasTransferPrivilegedRole(rejecter)) {
+            throw new DomainValidationException("No cuentas con permisos para rechazar esta transferencia");
+        }
+
+        // No movemos el item ni actualizamos precios, solo marcamos como rechazada
+        transfer.setSourceInventory(sourceInventory);
+        transfer.setApprovalStatus(TransferStatus.REJECTED);
+        transfer.setRejectedAt(LocalDateTime.now());
+        transfer.setRejectedBy(rejecter);
+        if (request != null && request.rejectionNotes() != null && !request.rejectionNotes().isBlank()) {
+            transfer.setRejectionNotes(request.rejectionNotes().trim());
+        }
+        transferRepository.save(transfer);
+
+        // Registrar auditoría
+        String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+        String sourceInventoryName = sourceInventory.getName() != null ? sourceInventory.getName() : "sin nombre";
+        String destinationInventoryName = destinationInventory.getName() != null ? destinationInventory.getName() : "sin nombre";
+        String requesterName = transfer.getRequestedBy() != null ? transfer.getRequestedBy().getFullName() : "N/A";
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(
+                String.format("Transferencia rechazada: Item %s (ID: %d) - De: %s (ID: %d) → A: %s (ID: %d) - Rechazado por: %s (%s) - Solicitado por: %s", 
+                        itemName,
+                        item.getId(),
+                        sourceInventoryName,
+                        sourceInventory.getId(),
+                        destinationInventoryName,
+                        destinationInventory.getId(),
+                        rejecter.getFullName(),
+                        rejecter.getEmail(),
+                        requesterName)
+        ));
+
+        return TransferMapper.toRejectResponse(transfer);
     }
 
     private boolean isAuthorizedToApprove(UserEntity user, InventoryEntity sourceInventory,

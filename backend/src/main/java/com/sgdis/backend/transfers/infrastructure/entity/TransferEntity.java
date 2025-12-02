@@ -48,6 +48,17 @@ public class TransferEntity {
     @Column(name = "approval_notes", length = 500)
     private String approvalNotes;
 
+    @Column(name = "rejected_at")
+    private LocalDateTime rejectedAt;
+
+    @Column(name = "rejection_notes", length = 500)
+    private String rejectionNotes;
+
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "rejected_by_id")
+    private UserEntity rejectedBy;
+
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_inventory_id")

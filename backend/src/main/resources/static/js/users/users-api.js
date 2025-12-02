@@ -903,16 +903,26 @@ async function loadUserStatistics() {
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Check if current user is SUPERADMIN
         // Safely get usersData - check if we're in items page context
         const usersDataRef = window.usersData || (typeof usersData !== 'undefined' ? usersData : {});
         const currentRole = usersDataRef.currentLoggedInUserRole || '';
-        if (currentRole !== 'SUPERADMIN') {
-            // For non-SUPERADMIN users, return null to use local calculation
+        const isSuperAdmin = currentRole === 'SUPERADMIN';
+        const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        
+        if (!isSuperAdmin && !isAdminRegional) {
+            // For other roles, return null to use local calculation
             return null;
         }
 
-        const response = await fetch('/api/v1/users/statistics', {
+        let endpoint = '';
+        if (isSuperAdmin) {
+            endpoint = '/api/v1/users/statistics';
+        } else if (isAdminRegional) {
+            endpoint = '/api/v1/users/regional/statistics';
+        }
+
+        const response = await fetch(endpoint, {
             method: 'GET',
             headers: headers
         });
@@ -922,6 +932,9 @@ async function loadUserStatistics() {
             // Store statistics in usersData
             if (window.usersData) {
                 window.usersData.statistics = statistics;
+            }
+            if (usersData && usersData !== window.usersData) {
+                usersData.statistics = statistics;
             }
             return statistics;
         } else {

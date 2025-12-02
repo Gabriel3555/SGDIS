@@ -5,13 +5,15 @@ let currentUserRegionalId = null;
 let verificationDataAdminRegional = {
     verifications: [],
     filteredVerifications: [],
+    inventories: [],
     currentPage: 0,
     pageSize: 10,
     totalPages: 0,
     totalElements: 0,
     filters: {
         status: 'all',
-        searchTerm: ''
+        searchTerm: '',
+        inventoryId: 'all'
     }
 };
 
@@ -182,8 +184,11 @@ async function loadVerificationsForAdminRegional(page = 0) {
             window.verificationData.searchTerm = verificationDataAdminRegional.filters.searchTerm;
             window.verificationData.selectedStatus = verificationDataAdminRegional.filters.status;
             
+            // Load inventories for filter
+            await loadInventoriesForAdminRegional();
+            
             // Update UI
-            updateVerificationUIForAdminRegional();
+            await updateVerificationUIForAdminRegional();
         } else {
             throw new Error('Error al cargar las verificaciones');
         }
@@ -251,9 +256,87 @@ function filterVerificationsForAdminRegional() {
 }
 
 /**
+ * Load inventories for admin regional filter
+ */
+async function loadInventoriesForAdminRegional() {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            return;
+        }
+
+        const response = await fetch('/api/v1/inventory/regionalAdminInventories?page=0&size=1000', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const inventories = Array.isArray(data.content) ? data.content : (Array.isArray(data) ? data : []);
+            verificationDataAdminRegional.inventories = inventories;
+            
+            // Also update window.verificationData for compatibility
+            if (window.verificationData) {
+                window.verificationData.inventories = inventories;
+            }
+        } else {
+            console.warn('Failed to load inventories for admin regional');
+            verificationDataAdminRegional.inventories = [];
+        }
+    } catch (error) {
+        console.error('Error loading inventories for admin regional:', error);
+        verificationDataAdminRegional.inventories = [];
+    }
+}
+
+/**
+ * Load verification statistics for admin regional
+ */
+async function loadVerificationStatisticsForAdminRegional() {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            return null;
+        }
+
+        const response = await fetch('/api/v1/verifications/regional/statistics', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const statistics = await response.json();
+            // Store statistics in verificationData
+            if (window.verificationData) {
+                window.verificationData.statistics = statistics;
+            }
+            if (verificationDataAdminRegional) {
+                verificationDataAdminRegional.statistics = statistics;
+            }
+            return statistics;
+        } else {
+            console.warn('Failed to load verification statistics, falling back to local calculation');
+            return null;
+        }
+    } catch (error) {
+        console.error('Error loading verification statistics:', error);
+        return null;
+    }
+}
+
+/**
  * Update verification UI for admin regional
  */
-function updateVerificationUIForAdminRegional() {
+async function updateVerificationUIForAdminRegional() {
+    // Load statistics first (for ADMIN_REGIONAL, this will use the regional endpoint)
+    await loadVerificationStatisticsForAdminRegional();
+    
     // Update stats
     if (window.updateStatsCards) {
         window.updateStatsCards();
@@ -282,6 +365,17 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
     
     const currentSearchTerm = verificationDataAdminRegional.filters.searchTerm || '';
     const currentStatusFilter = verificationDataAdminRegional.filters.status || 'all';
+    const currentInventoryFilter = verificationDataAdminRegional.filters.inventoryId || 'all';
+    
+    // Build inventory options
+    const inventories = verificationDataAdminRegional.inventories || [];
+    let inventoryOptions = '<option value="all">Todos los Inventarios</option>';
+    inventories.forEach(inv => {
+        if (inv && inv.id && inv.name) {
+            const selected = currentInventoryFilter === inv.id.toString() || currentInventoryFilter === inv.id ? 'selected' : '';
+            inventoryOptions += `<option value="${inv.id}" ${selected}>${inv.name}</option>`;
+        }
+    });
     
     container.innerHTML = `
         <div class="relative flex-1" style="min-width: 200px;">
@@ -296,6 +390,15 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
                     class="w-full pl-11 pr-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white text-gray-900 transition-all"
                     style="height: 56px; font-size: 0.9375rem;">
             </div>
+        </div>
+        <div class="relative" style="min-width: 200px; flex-shrink: 0;">
+            <label class="block text-xs font-medium text-gray-600 mb-1.5">Filtrar por Inventario</label>
+            <select id="verificationInventoryFilterAdminRegional" 
+                onchange="handleVerificationInventoryFilterForAdminRegional(this.value)" 
+                class="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white text-gray-900 transition-all" 
+                style="height: 56px; font-size: 0.9375rem;">
+                ${inventoryOptions}
+            </select>
         </div>
         <div class="relative" style="min-width: 180px; flex-shrink: 0;">
             <label class="block text-xs font-medium text-gray-600 mb-1.5">Estado</label>
@@ -323,6 +426,88 @@ function handleVerificationSearchForAdminRegional(event) {
         verificationDataAdminRegional.filters.searchTerm = searchTerm;
         filterVerificationsForAdminRegional();
         updateVerificationUIForAdminRegional();
+    }
+}
+
+/**
+ * Handle inventory filter change for admin regional
+ */
+async function handleVerificationInventoryFilterForAdminRegional(inventoryId) {
+    verificationDataAdminRegional.filters.inventoryId = inventoryId;
+    
+    // Reload verifications with inventory filter
+    if (inventoryId && inventoryId !== 'all') {
+        // Load verifications filtered by inventory
+        await loadVerificationsForAdminRegionalByInventory(inventoryId);
+    } else {
+        // Load all verifications for regional
+        await loadVerificationsForAdminRegional(0);
+    }
+}
+
+/**
+ * Load verifications filtered by inventory for admin regional
+ */
+async function loadVerificationsForAdminRegionalByInventory(inventoryId) {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        // Show loading state
+        const container = document.getElementById('verificationTableContainer');
+        if (container) {
+            container.innerHTML = `
+                <div class="animate-pulse space-y-4">
+                    <div class="h-32 bg-gray-200 rounded-xl"></div>
+                    <div class="h-32 bg-gray-200 rounded-xl"></div>
+                    <div class="h-32 bg-gray-200 rounded-xl"></div>
+                </div>
+            `;
+        }
+
+        // Load verifications filtered by inventory
+        const response = await fetch(`/api/v1/verifications?inventoryId=${inventoryId}&page=0&size=${verificationDataAdminRegional.pageSize}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Update verifications data
+            verificationDataAdminRegional.verifications = Array.isArray(data.content) ? data.content : [];
+            verificationDataAdminRegional.totalElements = data.totalElements || 0;
+            verificationDataAdminRegional.totalPages = data.totalPages || 0;
+            verificationDataAdminRegional.currentPage = data.number || 0;
+            
+            // Apply filters
+            filterVerificationsForAdminRegional();
+            
+            // Update window.verificationData for compatibility
+            if (!window.verificationData) {
+                window.verificationData = {};
+            }
+            window.verificationData.verifications = verificationDataAdminRegional.verifications;
+            window.verificationData.filteredVerifications = verificationDataAdminRegional.filteredVerifications;
+            window.verificationData.totalElements = verificationDataAdminRegional.totalElements;
+            window.verificationData.currentPage = verificationDataAdminRegional.currentPage;
+            window.verificationData.itemsPerPage = verificationDataAdminRegional.pageSize;
+            window.verificationData.searchTerm = verificationDataAdminRegional.filters.searchTerm;
+            window.verificationData.selectedStatus = verificationDataAdminRegional.filters.status;
+            
+            // Update UI
+            await updateVerificationUIForAdminRegional();
+        } else {
+            throw new Error('Error al cargar las verificaciones');
+        }
+    } catch (error) {
+        console.error('Error loading verifications by inventory:', error);
+        showError('Error al cargar las verificaciones: ' + error.message);
     }
 }
 
@@ -383,7 +568,10 @@ if (document.readyState === 'loading') {
 
 // Export functions
 window.loadVerificationsForAdminRegional = loadVerificationsForAdminRegional;
+window.loadVerificationStatisticsForAdminRegional = loadVerificationStatisticsForAdminRegional;
+window.loadInventoriesForAdminRegional = loadInventoriesForAdminRegional;
 window.handleVerificationSearchForAdminRegional = handleVerificationSearchForAdminRegional;
+window.handleVerificationInventoryFilterForAdminRegional = handleVerificationInventoryFilterForAdminRegional;
 window.handleVerificationStatusFilterForAdminRegional = handleVerificationStatusFilterForAdminRegional;
 window.initializeAdminRegionalVerifications = initializeAdminRegionalVerifications;
 
