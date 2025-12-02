@@ -100,14 +100,10 @@ async function loadCancellations() {
             cancellationsData.pageSize,
             userRole
         );
-
-        console.log('Cancellations page data:', pageData);
         
         cancellationsData.cancellations = pageData.content || [];
         cancellationsData.totalPages = pageData.totalPages || 0;
         cancellationsData.totalElements = pageData.totalElements || 0;
-
-        console.log('Loaded cancellations:', cancellationsData.cancellations.length);
 
         // Apply filters
         filterCancellations();

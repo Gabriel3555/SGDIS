@@ -13,6 +13,18 @@
                 document.documentElement.classList.add('dark');
             }
         })();
+        
+        // Suprimir warning de Tailwind CDN
+        (function() {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('cdn.tailwindcss.com') && message.includes('should not be used in production')) {
+                    return; // Suprimir este warning específico
+                }
+                originalWarn.apply(console, args);
+            };
+        })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>

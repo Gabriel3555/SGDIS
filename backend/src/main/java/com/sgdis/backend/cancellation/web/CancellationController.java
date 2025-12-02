@@ -70,17 +70,17 @@ public class CancellationController {
 
     @Operation(
             summary = "Get all cancellations",
-            description = "Retrieves paginated cancellations (Superadmin only)"
+            description = "Retrieves paginated cancellations (Superadmin, Admin Regional, Admin Institution)"
     )
     @ApiResponse(
             responseCode = "200",
             description = "Cancellations retrieved successfully",
             content = @Content(schema = @Schema(implementation = Page.class))
     )
-    @ApiResponse(responseCode = "403", description = "Access denied - SUPERADMIN role required")
+    @ApiResponse(responseCode = "403", description = "Access denied - Required role: SUPERADMIN, ADMIN_REGIONAL, or ADMIN_INSTITUTION")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
     @GetMapping
     public ResponseEntity<Page<CancellationResponse>> getAllCancellations(
             @Parameter(description = "Page number (0-indexed)")
@@ -316,6 +316,7 @@ public class CancellationController {
     @ApiResponse(responseCode = "404", description = "Cancellation or format file not found")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
     @GetMapping("/{cancellationId}/download-format")
     public ResponseEntity<Resource> downloadFormatFile(
             @Parameter(description = "Cancellation ID", required = true)
@@ -351,6 +352,7 @@ public class CancellationController {
     @ApiResponse(responseCode = "404", description = "Cancellation or format example file not found")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
     @GetMapping("/{cancellationId}/download-format-example")
     public ResponseEntity<Resource> downloadFormatExampleFile(
             @Parameter(description = "Cancellation ID", required = true)
@@ -387,6 +389,7 @@ public class CancellationController {
     @ApiResponse(responseCode = "404", description = "Cancellation not found")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
     @PostMapping(value = "/{cancellationId}/upload-format-example", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadFormatExample(
             @Parameter(description = "Cancellation ID", required = true)
@@ -426,6 +429,7 @@ public class CancellationController {
     @ApiResponse(responseCode = "404", description = "Cancellation not found")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
     @PostMapping("/{cancellationId}/accept")
     public ResponseEntity<AcceptCancellationResponse> acceptCancellation(
             @Parameter(description = "Cancellation ID", required = true)
@@ -455,6 +459,7 @@ public class CancellationController {
     @ApiResponse(responseCode = "404", description = "Cancellation not found")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
     @PostMapping("/{cancellationId}/refuse")
     public ResponseEntity<RefuseCancellationResponse> refuseCancellation(
             @Parameter(description = "Cancellation ID", required = true)
@@ -482,6 +487,7 @@ public class CancellationController {
     @ApiResponse(responseCode = "404", description = "Cancellation not found")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
     @PostMapping(value = "/{cancellationId}/upload-format", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadFormat(
             @Parameter(description = "Cancellation ID", required = true)
