@@ -588,6 +588,8 @@
     <!-- Token Auto-Refresh Script -->
     <script src="../../../js/token-refresh.js"></script>
     <!-- dashboard.js removed - superadmin has its own inline JavaScript -->
+    <!-- Custom Select Component (needed for filter dropdowns) -->
+    <script src="../../../js/inventory/inventory-modals.js"></script>
     <script src="../../../js/dark-mode.js"></script>
     <script src="../../../js/websocket-client.js"></script>
     <script src="../../../js/notification-sound.js"></script>
@@ -695,6 +697,214 @@
             50% {
                 opacity: .5;
             }
+        }
+
+        /* Custom Select Styles */
+        .custom-select-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .custom-select-container.select-open {
+            z-index: 10002;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border-color: #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger:hover {
+            border-color: #e5e7eb;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-arrow {
+            color: #d1d5db;
+        }
+
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.75rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 2.5rem;
+        }
+
+        .custom-select-trigger:hover {
+            border-color: #10b981;
+        }
+
+        .custom-select-trigger:focus-within {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: #10b981;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .custom-select-text {
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-placeholder {
+            color: #9ca3af;
+        }
+
+        .custom-select-arrow {
+            color: #10b981;
+            transition: transform 0.2s ease;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+        }
+
+        .custom-select-dropdown {
+            position: fixed;
+            background: white;
+            border: 2px solid #10b981;
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 10050;
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            min-width: 180px;
+        }
+
+        /* Dropdown opening upward */
+        .custom-select.dropdown-up .custom-select-dropdown {
+            border-top: 2px solid #10b981;
+            border-bottom: none;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .custom-select.dropdown-up .custom-select-trigger {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        .custom-select.dropdown-up .custom-select-arrow {
+            transform: rotate(0deg);
+        }
+
+        .custom-select.open .custom-select-dropdown {
+            display: block;
+        }
+
+        .custom-select.open {
+            z-index: 10002;
+        }
+
+        #dashboardFiltersContainer {
+            overflow: visible !important;
+        }
+
+        #dashboardFiltersContainer > div {
+            overflow: visible !important;
+        }
+
+        .custom-select-search {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            outline: none;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-options {
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .custom-select-option {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .custom-select-option.selected {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .custom-select-option.disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .custom-select-option.disabled:hover {
+            background-color: transparent;
+        }
+
+        /* Dark mode support */
+        .dark .custom-select-trigger {
+            background: #1f2937;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-text {
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-placeholder {
+            color: #9ca3af;
+        }
+
+        .dark .custom-select-dropdown {
+            background: #1f2937;
+            border-color: #10b981;
+        }
+
+        .dark .custom-select-search {
+            background: #1f2937;
+            color: #f3f4f6;
+            border-bottom-color: #4b5563;
+        }
+
+        .dark .custom-select-option {
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-option:hover {
+            background-color: #374151;
+        }
+
+        .dark .custom-select.custom-select-disabled .custom-select-trigger {
+            background: #374151;
+            color: #6b7280;
+            border-color: #4b5563;
         }
     </style>
 
@@ -1085,113 +1295,130 @@
         // Load inventory statistics
         async function loadInventoryStatistics(headers) {
             try {
-                let url = '/api/v1/inventory/statistics';
-                
-                // Add institution filter if selected
-                if (superadminDashboardData.selectedInstitution) {
-                    url = `/api/v1/inventory/statistics/institution/${superadminDashboardData.selectedInstitution}`;
-                } else if (superadminDashboardData.selectedRegional) {
-                    // If only regional is selected, we need to filter client-side
-                    url = '/api/v1/inventory/statistics';
-                }
-
-                const response = await fetch(url, { headers });
-                if (response.ok) {
-                    let stats = await response.json();
+                // Always get all inventories and filter client-side for better reliability
+                const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                if (inventoriesResponse.ok) {
+                    const data = await inventoriesResponse.json();
+                    let inventories = data.content || data || [];
                     
-                    // If only regional is selected (no institution), filter client-side
-                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
-                        // Get all inventories and filter by regional
-                        const inventoriesResponse = await fetch('/api/v1/inventory', { headers });
-                        if (inventoriesResponse.ok) {
-                            const inventories = await inventoriesResponse.json();
-                            const filteredInventories = inventories.filter(inv => {
-                                const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
-                                return institution && institution.regionalId == superadminDashboardData.selectedRegional;
-                            });
-                            
-                            // Recalculate stats from filtered inventories
-                            stats = {
-                                totalInventories: new Set(filteredInventories.map(inv => inv.id)).size,
-                                activeInventories: filteredInventories.filter(inv => inv.status === 'ACTIVE').length,
-                                inactiveInventories: filteredInventories.filter(inv => inv.status === 'INACTIVE').length,
-                                totalItems: filteredInventories.reduce((sum, inv) => sum + (inv.totalItems || 0), 0),
-                                totalValue: filteredInventories.reduce((sum, inv) => sum + (inv.totalValue || 0), 0)
-                            };
-                        }
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        inventories = inventories.filter(inv => {
+                            return inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString();
+                        });
+                    }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
+                        inventories = inventories.filter(inv => {
+                            const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
+                            return institution && institution.regionalId == superadminDashboardData.selectedRegional;
+                        });
                     }
                     
+                    // Calculate stats from filtered inventories
+                    const stats = {
+                        totalInventories: new Set(inventories.map(inv => inv.id)).size,
+                        activeInventories: inventories.filter(inv => inv.status === 'ACTIVE').length,
+                        inactiveInventories: inventories.filter(inv => inv.status === 'INACTIVE').length,
+                        totalItems: inventories.reduce((sum, inv) => sum + (inv.totalItems || inv.quantityItems || 0), 0),
+                        totalValue: inventories.reduce((sum, inv) => sum + (inv.totalValue || inv.totalPrice || 0), 0)
+                    };
+                    
                     superadminDashboardData.inventoryStats = stats;
+                } else {
+                    // Fallback: try to get statistics from general endpoint
+                    const response = await fetch('/api/v1/inventory/statistics', { headers });
+                    if (response.ok) {
+                        superadminDashboardData.inventoryStats = await response.json();
+                    }
                 }
             } catch (error) {
                 console.error('Error loading inventory statistics:', error);
+                // Set default values on error
+                superadminDashboardData.inventoryStats = {
+                    totalInventories: 0,
+                    activeInventories: 0,
+                    inactiveInventories: 0,
+                    totalItems: 0,
+                    totalValue: 0
+                };
             }
         }
 
         // Load user statistics
         async function loadUserStatistics(headers) {
             try {
-                let url = '/api/v1/users/statistics';
-                
-                // Add institution filter if selected
-                if (superadminDashboardData.selectedInstitution) {
-                    url = `/api/v1/users/statistics/institution/${superadminDashboardData.selectedInstitution}`;
-                } else if (superadminDashboardData.selectedRegional) {
-                    // If only regional is selected, filter client-side
-                    url = '/api/v1/users/statistics';
-                }
-
-                const response = await fetch(url, { headers });
-                if (response.ok) {
-                    let stats = await response.json();
+                // Always get all users and filter client-side for better reliability
+                const usersResponse = await fetch('/api/v1/users?page=0&size=10000', { headers });
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    let users = usersData.users || [];
                     
-                    // If only regional is selected (no institution), filter client-side
-                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
-                        // Get all users and filter by regional
-                        const usersResponse = await fetch('/api/v1/users?page=0&size=10000', { headers });
-                        if (usersResponse.ok) {
-                            const usersData = await usersResponse.json();
-                            const users = usersData.users || [];
-                            
-                            // Filter users by regional
-                            const filteredUsers = users.filter(user => {
-                                if (!user.institution) return false;
-                                const institution = superadminDashboardData.institutions.find(inst => 
-                                    inst.name === user.institution && inst.regionalId == superadminDashboardData.selectedRegional
-                                );
-                                return !!institution;
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        const selectedInstitution = superadminDashboardData.institutions.find(
+                            inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                        );
+                        if (selectedInstitution) {
+                            users = users.filter(user => {
+                                return user.institution === selectedInstitution.name;
                             });
-                            
-                            // Recalculate stats from filtered users
-                            const roleCounts = {
-                                SUPERADMIN: 0,
-                                ADMIN_REGIONAL: 0,
-                                ADMIN_INSTITUTION: 0,
-                                WAREHOUSE: 0,
-                                USER: 0
-                            };
-                            
-                            filteredUsers.forEach(user => {
-                                if (roleCounts.hasOwnProperty(user.role)) {
-                                    roleCounts[user.role]++;
-                                }
-                            });
-                            
-                            stats = {
-                                totalUsers: filteredUsers.length,
-                                superadminCount: roleCounts.SUPERADMIN,
-                                adminRegionalCount: roleCounts.ADMIN_REGIONAL,
-                                adminInstitutionCount: roleCounts.ADMIN_INSTITUTION,
-                                warehouseCount: roleCounts.WAREHOUSE,
-                                userCount: roleCounts.USER
-                            };
                         }
                     }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
+                        users = users.filter(user => {
+                            if (!user.institution) return false;
+                            const institution = superadminDashboardData.institutions.find(inst => 
+                                inst.name === user.institution && inst.regionalId == superadminDashboardData.selectedRegional
+                            );
+                            return !!institution;
+                        });
+                    }
+                    
+                    // Calculate stats from filtered users
+                    const roleCounts = {
+                        SUPERADMIN: 0,
+                        ADMIN_REGIONAL: 0,
+                        ADMIN_INSTITUTION: 0,
+                        WAREHOUSE: 0,
+                        USER: 0
+                    };
+                    
+                    users.forEach(user => {
+                        if (roleCounts.hasOwnProperty(user.role)) {
+                            roleCounts[user.role]++;
+                        }
+                    });
+                    
+                    const stats = {
+                        totalUsers: users.length,
+                        superadminCount: roleCounts.SUPERADMIN,
+                        adminRegionalCount: roleCounts.ADMIN_REGIONAL,
+                        adminInstitutionCount: roleCounts.ADMIN_INSTITUTION,
+                        warehouseCount: roleCounts.WAREHOUSE,
+                        userCount: roleCounts.USER
+                    };
                     
                     superadminDashboardData.userStats = stats;
+                } else {
+                    // Fallback: try to get statistics from general endpoint
+                    const response = await fetch('/api/v1/users/statistics', { headers });
+                    if (response.ok) {
+                        superadminDashboardData.userStats = await response.json();
+                    }
                 }
             } catch (error) {
                 console.error('Error loading user statistics:', error);
+                // Set default values on error
+                superadminDashboardData.userStats = {
+                    totalUsers: 0,
+                    superadminCount: 0,
+                    adminRegionalCount: 0,
+                    adminInstitutionCount: 0,
+                    warehouseCount: 0,
+                    userCount: 0
+                };
             }
         }
 
@@ -1257,6 +1484,10 @@
             }
         }
 
+        // Custom Select instances
+        let regionalCustomSelect = null;
+        let institutionCustomSelect = null;
+
         // Initialize filter dropdowns
         function initializeFilters() {
             const container = document.getElementById('dashboardFiltersContainer');
@@ -1265,81 +1496,192 @@
             container.innerHTML = `
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Regional</label>
-                    <select id="dashboardRegionalFilter" onchange="handleRegionalFilterChange(this.value)"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        <option value="">Todas las regionales</option>
-                    </select>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="dashboardRegionalFilterSelect">
+                            <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                                <span class="custom-select-text custom-select-placeholder">Todas las regionales</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                <div class="custom-select-options" id="dashboardRegionalFilterOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="dashboardRegionalFilter" value="">
+                    </div>
                 </div>
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Centro</label>
-                    <select id="dashboardInstitutionFilter" onchange="handleInstitutionFilterChange(this.value)"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                        ${!superadminDashboardData.selectedRegional ? 'disabled' : ''}>
-                        <option value="">Todos los centros</option>
-                    </select>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="dashboardInstitutionFilterSelect">
+                            <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                                <span class="custom-select-text custom-select-placeholder">Todos los centros</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar centro...">
+                                <div class="custom-select-options" id="dashboardInstitutionFilterOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="dashboardInstitutionFilter" value="">
+                    </div>
                 </div>
             `;
 
-            // Populate regionals dropdown after data is loaded
-            populateRegionalFilter();
+            // Initialize Custom Select instances
+            if (typeof CustomSelect !== 'undefined') {
+                regionalCustomSelect = new CustomSelect('dashboardRegionalFilterSelect', {
+                    placeholder: 'Todas las regionales',
+                    onChange: (option) => {
+                        const value = option.value || '';
+                        document.getElementById('dashboardRegionalFilter').value = value;
+                        handleRegionalFilterChange(value);
+                    }
+                });
+
+                institutionCustomSelect = new CustomSelect('dashboardInstitutionFilterSelect', {
+                    placeholder: 'Todos los centros',
+                    disabled: !superadminDashboardData.selectedRegional,
+                    onChange: (option) => {
+                        const value = option.value || '';
+                        document.getElementById('dashboardInstitutionFilter').value = value;
+                        handleInstitutionFilterChange(value);
+                    }
+                });
+
+                // Set initial empty options (will be populated when data loads)
+                regionalCustomSelect.setOptions([{ value: '', label: 'Todas las regionales' }]);
+                institutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
+            } else {
+                console.warn('CustomSelect class not available, falling back to regular selects');
+            }
+
+            // Note: populateRegionalFilter() will be called after data is loaded in loadDashboardData()
         }
 
         // Populate regional filter dropdown
         function populateRegionalFilter() {
-            const select = document.getElementById('dashboardRegionalFilter');
-            if (!select) return;
-
-            // Clear existing options except the first one
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
-
-            // Add regional options
-            superadminDashboardData.regionals.forEach(regional => {
-                const option = document.createElement('option');
-                option.value = regional.id;
-                option.textContent = regional.name;
-                if (regional.id == superadminDashboardData.selectedRegional) {
-                    option.selected = true;
+            if (regionalCustomSelect) {
+                // Use CustomSelect
+                const options = [
+                    { value: '', label: 'Todas las regionales' },
+                    ...superadminDashboardData.regionals.map(regional => ({
+                        value: regional.id.toString(),
+                        label: regional.name
+                    }))
+                ];
+                
+                regionalCustomSelect.setOptions(options);
+                
+                // Set selected value if exists
+                if (superadminDashboardData.selectedRegional) {
+                    const selectedOption = options.find(opt => opt.value === superadminDashboardData.selectedRegional.toString());
+                    if (selectedOption) {
+                        regionalCustomSelect.selectOption(selectedOption);
+                    }
+                } else {
+                    regionalCustomSelect.clear();
                 }
-                select.appendChild(option);
-            });
+            } else {
+                // Fallback to regular select
+                const select = document.getElementById('dashboardRegionalFilter');
+                if (!select) return;
+
+                // Clear existing options except the first one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+
+                // Add regional options
+                superadminDashboardData.regionals.forEach(regional => {
+                    const option = document.createElement('option');
+                    option.value = regional.id;
+                    option.textContent = regional.name;
+                    if (regional.id == superadminDashboardData.selectedRegional) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
         }
 
         // Populate institution filter dropdown
         function populateInstitutionFilter() {
-            const select = document.getElementById('dashboardInstitutionFilter');
-            if (!select) return;
-
-            // Clear existing options except the first one
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
-
-            // Enable/disable based on regional selection
-            if (!superadminDashboardData.selectedRegional) {
-                select.disabled = true;
-                return;
-            }
-
-            select.disabled = false;
-
-            // Add institution options
-            superadminDashboardData.filteredInstitutions.forEach(institution => {
-                const option = document.createElement('option');
-                option.value = institution.id;
-                option.textContent = institution.name;
-                if (institution.id == superadminDashboardData.selectedInstitution) {
-                    option.selected = true;
+            if (institutionCustomSelect) {
+                // Enable/disable based on regional selection
+                if (!superadminDashboardData.selectedRegional) {
+                    institutionCustomSelect.setDisabled(true);
+                    institutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
+                    institutionCustomSelect.clear();
+                    return;
                 }
-                select.appendChild(option);
-            });
+
+                institutionCustomSelect.setDisabled(false);
+
+                // Use CustomSelect
+                const options = [
+                    { value: '', label: 'Todos los centros' },
+                    ...superadminDashboardData.filteredInstitutions.map(institution => ({
+                        value: institution.id.toString(),
+                        label: institution.name
+                    }))
+                ];
+                
+                institutionCustomSelect.setOptions(options);
+                
+                // Set selected value if exists
+                if (superadminDashboardData.selectedInstitution) {
+                    const selectedOption = options.find(opt => opt.value === superadminDashboardData.selectedInstitution.toString());
+                    if (selectedOption) {
+                        institutionCustomSelect.selectOption(selectedOption);
+                    }
+                } else {
+                    institutionCustomSelect.clear();
+                }
+            } else {
+                // Fallback to regular select
+                const select = document.getElementById('dashboardInstitutionFilter');
+                if (!select) return;
+
+                // Clear existing options except the first one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+
+                // Enable/disable based on regional selection
+                if (!superadminDashboardData.selectedRegional) {
+                    select.disabled = true;
+                    return;
+                }
+
+                select.disabled = false;
+
+                // Add institution options
+                superadminDashboardData.filteredInstitutions.forEach(institution => {
+                    const option = document.createElement('option');
+                    option.value = institution.id;
+                    option.textContent = institution.name;
+                    if (institution.id == superadminDashboardData.selectedInstitution) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
         }
 
         // Handle regional filter change
         async function handleRegionalFilterChange(regionalId) {
             superadminDashboardData.selectedRegional = regionalId || '';
             superadminDashboardData.selectedInstitution = ''; // Reset institution when regional changes
+
+            // Clear institution selection in CustomSelect if available
+            if (institutionCustomSelect) {
+                institutionCustomSelect.clear();
+            }
 
             const token = localStorage.getItem('jwt');
             const headers = {
@@ -1370,20 +1712,20 @@
         // Load all inventories for chart
         async function loadAllInventories(headers) {
             try {
-                let url = '/api/v1/inventory?page=0&size=10000';
-                
-                // Add institution filter if selected
-                if (superadminDashboardData.selectedInstitution) {
-                    url = `/api/v1/inventory/institution/${superadminDashboardData.selectedInstitution}?page=0&size=10000`;
-                }
-
-                const response = await fetch(url, { headers });
+                // Always get all inventories and filter client-side
+                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
                 if (response.ok) {
                     const data = await response.json();
                     let inventories = data.content || data || [];
                     
-                    // If only regional is selected (no institution), filter client-side
-                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        inventories = inventories.filter(inv => {
+                            return inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString();
+                        });
+                    }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
                         inventories = inventories.filter(inv => {
                             const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
                             return institution && institution.regionalId == superadminDashboardData.selectedRegional;
@@ -1441,30 +1783,38 @@
         // Load recent inventories
         async function loadRecentInventories(headers) {
             try {
-                let url = '/api/v1/inventory?page=0&size=5';
-                
-                // Add institution filter if selected
-                if (superadminDashboardData.selectedInstitution) {
-                    url = `/api/v1/inventory/institution/${superadminDashboardData.selectedInstitution}?page=0&size=5`;
-                }
-
-                const response = await fetch(url, { headers });
+                // Always get all inventories and filter client-side, then take first 5
+                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    let inventories = data.content || [];
+                    let inventories = data.content || data || [];
                     
-                    // If only regional is selected (no institution), filter client-side
-                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        inventories = inventories.filter(inv => {
+                            return inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString();
+                        });
+                    }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
                         inventories = inventories.filter(inv => {
                             const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
                             return institution && institution.regionalId == superadminDashboardData.selectedRegional;
                         });
                     }
                     
-                    superadminDashboardData.recentInventories = inventories;
+                    // Sort by most recent (assuming there's a createdAt or updatedAt field) and take first 5
+                    inventories.sort((a, b) => {
+                        const dateA = new Date(a.createdAt || a.updatedAt || 0);
+                        const dateB = new Date(b.createdAt || b.updatedAt || 0);
+                        return dateB - dateA;
+                    });
+                    
+                    superadminDashboardData.recentInventories = inventories.slice(0, 5);
                 }
             } catch (error) {
                 console.error('Error loading recent inventories:', error);
+                superadminDashboardData.recentInventories = [];
             }
         }
 

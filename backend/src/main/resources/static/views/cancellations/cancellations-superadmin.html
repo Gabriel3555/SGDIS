@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cancelaciones - Superadmin - SGDIS | Sistema de Gestión de Inventario SENA</title>
+    <title>Bajas - Superadmin - SGDIS | Sistema de Gestión de Inventario SENA</title>
     <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function () {
@@ -64,7 +64,7 @@
             </div>
             <div class="text-gray-800">
                 <div class="font-bold text-lg">SGDIS</div>
-                <div class="text-xs opacity-70">Cancelaciones</div>
+                <div class="text-xs opacity-70">Bajas</div>
             </div>
         </div>
     </div>
@@ -109,7 +109,7 @@
         <a href="/superadmin/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
            onclick="handleSidebarClick(event, '/superadmin/cancellations')">
             <i class="fas fa-times-circle text-lg"></i>
-            <span class="font-medium">Cancelaciones</span>
+            <span class="font-medium">Bajas</span>
         </a>
         <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
            onclick="handleSidebarClick(event, '/superadmin/reports')">
@@ -167,7 +167,7 @@
                 <div class="relative flex-1 max-w-xl">
                     <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                     <input type="text" id="cancellationsSearch"
-                           placeholder="Buscar cancelaciones por solicitante, items o razón..." class="search-input">
+                           placeholder="Buscar bajas por solicitante, items o razón..." class="search-input">
                 </div>
             </div>
 
@@ -190,19 +190,33 @@
         <!-- Header Section -->
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-1">Gestión de Cancelaciones</h1>
-                <p class="text-gray-600 dark:text-gray-400">Control y administración de solicitudes de cancelación</p>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-12 h-12 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-file-invoice text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Gestión de Bajas</h1>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm">Control y administración de solicitudes de baja de bienes</p>
+                    </div>
+                </div>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="openAskCancellationModal()"
-                        class="bg-[#00AF00] hover:bg-[#008800] text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2">
-                    <i class="fas fa-times-circle"></i>
-                    <span>Solicitar Cancelación</span>
+                        class="group relative bg-gradient-to-r from-[#00AF00] to-[#008800] hover:from-[#008800] hover:to-[#006600] text-white px-6 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 shadow-lg hover:shadow-xl font-semibold">
+                    <i class="fas fa-plus-circle text-lg"></i>
+                    <span>Nueva Solicitud</span>
+                    <div class="absolute -top-2 -right-2 w-3 h-3 bg-yellow-400 rounded-full animate-pulse"></div>
+                </button>
+                <button onclick="downloadFormatTemplate()"
+                        class="group bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white px-5 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 font-semibold shadow-md hover:shadow-lg"
+                        title="Descargar formato GIL-F-011 (FORMATO CONCEPTO TÉCNICO DE BIENES)">
+                    <i class="fas fa-file-excel text-lg"></i>
+                    <span class="hidden sm:inline">Formato GIL-F-011</span>
                 </button>
                 <button onclick="loadCancellationsData()"
-                        class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                        class="group bg-white dark:bg-gray-700 border-2 border-[#00AF00] text-[#00AF00] dark:text-green-400 hover:bg-[#00AF00] hover:text-white dark:hover:bg-[#00AF00] px-5 py-3 rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-2 font-semibold shadow-md hover:shadow-lg">
                     <i class="fas fa-sync-alt" id="refreshIcon"></i>
-                    <span id="refreshText">Actualizar</span>
+                    <span id="refreshText" class="hidden sm:inline">Actualizar</span>
                 </button>
             </div>
         </div>
@@ -223,12 +237,20 @@
         </div>
 
         <!-- Filters Section -->
-        <div class="stat-card mb-6">
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Filtros</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="stat-card mb-6 border-2 border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-filter text-white"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">Filtros de Búsqueda</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <!-- Status Filter -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estado</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-[#00AF00]"></i>
+                        Estado
+                    </label>
                     <div class="custom-select-container">
                         <div class="custom-select" id="statusSelect">
                             <div class="custom-select-trigger">
@@ -238,14 +260,84 @@
                             <div class="custom-select-dropdown">
                                 <input type="text" class="custom-select-search" placeholder="Buscar estado...">
                                 <div class="custom-select-options" id="statusOptions">
-                                    <div class="custom-select-option" data-value="all">Todos los estados</div>
-                                    <div class="custom-select-option" data-value="pending">Pendientes</div>
-                                    <div class="custom-select-option" data-value="approved">Aprobadas</div>
-                                    <div class="custom-select-option" data-value="refused">Rechazadas</div>
+                                    <div class="custom-select-option" data-value="all">
+                                        <i class="fas fa-list mr-2"></i>Todos los estados
+                                    </div>
+                                    <div class="custom-select-option" data-value="pending">
+                                        <i class="fas fa-clock mr-2 text-yellow-500"></i>Pendientes
+                                    </div>
+                                    <div class="custom-select-option" data-value="approved">
+                                        <i class="fas fa-check-circle mr-2 text-green-500"></i>Aprobadas
+                                    </div>
+                                    <div class="custom-select-option" data-value="refused">
+                                        <i class="fas fa-times-circle mr-2 text-red-500"></i>Rechazadas
+                                    </div>
                                 </div>
                             </div>
                         </div>
                         <input type="hidden" id="selectedStatus" value="all">
+                    </div>
+                </div>
+
+                <!-- Requester Filter -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                        <i class="fas fa-user text-[#00AF00]"></i>
+                        Solicitante
+                    </label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="requesterSelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Todos los solicitantes</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar solicitante...">
+                                <div class="custom-select-options" id="requesterOptions">
+                                    <div class="custom-select-option" data-value="all">
+                                        <i class="fas fa-users mr-2"></i>Todos los solicitantes
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="selectedRequester" value="all">
+                    </div>
+                </div>
+
+                <!-- Date Range Filter -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt text-[#00AF00]"></i>
+                        Período
+                    </label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="dateRangeSelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Todos los períodos</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar período...">
+                                <div class="custom-select-options" id="dateRangeOptions">
+                                    <div class="custom-select-option" data-value="all">
+                                        <i class="fas fa-calendar mr-2"></i>Todos los períodos
+                                    </div>
+                                    <div class="custom-select-option" data-value="today">
+                                        <i class="fas fa-calendar-day mr-2 text-blue-500"></i>Hoy
+                                    </div>
+                                    <div class="custom-select-option" data-value="week">
+                                        <i class="fas fa-calendar-week mr-2 text-purple-500"></i>Última semana
+                                    </div>
+                                    <div class="custom-select-option" data-value="month">
+                                        <i class="fas fa-calendar-alt mr-2 text-indigo-500"></i>Último mes
+                                    </div>
+                                    <div class="custom-select-option" data-value="year">
+                                        <i class="fas fa-calendar mr-2 text-teal-500"></i>Último año
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="selectedDateRange" value="all">
                     </div>
                 </div>
             </div>
@@ -276,11 +368,20 @@
 </div>
 
 <!-- Ask for Cancellation Modal -->
-<div id="askCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Solicitar Cancelación de Items</h2>
-            <button onclick="closeAskCancellationModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+<div id="askCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity" style="overflow: visible;">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] transform transition-all duration-300 scale-95 animate-[slideIn_0.3s_ease-out]" style="overflow: visible;">
+        <div class="overflow-y-auto max-h-[90vh]" style="overflow-x: visible;">
+        <div class="sticky top-0 bg-gradient-to-r from-[#00AF00] to-[#008800] dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-invoice text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Nueva Solicitud de Baja</h2>
+                    <p class="text-sm text-white/80">Complete el formulario para solicitar la baja de items</p>
+                </div>
+            </div>
+            <button onclick="closeAskCancellationModal()" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
@@ -426,25 +527,35 @@
                 <!-- Actions -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button type="button" onclick="closeAskCancellationModal()"
-                            class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                        Cancelar
+                            class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold">
+                        <i class="fas fa-times mr-2"></i>Cancelar
                     </button>
                     <button type="submit"
-                            class="px-6 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                        Solicitar Cancelación
+                            class="px-6 py-3 bg-gradient-to-r from-[#00AF00] to-[#008800] hover:from-[#008800] hover:to-[#006600] text-white rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i>
+                        Solicitar Baja
                     </button>
                 </div>
             </form>
+        </div>
         </div>
     </div>
 </div>
 
 <!-- Accept Cancellation Modal -->
-<div id="acceptCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
-        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Aprobar Cancelación</h2>
-            <button onclick="closeAcceptCancellationModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+<div id="acceptCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all duration-300 scale-95">
+        <div class="sticky top-0 bg-gradient-to-r from-green-500 to-green-600 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Aprobar Baja</h2>
+                    <p class="text-sm text-white/80">Confirme la aprobación de esta solicitud de baja</p>
+                </div>
+            </div>
+            <button onclick="closeAcceptCancellationModal()" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
@@ -465,12 +576,13 @@
                 <!-- Actions -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button type="button" onclick="closeAcceptCancellationModal()"
-                            class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                        Cancelar
+                            class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold">
+                        <i class="fas fa-times mr-2"></i>Cancelar
                     </button>
                     <button type="submit"
-                            class="px-6 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
-                        Aprobar Cancelación
+                            class="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i>
+                        Aprobar Baja
                     </button>
                 </div>
             </form>
@@ -479,11 +591,19 @@
 </div>
 
 <!-- Refuse Cancellation Modal -->
-<div id="refuseCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
-        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Rechazar Cancelación</h2>
-            <button onclick="closeRefuseCancellationModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+<div id="refuseCancellationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all duration-300 scale-95">
+        <div class="sticky top-0 bg-gradient-to-r from-red-500 to-red-600 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-times-circle text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Rechazar Baja</h2>
+                    <p class="text-sm text-white/80">Confirme el rechazo de esta solicitud de baja</p>
+                </div>
+            </div>
+            <button onclick="closeRefuseCancellationModal()" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
@@ -504,12 +624,141 @@
                 <!-- Actions -->
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button type="button" onclick="closeRefuseCancellationModal()"
-                            class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                        Cancelar
+                            class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold">
+                        <i class="fas fa-times mr-2"></i>Cancelar
                     </button>
                     <button type="submit"
-                            class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors">
-                        Rechazar Cancelación
+                            class="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+                        <i class="fas fa-times-circle"></i>
+                        Rechazar Baja
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Format Modal -->
+<div id="uploadFormatModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all duration-300 scale-95">
+        <div class="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-upload text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Subir Formato GIL-F-011</h2>
+                    <p class="text-sm text-white/80">Formato CONCEPTO TÉCNICO DE BIENES</p>
+                </div>
+            </div>
+            <button onclick="closeUploadFormatModal()" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <form onsubmit="event.preventDefault(); handleUploadFormat();" class="space-y-6">
+                <input type="hidden" id="uploadFormatCancellationId" value="">
+
+                <!-- Info -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium text-blue-800 dark:text-blue-300 mb-1">Formato GIL-F-011</p>
+                            <p class="text-xs text-blue-600 dark:text-blue-400">
+                                Suba el archivo del formato "CONCEPTO TÉCNICO DE BIENES" (GIL-F-011) para esta cancelación.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Input -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Archivo del Formato <span class="text-red-500">*</span>
+                    </label>
+                    <input type="file" id="uploadFormatFile" required
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                           class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#00AF00] file:text-white hover:file:bg-[#008800]">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Formatos permitidos: PDF, Word, Excel, Imágenes (JPG, PNG)
+                    </p>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" onclick="closeUploadFormatModal()"
+                            class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+                        <i class="fas fa-upload"></i>
+                        Subir Formato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Format Example Modal -->
+<div id="uploadFormatExampleModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all duration-300 scale-95">
+        <div class="sticky top-0 bg-gradient-to-r from-purple-500 to-purple-600 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-alt text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">Subir Ejemplo de Formato</h2>
+                    <p class="text-sm text-white/80">Formato de ejemplo corregido</p>
+                </div>
+            </div>
+            <button onclick="closeUploadFormatExampleModal()" class="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6">
+            <form onsubmit="event.preventDefault(); handleUploadFormatExample();" class="space-y-6">
+                <input type="hidden" id="uploadFormatExampleCancellationId" value="">
+
+                <!-- Info -->
+                <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-purple-500 dark:text-purple-400 mt-1"></i>
+                        <div>
+                            <p class="text-sm font-medium text-purple-800 dark:text-purple-300 mb-1">Ejemplo de Formato</p>
+                            <p class="text-xs text-purple-600 dark:text-purple-400">
+                                Suba un archivo de ejemplo del formato corregido para esta cancelación.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Input -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Archivo de Ejemplo <span class="text-red-500">*</span>
+                    </label>
+                    <input type="file" id="uploadFormatExampleFile" required
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                           class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-500 file:text-white hover:file:bg-purple-600">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Formatos permitidos: PDF, Word, Excel, Imágenes (JPG, PNG)
+                    </p>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" onclick="closeUploadFormatExampleModal()"
+                            class="px-6 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold">
+                        <i class="fas fa-times mr-2"></i>Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-6 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-xl transition-all duration-200 transform hover:scale-105 active:scale-95 font-semibold shadow-lg hover:shadow-xl flex items-center gap-2">
+                        <i class="fas fa-file-upload"></i>
+                        Subir Ejemplo
                     </button>
                 </div>
             </form>
@@ -521,6 +770,7 @@
 <script src="../../js/dashboard.js"></script>
 <!-- Cancellations Module Scripts -->
 <script src="../../js/cancellations/cancellations-data.js"></script>
+<script src="../../js/token-refresh.js"></script>
 <script src="../../js/cancellations/cancellations-api.js"></script>
 <script src="../../js/cancellations/cancellations-ui.js"></script>
 <script src="../../js/cancellations/cancellations-forms.js"></script>
@@ -620,6 +870,376 @@
         .overlay.active {
             display: block;
         }
+    }
+
+    /* Animaciones personalizadas para modales */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    /* Aplicar animación cuando el modal se muestra */
+    #askCancellationModal:not(.hidden),
+    #acceptCancellationModal:not(.hidden),
+    #refuseCancellationModal:not(.hidden),
+    #uploadFormatModal:not(.hidden),
+    #uploadFormatExampleModal:not(.hidden) {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    #askCancellationModal:not(.hidden) > div,
+    #acceptCancellationModal:not(.hidden) > div,
+    #refuseCancellationModal:not(.hidden) > div,
+    #uploadFormatModal:not(.hidden) > div,
+    #uploadFormatExampleModal:not(.hidden) > div {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    /* Mejoras en la tabla */
+    .stat-card {
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Efecto hover mejorado en botones */
+    button:not(:disabled):hover {
+        transform: translateY(-2px);
+    }
+
+    button:not(:disabled):active {
+        transform: translateY(0);
+    }
+
+    /* Mejora en los badges de estado */
+    .status-badge {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .status-badge::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+        transition: left 0.5s;
+    }
+
+    .status-badge:hover::before {
+        left: 100%;
+    }
+
+    /* Mejora en los inputs de archivo */
+    input[type="file"] {
+        transition: all 0.3s ease;
+    }
+
+    input[type="file"]:hover {
+        border-color: #00AF00;
+    }
+
+    /* Animación de carga mejorada */
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+
+    /* Tooltip personalizado */
+    [title] {
+        position: relative;
+    }
+
+    /* Mejora en scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #00AF00;
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #008800;
+    }
+
+    .dark ::-webkit-scrollbar-track {
+        background: #1f2937;
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+        background: #00AF00;
+    }
+
+    .dark ::-webkit-scrollbar-thumb:hover {
+        background: #008800;
+    }
+
+    /* Efecto de pulso en botones importantes */
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.7;
+        }
+    }
+
+    .pulse-animation {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    /* Mejora en las tarjetas de estadísticas */
+    .stat-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        backdrop-filter: blur(10px);
+    }
+
+    .dark .stat-card {
+        background: linear-gradient(135deg, rgba(31, 41, 55, 0.5) 0%, rgba(17, 24, 39, 0.5) 100%);
+    }
+
+    /* Transición suave para todos los elementos */
+    * {
+        transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 150ms;
+    }
+
+    /* Fix para dropdowns dentro del modal de cancelaciones */
+    #askCancellationModal {
+        overflow: visible !important;
+    }
+
+    #askCancellationModal > div {
+        overflow: visible !important;
+    }
+
+    #askCancellationModal form {
+        overflow: visible !important;
+    }
+
+    /* Asegurar que los contenedores de select tengan position relative */
+    #askCancellationModal .custom-select-container {
+        position: relative !important;
+        overflow: visible !important;
+        z-index: 1;
+    }
+
+    /* Cuando un select está abierto, aumentar z-index */
+    #askCancellationModal .custom-select-container.select-open,
+    #askCancellationModal .custom-select.open {
+        z-index: 10060 !important;
+    }
+
+    /* Dropdown dentro del modal - usar fixed positioning */
+    #askCancellationModal .custom-select-dropdown {
+        position: fixed !important;
+        z-index: 10061 !important;
+        background: white;
+        border: 2px solid #00AF00;
+        border-top: none;
+        border-bottom-left-radius: 0.75rem;
+        border-bottom-right-radius: 0.75rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        max-height: 250px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: none;
+        min-width: 200px;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        transform: none !important;
+        inset: auto !important; /* Eliminar inset que causa problemas de posicionamiento */
+        /* No forzar left/right/top/bottom - dejar que JavaScript lo calcule */
+    }
+
+    .dark #askCancellationModal .custom-select-dropdown {
+        background-color: #1f2937;
+        border-color: #00AF00;
+    }
+
+    #askCancellationModal .custom-select.open .custom-select-dropdown {
+        display: block !important;
+    }
+
+    /* Dropdown abriendo hacia arriba */
+    #askCancellationModal .custom-select.dropdown-up .custom-select-dropdown {
+        border-top: 2px solid #00AF00;
+        border-bottom: none;
+        border-top-left-radius: 0.75rem;
+        border-top-right-radius: 0.75rem;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark #askCancellationModal .custom-select.dropdown-up .custom-select-dropdown {
+        border-top-color: #00AF00;
+    }
+
+    /* Asegurar que el contenido del modal no corte los dropdowns */
+    #askCancellationModal .p-6 {
+        overflow: visible !important;
+    }
+
+    #askCancellationModal #inventoryModeContent,
+    #askCancellationModal #plateModeContent {
+        overflow: visible !important;
+    }
+
+    /* Fix para dropdowns de filtros en la página principal */
+    .stat-card .custom-select-container {
+        position: relative !important;
+        overflow: visible !important;
+        z-index: 1;
+    }
+
+    .stat-card .custom-select-container.select-open,
+    .stat-card .custom-select.open {
+        z-index: 9999 !important;
+        position: relative;
+    }
+
+    /* Dropdowns de filtros - usar fixed positioning con z-index muy alto */
+    .stat-card .custom-select-dropdown {
+        position: fixed !important;
+        z-index: 10000 !important;
+        background: white;
+        border: 2px solid #00AF00;
+        border-top: none;
+        border-bottom-left-radius: 0.75rem;
+        border-bottom-right-radius: 0.75rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        max-height: 250px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: none;
+        min-width: 200px;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        transform: none !important;
+        inset: auto !important;
+    }
+
+    .dark .stat-card .custom-select-dropdown {
+        background-color: #1f2937;
+        border-color: #00AF00;
+    }
+
+    .stat-card .custom-select.open .custom-select-dropdown {
+        display: block !important;
+    }
+
+    /* Dropdown abriendo hacia arriba en filtros */
+    .stat-card .custom-select.dropdown-up .custom-select-dropdown {
+        border-top: 2px solid #00AF00;
+        border-bottom: none;
+        border-top-left-radius: 0.75rem;
+        border-top-right-radius: 0.75rem;
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark .stat-card .custom-select.dropdown-up .custom-select-dropdown {
+        border-top-color: #00AF00;
+    }
+
+    /* Asegurar que el contenedor de filtros no corte los dropdowns */
+    .stat-card {
+        overflow: visible !important;
+        position: relative;
+    }
+
+    .stat-card > div {
+        overflow: visible !important;
+    }
+
+    /* Asegurar que la tabla tenga un z-index menor que los dropdowns */
+    #cancellationsTableContainer {
+        position: relative;
+        z-index: 1 !important;
+    }
+
+    #cancellationsTableContainer table {
+        position: relative;
+        z-index: 1 !important;
+    }
+
+    #cancellationsTableContainer thead,
+    #cancellationsTableContainer tbody,
+    #cancellationsTableContainer tr,
+    #cancellationsTableContainer td,
+    #cancellationsTableContainer th {
+        position: relative;
+        z-index: 1 !important;
+    }
+
+    /* Asegurar que los stats cards también tengan z-index bajo */
+    #cancellationsStatsContainer {
+        position: relative;
+        z-index: 1 !important;
+    }
+
+    /* Asegurar que el contenedor principal no interfiera */
+    main {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* Forzar que los dropdowns de filtros estén siempre encima */
+    .stat-card .custom-select-dropdown {
+        z-index: 10000 !important;
+        position: fixed !important;
+    }
+
+    /* Asegurar que ningún elemento de la tabla tenga z-index alto */
+    #cancellationsTableContainer * {
+        z-index: auto !important;
+    }
+
+    /* Asegurar que los pagination también tengan z-index bajo */
+    #paginationContainer {
+        position: relative;
+        z-index: 1 !important;
+    }
+
+    /* Crear un nuevo stacking context solo para los filtros */
+    .stat-card:has(.custom-select.open) {
+        z-index: 9998 !important;
+        position: relative;
     }
 </style>
 

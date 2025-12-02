@@ -78,6 +78,16 @@ public class CancellationService implements
 
             UserEntity requester = authService.getCurrentUser();
 
+            // Validar que ningún item ya tenga una cancelación aprobada
+            for (ItemEntity item : items) {
+                List<CancellationEntity> approvedCancellations = cancellationRepository.findApprovedCancellationsByItemId(item.getId());
+                if (approvedCancellations != null && !approvedCancellations.isEmpty()) {
+                    String itemName = item.getProductName() != null ? item.getProductName() : "Item ID " + item.getId();
+                    String plateNumber = item.getLicencePlateNumber() != null ? " (Placa: " + item.getLicencePlateNumber() + ")" : "";
+                    throw new RuntimeException("El item \"" + itemName + "\"" + plateNumber + " ya está dado de baja y no puede ser cancelado nuevamente.");
+                }
+            }
+
             // Validaciones según el rol del usuario
             validateCancellationPermissions(requester, items);
 
@@ -106,17 +116,26 @@ public class CancellationService implements
 
             // Registrar auditoría (no crítico si falla, pero intentamos registrarlo)
             try {
-                StringBuilder itemsInfo = new StringBuilder();
-                if (items != null && !items.isEmpty()) {
-                    items.forEach(item -> {
-                        String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
-                        itemsInfo.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
-                    });
-                    if (itemsInfo.length() > 0) {
-                        itemsInfo.setLength(itemsInfo.length() - 2); // Remover última coma y espacio
+                int itemsCount = items != null ? items.size() : 0;
+                String itemsInfo;
+                if (itemsCount > 0) {
+                    if (itemsCount <= 3) {
+                        // Si hay 3 o menos items, mostrar todos
+                        StringBuilder itemsBuilder = new StringBuilder();
+                        items.forEach(item -> {
+                            String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
+                            itemsBuilder.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
+                        });
+                        if (itemsBuilder.length() > 0) {
+                            itemsBuilder.setLength(itemsBuilder.length() - 2); // Remover última coma y espacio
+                        }
+                        itemsInfo = itemsBuilder.toString();
+                    } else {
+                        // Si hay más de 3 items, solo mostrar cantidad
+                        itemsInfo = itemsCount + " items";
                     }
                 } else {
-                    itemsInfo.append("N/A");
+                    itemsInfo = "N/A";
                 }
                 
                 boolean isAutoApproved = requester.getRole() == Role.SUPERADMIN || 
@@ -124,20 +143,30 @@ public class CancellationService implements
                                         requester.getRole() == Role.ADMIN_INSTITUTION ||
                                         requester.getRole() == Role.WAREHOUSE;
                 
+                String requesterName = requester.getFullName() != null ? requester.getFullName() : "Usuario";
+                String requesterEmail = requester.getEmail() != null ? requester.getEmail() : "N/A";
+                String roleName = requester.getRole() != null ? requester.getRole().name() : "N/A";
+                String reason = request.reason() != null && !request.reason().isEmpty() 
+                    ? (request.reason().length() > 50 ? request.reason().substring(0, 50) + "..." : request.reason())
+                    : "N/A";
+                
                 String auditMessage = isAutoApproved
-                        ? String.format("Solicitud de baja creada y aprobada automáticamente: ID %d - Items: %s - Solicitado/Aprobado por: %s (%s) - Rol: %s - Razón: %s",
+                        ? String.format("Baja creada y aprobada: ID %d - %s items - Por: %s (%s) - Rol: %s",
                                 savedEntity.getId(),
-                                itemsInfo.toString(),
-                                requester.getFullName(),
-                                requester.getEmail(),
-                                requester.getRole().name(),
-                                request.reason() != null ? request.reason() : "N/A")
-                        : String.format("Solicitud de baja creada: ID %d - Items: %s - Solicitado por: %s (%s) - Razón: %s",
+                                itemsInfo,
+                                requesterName,
+                                requesterEmail,
+                                roleName)
+                        : String.format("Baja creada: ID %d - %s items - Por: %s (%s)",
                                 savedEntity.getId(),
-                                itemsInfo.toString(),
-                                requester.getFullName(),
-                                requester.getEmail(),
-                                request.reason() != null ? request.reason() : "N/A");
+                                itemsInfo,
+                                requesterName,
+                                requesterEmail);
+                
+                // Truncar a 250 caracteres para evitar errores de base de datos (campo es VARCHAR(255))
+                if (auditMessage.length() > 250) {
+                    auditMessage = auditMessage.substring(0, 247) + "...";
+                }
                 
                 recordActionUseCase.recordAction(new RecordActionRequest(auditMessage));
             } catch (Exception auditException) {
@@ -168,14 +197,24 @@ public class CancellationService implements
         cancellationRepository.save(cancellation);
 
         // Registrar auditoría
-        recordActionUseCase.recordAction(new RecordActionRequest(
-                String.format("Baja rechazada: ID %d - Rechazado por: %s (%s) - Solicitado por: %s - Comentario: %s", 
-                        cancellation.getId(),
-                        checker.getFullName(),
-                        checker.getEmail(),
-                        requesterName,
-                        request.comment() != null && !request.comment().isBlank() ? request.comment() : "N/A")
-        ));
+        String checkerName = checker.getFullName() != null ? checker.getFullName() : "Usuario";
+        String checkerEmail = checker.getEmail() != null ? checker.getEmail() : "N/A";
+        String comment = request.comment() != null && !request.comment().isBlank() 
+            ? (request.comment().length() > 30 ? request.comment().substring(0, 30) + "..." : request.comment())
+            : "N/A";
+        
+        String auditMessage = String.format("Baja rechazada: ID %d - Por: %s (%s) - Solicitado: %s", 
+                cancellation.getId(),
+                checkerName,
+                checkerEmail,
+                requesterName);
+        
+        // Truncar a 250 caracteres
+        if (auditMessage.length() > 250) {
+            auditMessage = auditMessage.substring(0, 247) + "...";
+        }
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(auditMessage));
 
         return new RefuseCancellationResponse("Baja rechazada exitosamente");
     }
@@ -187,20 +226,6 @@ public class CancellationService implements
         UserEntity checker = authService.getCurrentUser();
         String requesterName = cancellation.getRequester() != null ? cancellation.getRequester().getFullName() : "N/A";
         
-        // Obtener información de items antes de guardar
-        StringBuilder itemsInfo = new StringBuilder();
-        if (cancellation.getItems() != null && !cancellation.getItems().isEmpty()) {
-            cancellation.getItems().forEach(item -> {
-                String itemName = item.getProductName() != null ? item.getProductName() : "sin nombre";
-                itemsInfo.append(itemName).append(" (ID: ").append(item.getId()).append("), ");
-            });
-            if (itemsInfo.length() > 0) {
-                itemsInfo.setLength(itemsInfo.length() - 2); // Remover última coma y espacio
-            }
-        } else {
-            itemsInfo.append("N/A");
-        }
-
         cancellation.setApprovedAt(LocalDateTime.now());
         cancellation.setApproved(true);
         cancellation.setComment(request.comment());
@@ -215,15 +240,26 @@ public class CancellationService implements
         cancellationRepository.save(cancellation);
 
         // Registrar auditoría
-        recordActionUseCase.recordAction(new RecordActionRequest(
-                String.format("Baja aceptada: ID %d - Items: %s - Aceptado por: %s (%s) - Solicitado por: %s - Comentario: %s", 
-                        cancellation.getId(),
-                        itemsInfo.toString(),
-                        checker.getFullName(),
-                        checker.getEmail(),
-                        requesterName,
-                        request.comment() != null && !request.comment().isBlank() ? request.comment() : "N/A")
-        ));
+        int itemsCount = items != null ? items.size() : 0;
+        String checkerName = checker.getFullName() != null ? checker.getFullName() : "Usuario";
+        String checkerEmail = checker.getEmail() != null ? checker.getEmail() : "N/A";
+        String comment = request.comment() != null && !request.comment().isBlank() 
+            ? (request.comment().length() > 30 ? request.comment().substring(0, 30) + "..." : request.comment())
+            : "N/A";
+        
+        String auditMessage = String.format("Baja aceptada: ID %d - %d items - Por: %s (%s) - Solicitado: %s", 
+                cancellation.getId(),
+                itemsCount,
+                checkerName,
+                checkerEmail,
+                requesterName);
+        
+        // Truncar a 250 caracteres
+        if (auditMessage.length() > 250) {
+            auditMessage = auditMessage.substring(0, 247) + "...";
+        }
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(auditMessage));
 
         return new AcceptCancellationResponse("Baja aceptada exitosamente");
     }
@@ -242,13 +278,20 @@ public class CancellationService implements
         cancellationRepository.save(entity);
 
         // Registrar auditoría
-        recordActionUseCase.recordAction(new RecordActionRequest(
-                String.format("Formato de baja subido: ID %d - Subido por: %s (%s) - Solicitado por: %s", 
-                        cancellationId,
-                        currentUser.getFullName(),
-                        currentUser.getEmail(),
-                        requesterName)
-        ));
+        String currentUserName = currentUser.getFullName() != null ? currentUser.getFullName() : "Usuario";
+        String currentUserEmail = currentUser.getEmail() != null ? currentUser.getEmail() : "N/A";
+        
+        String auditMessage = String.format("Formato subido: ID %d - Por: %s (%s)", 
+                cancellationId,
+                currentUserName,
+                currentUserEmail);
+        
+        // Truncar a 250 caracteres
+        if (auditMessage.length() > 250) {
+            auditMessage = auditMessage.substring(0, 247) + "...";
+        }
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(auditMessage));
 
         return "Formato subido correctamente";
     }
@@ -311,13 +354,20 @@ public class CancellationService implements
         cancellationRepository.save(entity);
 
         // Registrar auditoría
-        recordActionUseCase.recordAction(new RecordActionRequest(
-                String.format("Formato de ejemplo de baja subido: ID %d - Subido por: %s (%s) - Solicitado por: %s", 
-                        cancellationId,
-                        currentUser.getFullName(),
-                        currentUser.getEmail(),
-                        requesterName)
-        ));
+        String currentUserName = currentUser.getFullName() != null ? currentUser.getFullName() : "Usuario";
+        String currentUserEmail = currentUser.getEmail() != null ? currentUser.getEmail() : "N/A";
+        
+        String auditMessage = String.format("Ejemplo formato subido: ID %d - Por: %s (%s)", 
+                cancellationId,
+                currentUserName,
+                currentUserEmail);
+        
+        // Truncar a 250 caracteres
+        if (auditMessage.length() > 250) {
+            auditMessage = auditMessage.substring(0, 247) + "...";
+        }
+        
+        recordActionUseCase.recordAction(new RecordActionRequest(auditMessage));
 
         return "Formato subido correctamente";
     }
@@ -368,7 +418,7 @@ public class CancellationService implements
     }
 
     /**
-     * Valida los permisos para crear cancelaciones según el rol del usuario
+     * Valida los permisos para crear Bajas según el rol del usuario
      * @param requester Usuario que solicita la cancelación
      * @param items Lista de items a cancelar
      * @throws RuntimeException Si el usuario no tiene permisos para cancelar los items

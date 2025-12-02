@@ -45,6 +45,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -239,9 +242,21 @@ public class CancellationController {
     @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/ask")
     public ResponseEntity<?> askForCancellation(
-            @Valid @RequestBody AskForCancellationRequest request
+            @Valid @RequestBody AskForCancellationRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest
     ) {
         try {
+            // Verificar si hay token en el request
+            String authHeader = httpRequest.getHeader("Authorization");
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                java.util.Map<String, Object> errorResponse = new java.util.HashMap<>();
+                errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
+                errorResponse.put("error", "Unauthorized");
+                errorResponse.put("message", "Token de autenticación requerido");
+                errorResponse.put("detail", "Por favor, inicie sesión para realizar esta operación");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            }
+            
             var response = askForCancellationUseCase.askForCancellation(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
@@ -251,6 +266,16 @@ public class CancellationController {
             
             // Return appropriate error response with JSON body
             java.util.Map<String, Object> errorResponse = new java.util.HashMap<>();
+            
+            // Si es error de autenticación, retornar 401
+            if (e.getMessage() != null && e.getMessage().contains("no autenticado")) {
+                errorResponse.put("status", HttpStatus.UNAUTHORIZED.value());
+                errorResponse.put("error", "Unauthorized");
+                errorResponse.put("message", "Usuario no autenticado. Por favor, inicie sesión.");
+                errorResponse.put("detail", e.getMessage());
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+            }
+            
             errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
             errorResponse.put("error", "Internal Server Error");
             errorResponse.put("message", e.getMessage() != null ? e.getMessage() : "Ha ocurrido un error inesperado");
@@ -301,10 +326,14 @@ public class CancellationController {
             String filename = downloadCancellationFormatFileUseCase.getFilename(cancellationId);
             MediaType mediaType = downloadCancellationFormatFileUseCase.getMediaType(cancellationId);
             
+            // Codificar el nombre del archivo para evitar problemas con caracteres especiales
+            String encodedFilename = java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8)
+                    .replace("+", "%20"); // Reemplazar + con espacio codificado
+            
             return ResponseEntity.ok()
                     .contentType(mediaType)
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + filename + "\"")
+                            "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + encodedFilename)
                     .body(resource);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -332,10 +361,14 @@ public class CancellationController {
             String filename = downloadCancellationFormatExampleFileUseCase.getFilenameExample(cancellationId);
             MediaType mediaType = downloadCancellationFormatExampleFileUseCase.getMediaTypeExample(cancellationId);
             
+            // Codificar el nombre del archivo para evitar problemas con caracteres especiales
+            String encodedFilename = java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8)
+                    .replace("+", "%20"); // Reemplazar + con espacio codificado
+            
             return ResponseEntity.ok()
                     .contentType(mediaType)
                     .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "attachment; filename=\"" + filename + "\"")
+                            "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + encodedFilename)
                     .body(resource);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
@@ -472,6 +505,42 @@ public class CancellationController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Cancelación no encontrada");
+        }
+    }
+
+    @Operation(
+            summary = "Download GIL-F-011 format template",
+            description = "Downloads the GIL-F-011 format template (FORMATO CONCEPTO TÉCNICO DE BIENES)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Format template downloaded successfully"
+    )
+    @ApiResponse(responseCode = "404", description = "Format template file not found")
+    @GetMapping("/download-format-template")
+    public ResponseEntity<Resource> downloadFormatTemplate() {
+        try {
+            String filename = "GIL-F-011FormatoConceptoTecnicodeBienes.xlsx";
+            Path filePath = Paths.get("uploads", "cancellation", "formats", filename);
+            
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            Resource resource = new org.springframework.core.io.FileSystemResource(filePath);
+            
+            // Codificar el nombre del archivo para evitar problemas con caracteres especiales
+            String encodedFilename = java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

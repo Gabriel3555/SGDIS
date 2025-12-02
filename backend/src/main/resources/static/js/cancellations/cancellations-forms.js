@@ -882,10 +882,18 @@ async function handleAskCancellation() {
             return id;
         });
         
+        // Deshabilitar botón mientras se procesa
+        const submitBtn = document.querySelector('#askCancellationModal button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Procesando...';
+        }
+
         const response = await askForCancellation(numericItemsIds, reason);
         
-        if (typeof showToast === 'function') {
-            showToast('Solicitud de cancelación creada exitosamente', 'success');
+        if (typeof showInventorySuccessToast === 'function') {
+            showInventorySuccessToast('Solicitud creada', 'La solicitud de baja ha sido creada exitosamente');
         } else {
             alert('Solicitud de cancelación creada exitosamente');
         }
@@ -894,10 +902,24 @@ async function handleAskCancellation() {
         await loadCancellationsData();
     } catch (error) {
         console.error('Error asking for cancellation:', error);
-        if (typeof showToast === 'function') {
-            showToast(error.message || 'Error al crear la solicitud de cancelación', 'error');
+        const errorMessage = error.message || 'Error al crear la solicitud de cancelación';
+        
+        // Usar el sistema de toast de inventory
+        if (typeof showInventoryErrorToast === 'function') {
+            showInventoryErrorToast('Error al solicitar baja', errorMessage);
+        } else if (typeof showInventoryToast === 'function') {
+            showInventoryToast({ tipo: 'error', titulo: 'Error al solicitar baja', descripcion: errorMessage });
+        } else if (typeof showToast === 'function') {
+            showToast(errorMessage, 'error');
         } else {
-            alert(error.message || 'Error al crear la solicitud de cancelación');
+            alert(errorMessage);
+        }
+    } finally {
+        // Rehabilitar botón
+        const submitBtn = document.querySelector('#askCancellationModal button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Solicitar Cancelación';
         }
     }
 }

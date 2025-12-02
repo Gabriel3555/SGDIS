@@ -10,7 +10,9 @@ const cancellationsData = {
     totalElements: 0,
     filters: {
         status: 'all',
-        search: ''
+        search: '',
+        requester: 'all',
+        dateRange: 'all' // 'all', 'today', 'week', 'month', 'custom'
     },
     userRole: null
 };
@@ -23,7 +25,9 @@ function initCancellationsData() {
     cancellationsData.currentPage = 0;
     cancellationsData.filters = {
         status: 'all',
-        search: ''
+        search: '',
+        requester: 'all',
+        dateRange: 'all'
     };
 }
 
