@@ -144,8 +144,8 @@ async function filterUsers() {
                 }
             }
 
-            // Filter by institution (super admin only)
-            if (isSuperAdmin && data.selectedInstitution) {
+            // Filter by institution (super admin and admin regional)
+            if ((isSuperAdmin || isAdminRegional) && data.selectedInstitution) {
                 // Use cached institutions or load them
                 const allInstitutions = institutionsCache || await loadInstitutionsCache();
                 
