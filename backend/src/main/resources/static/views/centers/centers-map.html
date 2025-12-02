@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Centros SENA - SGDIS</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('sgdis-dark-mode');
+            if (saved === 'true' || (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'sena-verde': '#00AF00',
+                            'sena-verde-oscuro': '#008800'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="icon" type="image/jpeg" href="../../svg/box.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+    
+    <!-- MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <link rel="stylesheet" href="../../css/dark-mode.css">
+    <link rel="stylesheet" href="../../css/notifications-bell.css">
+    
+    <style>
+        /* Variables de color SENA */
+        :root {
+            --sena-verde: #00AF00;
+            --sena-verde-oscuro: #008800;
+            --sena-verde-claro: #39B54A;
+            --sena-verde-muy-claro: #E8F5E9;
+        }
+
+        #map {
+            height: calc(100vh - 180px);
+            width: 100%;
+            border-radius: 1rem;
+            z-index: 1;
+            border: 4px solid var(--sena-verde);
+            box-shadow: 0 8px 30px rgba(0, 175, 0, 0.2);
+        }
+        
+        /* Filtro verde para los tiles del mapa */
+        .map-tiles {
+            filter: hue-rotate(-10deg) saturate(1.1) brightness(1.05);
+        }
+        
+        /* Estilos de los controles de zoom */
+        .leaflet-control-zoom a {
+            background-color: var(--sena-verde) !important;
+            color: white !important;
+            border: 2px solid white !important;
+            font-weight: bold !important;
+        }
+        
+        .leaflet-control-zoom a:hover {
+            background-color: var(--sena-verde-oscuro) !important;
+        }
+        
+        /* Popups personalizados */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            border: 3px solid var(--sena-verde);
+            box-shadow: 0 5px 20px rgba(0, 175, 0, 0.3);
+        }
+        
+        .leaflet-popup-tip {
+            border-top-color: var(--sena-verde) !important;
+        }
+        
+        .leaflet-popup-content {
+            margin: 0;
+            padding: 0;
+        }
+        
+        .custom-popup {
+            min-width: 280px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--sena-verde-muy-claro) 100%);
+        }
+        
+        .custom-popup h3 {
+            background: var(--sena-verde);
+            color: white;
+            padding: 12px;
+            margin: 0 0 12px 0;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        /* Clusters de marcadores */
+        .marker-cluster {
+            background: transparent !important;
+        }
+        
+        .cluster-inner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse-green 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(0, 175, 0, 0.7);
+            }
+            50% {
+                box-shadow: 0 0 0 15px rgba(0, 175, 0, 0);
+            }
+        }
+        
+        .marker-cluster-small .cluster-inner {
+            width: 35px;
+            height: 35px;
+        }
+        
+        .marker-cluster-medium .cluster-inner {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .marker-cluster-large .cluster-inner {
+            width: 50px;
+            height: 50px;
+        }
+        
+        /* Iconos de marcadores personalizados */
+        .custom-marker-icon {
+            filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.4));
+            transition: all 0.3s ease;
+        }
+        
+        .custom-marker-icon:hover {
+            filter: drop-shadow(0 5px 15px rgba(0, 175, 0, 0.6));
+            transform: scale(1.1);
+        }
+        
+        /* Leyenda */
+        .legend {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .legend-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        /* Tarjeta de filtros con tema verde */
+        .filter-card {
+            background: linear-gradient(135deg, #ffffff 0%, var(--sena-verde-muy-claro) 100%);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 175, 0, 0.15);
+            margin-bottom: 16px;
+            border: 2px solid var(--sena-verde-claro);
+        }
+        
+        /* Selectores y inputs con tema verde */
+        .filter-card select,
+        .filter-card input {
+            border: 2px solid var(--sena-verde-claro) !important;
+        }
+        
+        .filter-card select:focus,
+        .filter-card input:focus {
+            border-color: var(--sena-verde) !important;
+            box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.2) !important;
+        }
+        
+        .dark .filter-card {
+            background: linear-gradient(135deg, #1f2937 0%, #1a3a1f 100%);
+            border-color: var(--sena-verde-oscuro);
+        }
+        
+        .dark .legend {
+            background: #1f2937;
+            color: white;
+        }
+        
+        /* Tooltip del contorno de Colombia */
+        .country-label {
+            background-color: var(--sena-verde) !important;
+            color: white !important;
+            border: 2px solid white !important;
+            font-weight: bold !important;
+            font-size: 16px !important;
+            padding: 8px 12px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        /* Animación de carga */
+        @keyframes fadeInMap {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        #map {
+            animation: fadeInMap 0.5s ease-out;
+        }
+        
+        /* Botones con tema verde */
+        .btn-verde-sena {
+            background: linear-gradient(135deg, var(--sena-verde) 0%, var(--sena-verde-oscuro) 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 175, 0, 0.3);
+        }
+        
+        .btn-verde-sena:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 175, 0, 0.4);
+        }
+        
+        /* Efecto de brillo en el borde del mapa */
+        @keyframes border-glow {
+            0%, 100% {
+                box-shadow: 0 8px 30px rgba(0, 175, 0, 0.2);
+            }
+            50% {
+                box-shadow: 0 8px 40px rgba(0, 175, 0, 0.4);
+            }
+        }
+        
+        #map {
+            animation: fadeInMap 0.5s ease-out, border-glow 3s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Overlay for mobile -->
+    <div class="overlay" id="overlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar fixed left-0 top-0 h-screen w-64" id="sidebar" style="background: white; box-shadow: 4px 0 20px rgba(0, 0, 0, 0.1); z-index: 1000; width: 280px; position: fixed; left: 0; top: 0; height: 100vh; overflow-y: auto; display: flex; flex-direction: column;">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+                <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden">
+                    <img src="../../../svg/box.png" alt="Logo SENA" class="w-full h-full object-cover">
+                </div>
+                <div class="text-gray-800">
+                    <div class="font-bold text-lg">SGDIS</div>
+                    <div class="text-xs opacity-70">Mapa de Centros</div>
+                </div>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-4 overflow-y-auto">
+            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/dashboard')">
+                <i class="fas fa-chart-line text-lg"></i>
+                <span class="font-medium">Dashboard</span>
+            </a>
+            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/inventory')">
+                <i class="fas fa-boxes text-lg"></i>
+                <span class="font-medium">Inventario</span>
+            </a>
+            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/users')">
+                <i class="fas fa-users text-lg"></i>
+                <span class="font-medium">Usuarios</span>
+            </a>
+            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/centers')">
+                <i class="fas fa-building text-lg"></i>
+                <span class="font-medium">Centros</span>
+            </a>
+            <a href="/superadmin/centers/map" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active" onclick="handleSidebarClick(event, '/superadmin/centers/map')">
+                <i class="fas fa-map-marked-alt text-lg"></i>
+                <span class="font-medium">Mapa de Centros</span>
+            </a>
+            <a href="/superadmin/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/transfers')">
+                <i class="fas fa-exchange-alt text-lg"></i>
+                <span class="font-medium">Transferencias</span>
+            </a>
+            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/verification')">
+                <i class="fas fa-clipboard-check text-lg"></i>
+                <span class="font-medium">Verificación</span>
+            </a>
+            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/loans')">
+                <i class="fas fa-hand-holding text-lg"></i>
+                <span class="font-medium">Préstamos</span>
+            </a>
+            <a href="/superadmin/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/superadmin/cancellations')">
+                <i class="fas fa-times-circle text-lg"></i>
+                <span class="font-medium">Cancelaciones</span>
+            </a>
+            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/reports')">
+                <i class="fas fa-chart-bar text-lg"></i>
+                <span class="font-medium">Reportes</span>
+            </a>
+            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/auditory')">
+                <i class="fas fa-clipboard-list text-lg"></i>
+                <span class="font-medium">Auditoría</span>
+            </a>
+            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/notifications')">
+                <i class="fas fa-bell text-lg"></i>
+                <span class="font-medium">Notificaciones</span>
+            </a>
+            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/import-export')">
+                <i class="fas fa-file-import text-lg"></i>
+                <span class="font-medium">Importar/Exportar</span>
+            </a>
+            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/settings')">
+                <i class="fas fa-sliders-h text-lg"></i>
+                <span class="font-medium">Configuración</span>
+            </a>
+            <a href="/superadmin/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" onclick="handleSidebarClick(event, '/superadmin/info-me')">
+                <i class="fas fa-user-circle text-lg"></i>
+                <span class="font-medium">Mi Perfil</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-gray-200 mt-auto">
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-3 px-4 rounded-xl">
+                <i class="fas fa-sign-out-alt text-lg"></i>
+                <span>Cerrar Sesión</span>
+            </button>
+        </div>
+    </aside>
+
+    <div class="main-content min-h-screen">
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 flex-1">
+                    <button class="sidebar-toggle text-gray-600 hover:text-[#00AF00] transition-colors" id="menuToggle">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Notification bell will be inserted here by notifications-bell.js -->
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" onclick="window.location.href='/superadmin/info-me'">
+                        <div class="user-avatar" id="headerUserAvatar"></div>
+                        <div class="hidden sm:block">
+                            <div class="font-semibold text-gray-800 text-sm" id="headerUserName"></div>
+                            <div class="text-xs text-gray-500" id="headerUserRole"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-1">Mapa Interactivo de Centros SENA</h1>
+                    <p class="text-gray-600 dark:text-gray-400">Visualización geográfica de Centros y Regionales de Colombia</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="centerMapOnColombia()" class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                        <i class="fas fa-globe-americas"></i>
+                        <span>Centrar en Colombia</span>
+                    </button>
+                    <button onclick="reloadMap()" class="flex items-center gap-2 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
+                        <i class="fas fa-sync-alt" id="reloadIcon"></i>
+                        <span>Recargar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-card">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-filter mr-1"></i> Filtrar por Regional
+                        </label>
+                        <select id="regionalFilter" class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="">Todas las Regionales</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-search mr-1"></i> Buscar Centro
+                        </label>
+                        <input type="text" id="searchInput" placeholder="Buscar por nombre..." class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="clearFilters()" class="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-colors">
+                            <i class="fas fa-times mr-2"></i> Limpiar Filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4">
+                <div id="map"></div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">Total Centros</p>
+                            <p class="text-3xl font-bold text-gray-800 dark:text-white" id="totalCenters">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-building text-blue-600 dark:text-blue-400 text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">Total Regionales</p>
+                            <p class="text-3xl font-bold text-gray-800 dark:text-white" id="totalRegionals">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-map-marker-alt text-green-600 dark:text-green-400 text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">Centros Visibles</p>
+                            <p class="text-3xl font-bold text-gray-800 dark:text-white" id="visibleCenters">0</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-eye text-purple-600 dark:text-purple-400 text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+    
+    <!-- MarkerCluster JS -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <script src="../../../js/token-refresh.js"></script>
+    <script src="../../../js/dashboard.js"></script>
+    <script src="../../../js/websocket-client.js"></script>
+    <script src="../../../js/notifications-bell.js"></script>
+    <script src="../../../js/notification-sound.js"></script>
+    <script src="../../js/centers/centers-map.js"></script>
+    
+    <style>
+        .main-content { margin-left: 280px; transition: margin-left 0.3s ease; }
+        @media (max-width: 1024px) {
+            .main-content { margin-left: 0; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+            .sidebar.active { transform: translateX(0); }
+            .overlay { display: none; }
+            .overlay.active { display: block; }
+        }
+    </style>
+    
+    <script>
+        function handleSidebarClick(event, link) {
+            if (link === '#') { event.preventDefault(); return; }
+            event.preventDefault();
+            if (window.innerWidth <= 1024) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('overlay');
+                if (sidebar) sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+            }
+            if (link.startsWith('/')) {
+                if (typeof debouncedNavigate === 'function') { debouncedNavigate(link); } else { window.location.href = link; }
+            }
+        }
+
+        function logout() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function confirmLogout() {
+            localStorage.removeItem('jwt');
+            window.location.href = '/';
+        }
+
+        function setupMobileMenuToggle() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            if (menuToggle && sidebar && overlay) {
+                menuToggle.addEventListener('click', function () {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+                    if (isHidden) { sidebar.style.transform = 'translateX(0)'; overlay.style.display = 'block'; } else { sidebar.style.transform = 'translateX(-100%)'; overlay.style.display = 'none'; }
+                });
+            }
+        }
+
+        function scrollToActiveSidebarItem() {
+            const sidebarNav = document.querySelector('#sidebar nav');
+            if (sidebarNav) {
+                const activeItem = sidebarNav.querySelector('.sidebar-item.active');
+                if (activeItem) {
+                    setTimeout(() => {
+                        activeItem.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center',
+                            inline: 'nearest'
+                        });
+                    }, 100);
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setupMobileMenuToggle();
+            scrollToActiveSidebarItem();
+        });
+    </script>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-sign-out-alt text-[#00AF00] text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600 dark:text-gray-400">Será redirigido a la página de inicio de sesión.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeLogoutModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmLogout()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

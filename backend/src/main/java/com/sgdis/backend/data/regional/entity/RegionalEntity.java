@@ -27,6 +27,8 @@ public class RegionalEntity {
 
     private String name;
     private String regionalCode;
+    private Double latitude;
+    private Double longitude;
     @ManyToOne(fetch = FetchType.LAZY)
     private DepartamentEntity departament;
 

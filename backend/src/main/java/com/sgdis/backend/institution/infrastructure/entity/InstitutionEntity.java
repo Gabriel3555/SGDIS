@@ -26,6 +26,10 @@ public class InstitutionEntity {
 
     private String codeInstitution;
 
+    private Double latitude;
+
+    private Double longitude;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "regional_id")
     private RegionalEntity regional;
