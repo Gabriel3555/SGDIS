@@ -594,8 +594,9 @@ function getDashboardPath(role) {
 function getRoleDisplayName(role) {
     const roleNames = {
         'SUPERADMIN': 'Super Administrador',
-        'ADMIN_REGIONAL': 'Administrador Regional',
+        'ADMIN_REGIONAL': 'Admin Regional',
         'ADMIN_INSTITUTION': 'Administrador de Institución',
+        'ADMIN_INSTITUTIONAL': 'Admin Institucional',
         'WAREHOUSE': 'Encargado de Almacén',
         'USER': 'Usuario'
     };

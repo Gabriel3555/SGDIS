@@ -453,10 +453,27 @@ async function authenticatedFetch(url, options = {}) {
         headers: options.headers || {}
       };
       
+      // Verificar si el body es FormData ANTES de agregar Content-Type
+      // FormData necesita que el navegador establezca automáticamente el Content-Type con boundary
+      const isFormData = options.body instanceof FormData;
+      
       // Si headers es un objeto plano, asegurarse de que tenga Content-Type si no lo tiene
+      // PERO NO si el body es FormData (el navegador lo establece automáticamente)
       if (!(fetchOptions.headers instanceof Headers)) {
-        if (!fetchOptions.headers['Content-Type'] && !fetchOptions.headers['content-type']) {
+        // Si es FormData, NO establecer Content-Type (dejar que el navegador lo haga)
+        // Si no es FormData y no tiene Content-Type, establecer application/json
+        if (!isFormData && !fetchOptions.headers['Content-Type'] && !fetchOptions.headers['content-type']) {
           fetchOptions.headers['Content-Type'] = 'application/json';
+        }
+        // Si es FormData y tiene Content-Type establecido manualmente, eliminarlo
+        if (isFormData && (fetchOptions.headers['Content-Type'] || fetchOptions.headers['content-type'])) {
+          delete fetchOptions.headers['Content-Type'];
+          delete fetchOptions.headers['content-type'];
+        }
+      } else {
+        // Si headers es una instancia de Headers y es FormData, eliminar Content-Type si existe
+        if (isFormData && fetchOptions.headers.has('Content-Type')) {
+          fetchOptions.headers.delete('Content-Type');
         }
       }
       

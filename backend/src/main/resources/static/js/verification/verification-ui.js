@@ -136,6 +136,10 @@ function updateFilters() {
     const container = document.getElementById('searchFilterContainer');
     if (!container) return;
 
+    // Check if user is superadmin
+    const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
+
     const inventoryOptions = verificationData.inventories && verificationData.inventories.length > 0
         ? verificationData.inventories.map(inv => 
             `<option value="${inv.id}">${inv.name || `Inventario ${inv.id}`}</option>`
@@ -144,8 +148,24 @@ function updateFilters() {
 
     const currentSearchValue = verificationData.searchTerm || '';
     const currentInventoryValue = verificationData.selectedInventory || 'all';
+    const currentRegionalValue = verificationData.selectedRegional || '';
+    const currentInstitutionValue = verificationData.selectedInstitution || '';
 
-    container.innerHTML = `
+    // Build regional options
+    const regionalOptions = verificationData.regionals && verificationData.regionals.length > 0
+        ? verificationData.regionals.map(regional => 
+            `<option value="${regional.id}" ${currentRegionalValue === regional.id.toString() ? 'selected' : ''}>${regional.name}</option>`
+          ).join('')
+        : '<option value="">Cargando regionales...</option>';
+
+    // Build institution options
+    const institutionOptions = verificationData.institutions && verificationData.institutions.length > 0
+        ? verificationData.institutions.map(institution => 
+            `<option value="${institution.institutionId || institution.id}" ${currentInstitutionValue === (institution.institutionId || institution.id).toString() ? 'selected' : ''}>${institution.name}</option>`
+          ).join('')
+        : '<option value="">Seleccione una regional primero</option>';
+
+    let filtersHTML = `
         <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
             <input 
@@ -157,15 +177,44 @@ function updateFilters() {
                 class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
             />
         </div>
+    `;
+
+    // Add regional and institution filters for superadmin
+    if (isSuperAdmin) {
+        filtersHTML += `
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Regional</label>
+                <select id="regionalFilter" onchange="setRegionalFilter(this.value)"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                    <option value="">Todas las regionales</option>
+                    ${regionalOptions}
+                </select>
+            </div>
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Centro</label>
+                <select id="institutionFilter" onchange="setInstitutionFilter(this.value)"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                    ${!currentRegionalValue ? 'disabled' : ''}>
+                    <option value="">Todos los centros</option>
+                    ${institutionOptions}
+                </select>
+            </div>
+        `;
+    }
+
+    filtersHTML += `
         <div class="flex-1">
             <label class="block text-sm font-medium text-gray-700 mb-2">Filtrar por Inventario</label>
             <select id="inventoryFilter" onchange="setInventoryFilter(this.value)"
-                class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                ${!currentInstitutionValue && isSuperAdmin ? 'disabled' : ''}>
                 <option value="all" ${currentInventoryValue === 'all' ? 'selected' : ''}>Todos los Inventarios</option>
                 ${inventoryOptions}
             </select>
         </div>
     `;
+
+    container.innerHTML = filtersHTML;
 }
 
 function updateVerificationTable() {

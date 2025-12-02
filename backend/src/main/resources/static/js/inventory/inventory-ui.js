@@ -1072,7 +1072,17 @@ function updateUserInfoDisplay(userData) {
 
   if (headerUserName)
     headerUserName.textContent = userData.fullName || "Super Admin";
-  if (headerUserRole) headerUserRole.textContent = userData.role || "ADMIN";
+  if (headerUserRole) {
+    const roleText = {
+      'SUPERADMIN': 'Super Administrador',
+      'ADMIN_INSTITUTIONAL': 'Admin Institucional',
+      'ADMIN_INSTITUTION': 'Admin Institucional',
+      'ADMIN_REGIONAL': 'Admin Regional',
+      'WAREHOUSE': 'Almacén',
+      'USER': 'Usuario'
+    }[userData.role] || userData.role || 'Admin';
+    headerUserRole.textContent = roleText;
+  }
 
   if (headerUserAvatar) {
     if (userData.imgUrl) {
