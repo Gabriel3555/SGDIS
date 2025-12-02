@@ -78,7 +78,6 @@ public class CancellationService implements
 
             UserEntity requester = authService.getCurrentUser();
 
-            // Validar que ningún item ya tenga una cancelación aprobada
             for (ItemEntity item : items) {
                 List<CancellationEntity> approvedCancellations = cancellationRepository.findApprovedCancellationsByItemId(item.getId());
                 if (approvedCancellations != null && !approvedCancellations.isEmpty()) {
@@ -88,7 +87,6 @@ public class CancellationService implements
                 }
             }
 
-            // Validaciones según el rol del usuario
             validateCancellationPermissions(requester, items);
 
             CancellationEntity entity = new CancellationEntity();
@@ -97,7 +95,6 @@ public class CancellationService implements
             entity.setReason(request.reason());
             entity.setRequestedAt(LocalDateTime.now());
 
-            // Si el usuario es SUPERADMIN, ADMIN_REGIONAL, ADMIN_INSTITUTION o WAREHOUSE, aprobar automáticamente la cancelación
             if (requester.getRole() == Role.SUPERADMIN || 
                 requester.getRole() == Role.ADMIN_REGIONAL || 
                 requester.getRole() == Role.ADMIN_INSTITUTION ||

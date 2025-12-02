@@ -4,6 +4,7 @@ import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -36,5 +37,15 @@ public interface SpringDataCancellationRepository extends JpaRepository<Cancella
            "LEFT JOIN FETCH inv.institution inst " +
            "WHERE inst.name = :institutionName " +
            "ORDER BY c.id DESC")
-    List<CancellationEntity> findAllByInstitutionNameWithJoins(String institutionName);
+    List<CancellationEntity> findAllByInstitutionNameWithJoins(@Param("institutionName") String institutionName);
+    
+    @Query("SELECT DISTINCT c FROM CancellationEntity c " +
+           "LEFT JOIN FETCH c.requester " +
+           "LEFT JOIN FETCH c.checker " +
+           "LEFT JOIN FETCH c.items i " +
+           "WHERE i.id = :itemId " +
+           "AND c.approved = true " +
+           "AND c.refusedAt IS NULL " +
+           "ORDER BY c.id DESC")
+    List<CancellationEntity> findApprovedCancellationsByItemId(@Param("itemId") Long itemId);
 }

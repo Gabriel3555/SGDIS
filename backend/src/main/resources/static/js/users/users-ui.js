@@ -762,7 +762,7 @@ function updateUsersTable() {
                             </button>
                             ${editButtonHtml}
                             ${deleteButtonHtml}
-                            ${!isAdminRegional ? `
+                            ${!isAdminRegional && !isWarehouse ? `
                             <button onclick="showUserLoansModal('${
                               user.id
                             }')" class="user-action-btn p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
@@ -1578,7 +1578,7 @@ function updateUsersCards() {
                         </button>
                         ${editButtonHtmlCards}
                         ${deleteButtonHtmlCards}
-                        ${!isAdminRegional ? `
+                        ${!isAdminRegional && !isWarehouse ? `
                         <button onclick="showUserLoansModal('${
                           user.id
                         }')" class="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors" title="Ver préstamos">
