@@ -62,56 +62,65 @@ async function loadUserInfoAndInventories() {
         const userData = await userResponse.json();
         userInstitutionName = userData.institution;
 
-        // Get all institutions to find the one matching the user's institution
-        const institutionsResponse = await fetch('/api/v1/institutions', {
-            method: 'GET',
-            headers: headers
-        });
+        // Try to get institution ID for reference (optional, not required for loading inventories)
+        try {
+            const institutionsResponse = await fetch('/api/v1/institutions', {
+                method: 'GET',
+                headers: headers
+            });
 
-        if (institutionsResponse.ok) {
-            const institutions = await institutionsResponse.json();
-            console.log('All institutions:', institutions);
-            console.log('Looking for institution with name:', userInstitutionName);
-            
-            const institution = institutions.find(inst => 
-                inst.name === userInstitutionName || 
-                inst.nombre === userInstitutionName
-            );
-            
-            if (institution) {
-                userInstitutionId = institution.institutionId || institution.id;
-                userRegionalId = institution.regionalId || institution.regional?.id;
-                console.log('Found institution:', institution.name, 'ID:', userInstitutionId, 'Regional ID:', userRegionalId);
+            if (institutionsResponse.ok) {
+                const institutions = await institutionsResponse.json();
+                const institution = institutions.find(inst => 
+                    inst.name === userInstitutionName || 
+                    inst.nombre === userInstitutionName
+                );
+                
+                if (institution) {
+                    userInstitutionId = institution.institutionId || institution.id;
+                    userRegionalId = institution.regionalId || institution.regional?.id;
 
-                // Get regional name
-                if (userRegionalId) {
-                    const regionalsResponse = await fetch('/api/v1/regional', {
-                        method: 'GET',
-                        headers: headers
-                    });
+                    // Get regional name (optional)
+                    if (userRegionalId) {
+                        try {
+                            const regionalsResponse = await fetch('/api/v1/regional', {
+                                method: 'GET',
+                                headers: headers
+                            });
 
-                    if (regionalsResponse.ok) {
-                        const regionals = await regionalsResponse.json();
-                        const regional = regionals.find(reg => reg.id === userRegionalId);
-                        if (regional) {
-                            userRegionalName = regional.name || regional.nombre;
+                            if (regionalsResponse.ok) {
+                                const regionals = await regionalsResponse.json();
+                                const regional = regionals.find(reg => reg.id === userRegionalId);
+                                if (regional) {
+                                    userRegionalName = regional.name || regional.nombre;
+                                }
+                            }
+                        } catch (regionalError) {
+                            console.warn('Could not load regional name:', regionalError);
+                            // Continue without regional name
                         }
                     }
                 }
-
-                // Load inventories for the user's institution
-                await loadInventories(userInstitutionId);
-            } else {
-                console.error('Institution not found for:', userInstitutionName);
-                showReportErrorToast('Error', 'No se pudo encontrar la institución del usuario');
             }
-        } else {
-            console.error('Failed to load institutions:', institutionsResponse.status);
-            showReportErrorToast('Error', 'Error al cargar las instituciones');
+        } catch (institutionError) {
+            console.warn('Could not load institution details:', institutionError);
+            // Continue without institution ID - we can still load inventories
         }
+
+        // Load inventories for the user's institution
+        // This endpoint automatically uses the current user's institution from the token
+        await loadInventories(userInstitutionId);
     } catch (error) {
         console.error('Error loading user info and inventories:', error);
-        showReportErrorToast('Error', 'Error al cargar información del usuario');
+        const errorMessage = error.message || 'Error desconocido';
+        showReportErrorToast('Error', `Error al cargar información del usuario: ${errorMessage}`);
+        
+        // Try to load inventories anyway (might still work)
+        try {
+            await loadInventories(null);
+        } catch (inventoryError) {
+            console.error('Also failed to load inventories:', inventoryError);
+        }
     }
 }
 
@@ -132,38 +141,68 @@ function setupEventListeners() {
 
 // Load inventories for the user's institution
 async function loadInventories(institutionId) {
-    if (!institutionId) {
-        document.getElementById('inventorySelect').innerHTML = '<option value="">Cargando inventarios...</option>';
-        return;
-    }
-
+    const select = document.getElementById('inventorySelect');
+    
     try {
         const token = localStorage.getItem('jwt');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (!token || token === 'undefined' || token === 'null' || token.trim() === '') {
+            throw new Error('No hay token de autenticación disponible');
+        }
 
-        const response = await fetch(`/api/v1/inventory/institutionAdminInventories/${institutionId}?page=0&size=1000`, {
-            method: 'GET',
-            headers: headers
-        });
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
+
+        // Use endpoint without ID to automatically get inventories from current user's institution
+        // Try using authenticatedFetch first (which handles token refresh), then fallback to regular fetch
+        let response;
+        
+        if (window.authenticatedFetch && typeof window.authenticatedFetch === 'function') {
+            // Use authenticatedFetch which handles token refresh automatically
+            try {
+                response = await window.authenticatedFetch('/api/v1/inventory/institutionAdminInventories?page=0&size=1000', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            } catch (authFetchError) {
+                console.warn('authenticatedFetch failed, trying regular fetch:', authFetchError);
+                // Fallback to regular fetch
+                response = await fetch('/api/v1/inventory/institutionAdminInventories?page=0&size=1000', {
+                    method: 'GET',
+                    headers: headers
+                });
+            }
+        } else {
+            // Use regular fetch
+            response = await fetch('/api/v1/inventory/institutionAdminInventories?page=0&size=1000', {
+                method: 'GET',
+                headers: headers
+            });
+        }
 
         if (response.ok) {
             const data = await response.json();
-            const inventoriesList = data.content || [];
-            inventories[institutionId] = inventoriesList;
+            const inventoriesList = data.content || data || [];
+            if (institutionId) {
+                inventories[institutionId] = inventoriesList;
+            }
             populateInventoryDropdown(inventoriesList);
-    } else {
-        const errorText = await response.text().catch(() => 'Error desconocido');
-        console.error('Error loading inventories:', response.status, errorText);
-        showReportErrorToast('Error', `No se pudieron cargar los inventarios (${response.status})`);
-        const select = document.getElementById('inventorySelect');
+        } else {
+            const errorText = await response.text().catch(() => 'Error desconocido');
+            console.error('Error loading inventories:', response.status, errorText);
+            showReportErrorToast('Error', `No se pudieron cargar los inventarios (${response.status})`);
+            if (select) {
+                select.innerHTML = '<option value="">Error al cargar inventarios...</option>';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading inventories:', error);
+        const errorMessage = error.message || 'Error desconocido';
+        showReportErrorToast('Error', `Error de conexión al cargar inventarios: ${errorMessage}`);
         if (select) {
             select.innerHTML = '<option value="">Error al cargar inventarios...</option>';
         }
-    }
-    } catch (error) {
-        console.error('Error loading inventories:', error);
-        showReportErrorToast('Error', 'Error de conexión al cargar inventarios');
     }
 }
 

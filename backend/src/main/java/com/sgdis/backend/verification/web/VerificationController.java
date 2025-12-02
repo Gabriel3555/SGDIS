@@ -10,6 +10,8 @@ import com.sgdis.backend.verification.application.dto.CreateVerificationResponse
 import com.sgdis.backend.verification.application.dto.LatestVerificationResponse;
 import com.sgdis.backend.verification.application.dto.UploadEvidenceResponse;
 import com.sgdis.backend.verification.application.dto.VerificationResponse;
+import com.sgdis.backend.verification.application.dto.VerificationStatisticsResponse;
+import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.verification.application.port.in.CreateBatchVerificationUseCase;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationByLicencePlateNumberUseCase;
 import com.sgdis.backend.verification.application.port.in.CreateVerificationBySerialUseCase;
@@ -65,6 +67,7 @@ public class VerificationController {
     private final GetLatestInventoryVerificationsUseCase getLatestInventoryVerificationsUseCase;
     private final SpringDataVerificationRepository verificationRepository;
     private final FileUploadService fileUploadService;
+    private final AuthService authService;
 
     @Operation(
             summary = "Create verification by serial number",
@@ -513,6 +516,40 @@ public class VerificationController {
         Page<VerificationEntity> verificationPage = verificationRepository.findAllByRegionalId(regionalId, pageable);
         Page<VerificationResponse> responsePage = verificationPage.map(VerificationMapper::toDto);
         return ResponseEntity.ok(responsePage);
+    }
+
+    @Operation(
+            summary = "Get regional verification statistics",
+            description = "Retrieves total statistics of verifications in the current user's regional. " +
+                    "The regional is obtained from the current user's institution."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = VerificationStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution or regional not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/regional/statistics")
+    public ResponseEntity<VerificationStatisticsResponse> getRegionalVerificationStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+            throw new ResourceNotFoundException("User institution or regional not found");
+        }
+        Long regionalId = currentUser.getInstitution().getRegional().getId();
+        
+        Long total = verificationRepository.countByRegionalId(regionalId);
+        Long completed = verificationRepository.countCompletedByRegionalId(regionalId);
+        Long withEvidence = verificationRepository.countWithEvidenceByRegionalId(regionalId);
+        
+        VerificationStatisticsResponse statistics = new VerificationStatisticsResponse(
+                total,
+                completed,
+                withEvidence
+        );
+        
+        return ResponseEntity.ok(statistics);
     }
 }
 

@@ -46,4 +46,11 @@ public interface SpringDataUserRepository extends JpaRepository<UserEntity, Long
     long countByRole(Role role);
     
     long count();
+    
+    // Regional statistics queries
+    @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.institution.regional.id = :regionalId AND u.role != :excludedRole")
+    long countByRegionalIdExcludingRole(@Param("regionalId") Long regionalId, @Param("excludedRole") Role excludedRole);
+    
+    @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.institution.regional.id = :regionalId AND u.role = :role")
+    long countByRegionalIdAndRole(@Param("regionalId") Long regionalId, @Param("role") Role role);
 }

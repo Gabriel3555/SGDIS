@@ -2,10 +2,13 @@ package com.sgdis.backend.transfers.web;
 
 import com.sgdis.backend.transfers.application.dto.ApproveTransferRequest;
 import com.sgdis.backend.transfers.application.dto.ApproveTransferResponse;
+import com.sgdis.backend.transfers.application.dto.RejectTransferRequest;
+import com.sgdis.backend.transfers.application.dto.RejectTransferResponse;
 import com.sgdis.backend.transfers.application.dto.RequestTransferRequest;
 import com.sgdis.backend.transfers.application.dto.RequestTransferResponse;
 import com.sgdis.backend.transfers.application.dto.TransferSummaryResponse;
 import com.sgdis.backend.transfers.application.port.in.ApproveTransferUseCase;
+import com.sgdis.backend.transfers.application.port.in.RejectTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.RequestTransferUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetInventoryTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetItemTransfersUseCase;
@@ -13,6 +16,10 @@ import com.sgdis.backend.transfers.application.port.in.GetAllTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetRegionalTransfersUseCase;
 import com.sgdis.backend.transfers.application.port.in.GetTransferStatisticsUseCase;
 import com.sgdis.backend.transfers.application.dto.TransferStatisticsResponse;
+import com.sgdis.backend.auth.application.service.AuthService;
+import com.sgdis.backend.exception.ResourceNotFoundException;
+import com.sgdis.backend.transfers.domain.TransferStatus;
+import com.sgdis.backend.transfers.infrastructure.repository.SpringDataTransferRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,6 +35,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,12 +47,15 @@ import java.util.List;
 public class TransferController {
 
     private final ApproveTransferUseCase approveTransferUseCase;
+    private final RejectTransferUseCase rejectTransferUseCase;
     private final RequestTransferUseCase requestTransferUseCase;
     private final GetInventoryTransfersUseCase getInventoryTransfersUseCase;
     private final GetItemTransfersUseCase getItemTransfersUseCase;
     private final GetAllTransfersUseCase getAllTransfersUseCase;
     private final GetRegionalTransfersUseCase getRegionalTransfersUseCase;
     private final GetTransferStatisticsUseCase getTransferStatisticsUseCase;
+    private final AuthService authService;
+    private final SpringDataTransferRepository transferRepository;
 
     @Operation(
             summary = "Get all transfers",
@@ -143,6 +154,27 @@ public class TransferController {
     }
 
     @Operation(
+            summary = "Rejects an item transfer",
+            description = "Rejects a transfer request, preventing the item from being moved",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = false,
+                    content = @Content(schema = @Schema(implementation = RejectTransferRequest.class))
+            )
+    )
+    @ApiResponse(responseCode = "200", description = "Transfer rejected successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid request")
+    @ApiResponse(responseCode = "404", description = "Transfer not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/{transferId}/reject")
+    public ResponseEntity<RejectTransferResponse> rejectTransfer(
+            @PathVariable Long transferId,
+            @Valid @RequestBody(required = false) RejectTransferRequest request
+    ) {
+        RejectTransferResponse response = rejectTransferUseCase.rejectTransfer(transferId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
             summary = "Get transfers by regional",
             description = "Retrieves all transfers from inventories belonging to institutions in the specified regional with pagination"
     )
@@ -182,6 +214,36 @@ public class TransferController {
     @GetMapping("/statistics")
     public ResponseEntity<TransferStatisticsResponse> getTransferStatistics() {
         TransferStatisticsResponse statistics = getTransferStatisticsUseCase.getTransferStatistics();
+        return ResponseEntity.ok(statistics);
+    }
+
+    @Operation(
+            summary = "Get regional transfer statistics",
+            description = "Retrieves total statistics of transfers in the current user's regional by status. " +
+                    "The regional is obtained from the current user's institution."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = TransferStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution or regional not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/regional/statistics")
+    public ResponseEntity<TransferStatisticsResponse> getRegionalTransferStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+            throw new ResourceNotFoundException("User institution or regional not found");
+        }
+        Long regionalId = currentUser.getInstitution().getRegional().getId();
+        
+        Long total = transferRepository.countByRegionalId(regionalId);
+        Long pending = transferRepository.countByRegionalIdAndStatus(regionalId, TransferStatus.PENDING);
+        Long approved = transferRepository.countByRegionalIdAndStatus(regionalId, TransferStatus.APPROVED);
+        Long rejected = transferRepository.countByRegionalIdAndStatus(regionalId, TransferStatus.REJECTED);
+        
+        TransferStatisticsResponse statistics = new TransferStatisticsResponse(total, pending, approved, rejected);
         return ResponseEntity.ok(statistics);
     }
 }

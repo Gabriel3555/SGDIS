@@ -366,7 +366,7 @@ async function loadInventories(regionalId, institutionId) {
         
         if (isAdminInstitution) {
             // For ADMIN_INSTITUTION role, load only inventories from their institution
-            const response = await fetch('/api/v1/inventory/institution?page=0&size=1000', {
+            const response = await fetch('/api/v1/inventory/institutionAdminInventories?page=0&size=1000', {
                 method: 'GET',
                 headers: headers
             });

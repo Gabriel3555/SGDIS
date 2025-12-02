@@ -496,7 +496,28 @@ async function authenticatedFetch(url, options = {}) {
       }
       
       // Hacer la petición
-      let response = await originalFetch(url, options);
+      // Asegurarse de que las opciones estén correctamente formateadas
+      const fetchOptions = {
+        ...options,
+        headers: options.headers || {}
+      };
+      
+      // Si headers es un objeto plano, asegurarse de que tenga Content-Type si no lo tiene
+      if (!(fetchOptions.headers instanceof Headers)) {
+        if (!fetchOptions.headers['Content-Type'] && !fetchOptions.headers['content-type']) {
+          fetchOptions.headers['Content-Type'] = 'application/json';
+        }
+      }
+      
+      let response;
+      try {
+        response = await originalFetch(url, fetchOptions);
+      } catch (fetchError) {
+        // Si hay un error de red o CORS, loguearlo pero no fallar silenciosamente
+        console.error(`Error en fetch para ${urlString}:`, fetchError);
+        // Re-lanzar el error para que el código que llama pueda manejarlo
+        throw fetchError;
+      }
       
       // Si recibimos 401 o 403, intentar refrescar el token y reintentar
       if (response.status === 401 || response.status === 403) {
@@ -558,4 +579,8 @@ window.refreshJWTToken = refreshJWTToken;
 window.isTokenExpired = isTokenExpired;
 window.getValidToken = getValidToken;
 window.authenticatedFetch = authenticatedFetch;
+
+// Exponer originalFetch para casos donde se necesite bypass del interceptor
+// Nota: originalFetch está en el scope de la IIFE, así que necesitamos exponerlo de otra forma
+// Por ahora, authenticatedFetch debería ser suficiente
 

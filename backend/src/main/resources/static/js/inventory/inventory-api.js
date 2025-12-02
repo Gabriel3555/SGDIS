@@ -120,9 +120,17 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
         const data = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : {});
         const selectedInstitution = data.selectedInstitution;
         
-        // Get the regional ID from the current user
+        // Get the regional ID from multiple possible sources
         const currentUser = window.currentUserData || {};
-        const userRegionalId = currentUser.institution?.regional?.id || currentUser.regional?.id;
+        const userRegionalId = data.userRegionalId || 
+                              currentUser.institution?.regional?.id || 
+                              currentUser.regional?.id;
+        
+        console.log('Admin Regional - Building endpoint:', {
+            selectedInstitution,
+            userRegionalId,
+            hasSelectedInstitution: !!selectedInstitution
+        });
         
         // Use default size of 6 for admin regional if size is not explicitly provided
         const pageSize = size === DEFAULT_INSTITUTION_PAGE_SIZE ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : size;
@@ -134,6 +142,7 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
                 size: pageSize.toString()
             });
             const endpoint = `/api/v1/inventory/regional/${userRegionalId}/institution/${selectedInstitution}?${params.toString()}`;
+            console.log('Using filtered endpoint:', endpoint);
             return endpoint;
         } else {
             // Use the regional admin inventories endpoint (all inventories of the regional)
@@ -141,7 +150,9 @@ function buildInventoryEndpoint(page = 0, size = DEFAULT_INSTITUTION_PAGE_SIZE) 
                 page: page.toString(),
                 size: pageSize.toString()
             });
-            return `/api/v1/inventory/regionalAdminInventories?${params.toString()}`;
+            const endpoint = `/api/v1/inventory/regionalAdminInventories?${params.toString()}`;
+            console.log('Using default regional endpoint:', endpoint);
+            return endpoint;
         }
     }
     
@@ -1416,6 +1427,15 @@ async function handleInstitutionFilterChange(institutionId) {
     
     // Reload inventories with new filter
     window.inventoryData.currentPage = 1; // Use 1-based for UI
+    
+    // Reload statistics first (for ADMIN_REGIONAL, this will use the filtered endpoint)
+    const currentRole = window.currentUserRole || '';
+    const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    if (isAdminRegional && typeof loadInventoryStatistics === 'function') {
+        await loadInventoryStatistics();
+    }
+    
     await loadInventories({ page: 0 });
     
     // Update the CustomSelect visual value to reflect the selection
@@ -1459,21 +1479,40 @@ async function handleInstitutionFilterChange(institutionId) {
     }
 }
 
-// Function to load inventory statistics (only for SUPERADMIN)
+// Function to load inventory statistics (for SUPERADMIN and ADMIN_REGIONAL)
 async function loadInventoryStatistics() {
     try {
         const token = localStorage.getItem('jwt');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        // Check if current user is SUPERADMIN
         const currentRole = window.currentUserRole || '';
-        if (currentRole !== 'SUPERADMIN') {
-            // For non-SUPERADMIN users, return null to use local calculation
+        const isSuperAdmin = currentRole === 'SUPERADMIN';
+        const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        
+        if (!isSuperAdmin && !isAdminRegional) {
+            // For other roles, return null to use local calculation
             return null;
         }
 
-        const response = await fetch('/api/v1/inventory/statistics', {
+        let endpoint = '';
+        if (isSuperAdmin) {
+            endpoint = '/api/v1/inventory/statistics';
+        } else if (isAdminRegional) {
+            // For ADMIN_REGIONAL, use the regional statistics endpoint
+            // Check if there's a selected institution filter
+            const data = window.inventoryData || (typeof inventoryData !== 'undefined' ? inventoryData : {});
+            const selectedInstitution = data.selectedInstitution;
+            
+            if (selectedInstitution) {
+                endpoint = `/api/v1/inventory/regional/statistics?institutionId=${selectedInstitution}`;
+            } else {
+                endpoint = '/api/v1/inventory/regional/statistics';
+            }
+        }
+
+        const response = await fetch(endpoint, {
             method: 'GET',
             headers: headers
         });

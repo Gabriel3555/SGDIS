@@ -57,11 +57,13 @@ async function updateInventoryStats() {
 
   const currentRole = window.currentUserRole || '';
   const isSuperAdmin = currentRole === 'SUPERADMIN';
+  const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                          (window.location.pathname && window.location.pathname.includes('/admin_regional'));
 
-  // Use statistics from endpoint if available (for SUPERADMIN), otherwise calculate from current page
+  // Use statistics from endpoint if available (for SUPERADMIN and ADMIN_REGIONAL), otherwise calculate from current page
   let totalInventories, activeInventories, inactiveInventories, totalItems, totalValue;
 
-  if (isSuperAdmin && window.inventoryData.statistics) {
+  if ((isSuperAdmin || isAdminRegional) && window.inventoryData.statistics) {
     // Use total statistics from endpoint
     const stats = window.inventoryData.statistics;
     totalInventories = stats.totalInventories || 0;
@@ -390,6 +392,54 @@ async function loadRegionalInstitutionsForAdminRegional() {
     if (!userRegionalId) {
       console.error('No regionalId found for user institution:', userInstitution);
       return;
+    }
+
+    // Store regional ID in currentUserData and inventoryData for use in buildInventoryEndpoint
+    if (!window.currentUserData) {
+      window.currentUserData = {};
+    }
+    
+    // Check if institution is a string (name) or an object
+    const institutionIsString = typeof window.currentUserData.institution === 'string';
+    
+    // Store the institution name (institutionName is already defined above from line 347)
+    const savedInstitutionName = institutionIsString 
+      ? window.currentUserData.institution 
+      : (window.currentUserData.institution?.name || institutionName);
+    
+    // Create/update institution object structure
+    // If institution is a string, we need to convert it to an object
+    if (institutionIsString) {
+      // Convert string to object structure
+      window.currentUserData.institution = {
+        name: savedInstitutionName,
+        regional: { id: userRegionalId }
+      };
+    } else if (!window.currentUserData.institution || typeof window.currentUserData.institution !== 'object') {
+      // Institution doesn't exist or is not an object, create it
+      window.currentUserData.institution = {
+        name: savedInstitutionName,
+        regional: { id: userRegionalId }
+      };
+    } else {
+      // Institution is already an object, update it safely
+      if (!window.currentUserData.institution.regional) {
+        window.currentUserData.institution.regional = {};
+      }
+      window.currentUserData.institution.regional.id = userRegionalId;
+    }
+    
+    // Also store regional ID at root level for easier access
+    window.currentUserData.regional = { id: userRegionalId };
+    
+    // Also store in inventoryData if it exists
+    if (window.inventoryData) {
+      window.inventoryData.userRegionalId = userRegionalId;
+    } else {
+      // Initialize inventoryData if it doesn't exist
+      if (typeof window.inventoryData === 'undefined') {
+        window.inventoryData = { userRegionalId: userRegionalId };
+      }
     }
 
     // Fetch regional information and store it globally

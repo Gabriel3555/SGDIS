@@ -79,5 +79,15 @@ public interface SpringDataTransferRepository extends JpaRepository<TransferEnti
 
     @Query("SELECT COUNT(t) FROM TransferEntity t WHERE t.approvalStatus = :status")
     Long countByStatus(@Param("status") TransferStatus status);
+    
+    // Regional statistics queries
+    @Query("SELECT COUNT(t) FROM TransferEntity t WHERE " +
+           "(t.inventory.institution.regional.id = :regionalId OR t.sourceInventory.institution.regional.id = :regionalId)")
+    Long countByRegionalId(@Param("regionalId") Long regionalId);
+    
+    @Query("SELECT COUNT(t) FROM TransferEntity t WHERE " +
+           "(t.inventory.institution.regional.id = :regionalId OR t.sourceInventory.institution.regional.id = :regionalId) " +
+           "AND t.approvalStatus = :status")
+    Long countByRegionalIdAndStatus(@Param("regionalId") Long regionalId, @Param("status") TransferStatus status);
 }
 

@@ -822,7 +822,10 @@
                 updateDashboardUI();
                 
                 // Initialize charts after data is loaded
-                initializeCharts();
+                // Use setTimeout to ensure DOM is ready and data is set
+                setTimeout(() => {
+                    initializeCharts();
+                }, 100);
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
             }
@@ -835,14 +838,21 @@
                 const response = await fetch(`/api/v1/inventory/regionalAdminInventories/${regionalId}?page=0&size=10000`, { headers });
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('Inventory statistics response:', data);
                     
-                    // Handle both paginated response and direct array
+                    // Handle both paginated response (Page) and direct array
                     let inventories = [];
                     if (Array.isArray(data)) {
                         inventories = data;
                     } else if (data && Array.isArray(data.content)) {
+                        // Spring Page response has 'content' property
                         inventories = data.content;
+                    } else if (data && typeof data === 'object') {
+                        // Try to extract array from response
+                        inventories = [];
                     }
+                    
+                    console.log('Extracted inventories:', inventories.length);
                     
                     // Store all inventories for chart calculations
                     adminRegionalDashboardData.allInventories = inventories;
@@ -885,17 +895,24 @@
                 const response = await fetch('/api/v1/users/regional?page=0&size=10000', { headers });
                 if (response.ok) {
                     const data = await response.json();
+                    console.log('User statistics response:', data);
                     
-                    // Handle both paginated response and direct array
+                    // Handle both paginated response (PagedUserResponse) and direct array
                     let users = [];
                     if (Array.isArray(data)) {
                         users = data;
+                    } else if (data && Array.isArray(data.users)) {
+                        // PagedUserResponse has 'users' property
+                        users = data.users;
                     } else if (data && Array.isArray(data.content)) {
+                        // Fallback for other paginated responses
                         users = data.content;
                     } else if (data && typeof data === 'object') {
                         // Try to extract array from response
                         users = [];
                     }
+                    
+                    console.log('Extracted users:', users.length, users);
                     
                     // The /api/v1/users/regional endpoint already filters by regional
                     // So we can use all users returned
@@ -908,6 +925,14 @@
                     const warehouseCount = regionalUsers.filter(u => u.role === 'WAREHOUSE').length;
                     const userCount = regionalUsers.filter(u => u.role === 'USER').length;
 
+                    console.log('Calculated stats:', {
+                        totalUsers,
+                        adminRegionalCount,
+                        adminInstitutionCount,
+                        warehouseCount,
+                        userCount
+                    });
+
                     adminRegionalDashboardData.userStats = {
                         totalUsers,
                         adminRegionalCount,
@@ -915,6 +940,10 @@
                         warehouseCount,
                         userCount
                     };
+                } else {
+                    console.error('Failed to load user statistics. Status:', response.status);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
                 }
             } catch (error) {
                 console.error('Error loading user statistics:', error);
@@ -1143,6 +1172,12 @@
                     'APPROVED': 'bg-green-100 text-green-800',
                     'REJECTED': 'bg-red-100 text-red-800'
                 };
+                const statusLabels = {
+                    'PENDING': 'Pendiente',
+                    'APPROVED': 'Aprobado',
+                    'REJECTED': 'Rechazado'
+                };
+                const statusLabel = statusLabels[transfer.status] || transfer.status || 'N/A';
                 return `
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                         <div class="flex-1">
@@ -1151,7 +1186,7 @@
                         </div>
                         <div class="ml-3">
                             <span class="px-2 py-1 text-xs rounded-full ${statusColors[transfer.status] || 'bg-gray-100 text-gray-800'}">
-                                ${transfer.status || 'N/A'}
+                                ${statusLabel}
                             </span>
                         </div>
                     </div>
@@ -1178,8 +1213,8 @@
                     });
                 }
                 
-                // Get item identifier
-                const itemId = verif.item?.serialNumber || verif.item?.licencePlateNumber || 'N/A';
+                // Get item identifier - prioritize itemLicencePlateNumber, then itemName, then itemId as fallback
+                const itemId = verif.itemLicencePlateNumber || verif.itemName || (verif.itemId ? `Item #${verif.itemId}` : 'N/A');
                 
                 return `
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
@@ -1211,9 +1246,25 @@
 
         // Initialize charts
         function initializeCharts() {
+            console.log('Inicializando gráficas...');
+            console.log('userStats:', adminRegionalDashboardData.userStats);
+            
+            // Check for Chart.js availability (try different possible names)
+            // Declare once at the beginning for all charts
+            const ChartLib = window.Chart || window.chart || (typeof Chart !== 'undefined' ? Chart : null);
+            console.log('Chart disponible:', typeof ChartLib !== 'undefined' && ChartLib !== null);
+            console.log('window.Chart:', typeof window.Chart);
+            
+            if (!ChartLib) {
+                console.error('Chart.js no está disponible. Verifica que el script esté cargado.');
+                return;
+            }
+            
             // Destroy existing charts if they exist
             Object.values(adminRegionalDashboardData.charts).forEach(chart => {
-                if (chart) chart.destroy();
+                if (chart && typeof chart.destroy === 'function') {
+                    chart.destroy();
+                }
             });
             adminRegionalDashboardData.charts = {};
 
@@ -1221,90 +1272,132 @@
 
             // Chart: Users by Role (without Superadmin)
             if (adminRegionalDashboardData.userStats) {
-                const ctx = document.getElementById('usersByRoleChart');
-                if (ctx) {
-                    adminRegionalDashboardData.charts.usersByRole = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Admin Regional', 'Admin Inst.', 'Warehouse', 'Usuarios'],
-                            datasets: [{
-                                data: [
-                                    adminRegionalDashboardData.userStats.adminRegionalCount || 0,
-                                    adminRegionalDashboardData.userStats.adminInstitutionCount || 0,
-                                    adminRegionalDashboardData.userStats.warehouseCount || 0,
-                                    adminRegionalDashboardData.userStats.userCount || 0
-                                ],
-                                backgroundColor: [
-                                    'rgba(59, 130, 246, 0.8)',
-                                    'rgba(139, 92, 246, 0.8)',
-                                    'rgba(245, 158, 11, 0.8)',
-                                    'rgba(16, 185, 129, 0.8)'
-                                ],
-                                borderColor: [
-                                    'rgb(59, 130, 246)',
-                                    'rgb(139, 92, 246)',
-                                    'rgb(245, 158, 11)',
-                                    'rgb(16, 185, 129)'
-                                ],
-                                borderWidth: 2,
-                                hoverOffset: 8
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '60%',
-                            animation: {
-                                animateRotate: true,
-                                animateScale: true,
-                                duration: 1500,
-                                easing: 'easeOutQuart'
+                const canvas = document.getElementById('usersByRoleChart');
+                console.log('Canvas encontrado:', canvas);
+                if (canvas) {
+                    // Check if canvas has proper dimensions
+                    const canvasContainer = canvas.parentElement;
+                    if (canvasContainer) {
+                        const containerHeight = canvasContainer.offsetHeight || 256;
+                        canvas.height = containerHeight;
+                        canvas.width = canvasContainer.offsetWidth || 400;
+                        console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
+                    }
+                    
+                    console.log('Creando gráfica de usuarios por rol...');
+                    const dataValues = [
+                        adminRegionalDashboardData.userStats.adminRegionalCount || 0,
+                        adminRegionalDashboardData.userStats.adminInstitutionCount || 0,
+                        adminRegionalDashboardData.userStats.warehouseCount || 0,
+                        adminRegionalDashboardData.userStats.userCount || 0
+                    ];
+                    console.log('Datos:', {
+                        adminRegional: dataValues[0],
+                        adminInstitution: dataValues[1],
+                        warehouse: dataValues[2],
+                        users: dataValues[3],
+                        total: dataValues.reduce((a, b) => a + b, 0)
+                    });
+                    
+                    const ctx2d = canvas.getContext('2d');
+                    
+                    // Create gradients for better visual appeal
+                    const gradient1 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient1.addColorStop(0, '#3B82F6');
+                    gradient1.addColorStop(1, '#2563EB');
+                    
+                    const gradient2 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient2.addColorStop(0, '#8B5CF6');
+                    gradient2.addColorStop(1, '#7C3AED');
+                    
+                    const gradient3 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient3.addColorStop(0, '#F59E0B');
+                    gradient3.addColorStop(1, '#D97706');
+                    
+                    const gradient4 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                    gradient4.addColorStop(0, '#10B981');
+                    gradient4.addColorStop(1, '#059669');
+                    
+                    try {
+                        adminRegionalDashboardData.charts.usersByRole = new ChartLib(canvas, {
+                            type: 'doughnut',
+                            data: {
+                                labels: ['Admin Regional', 'Admin Inst.', 'Warehouse', 'Usuarios'],
+                                datasets: [{
+                                    data: dataValues,
+                                    backgroundColor: [gradient1, gradient2, gradient3, gradient4],
+                                    borderWidth: 0,
+                                    hoverOffset: 8
+                                }]
                             },
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        padding: 15,
-                                        usePointStyle: true,
-                                        pointStyle: 'circle',
-                                        font: {
-                                            size: 12,
-                                            weight: '500',
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '60%',
+                                borderRadius: 8,
+                                animation: {
+                                    animateRotate: true,
+                                    animateScale: true,
+                                    duration: 1000
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            padding: 15,
+                                            usePointStyle: true,
+                                            pointStyle: 'circle',
+                                            font: {
+                                                size: 12,
+                                                weight: '500',
+                                                family: "'Inter', sans-serif"
+                                            },
+                                            color: colors.textColor
+                                        }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: colors.tooltipBg,
+                                        borderColor: colors.tooltipBorder,
+                                        borderWidth: 1,
+                                        padding: 12,
+                                        titleFont: {
+                                            size: 14,
+                                            weight: 'bold',
                                             family: "'Inter', sans-serif"
                                         },
-                                        color: colors.textColor
-                                    }
-                                },
-                                tooltip: {
-                                    backgroundColor: colors.tooltipBg,
-                                    padding: 12,
-                                    titleFont: {
-                                        size: 14,
-                                        weight: '600',
-                                        family: "'Inter', sans-serif"
-                                    },
-                                    bodyFont: {
-                                        size: 13,
-                                        family: "'Inter', sans-serif"
-                                    },
-                                    borderColor: colors.tooltipBorder,
-                                    borderWidth: 1,
-                                    cornerRadius: 8,
-                                    displayColors: true,
-                                    callbacks: {
-                                        label: function(context) {
-                                            const label = context.label || '';
-                                            const value = context.parsed || 0;
-                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                                            return `${label}: ${value} (${percentage}%)`;
+                                        bodyFont: {
+                                            size: 13,
+                                            family: "'Inter', sans-serif"
+                                        },
+                                        cornerRadius: 8,
+                                        displayColors: true,
+                                        callbacks: {
+                                            label: function(context) {
+                                                const label = context.label || '';
+                                                const value = context.parsed || 0;
+                                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                                return `${label}: ${value} (${percentage}%)`;
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    });
+                        });
+                        console.log('Gráfica de usuarios por rol creada exitosamente');
+                    } catch (chartError) {
+                        console.error('Error al crear la gráfica de usuarios por rol:', chartError);
+                    }
+                } else {
+                    if (!canvas) {
+                        console.warn('Canvas usersByRoleChart no encontrado');
+                    }
+                    if (typeof Chart === 'undefined') {
+                        console.warn('Chart.js no está disponible');
+                    }
                 }
+            } else {
+                console.warn('userStats no está disponible para inicializar la gráfica');
             }
 
             // Chart: Inventories by Status
@@ -1487,8 +1580,17 @@
 
             // Chart: Institutions Distribution
             if (adminRegionalDashboardData.institutions && adminRegionalDashboardData.institutions.length > 0) {
-                const ctx = document.getElementById('institutionsChart');
-                if (ctx) {
+                const canvas = document.getElementById('institutionsChart');
+                console.log('Canvas de instituciones encontrado:', canvas);
+                if (canvas) {
+                    // Check if canvas has proper dimensions
+                    const canvasContainer = canvas.parentElement;
+                    if (canvasContainer) {
+                        const containerHeight = canvasContainer.offsetHeight || 256;
+                        canvas.height = containerHeight;
+                        canvas.width = canvasContainer.offsetWidth || 400;
+                    }
+                    
                     // Count inventories per institution using all inventories
                     const institutionCounts = {};
                     
@@ -1497,31 +1599,46 @@
                         institutionCounts[inst.name] = 0;
                     });
                     
+                    console.log('Instituciones encontradas:', adminRegionalDashboardData.institutions.length);
+                    console.log('Inventarios totales:', adminRegionalDashboardData.allInventories?.length || 0);
+                    
                     // Count inventories per institution
                     if (adminRegionalDashboardData.allInventories && adminRegionalDashboardData.allInventories.length > 0) {
                         adminRegionalDashboardData.allInventories.forEach(inv => {
-                            if (inv.institution && inv.institution.name) {
-                                institutionCounts[inv.institution.name] = (institutionCounts[inv.institution.name] || 0) + 1;
+                            // Check different possible structures for institution
+                            const institutionName = inv.institution?.name || 
+                                                   inv.institutionName || 
+                                                   (typeof inv.institution === 'string' ? inv.institution : null);
+                            if (institutionName) {
+                                institutionCounts[institutionName] = (institutionCounts[institutionName] || 0) + 1;
                             }
                         });
                     }
 
                     // Prepare data for chart
                     const labels = Object.keys(institutionCounts);
-                    const data = Object.values(institutionCounts);
+                    const dataValues = Object.values(institutionCounts);
+                    
+                    console.log('Datos para gráfica de instituciones:', {
+                        labels,
+                        dataValues,
+                        total: dataValues.reduce((a, b) => a + b, 0)
+                    });
 
                     // Create gradient for bars
-                    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+                    const ctx2d = canvas.getContext('2d');
+                    const gradient = ctx2d.createLinearGradient(0, 0, 0, 400);
                     gradient.addColorStop(0, 'rgba(139, 92, 246, 0.9)');
                     gradient.addColorStop(1, 'rgba(139, 92, 246, 0.4)');
 
-                    adminRegionalDashboardData.charts.institutions = new Chart(ctx, {
+                    try {
+                        adminRegionalDashboardData.charts.institutions = new ChartLib(canvas, {
                         type: 'bar',
                         data: {
                             labels: labels,
                             datasets: [{
                                 label: 'Inventarios',
-                                data: data,
+                                data: dataValues,
                                 backgroundColor: gradient,
                                 borderColor: 'rgb(139, 92, 246)',
                                 borderWidth: 2,
@@ -1593,7 +1710,15 @@
                             }
                         }
                     });
+                    console.log('Gráfica de instituciones creada exitosamente');
+                    } catch (error) {
+                        console.error('Error al crear gráfica de instituciones:', error);
+                    }
+                } else {
+                    console.warn('Canvas de instituciones no encontrado');
                 }
+            } else {
+                console.warn('No hay instituciones disponibles para la gráfica');
             }
         }
 

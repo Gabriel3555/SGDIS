@@ -13,9 +13,25 @@ function updateLoansStats() {
     const statsContainer = document.getElementById('loansStatsContainer');
     if (!statsContainer) return;
 
-    const totalLoans = loansData.loans.length;
-    const activeLoans = loansData.loans.filter(loan => !loan.returned).length;
-    const returnedLoans = loansData.loans.filter(loan => loan.returned === true).length;
+    // Check if user is admin regional and has statistics from endpoint
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    
+    let totalLoans, activeLoans, returnedLoans;
+    
+    if (isAdminRegional && window.loansData && window.loansData.statistics) {
+        // Use total statistics from endpoint
+        const stats = window.loansData.statistics;
+        totalLoans = stats.totalLoans || 0;
+        activeLoans = stats.activeLoans || 0;
+        returnedLoans = stats.returnedLoans || 0;
+    } else {
+        // Fallback to local calculation from current page data
+        totalLoans = loansData.loans.length;
+        activeLoans = loansData.loans.filter(loan => !loan.returned || loan.returned === null || loan.returned === false).length;
+        returnedLoans = loansData.loans.filter(loan => loan.returned === true).length;
+    }
+    
     const filteredLoans = loansData.filteredLoans.length;
 
     statsContainer.innerHTML = `
