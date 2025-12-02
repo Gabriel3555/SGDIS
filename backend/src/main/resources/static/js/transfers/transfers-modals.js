@@ -506,25 +506,99 @@ function closeNewTransferModal() {
 
 function showViewTransferModal(transferId) {
     const modal = document.getElementById('viewTransferModal');
-    if (!modal) return;
+    if (!modal) {
+        console.error('viewTransferModal element not found in DOM');
+        alert('Error: El modal de detalles no está disponible. Por favor, recarga la página.');
+        return;
+    }
     
     const content = document.getElementById('viewTransferContent');
     if (content) {
         content.innerHTML = `
             <div class="flex items-center justify-center py-8">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AF00]"></div>
+                <p class="ml-4 text-gray-600 dark:text-gray-400">Cargando detalles...</p>
             </div>
         `;
     }
     
+    // Show modal first - ensure it's visible
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
+    modal.style.zIndex = '9999';
+    modal.style.position = 'fixed';
     
-    // Find transfer in current data
+    // Find transfer in current data - check multiple sources
+    let transfer = null;
+    
+    // Check window.transfersData first
     if (window.transfersData && window.transfersData.transfers) {
-        const transfer = window.transfersData.transfers.find(t => t.id === transferId);
-        if (transfer) {
-            populateViewTransferModal(transfer);
+        transfer = window.transfersData.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+    }
+    
+    // If not found, check if we're on admin regional page and check transfersDataAdminRegional
+    if (!transfer && window.transfersDataAdminRegional && window.transfersDataAdminRegional.transfers) {
+        transfer = window.transfersDataAdminRegional.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+    }
+    
+    // If still not found, try to reload transfers or show error
+    if (!transfer) {
+        // Try to reload transfers data
+        if (window.loadTransfersData || window.loadTransfersForAdminRegional) {
+            const loadFunction = window.loadTransfersForAdminRegional || window.loadTransfersData;
+            loadFunction().then(() => {
+                // Try again after reload - check both sources
+                let reloadedTransfer = null;
+                if (window.transfersData && window.transfersData.transfers) {
+                    reloadedTransfer = window.transfersData.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+                }
+                if (!reloadedTransfer && window.transfersDataAdminRegional && window.transfersDataAdminRegional.transfers) {
+                    reloadedTransfer = window.transfersDataAdminRegional.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+                }
+                
+                if (reloadedTransfer) {
+                    populateViewTransferModal(reloadedTransfer);
+                    return;
+                }
+                // If still not found, show error
+                if (content) {
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
+                            <p class="text-gray-600 dark:text-gray-400">No se pudo encontrar la transferencia en los datos actuales</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">ID: ${transferId}</p>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Por favor, recarga la página e intenta nuevamente</p>
+                        </div>
+                    `;
+                }
+            }).catch(error => {
+                console.error('Error reloading transfers:', error);
+                if (content) {
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+                            <p class="text-gray-600 dark:text-gray-400">Error al cargar la transferencia: ${error.message}</p>
+                        </div>
+                    `;
+                }
+            });
+        } else {
+            // No load function available, show error
+            if (content) {
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-400">No se pudo encontrar la transferencia</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">ID: ${transferId}</p>
+                        <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">Los datos no están disponibles. Por favor, recarga la página.</p>
+                    </div>
+                `;
+            }
         }
+    } else {
+        populateViewTransferModal(transfer);
     }
 }
 
@@ -532,7 +606,7 @@ function populateViewTransferModal(transfer) {
     const content = document.getElementById('viewTransferContent');
     if (!content) return;
     
-    const statusBadge = getTransferStatusBadge(transfer.status);
+    const statusBadge = getTransferStatusBadge(transfer.status || transfer.approvalStatus);
     const requestedDate = transfer.requestedAt 
         ? new Date(transfer.requestedAt).toLocaleDateString('es-ES', { 
             year: 'numeric', 
@@ -551,6 +625,15 @@ function populateViewTransferModal(transfer) {
             minute: '2-digit'
         })
         : 'N/A';
+    const rejectedDate = transfer.rejectedAt 
+        ? new Date(transfer.rejectedAt).toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })
+        : null;
     
     content.innerHTML = `
         <div class="space-y-6">
@@ -601,6 +684,19 @@ function populateViewTransferModal(transfer) {
                         <p class="text-gray-900 dark:text-gray-100">${approvedDate}</p>
                     </div>
                 ` : ''}
+                
+                ${transfer.rejectedByName ? `
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rechazado por</label>
+                        <p class="text-gray-900 dark:text-gray-100">${transfer.rejectedByName}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: ${transfer.rejectedById || 'N/A'}</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Fecha de Rechazo</label>
+                        <p class="text-gray-900 dark:text-gray-100">${rejectedDate || 'N/A'}</p>
+                    </div>
+                ` : ''}
             </div>
             
             ${transfer.details ? `
@@ -616,6 +712,13 @@ function populateViewTransferModal(transfer) {
                     <p class="text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">${transfer.approvalNotes}</p>
                 </div>
             ` : ''}
+            
+            ${transfer.rejectionNotes ? `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notas de Rechazo</label>
+                    <p class="text-gray-900 dark:text-gray-100 bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800">${transfer.rejectionNotes}</p>
+                </div>
+            ` : ''}
         </div>
     `;
 }
@@ -624,6 +727,7 @@ function closeViewTransferModal() {
     const modal = document.getElementById('viewTransferModal');
     if (modal) {
         modal.classList.add('hidden');
+        modal.style.display = 'none'; // Ensure it's hidden
     }
 }
 

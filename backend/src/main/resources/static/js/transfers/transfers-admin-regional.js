@@ -390,9 +390,10 @@ if (document.readyState === 'loading') {
     initializeAdminRegionalTransfers();
 }
 
-// Export functions
+// Export functions and data
 window.loadTransfersForAdminRegional = loadTransfersForAdminRegional;
 window.handleTransferSearchForAdminRegional = handleTransferSearchForAdminRegional;
 window.handleTransferStatusFilterForAdminRegional = handleTransferStatusFilterForAdminRegional;
 window.initializeAdminRegionalTransfers = initializeAdminRegionalTransfers;
+window.transfersDataAdminRegional = transfersDataAdminRegional;
 
