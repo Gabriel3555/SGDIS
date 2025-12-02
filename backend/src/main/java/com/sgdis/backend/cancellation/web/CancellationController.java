@@ -42,6 +42,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -413,6 +416,42 @@ public class CancellationController {
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Cancelación no encontrada");
+        }
+    }
+
+    @Operation(
+            summary = "Download GIL-F-011 format template",
+            description = "Downloads the GIL-F-011 format template (FORMATO CONCEPTO TÉCNICO DE BIENES)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Format template downloaded successfully"
+    )
+    @ApiResponse(responseCode = "404", description = "Format template file not found")
+    @GetMapping("/download-format-template")
+    public ResponseEntity<Resource> downloadFormatTemplate() {
+        try {
+            String filename = "GIL-F-011FormatoConceptoTecnicodeBienes.xlsx";
+            Path filePath = Paths.get("uploads", "cancellation", "formats", filename);
+            
+            if (!Files.exists(filePath)) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            Resource resource = new org.springframework.core.io.FileSystemResource(filePath);
+            
+            // Codificar el nombre del archivo para evitar problemas con caracteres especiales
+            String encodedFilename = java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            
+            return ResponseEntity.ok()
+                    .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

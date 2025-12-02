@@ -84,6 +84,9 @@ async function loadCancellations() {
 
         // Apply filters
         filterCancellations();
+        
+        // Update requester filter options after loading cancellations
+        updateRequesterFilterOptions();
     } catch (error) {
         console.error('Error loading cancellations:', error);
         cancellationsData.cancellations = [];
@@ -117,7 +120,7 @@ function filterCancellations() {
     if (cancellationsData.filters.search) {
         const searchTerm = cancellationsData.filters.search.toLowerCase();
         filtered = filtered.filter(cancellation => {
-            const requesterName = cancellation.requester?.fullName || '';
+            const requesterName = cancellation.requester?.fullName || cancellation.requesterFullName || '';
             const reason = cancellation.reason || '';
             const itemsText = (cancellation.items || [])
                 .map(item => `${item.licencePlateNumber || ''} ${item.name || ''}`)
@@ -127,6 +130,45 @@ function filterCancellations() {
             return requesterName.toLowerCase().includes(searchTerm) ||
                    reason.toLowerCase().includes(searchTerm) ||
                    itemsText.includes(searchTerm);
+        });
+    }
+
+    // Apply requester filter
+    if (cancellationsData.filters.requester !== 'all') {
+        filtered = filtered.filter(cancellation => {
+            const requesterId = cancellation.requester?.id || cancellation.requesterId;
+            return requesterId && requesterId.toString() === cancellationsData.filters.requester;
+        });
+    }
+
+    // Apply date range filter
+    if (cancellationsData.filters.dateRange !== 'all') {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        filtered = filtered.filter(cancellation => {
+            if (!cancellation.requestedAt) return false;
+            const requestDate = new Date(cancellation.requestedAt);
+            requestDate.setHours(0, 0, 0, 0);
+            
+            switch (cancellationsData.filters.dateRange) {
+                case 'today':
+                    return requestDate.getTime() === today.getTime();
+                case 'week':
+                    const weekAgo = new Date(today);
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return requestDate >= weekAgo;
+                case 'month':
+                    const monthAgo = new Date(today);
+                    monthAgo.setMonth(monthAgo.getMonth() - 1);
+                    return requestDate >= monthAgo;
+                case 'year':
+                    const yearAgo = new Date(today);
+                    yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+                    return requestDate >= yearAgo;
+                default:
+                    return true;
+            }
         });
     }
 
@@ -252,9 +294,6 @@ function updateCancellationsTable() {
                 <thead>
                     <tr class="border-b-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                         <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                            <i class="fas fa-hashtag mr-2 text-[#00AF00]"></i>ID
-                        </th>
-                        <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
                             <i class="fas fa-user mr-2 text-[#00AF00]"></i>Solicitante
                         </th>
                         <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -310,8 +349,12 @@ function updateCancellationsTable() {
 
         // Action buttons
         let actionsHtml = '';
-        if (!cancellation.approved && !cancellation.refusedAt) {
-            // Pending cancellation - show accept/refuse buttons and upload buttons
+        const isRejected = cancellation.refusedAt !== null;
+        const isApproved = cancellation.approved === true;
+        const isPending = !isApproved && !isRejected;
+        
+        if (isPending) {
+            // Pending cancellation - show accept/refuse buttons and upload format button
             actionsHtml = `
                 <div class="flex items-center justify-center gap-2 flex-wrap">
                     <button onclick="openAcceptCancellationModal(${cancellation.id})" 
@@ -332,16 +375,10 @@ function updateCancellationsTable() {
                         <i class="fas fa-file-upload"></i>
                         <span class="hidden sm:inline">Formato</span>
                     </button>
-                    <button onclick="openUploadFormatExampleModal(${cancellation.id})" 
-                        class="group relative px-3 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-lg"
-                        title="Subir ejemplo de formato corregido">
-                        <i class="fas fa-file-alt"></i>
-                        <span class="hidden sm:inline">Ejemplo</span>
-                    </button>
                 </div>
             `;
-        } else {
-            // Already processed - show download buttons if available and upload buttons
+        } else if (isRejected) {
+            // Rejected cancellation - show format and example buttons
             actionsHtml = `
                 <div class="flex items-center justify-center gap-2 flex-wrap">
                     ${cancellation.urlFormat ? `
@@ -369,9 +406,30 @@ function updateCancellationsTable() {
                     ` : `
                         <button onclick="openUploadFormatExampleModal(${cancellation.id})" 
                             class="group relative px-3 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-lg"
-                            title="Subir ejemplo de formato">
+                            title="Subir ejemplo de formato corregido">
                             <i class="fas fa-file-upload"></i>
                             <span class="hidden sm:inline">Ejemplo</span>
+                        </button>
+                    `}
+                </div>
+            `;
+        } else {
+            // Approved cancellation - show only format button (no example button)
+            actionsHtml = `
+                <div class="flex items-center justify-center gap-2 flex-wrap">
+                    ${cancellation.urlFormat ? `
+                        <button onclick="downloadCancellationFormat(${cancellation.id})" 
+                            class="group relative px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-lg"
+                            title="Descargar formato GIL-F-011">
+                            <i class="fas fa-download"></i>
+                            <span class="hidden sm:inline">Formato</span>
+                        </button>
+                    ` : `
+                        <button onclick="openUploadFormatModal(${cancellation.id})" 
+                            class="group relative px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-lg"
+                            title="Subir formato GIL-F-011">
+                            <i class="fas fa-upload"></i>
+                            <span class="hidden sm:inline">Formato</span>
                         </button>
                     `}
                 </div>
@@ -390,11 +448,6 @@ function updateCancellationsTable() {
 
         tableHtml += `
             <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gradient-to-r hover:from-gray-50 hover:to-transparent dark:hover:from-gray-800/50 dark:hover:to-transparent transition-all duration-200 group">
-                <td class="py-4 px-4">
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm font-bold text-[#00AF00] dark:text-green-400">#${cancellation.id}</span>
-                    </div>
-                </td>
                 <td class="py-4 px-4">
                     <div class="flex items-center gap-2">
                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#00AF00] to-[#008800] flex items-center justify-center text-white text-xs font-bold">
@@ -750,21 +803,367 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Setup status filter
-    const statusSelect = document.getElementById('statusSelect');
-    if (statusSelect) {
-        // This assumes you have a custom select component
-        // You may need to adapt this to your select implementation
-        document.getElementById('selectedStatus').addEventListener('change', function() {
-            cancellationsData.filters.status = this.value;
-            filterCancellations();
-            updateCancellationsUI();
-        });
-    }
+    // Setup status filter with CustomSelect
+    setupStatusFilter();
+    
+    // Setup requester filter
+    setupRequesterFilter();
+    
+    // Setup date range filter
+    setupDateRangeFilter();
 
     // Load initial data
     loadCancellationsData();
 });
+
+// Store status filter CustomSelect instance
+let statusFilterSelect = null;
+
+/**
+ * Setup status filter
+ */
+function setupStatusFilter() {
+    const statusSelect = document.getElementById('statusSelect');
+    if (!statusSelect) return;
+
+    // Use CustomSelect if available
+    if (typeof CustomSelect !== 'undefined') {
+        try {
+            // First, set up options from HTML
+            const optionsContainer = document.getElementById('statusOptions');
+            const options = [];
+            if (optionsContainer) {
+                optionsContainer.querySelectorAll('.custom-select-option').forEach(opt => {
+                    const value = opt.dataset.value || 'all';
+                    // Extract clean label text - get text after icon
+                    let label = opt.textContent.trim();
+                    // Remove icon text, keep only the actual text
+                    const textMatch = label.match(/(?:Todos los estados|Pendientes|Aprobadas|Rechazadas)/);
+                    if (textMatch) {
+                        label = textMatch[0];
+                    } else {
+                        // Fallback: try to get text after removing common icon patterns
+                        label = label.replace(/^[^\w]*/, '').trim();
+                    }
+                    options.push({ value, label: label || value });
+                });
+            }
+            
+            statusFilterSelect = new CustomSelect('statusSelect', {
+                placeholder: 'Todos los estados',
+                onChange: (option) => {
+                    const value = option.value || option.dataset?.value || 'all';
+                    cancellationsData.filters.status = value;
+                    filterCancellations();
+                    updateCancellationsUI();
+                }
+            });
+            
+            // Set options if available - this will replace the HTML options
+            if (options.length > 0 && statusFilterSelect.setOptions) {
+                statusFilterSelect.setOptions(options);
+                // Set initial value to "all" after setting options
+                setTimeout(() => {
+                    if (statusFilterSelect && statusFilterSelect.setValue) {
+                        statusFilterSelect.setValue('all');
+                    }
+                }, 200);
+            } else {
+                // If setOptions doesn't work, manually set the text and use fallback
+                const textEl = document.querySelector('#statusSelect .custom-select-text');
+                if (textEl) {
+                    textEl.textContent = 'Todos los estados';
+                    textEl.classList.remove('custom-select-placeholder');
+                }
+                // Use fallback handler to ensure clicks work
+                setupStatusFilterFallback();
+            }
+        } catch (e) {
+            console.warn('Could not initialize CustomSelect for status filter, using fallback', e);
+            setupStatusFilterFallback();
+        }
+    } else {
+        setupStatusFilterFallback();
+    }
+}
+
+function setupStatusFilterFallback() {
+    const statusSelect = document.getElementById('statusSelect');
+    if (!statusSelect) return;
+    
+    const trigger = statusSelect.querySelector('.custom-select-trigger');
+    const options = statusSelect.querySelectorAll('.custom-select-option');
+    const textElement = statusSelect.querySelector('.custom-select-text');
+    const dropdown = statusSelect.querySelector('.custom-select-dropdown');
+    
+    if (!trigger || !options || options.length === 0) {
+        console.error('Status filter elements not found');
+        return;
+    }
+    
+    // Remove any existing event listeners by cloning
+    const newTrigger = trigger.cloneNode(true);
+    trigger.parentNode.replaceChild(newTrigger, trigger);
+    
+    // Add click handler to trigger
+    newTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        statusSelect.classList.toggle('open');
+    });
+    
+    // Add click handlers to options
+    options.forEach(option => {
+        // Remove existing listeners
+        const newOption = option.cloneNode(true);
+        option.parentNode.replaceChild(newOption, option);
+        
+        newOption.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            const value = newOption.dataset.value || 'all';
+            cancellationsData.filters.status = value;
+            
+            // Update text
+            const textContent = newOption.textContent.trim();
+            const textEl = statusSelect.querySelector('.custom-select-text');
+            if (textEl) {
+                textEl.textContent = textContent;
+            }
+            
+            // Close dropdown
+            statusSelect.classList.remove('open');
+            
+            // Apply filter
+            filterCancellations();
+            updateCancellationsUI();
+        });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!statusSelect.contains(e.target)) {
+            statusSelect.classList.remove('open');
+        }
+    });
+}
+
+// Store requester filter CustomSelect instance
+let requesterFilterSelect = null;
+
+/**
+ * Setup requester filter
+ */
+function setupRequesterFilter() {
+    const requesterSelect = document.getElementById('requesterSelect');
+    if (!requesterSelect) return;
+
+    // Use CustomSelect if available
+    if (typeof CustomSelect !== 'undefined') {
+        try {
+            requesterFilterSelect = new CustomSelect('requesterSelect', {
+                onChange: (option) => {
+                    cancellationsData.filters.requester = option.value || 'all';
+                    filterCancellations();
+                    updateCancellationsUI();
+                }
+            });
+            
+            // Populate after data loads
+            updateRequesterFilterOptions();
+        } catch (e) {
+            console.warn('Could not initialize CustomSelect for requester filter', e);
+        }
+    }
+}
+
+/**
+ * Update requester filter options
+ */
+function updateRequesterFilterOptions() {
+    const optionsContainer = document.getElementById('requesterOptions');
+    if (!optionsContainer) return;
+
+    // Get unique requesters
+    const requestersMap = new Map();
+    cancellationsData.cancellations.forEach(cancellation => {
+        const requesterId = cancellation.requester?.id || cancellation.requesterId;
+        const requesterName = cancellation.requester?.fullName || cancellation.requesterFullName || 'Desconocido';
+        
+        if (requesterId && !requestersMap.has(requesterId)) {
+            requestersMap.set(requesterId, requesterName);
+        }
+    });
+
+    // Create options array
+    const options = [
+        { value: 'all', label: 'Todos los solicitantes' }
+    ];
+    
+    requestersMap.forEach((name, id) => {
+        options.push({
+            value: id.toString(),
+            label: name
+        });
+    });
+
+    // Update CustomSelect if available
+    if (requesterFilterSelect && typeof requesterFilterSelect.setOptions === 'function') {
+        requesterFilterSelect.setOptions(options);
+    } else {
+        // Fallback: update HTML directly
+        optionsContainer.innerHTML = '';
+        options.forEach(opt => {
+            const option = document.createElement('div');
+            option.className = 'custom-select-option';
+            option.dataset.value = opt.value;
+            if (opt.value === 'all') {
+                option.innerHTML = `<i class="fas fa-users mr-2"></i>${opt.label}`;
+            } else {
+                option.innerHTML = `<i class="fas fa-user mr-2 text-[#00AF00]"></i>${opt.label}`;
+            }
+            optionsContainer.appendChild(option);
+        });
+    }
+}
+
+// Store date range filter CustomSelect instance
+let dateRangeFilterSelect = null;
+
+/**
+ * Setup date range filter
+ */
+function setupDateRangeFilter() {
+    const dateRangeSelect = document.getElementById('dateRangeSelect');
+    if (!dateRangeSelect) return;
+
+    // Use CustomSelect if available
+    if (typeof CustomSelect !== 'undefined') {
+        try {
+            // First, set up options from HTML
+            const optionsContainer = document.getElementById('dateRangeOptions');
+            const options = [];
+            if (optionsContainer) {
+                optionsContainer.querySelectorAll('.custom-select-option').forEach(opt => {
+                    const value = opt.dataset.value || 'all';
+                    // Extract clean label text
+                    let label = opt.textContent.trim();
+                    // Remove icon text, keep only the actual text
+                    const textMatch = label.match(/(?:Todos los períodos|Hoy|Última semana|Último mes|Último año)/);
+                    if (textMatch) {
+                        label = textMatch[0];
+                    } else {
+                        // Fallback: try to get text after removing common icon patterns
+                        label = label.replace(/^[^\w]*/, '').trim();
+                    }
+                    options.push({ value, label: label || value });
+                });
+            }
+            
+            dateRangeFilterSelect = new CustomSelect('dateRangeSelect', {
+                placeholder: 'Todos los períodos',
+                onChange: (option) => {
+                    const value = option.value || option.dataset?.value || 'all';
+                    cancellationsData.filters.dateRange = value;
+                    filterCancellations();
+                    updateCancellationsUI();
+                }
+            });
+            
+            // Set options if available
+            if (options.length > 0 && dateRangeFilterSelect.setOptions) {
+                dateRangeFilterSelect.setOptions(options);
+                // Set initial value to "all" to show "Todos los períodos"
+                setTimeout(() => {
+                    if (dateRangeFilterSelect && dateRangeFilterSelect.setValue) {
+                        dateRangeFilterSelect.setValue('all');
+                    }
+                }, 150);
+            } else {
+                // If setOptions doesn't work, manually set the text to avoid "Seleccionar..."
+                const textEl = document.querySelector('#dateRangeSelect .custom-select-text');
+                if (textEl) {
+                    textEl.textContent = 'Todos los períodos';
+                    textEl.classList.remove('custom-select-placeholder');
+                }
+                // Try setting value directly
+                setTimeout(() => {
+                    if (dateRangeFilterSelect && dateRangeFilterSelect.setValue) {
+                        dateRangeFilterSelect.setValue('all');
+                    }
+                }, 200);
+            }
+        } catch (e) {
+            console.warn('Could not initialize CustomSelect for date range filter, using fallback', e);
+            setupDateRangeFilterFallback();
+        }
+    } else {
+        setupDateRangeFilterFallback();
+    }
+}
+
+function setupDateRangeFilterFallback() {
+    const dateRangeSelect = document.getElementById('dateRangeSelect');
+    if (!dateRangeSelect) return;
+    
+    const trigger = dateRangeSelect.querySelector('.custom-select-trigger');
+    const options = dateRangeSelect.querySelectorAll('.custom-select-option');
+    const textElement = dateRangeSelect.querySelector('.custom-select-text');
+    
+    if (!trigger || !options || options.length === 0) {
+        console.error('Date range filter elements not found');
+        return;
+    }
+    
+    // Remove any existing event listeners by cloning
+    const newTrigger = trigger.cloneNode(true);
+    trigger.parentNode.replaceChild(newTrigger, trigger);
+    
+    // Add click handler to trigger
+    newTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        dateRangeSelect.classList.toggle('open');
+    });
+    
+    // Add click handlers to options
+    options.forEach(option => {
+        // Remove existing listeners
+        const newOption = option.cloneNode(true);
+        option.parentNode.replaceChild(newOption, option);
+        
+        newOption.addEventListener('click', (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            const value = newOption.dataset.value || 'all';
+            cancellationsData.filters.dateRange = value;
+            
+            // Update text - remove icons from text content
+            let textContent = newOption.textContent.trim();
+            // Remove icon text if present
+            textContent = textContent.replace(/^[^\w]*/, '').trim();
+            if (textElement) {
+                textElement.textContent = textContent;
+            }
+            
+            // Close dropdown
+            dateRangeSelect.classList.remove('open');
+            
+            // Apply filter
+            filterCancellations();
+            updateCancellationsUI();
+        });
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!dateRangeSelect.contains(e.target)) {
+            dateRangeSelect.classList.remove('open');
+        }
+    });
+}
 
 /**
  * Open upload format modal
@@ -965,7 +1364,12 @@ window.handleAcceptCancellation = handleAcceptCancellation;
 window.handleRefuseCancellation = handleRefuseCancellation;
 window.downloadCancellationFormat = downloadCancellationFormat;
 window.downloadCancellationFormatExample = downloadCancellationFormatExample;
+window.downloadFormatTemplate = downloadFormatTemplate;
 window.askForCancellation = askForCancellation;
+window.setupStatusFilter = setupStatusFilter;
+window.setupRequesterFilter = setupRequesterFilter;
+window.setupDateRangeFilter = setupDateRangeFilter;
+window.updateRequesterFilterOptions = updateRequesterFilterOptions;
 window.openUploadFormatModal = openUploadFormatModal;
 window.closeUploadFormatModal = closeUploadFormatModal;
 window.openUploadFormatExampleModal = openUploadFormatExampleModal;

@@ -506,6 +506,88 @@ async function uploadCancellationFormat(cancellationId, file) {
 }
 
 /**
+ * Downloads the GIL-F-011 format template
+ * @returns {Promise<void>}
+ */
+async function downloadFormatTemplate() {
+    try {
+        const token = localStorage.getItem("jwt");
+        const headers = {};
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(
+            `/api/v1/cancellations/download-format-template`,
+            {
+                method: "GET",
+                headers: headers,
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        
+        // Mejorar el parsing del Content-Disposition header
+        const contentDisposition = response.headers.get("content-disposition");
+        let filename = "GIL-F-011FormatoConceptoTecnicodeBienes.xlsx";
+        
+        if (contentDisposition) {
+            // Intentar extraer el nombre del archivo del header
+            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+            const matches = contentDisposition.match(filenameRegex);
+            
+            if (matches && matches[1]) {
+                // Remover comillas si existen
+                filename = matches[1].replace(/['"]/g, '');
+                
+                // Manejar formato RFC 5987 (filename*=UTF-8''nombre)
+                if (filename.startsWith("UTF-8''")) {
+                    filename = decodeURIComponent(filename.substring(7));
+                }
+                
+                // Limpiar el nombre del archivo de caracteres problemáticos
+                filename = filename.trim();
+                
+                // Si el nombre no tiene extensión, agregar .xlsx por defecto
+                if (!filename.includes('.')) {
+                    filename += '.xlsx';
+                }
+            }
+        }
+        
+        // Asegurar que el nombre del archivo sea válido
+        filename = filename.replace(/[<>:"/\\|?*]/g, '_'); // Reemplazar caracteres inválidos
+        filename = filename.replace(/\s+/g, '_'); // Reemplazar espacios con guiones bajos
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        if (typeof showInventorySuccessToast === 'function') {
+            showInventorySuccessToast('Descarga iniciada', `El formato GIL-F-011 se está descargando`);
+        }
+    } catch (error) {
+        console.error("Error downloading format template:", error);
+        if (typeof showInventoryErrorToast === 'function') {
+            showInventoryErrorToast('Error al descargar', 'No se pudo descargar el formato. Por favor, intente nuevamente.');
+        }
+        throw error;
+    }
+}
+
+// Export function to global scope
+window.downloadFormatTemplate = downloadFormatTemplate;
+
+/**
  * Uploads a format example file for a cancellation
  * @param {number} cancellationId - Cancellation ID
  * @param {File} file - File to upload
