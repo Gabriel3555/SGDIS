@@ -332,6 +332,11 @@
                 <p class="text-gray-600">Vista general del sistema SGDIS</p>
             </div>
 
+            <!-- Filters Section (only for superadmin) -->
+            <div class="mb-6 flex flex-col sm:flex-row gap-4" id="dashboardFiltersContainer">
+                <!-- Filters will be loaded dynamically by JavaScript -->
+            </div>
+
             <!-- Stat Cards Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                 <!-- Total Inventarios -->
@@ -962,7 +967,10 @@
             recentVerifications: [],
             verificationCount: 0,
             loansCount: 0,
-            charts: {}
+            charts: {},
+            selectedRegional: '',
+            selectedInstitution: '',
+            filteredInstitutions: []
         };
 
         // Initialize mobile menu toggle when DOM is ready
@@ -970,6 +978,7 @@
             setupMobileMenuToggle();
             loadCurrentUserInfo(); // Load user info for header
             scrollToActiveSidebarItem(); // Scroll to active sidebar item
+            initializeFilters(); // Initialize filter dropdowns
             loadDashboardData(); // Load all dashboard data
 
             // Listen for theme changes and update charts
@@ -1036,11 +1045,19 @@
             try {
                 // Load all data in parallel
                 await Promise.all([
+                    loadRegionals(headers),
+                    loadInstitutions(headers)
+                ]);
+
+                // Populate filters after regionals and institutions are loaded
+                populateRegionalFilter();
+                populateInstitutionFilter();
+
+                // Load filtered data
+                await Promise.all([
                     loadInventoryStatistics(headers),
                     loadUserStatistics(headers),
                     loadTransferStatistics(headers),
-                    loadRegionals(headers),
-                    loadInstitutions(headers),
                     loadAllInventories(headers),
                     loadAllAuditories(headers),
                     loadRecentInventories(headers),
@@ -1064,9 +1081,43 @@
         // Load inventory statistics
         async function loadInventoryStatistics(headers) {
             try {
-                const response = await fetch('/api/v1/inventory/statistics', { headers });
+                let url = '/api/v1/inventory/statistics';
+                
+                // Add institution filter if selected
+                if (superadminDashboardData.selectedInstitution) {
+                    url = `/api/v1/inventory/statistics/institution/${superadminDashboardData.selectedInstitution}`;
+                } else if (superadminDashboardData.selectedRegional) {
+                    // If only regional is selected, we need to filter client-side
+                    url = '/api/v1/inventory/statistics';
+                }
+
+                const response = await fetch(url, { headers });
                 if (response.ok) {
-                    superadminDashboardData.inventoryStats = await response.json();
+                    let stats = await response.json();
+                    
+                    // If only regional is selected (no institution), filter client-side
+                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                        // Get all inventories and filter by regional
+                        const inventoriesResponse = await fetch('/api/v1/inventory', { headers });
+                        if (inventoriesResponse.ok) {
+                            const inventories = await inventoriesResponse.json();
+                            const filteredInventories = inventories.filter(inv => {
+                                const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
+                                return institution && institution.regionalId == superadminDashboardData.selectedRegional;
+                            });
+                            
+                            // Recalculate stats from filtered inventories
+                            stats = {
+                                totalInventories: new Set(filteredInventories.map(inv => inv.id)).size,
+                                activeInventories: filteredInventories.filter(inv => inv.status === 'ACTIVE').length,
+                                inactiveInventories: filteredInventories.filter(inv => inv.status === 'INACTIVE').length,
+                                totalItems: filteredInventories.reduce((sum, inv) => sum + (inv.totalItems || 0), 0),
+                                totalValue: filteredInventories.reduce((sum, inv) => sum + (inv.totalValue || 0), 0)
+                            };
+                        }
+                    }
+                    
+                    superadminDashboardData.inventoryStats = stats;
                 }
             } catch (error) {
                 console.error('Error loading inventory statistics:', error);
@@ -1076,9 +1127,64 @@
         // Load user statistics
         async function loadUserStatistics(headers) {
             try {
-                const response = await fetch('/api/v1/users/statistics', { headers });
+                let url = '/api/v1/users/statistics';
+                
+                // Add institution filter if selected
+                if (superadminDashboardData.selectedInstitution) {
+                    url = `/api/v1/users/statistics/institution/${superadminDashboardData.selectedInstitution}`;
+                } else if (superadminDashboardData.selectedRegional) {
+                    // If only regional is selected, filter client-side
+                    url = '/api/v1/users/statistics';
+                }
+
+                const response = await fetch(url, { headers });
                 if (response.ok) {
-                    superadminDashboardData.userStats = await response.json();
+                    let stats = await response.json();
+                    
+                    // If only regional is selected (no institution), filter client-side
+                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                        // Get all users and filter by regional
+                        const usersResponse = await fetch('/api/v1/users?page=0&size=10000', { headers });
+                        if (usersResponse.ok) {
+                            const usersData = await usersResponse.json();
+                            const users = usersData.users || [];
+                            
+                            // Filter users by regional
+                            const filteredUsers = users.filter(user => {
+                                if (!user.institution) return false;
+                                const institution = superadminDashboardData.institutions.find(inst => 
+                                    inst.name === user.institution && inst.regionalId == superadminDashboardData.selectedRegional
+                                );
+                                return !!institution;
+                            });
+                            
+                            // Recalculate stats from filtered users
+                            const roleCounts = {
+                                SUPERADMIN: 0,
+                                ADMIN_REGIONAL: 0,
+                                ADMIN_INSTITUTION: 0,
+                                WAREHOUSE: 0,
+                                USER: 0
+                            };
+                            
+                            filteredUsers.forEach(user => {
+                                if (roleCounts.hasOwnProperty(user.role)) {
+                                    roleCounts[user.role]++;
+                                }
+                            });
+                            
+                            stats = {
+                                totalUsers: filteredUsers.length,
+                                superadminCount: roleCounts.SUPERADMIN,
+                                adminRegionalCount: roleCounts.ADMIN_REGIONAL,
+                                adminInstitutionCount: roleCounts.ADMIN_INSTITUTION,
+                                warehouseCount: roleCounts.WAREHOUSE,
+                                userCount: roleCounts.USER
+                            };
+                        }
+                    }
+                    
+                    superadminDashboardData.userStats = stats;
                 }
             } catch (error) {
                 console.error('Error loading user statistics:', error);
@@ -1115,20 +1221,172 @@
                 const response = await fetch('/api/v1/institutions', { headers });
                 if (response.ok) {
                     superadminDashboardData.institutions = await response.json();
+                    // Update filtered institutions if a regional is selected
+                    if (superadminDashboardData.selectedRegional) {
+                        await loadInstitutionsByRegional(superadminDashboardData.selectedRegional, headers);
+                    } else {
+                        superadminDashboardData.filteredInstitutions = superadminDashboardData.institutions;
+                    }
                 }
             } catch (error) {
                 console.error('Error loading institutions:', error);
             }
         }
 
+        // Load institutions by regional
+        async function loadInstitutionsByRegional(regionalId, headers) {
+            try {
+                if (!regionalId) {
+                    superadminDashboardData.filteredInstitutions = superadminDashboardData.institutions;
+                    return;
+                }
+
+                const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, { headers });
+                if (response.ok) {
+                    superadminDashboardData.filteredInstitutions = await response.json();
+                } else {
+                    superadminDashboardData.filteredInstitutions = [];
+                }
+            } catch (error) {
+                console.error('Error loading institutions by regional:', error);
+                superadminDashboardData.filteredInstitutions = [];
+            }
+        }
+
+        // Initialize filter dropdowns
+        function initializeFilters() {
+            const container = document.getElementById('dashboardFiltersContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Regional</label>
+                    <select id="dashboardRegionalFilter" onchange="handleRegionalFilterChange(this.value)"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                        <option value="">Todas las regionales</option>
+                    </select>
+                </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Centro</label>
+                    <select id="dashboardInstitutionFilter" onchange="handleInstitutionFilterChange(this.value)"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                        ${!superadminDashboardData.selectedRegional ? 'disabled' : ''}>
+                        <option value="">Todos los centros</option>
+                    </select>
+                </div>
+            `;
+
+            // Populate regionals dropdown after data is loaded
+            populateRegionalFilter();
+        }
+
+        // Populate regional filter dropdown
+        function populateRegionalFilter() {
+            const select = document.getElementById('dashboardRegionalFilter');
+            if (!select) return;
+
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+
+            // Add regional options
+            superadminDashboardData.regionals.forEach(regional => {
+                const option = document.createElement('option');
+                option.value = regional.id;
+                option.textContent = regional.name;
+                if (regional.id == superadminDashboardData.selectedRegional) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        // Populate institution filter dropdown
+        function populateInstitutionFilter() {
+            const select = document.getElementById('dashboardInstitutionFilter');
+            if (!select) return;
+
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+
+            // Enable/disable based on regional selection
+            if (!superadminDashboardData.selectedRegional) {
+                select.disabled = true;
+                return;
+            }
+
+            select.disabled = false;
+
+            // Add institution options
+            superadminDashboardData.filteredInstitutions.forEach(institution => {
+                const option = document.createElement('option');
+                option.value = institution.id;
+                option.textContent = institution.name;
+                if (institution.id == superadminDashboardData.selectedInstitution) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+
+        // Handle regional filter change
+        async function handleRegionalFilterChange(regionalId) {
+            superadminDashboardData.selectedRegional = regionalId || '';
+            superadminDashboardData.selectedInstitution = ''; // Reset institution when regional changes
+
+            const token = localStorage.getItem('jwt');
+            const headers = {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+
+            // Load institutions for selected regional
+            await loadInstitutionsByRegional(regionalId, headers);
+            populateInstitutionFilter();
+
+            // Reload dashboard data with filters
+            await loadDashboardData();
+        }
+
+        // Handle institution filter change
+        async function handleInstitutionFilterChange(institutionId) {
+            superadminDashboardData.selectedInstitution = institutionId || '';
+
+            // Reload dashboard data with filters
+            await loadDashboardData();
+        }
+
+        // Make functions globally available
+        window.handleRegionalFilterChange = handleRegionalFilterChange;
+        window.handleInstitutionFilterChange = handleInstitutionFilterChange;
+
         // Load all inventories for chart
         async function loadAllInventories(headers) {
             try {
-                // Get all inventories with a large page size
-                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                let url = '/api/v1/inventory?page=0&size=10000';
+                
+                // Add institution filter if selected
+                if (superadminDashboardData.selectedInstitution) {
+                    url = `/api/v1/inventory/institution/${superadminDashboardData.selectedInstitution}?page=0&size=10000`;
+                }
+
+                const response = await fetch(url, { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    superadminDashboardData.allInventories = data.content || [];
+                    let inventories = data.content || data || [];
+                    
+                    // If only regional is selected (no institution), filter client-side
+                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                        inventories = inventories.filter(inv => {
+                            const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
+                            return institution && institution.regionalId == superadminDashboardData.selectedRegional;
+                        });
+                    }
+                    
+                    superadminDashboardData.allInventories = inventories;
                 }
             } catch (error) {
                 console.error('Error loading all inventories:', error);
@@ -1180,10 +1438,27 @@
         // Load recent inventories
         async function loadRecentInventories(headers) {
             try {
-                const response = await fetch('/api/v1/inventory?page=0&size=5', { headers });
+                let url = '/api/v1/inventory?page=0&size=5';
+                
+                // Add institution filter if selected
+                if (superadminDashboardData.selectedInstitution) {
+                    url = `/api/v1/inventory/institution/${superadminDashboardData.selectedInstitution}?page=0&size=5`;
+                }
+
+                const response = await fetch(url, { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    superadminDashboardData.recentInventories = data.content || [];
+                    let inventories = data.content || [];
+                    
+                    // If only regional is selected (no institution), filter client-side
+                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                        inventories = inventories.filter(inv => {
+                            const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
+                            return institution && institution.regionalId == superadminDashboardData.selectedRegional;
+                        });
+                    }
+                    
+                    superadminDashboardData.recentInventories = inventories;
                 }
             } catch (error) {
                 console.error('Error loading recent inventories:', error);
@@ -1266,9 +1541,19 @@
                 document.getElementById('userRolesBreakdown').textContent = rolesBreakdown.slice(0, 3).join(', ') || 'Sin datos';
             }
 
-            // Update centers stats
+            // Update centers stats (filtered if filters are applied)
             const totalRegionals = superadminDashboardData.regionals.length || 0;
-            const totalInstitutions = superadminDashboardData.institutions.length || 0;
+            let totalInstitutions = superadminDashboardData.institutions.length || 0;
+            
+            // If filters are applied, show filtered counts
+            if (superadminDashboardData.selectedRegional || superadminDashboardData.selectedInstitution) {
+                if (superadminDashboardData.selectedInstitution) {
+                    totalInstitutions = 1;
+                } else if (superadminDashboardData.selectedRegional) {
+                    totalInstitutions = superadminDashboardData.filteredInstitutions.length || 0;
+                }
+            }
+            
             document.getElementById('totalCenters').textContent = totalInstitutions;
             document.getElementById('centersBreakdown').textContent = `${totalRegionals} regionales, ${totalInstitutions} instituciones`;
 
