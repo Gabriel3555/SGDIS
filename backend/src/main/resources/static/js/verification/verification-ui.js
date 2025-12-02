@@ -18,19 +18,41 @@ function updateUserInfoDisplay(userData) {
         const roleText = {
             'SUPERADMIN': 'Super Administrador',
             'ADMIN_INSTITUTIONAL': 'Admin Institucional',
+            'ADMIN_INSTITUTION': 'Admin Institucional',
             'ADMIN_REGIONAL': 'Admin Regional',
             'WAREHOUSE': 'Almacén',
             'USER': 'Usuario'
-        }[userData.role] || userData.role;
+        }[userData.role] || userData.role || 'Usuario';
         headerUserRole.textContent = roleText;
     }
 
     if (headerUserAvatar) {
-        if (userData.profilePhotoUrl) {
-            headerUserAvatar.style.backgroundImage = `url(${userData.profilePhotoUrl})`;
-            headerUserAvatar.style.backgroundSize = 'cover';
-            headerUserAvatar.style.backgroundPosition = 'center';
-            headerUserAvatar.textContent = '';
+        if (userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl) {
+            const imgUrl = userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl;
+            
+            // Try to use createImageWithSpinner from dashboard.js if available
+            if (typeof createImageWithSpinner === 'function') {
+                const spinnerHtml = createImageWithSpinner(
+                    imgUrl,
+                    userData.fullName || 'Usuario',
+                    'w-full h-full object-cover',
+                    'w-full h-full',
+                    'rounded-full'
+                );
+                if (spinnerHtml) {
+                    headerUserAvatar.innerHTML = spinnerHtml;
+                } else {
+                    const initials = (userData.fullName || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    headerUserAvatar.textContent = initials;
+                    headerUserAvatar.style.backgroundImage = 'none';
+                }
+            } else {
+                // Fallback: use background image approach
+                headerUserAvatar.style.backgroundImage = `url(${imgUrl})`;
+                headerUserAvatar.style.backgroundSize = 'cover';
+                headerUserAvatar.style.backgroundPosition = 'center';
+                headerUserAvatar.textContent = '';
+            }
         } else {
             const initials = (userData.fullName || 'U').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             headerUserAvatar.textContent = initials;

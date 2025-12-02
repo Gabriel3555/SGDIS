@@ -330,12 +330,65 @@ async function loadCurrentUserInfo() {
 
         if (response.ok) {
             const userData = await response.json();
-            if (typeof updateUserInfoDisplay === 'function') {
-                updateUserInfoDisplay(userData);
-            }
+            updateUserInfoDisplay(userData);
         }
     } catch (error) {
         console.error('Error loading current user info:', error);
+    }
+}
+
+function updateUserInfoDisplay(userData) {
+    const headerUserName = document.getElementById('headerUserName');
+    const headerUserRole = document.getElementById('headerUserRole');
+    const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+    if (headerUserName) {
+        headerUserName.textContent = userData.fullName || 'Super Admin';
+    }
+
+    if (headerUserRole) {
+        const roleText = {
+            'SUPERADMIN': 'Super Administrador',
+            'ADMIN_INSTITUTIONAL': 'Admin Institucional',
+            'ADMIN_INSTITUTION': 'Admin Institucional',
+            'ADMIN_REGIONAL': 'Admin Regional',
+            'WAREHOUSE': 'Almacén',
+            'USER': 'Usuario'
+        }[userData.role] || userData.role || 'Super Admin';
+        headerUserRole.textContent = roleText;
+    }
+
+    if (headerUserAvatar) {
+        if (userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl) {
+            const imgUrl = userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl;
+            
+            // Try to use createImageWithSpinner from dashboard.js if available
+            if (typeof createImageWithSpinner === 'function') {
+                const spinnerHtml = createImageWithSpinner(
+                    imgUrl,
+                    userData.fullName || 'Usuario',
+                    'w-full h-full object-cover',
+                    'w-full h-full',
+                    'rounded-full'
+                );
+                if (spinnerHtml) {
+                    headerUserAvatar.innerHTML = spinnerHtml;
+                } else {
+                    const initials = (userData.fullName || 'Super Admin').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    headerUserAvatar.textContent = initials;
+                }
+            } else {
+                // Fallback: use background image approach
+                headerUserAvatar.style.backgroundImage = `url(${imgUrl})`;
+                headerUserAvatar.style.backgroundSize = 'cover';
+                headerUserAvatar.style.backgroundPosition = 'center';
+                headerUserAvatar.textContent = '';
+            }
+        } else {
+            const initials = (userData.fullName || 'Super Admin').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            headerUserAvatar.textContent = initials;
+            headerUserAvatar.style.backgroundImage = 'none';
+        }
     }
 }
 
