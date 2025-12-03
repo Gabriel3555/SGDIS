@@ -393,6 +393,9 @@ let editCenterCitySelect = null;
 let filterRegionalSelect = null;
 let filterCitySelect = null;
 let filterCitiesData = []; // Ciudades para el filtro
+// Paginación
+let centersCurrentPage = 1;
+let centersItemsPerPage = 6;
 
 // Cargar datos al iniciar
 document.addEventListener('DOMContentLoaded', function() {
@@ -493,6 +496,7 @@ async function loadCenters() {
         if (response.ok) {
             allCentersData = await response.json();
             centersData = [...allCentersData]; // Inicializar con todos los centros
+            centersCurrentPage = 1; // Reset to first page when loading
             renderCenters();
         } else {
             throw new Error('Error al cargar los centros');
@@ -663,26 +667,35 @@ function renderCenters() {
                 <p>No hay centros registrados</p>
             </div>
         `;
+        updateCentersPagination();
         return;
     }
 
+    // Calcular los centros para la página actual
+    const totalPages = Math.ceil(centersData.length / centersItemsPerPage);
+    const startIndex = (centersCurrentPage - 1) * centersItemsPerPage;
+    const endIndex = startIndex + centersItemsPerPage;
+    const currentPageCenters = centersData.slice(startIndex, endIndex);
+
     let html = `
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead>
-                    <tr class="border-b border-gray-200 dark:border-gray-700">
-                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">ID</th>
-                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Nombre</th>
-                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Código</th>
-                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Regional</th>
-                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Ciudad</th>
-                        <th class="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
+        <div>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Centros del Sistema</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">ID</th>
+                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Nombre</th>
+                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Código</th>
+                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Regional</th>
+                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Ciudad</th>
+                            <th class="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
     `;
 
-    centersData.forEach(center => {
+    currentPageCenters.forEach(center => {
         html += `
             <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.institutionId || center.id || '-'}</td>
@@ -700,12 +713,14 @@ function renderCenters() {
     });
 
     html += `
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     `;
 
     container.innerHTML = html;
+    updateCentersPagination();
 }
 
 function showNewCenterModal() {
@@ -811,6 +826,7 @@ async function handleCreateCenter(event) {
         if (response.ok) {
             showSuccess('Centro creado exitosamente');
             closeNewCenterModal();
+            centersCurrentPage = 1; // Reset to first page after creating
             loadCenters();
         } else {
             const error = await response.json();
@@ -850,6 +866,7 @@ async function handleUpdateCenter(event) {
         if (response.ok) {
             showSuccess('Centro actualizado exitosamente');
             closeEditCenterModal();
+            // Keep current page when updating
             loadCenters();
         } else {
             const error = await response.json();
@@ -1026,6 +1043,134 @@ function applyFilters() {
     }
 
     centersData = filtered;
+    centersCurrentPage = 1; // Reset to first page when filtering
     renderCenters();
 }
+
+/**
+ * Update pagination controls for centers
+ */
+function updateCentersPagination() {
+    const container = document.getElementById('centersPaginationContainer');
+    if (!container) return;
+
+    const totalItems = centersData.length;
+    const totalPages = Math.ceil(totalItems / centersItemsPerPage);
+    
+    // Reset to page 1 if current page is out of bounds
+    if (centersCurrentPage > totalPages && totalPages > 0) {
+        centersCurrentPage = 1;
+    } else if (totalPages === 0) {
+        centersCurrentPage = 1;
+    }
+    
+    const currentPage = centersCurrentPage;
+    const startItem = totalItems === 0 ? 0 : (currentPage - 1) * centersItemsPerPage + 1;
+    const endItem = Math.min(currentPage * centersItemsPerPage, totalItems);
+
+    const shouldShowPagination = totalPages > 1;
+
+    let paginationHtml = `
+        <div class="flex items-center justify-between w-full">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                Mostrando ${startItem}-${endItem} de ${totalItems} centros
+            </div>
+            <div class="flex items-center gap-2">
+    `;
+
+    if (shouldShowPagination) {
+        // Previous button
+        paginationHtml += `
+            <button onclick="changeCentersPage(${currentPage - 1})"
+                    ${currentPage === 1 ? 'disabled' : ''}
+                    class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        `;
+
+        // Page numbers
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+
+        // Show first page if not in range
+        if (startPage > 1) {
+            paginationHtml += `
+                <button onclick="changeCentersPage(1)"
+                        class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                    1
+                </button>
+            `;
+            if (startPage > 2) {
+                paginationHtml += `
+                    <span class="px-2 text-gray-500 dark:text-gray-400">...</span>
+                `;
+            }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHtml += `
+                <button onclick="changeCentersPage(${i})"
+                        class="px-4 py-2 border-2 ${currentPage === i ? 'bg-[#00AF00] text-white border-[#00AF00] dark:bg-[#00AF00] dark:border-[#00AF00]' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'} rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                    ${i}
+                </button>
+            `;
+        }
+
+        // Show last page if not in range
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                paginationHtml += `
+                    <span class="px-2 text-gray-500 dark:text-gray-400">...</span>
+                `;
+            }
+            paginationHtml += `
+                <button onclick="changeCentersPage(${totalPages})"
+                        class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                    ${totalPages}
+                </button>
+            `;
+        }
+
+        // Next button
+        paginationHtml += `
+            <button onclick="changeCentersPage(${currentPage + 1})"
+                    ${currentPage === totalPages ? 'disabled' : ''}
+                    class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        `;
+    } else {
+        // Show message when no pagination is needed
+        paginationHtml += `
+            <span class="text-sm text-gray-500 dark:text-gray-400">No hay más páginas</span>
+        `;
+    }
+
+    paginationHtml += `
+            </div>
+        </div>
+    `;
+
+    container.innerHTML = paginationHtml;
+}
+
+/**
+ * Change page for centers pagination
+ */
+function changeCentersPage(page) {
+    const totalPages = Math.ceil(centersData.length / centersItemsPerPage);
+    if (page >= 1 && page <= totalPages) {
+        centersCurrentPage = page;
+        renderCenters();
+    }
+}
+
+// Expose functions globally
+window.changeCentersPage = changeCentersPage;
+window.updateCentersPagination = updateCentersPagination;
 
