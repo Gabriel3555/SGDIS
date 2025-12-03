@@ -1570,6 +1570,26 @@ class CustomSelect {
 
         this.renderOptions();
     }
+
+    setDisabled(disabled) {
+        if (!this.container) return;
+        
+        if (disabled) {
+            this.container.classList.add('disabled');
+            if (this.trigger) {
+                this.trigger.style.pointerEvents = 'none';
+                this.trigger.style.opacity = '0.6';
+                this.trigger.style.cursor = 'not-allowed';
+            }
+        } else {
+            this.container.classList.remove('disabled');
+            if (this.trigger) {
+                this.trigger.style.pointerEvents = '';
+                this.trigger.style.opacity = '';
+                this.trigger.style.cursor = '';
+            }
+        }
+    }
 }
 
 // Update role options based on current user role

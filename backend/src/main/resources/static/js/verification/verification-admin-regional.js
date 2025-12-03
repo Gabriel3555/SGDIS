@@ -7,7 +7,7 @@ let verificationDataAdminRegional = {
     filteredVerifications: [],
     inventories: [],
     currentPage: 0,
-    pageSize: 10,
+    pageSize: 6,
     totalPages: 0,
     totalElements: 0,
     filters: {
@@ -184,10 +184,10 @@ async function loadVerificationsForAdminRegional(page = 0) {
             window.verificationData.searchTerm = verificationDataAdminRegional.filters.searchTerm;
             window.verificationData.selectedStatus = verificationDataAdminRegional.filters.status;
             
-            // Load inventories for filter
+            // Load inventories for filter (must complete before updating UI)
             await loadInventoriesForAdminRegional();
             
-            // Update UI
+            // Update UI (inventories should be loaded by now)
             await updateVerificationUIForAdminRegional();
         } else {
             throw new Error('Error al cargar las verificaciones');
@@ -217,6 +217,15 @@ async function loadVerificationsForAdminRegional(page = 0) {
  */
 function filterVerificationsForAdminRegional() {
     let filtered = [...verificationDataAdminRegional.verifications];
+    
+    // Filter by inventory
+    const inventoryFilter = verificationDataAdminRegional.filters.inventoryId;
+    if (inventoryFilter && inventoryFilter !== 'all') {
+        filtered = filtered.filter(v => {
+            const inventoryId = v.inventoryId || v.item?.inventory?.id || v.item?.inventoryId;
+            return inventoryId && (inventoryId.toString() === inventoryFilter.toString() || inventoryId === parseInt(inventoryFilter));
+        });
+    }
     
     // Filter by status
     const statusFilter = verificationDataAdminRegional.filters.status;
@@ -262,6 +271,8 @@ async function loadInventoriesForAdminRegional() {
     try {
         const token = localStorage.getItem('jwt');
         if (!token) {
+            console.warn('No token found for loading inventories');
+            verificationDataAdminRegional.inventories = [];
             return;
         }
 
@@ -275,7 +286,20 @@ async function loadInventoriesForAdminRegional() {
 
         if (response.ok) {
             const data = await response.json();
-            const inventories = Array.isArray(data.content) ? data.content : (Array.isArray(data) ? data : []);
+            console.log('Inventories response data:', data);
+            
+            // Handle paginated response (Page object) or direct array
+            let inventories = [];
+            if (Array.isArray(data)) {
+                inventories = data;
+            } else if (data && Array.isArray(data.content)) {
+                // Spring Page response has 'content' property
+                inventories = data.content;
+            } else if (data && typeof data === 'object' && data.content) {
+                inventories = Array.isArray(data.content) ? data.content : [];
+            }
+            
+            console.log('Loaded inventories count:', inventories.length);
             verificationDataAdminRegional.inventories = inventories;
             
             // Also update window.verificationData for compatibility
@@ -283,12 +307,19 @@ async function loadInventoriesForAdminRegional() {
                 window.verificationData.inventories = inventories;
             }
         } else {
-            console.warn('Failed to load inventories for admin regional');
+            const errorText = await response.text();
+            console.error('Failed to load inventories for admin regional. Status:', response.status, 'Error:', errorText);
             verificationDataAdminRegional.inventories = [];
+            if (window.verificationData) {
+                window.verificationData.inventories = [];
+            }
         }
     } catch (error) {
         console.error('Error loading inventories for admin regional:', error);
         verificationDataAdminRegional.inventories = [];
+        if (window.verificationData) {
+            window.verificationData.inventories = [];
+        }
     }
 }
 
@@ -356,26 +387,70 @@ async function updateVerificationUIForAdminRegional() {
     updateVerificationSearchAndFiltersForAdminRegional();
 }
 
+// Custom Select instance for admin regional inventory filter
+let verificationInventoryCustomSelectAdminRegional = null;
+// Flag to prevent infinite loops during initialization
+let isInitializingInventoryFilter = false;
+
 /**
  * Update search and filters for admin regional (simplified version)
  */
 function updateVerificationSearchAndFiltersForAdminRegional() {
     const container = document.getElementById('searchFilterContainer');
-    if (!container) return;
+    if (!container) {
+        console.warn('searchFilterContainer not found');
+        return;
+    }
     
     const currentSearchTerm = verificationDataAdminRegional.filters.searchTerm || '';
     const currentStatusFilter = verificationDataAdminRegional.filters.status || 'all';
     const currentInventoryFilter = verificationDataAdminRegional.filters.inventoryId || 'all';
     
-    // Build inventory options
-    const inventories = verificationDataAdminRegional.inventories || [];
-    let inventoryOptions = '<option value="all">Todos los Inventarios</option>';
-    inventories.forEach(inv => {
-        if (inv && inv.id && inv.name) {
-            const selected = currentInventoryFilter === inv.id.toString() || currentInventoryFilter === inv.id ? 'selected' : '';
-            inventoryOptions += `<option value="${inv.id}" ${selected}>${inv.name}</option>`;
+    // Build inventory options - check both verificationDataAdminRegional and window.verificationData
+    let inventories = verificationDataAdminRegional.inventories || [];
+    if (inventories.length === 0 && window.verificationData && window.verificationData.inventories) {
+        inventories = window.verificationData.inventories;
+        console.log('Using inventories from window.verificationData');
+    }
+    
+    console.log('Updating filters with inventories:', inventories.length);
+    
+    // Check if the container already has the filters (to avoid regenerating unnecessarily)
+    const existingInventorySelect = document.getElementById('verificationInventoryFilterAdminRegionalSelect');
+    const existingSearchInput = document.getElementById('verificationSearchAdminRegional');
+    
+    // Only regenerate HTML if it doesn't exist or if inventories changed
+    const needsRegeneration = !existingInventorySelect || !existingSearchInput;
+    
+    if (!needsRegeneration && verificationInventoryCustomSelectAdminRegional) {
+        // Just update the options without regenerating HTML
+        const options = [
+            { value: 'all', label: 'Todos los Inventarios' },
+            ...inventories.map(inv => ({
+                value: (inv.id || inv.inventoryId).toString(),
+                label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+            }))
+        ];
+        
+        isInitializingInventoryFilter = true;
+        verificationInventoryCustomSelectAdminRegional.setOptions(options);
+        
+        // Update selected value if needed
+        if (currentInventoryFilter && currentInventoryFilter !== 'all') {
+            verificationInventoryCustomSelectAdminRegional.setValue(currentInventoryFilter.toString());
+        } else {
+            verificationInventoryCustomSelectAdminRegional.setValue('all');
         }
-    });
+        
+        setTimeout(() => {
+            isInitializingInventoryFilter = false;
+        }, 100);
+        
+        return;
+    }
+    
+    // Reset custom select instance since HTML will be regenerated
+    verificationInventoryCustomSelectAdminRegional = null;
     
     container.innerHTML = `
         <div class="relative flex-1" style="min-width: 200px;">
@@ -393,12 +468,21 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
         </div>
         <div class="relative" style="min-width: 200px; flex-shrink: 0;">
             <label class="block text-xs font-medium text-gray-600 mb-1.5">Filtrar por Inventario</label>
-            <select id="verificationInventoryFilterAdminRegional" 
-                onchange="handleVerificationInventoryFilterForAdminRegional(this.value)" 
-                class="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white text-gray-900 transition-all" 
-                style="height: 56px; font-size: 0.9375rem;">
-                ${inventoryOptions}
-            </select>
+            <div class="custom-select-container">
+                <div class="custom-select" id="verificationInventoryFilterAdminRegionalSelect">
+                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                        <span class="custom-select-text custom-select-placeholder">Todos los Inventarios</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-select-dropdown">
+                        <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
+                        <div class="custom-select-options" id="verificationInventoryFilterAdminRegionalOptions">
+                            <!-- Options loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="verificationInventoryFilterAdminRegional" value="${currentInventoryFilter}">
+            </div>
         </div>
         <div class="relative" style="min-width: 180px; flex-shrink: 0;">
             <label class="block text-xs font-medium text-gray-600 mb-1.5">Estado</label>
@@ -415,6 +499,86 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
             </select>
         </div>
     `;
+    
+    // Initialize Custom Select after HTML is inserted
+    setTimeout(() => {
+        initializeInventoryCustomSelectForAdminRegional(inventories, currentInventoryFilter);
+    }, 50);
+}
+
+/**
+ * Initialize Custom Select for inventory filter (Admin Regional)
+ */
+function initializeInventoryCustomSelectForAdminRegional(inventories, currentInventoryFilter) {
+    // Check if CustomSelect is available
+    if (typeof CustomSelect === 'undefined' && typeof window.CustomSelect === 'undefined') {
+        console.warn('CustomSelect class not available, falling back to regular select');
+        return;
+    }
+    
+    const CustomSelectClass = window.CustomSelect || CustomSelect;
+    const inventorySelect = document.getElementById('verificationInventoryFilterAdminRegionalSelect');
+    
+    if (!inventorySelect) {
+        console.warn('Inventory select container not found');
+        return;
+    }
+    
+    // Initialize Custom Select if not already initialized
+    if (!verificationInventoryCustomSelectAdminRegional) {
+        verificationInventoryCustomSelectAdminRegional = new CustomSelectClass('verificationInventoryFilterAdminRegionalSelect', {
+            placeholder: 'Todos los Inventarios',
+            onChange: (option) => {
+                // Don't trigger filter change during initialization
+                if (isInitializingInventoryFilter) {
+                    return;
+                }
+                const value = option.value || 'all';
+                const hiddenInput = document.getElementById('verificationInventoryFilterAdminRegional');
+                if (hiddenInput) {
+                    hiddenInput.value = value;
+                }
+                handleVerificationInventoryFilterForAdminRegional(value);
+            }
+        });
+    }
+    
+    // Build options array
+    const options = [
+        { value: 'all', label: 'Todos los Inventarios' },
+        ...inventories.map(inv => ({
+            value: (inv.id || inv.inventoryId).toString(),
+            label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+        }))
+    ];
+    
+    console.log('Setting CustomSelect options:', options.length);
+    
+    // Set flag to prevent onChange during initialization
+    isInitializingInventoryFilter = true;
+    
+    // Set options
+    verificationInventoryCustomSelectAdminRegional.setOptions(options);
+    
+    // Set selected value without triggering onChange
+    if (currentInventoryFilter && currentInventoryFilter !== 'all') {
+        const selectedOption = options.find(opt => opt.value === currentInventoryFilter.toString());
+        if (selectedOption) {
+            // Use setValue instead of selectOption to avoid triggering onChange
+            verificationInventoryCustomSelectAdminRegional.setValue(selectedOption.value);
+        }
+    } else {
+        // Select "all" option
+        const allOption = options.find(opt => opt.value === 'all');
+        if (allOption) {
+            verificationInventoryCustomSelectAdminRegional.setValue('all');
+        }
+    }
+    
+    // Reset flag after initialization
+    setTimeout(() => {
+        isInitializingInventoryFilter = false;
+    }, 100);
 }
 
 /**
@@ -447,8 +611,22 @@ async function handleVerificationInventoryFilterForAdminRegional(inventoryId) {
 
 /**
  * Load verifications filtered by inventory for admin regional
+ * Uses the regional endpoint and filters by inventory on the client side
  */
 async function loadVerificationsForAdminRegionalByInventory(inventoryId) {
+    // Instead of using the general endpoint (which requires superadmin permissions),
+    // we load all verifications from the regional and filter by inventory on the client side
+    // First, ensure we have the regional ID
+    if (!currentUserRegionalId) {
+        const regionalId = await loadCurrentUserInfoForVerifications();
+        if (!regionalId) {
+            showError('No se pudo obtener la información de la regional');
+            return;
+        }
+    }
+    
+    // Load all verifications from regional (with a larger page size to get all data)
+    // Then filter by inventory on the client side
     try {
         const token = localStorage.getItem('jwt');
         if (!token) {
@@ -467,8 +645,8 @@ async function loadVerificationsForAdminRegionalByInventory(inventoryId) {
             `;
         }
 
-        // Load verifications filtered by inventory
-        const response = await fetch(`/api/v1/verifications?inventoryId=${inventoryId}&page=0&size=${verificationDataAdminRegional.pageSize}`, {
+        // Load verifications from regional (use a large page size to get all verifications)
+        const response = await fetch(`/api/v1/verifications/regional/${currentUserRegionalId}?page=0&size=1000`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -479,13 +657,23 @@ async function loadVerificationsForAdminRegionalByInventory(inventoryId) {
         if (response.ok) {
             const data = await response.json();
             
-            // Update verifications data
-            verificationDataAdminRegional.verifications = Array.isArray(data.content) ? data.content : [];
-            verificationDataAdminRegional.totalElements = data.totalElements || 0;
-            verificationDataAdminRegional.totalPages = data.totalPages || 0;
-            verificationDataAdminRegional.currentPage = data.number || 0;
+            // Get all verifications (handle pagination if needed)
+            let allVerifications = Array.isArray(data.content) ? data.content : [];
             
-            // Apply filters
+            // If there are more pages, we might need to load them, but for now we'll work with what we have
+            // Filter by inventory on client side
+            const filteredByInventory = allVerifications.filter(v => {
+                const vInventoryId = v.inventoryId || v.item?.inventory?.id || v.item?.inventoryId;
+                return vInventoryId && (vInventoryId.toString() === inventoryId.toString() || vInventoryId === parseInt(inventoryId));
+            });
+            
+            // Update verifications data with filtered results
+            verificationDataAdminRegional.verifications = filteredByInventory;
+            verificationDataAdminRegional.totalElements = filteredByInventory.length;
+            verificationDataAdminRegional.totalPages = Math.ceil(filteredByInventory.length / verificationDataAdminRegional.pageSize);
+            verificationDataAdminRegional.currentPage = 0;
+            
+            // Apply other filters (status, search)
             filterVerificationsForAdminRegional();
             
             // Update window.verificationData for compatibility
