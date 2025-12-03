@@ -78,11 +78,14 @@ if (isAdminInstitutionPage) {
     
     // Override setupEventListeners to skip institution selectors
     window.setupEventListeners = function() {
+        console.log('Admin Institution: Setting up event listeners');
+        
         // Only setup listeners for elements that exist
         // Import inventory dropdown
         const importInventorySelect = document.getElementById('importInventorySelect');
         if (importInventorySelect) {
             importInventorySelect.addEventListener('change', function() {
+                console.log('Import inventory changed:', this.value);
                 if (typeof window.updateImportButtonState === 'function') {
                     window.updateImportButtonState();
                 }
@@ -93,6 +96,7 @@ if (isAdminInstitutionPage) {
         const exportInventorySelect = document.getElementById('exportInventorySelect');
         if (exportInventorySelect) {
             exportInventorySelect.addEventListener('change', function() {
+                console.log('Export inventory changed:', this.value);
                 if (typeof window.updateExportButtonState === 'function') {
                     window.updateExportButtonState();
                 }
@@ -108,16 +112,66 @@ if (isAdminInstitutionPage) {
         // File input
         const importFileInput = document.getElementById('importFileInput');
         if (importFileInput) {
+            console.log('Setting up file input listener');
             importFileInput.addEventListener('change', function(e) {
-                if (typeof window.handleFileSelection === 'function') {
-                    window.handleFileSelection(e.target.files[0]);
+                console.log('File selected:', e.target.files[0]?.name);
+                const file = e.target.files[0];
+                if (file && typeof window.handleFileSelection === 'function') {
+                    window.handleFileSelection(file);
+                } else {
+                    console.error('handleFileSelection function not found or no file selected');
                 }
             });
+        } else {
+            console.error('importFileInput element not found');
         }
 
         // Drag and drop support
         const fileUploadArea = document.getElementById('fileUploadArea');
         if (fileUploadArea) {
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight(e) {
+                fileUploadArea.classList.add('drag-over');
+            }
+
+            function unhighlight(e) {
+                fileUploadArea.classList.remove('drag-over');
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    // Check if it's an Excel file
+                    if (file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
+                        // Set the file input
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        const currentFileInput = document.getElementById('importFileInput');
+                        if (currentFileInput) {
+                            currentFileInput.files = dataTransfer.files;
+                            // Trigger change event
+                            const changeEvent = new Event('change', { bubbles: true });
+                            currentFileInput.dispatchEvent(changeEvent);
+                        }
+                    } else {
+                        if (typeof window.showErrorToastLocal === 'function') {
+                            window.showErrorToastLocal('Error', 'Por favor seleccione un archivo Excel (.xls o .xlsx)');
+                        } else if (window.showInventoryErrorToast) {
+                            window.showInventoryErrorToast('Error', 'Por favor seleccione un archivo Excel (.xls o .xlsx)');
+                        } else {
+                            alert('Error: Por favor seleccione un archivo Excel (.xls o .xlsx)');
+                        }
+                    }
+                }
+                unhighlight(e);
+            }
+
             // Prevent default drag behaviors
             ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
                 fileUploadArea.addEventListener(eventName, preventDefaults, false);
@@ -135,48 +189,6 @@ if (isAdminInstitutionPage) {
 
             // Handle dropped files
             fileUploadArea.addEventListener('drop', handleDrop, false);
-        }
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function highlight(e) {
-            fileUploadArea.classList.add('drag-over');
-        }
-
-        function unhighlight(e) {
-            fileUploadArea.classList.remove('drag-over');
-        }
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            if (files.length > 0) {
-                const file = files[0];
-                // Check if it's an Excel file
-                if (file.name.endsWith('.xls') || file.name.endsWith('.xlsx')) {
-                    // Set the file input
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    const importFileInput = document.getElementById('importFileInput');
-                    if (importFileInput) {
-                        importFileInput.files = dataTransfer.files;
-                        if (typeof window.handleFileSelection === 'function') {
-                            window.handleFileSelection(file);
-                        }
-                    }
-                } else {
-                    if (typeof window.showErrorToastLocal === 'function') {
-                        window.showErrorToastLocal('Error', 'Por favor seleccione un archivo Excel (.xls o .xlsx)');
-                    } else if (window.showInventoryErrorToast) {
-                        window.showInventoryErrorToast('Error', 'Por favor seleccione un archivo Excel (.xls o .xlsx)');
-                    } else {
-                        alert('Error: Por favor seleccione un archivo Excel (.xls o .xlsx)');
-                    }
-                }
-            }
         }
 
         // Import button
@@ -224,8 +236,8 @@ async function initializeAdminInstitutionImportExport() {
         // Setup mode toggle (Import/Export switch)
         setupModeToggleForAdminInstitution();
 
-        // Remove event listeners for institution selectors (they don't exist anymore)
-        // The inventory selectors will be handled by the base import-export.js
+        // Setup event listeners for file input and buttons
+        setupEventListeners();
 
     } catch (error) {
         console.error('Error initializing admin institution import-export:', error);
@@ -420,8 +432,8 @@ function setupModeToggleForAdminInstitution() {
         importSection.classList.remove('hidden');
         exportSection.classList.add('hidden');
         // Close preview when switching modes
-        if (typeof closePreview === 'function') {
-            closePreview();
+        if (typeof window.closePreview === 'function') {
+            window.closePreview();
         }
     });
 
@@ -431,15 +443,15 @@ function setupModeToggleForAdminInstitution() {
         exportSection.classList.remove('hidden');
         importSection.classList.add('hidden');
         // Close import preview when switching modes
-        if (typeof closePreview === 'function') {
-            closePreview();
+        if (typeof window.closePreview === 'function') {
+            window.closePreview();
         }
         // Check if there's a selected inventory and show preview
         const inventoryId = document.getElementById('exportInventorySelect').value;
-        if (inventoryId && typeof loadExportPreview === 'function') {
-            loadExportPreview(inventoryId);
-        } else if (typeof hideExportPreview === 'function') {
-            hideExportPreview();
+        if (inventoryId && typeof window.loadExportPreview === 'function') {
+            window.loadExportPreview(inventoryId);
+        } else if (typeof window.hideExportPreview === 'function') {
+            window.hideExportPreview();
         }
     });
 }

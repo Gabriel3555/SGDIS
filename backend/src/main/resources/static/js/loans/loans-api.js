@@ -523,9 +523,27 @@ async function loadLoans() {
         const params = new URLSearchParams();
         
         // For ADMIN_INSTITUTION, automatically filter by their institution
-        if (isAdminInstitution && userInfo && userInfo.institution && userInfo.institution.id) {
-            params.append('institutionId', userInfo.institution.id);
-            console.log('ADMIN_INSTITUTION: filtering loans by institution ID:', userInfo.institution.id);
+        if (isAdminInstitution && userInfo) {
+            // Try to get institution ID from different possible structures
+            let institutionId = null;
+            if (userInfo.institution) {
+                if (typeof userInfo.institution === 'object' && userInfo.institution.id) {
+                    institutionId = userInfo.institution.id;
+                } else if (typeof userInfo.institution === 'string') {
+                    // If institution is a string (name), we need to fetch the ID
+                    // But for now, try to use institutionId directly if available
+                    institutionId = userInfo.institutionId;
+                }
+            } else if (userInfo.institutionId) {
+                institutionId = userInfo.institutionId;
+            }
+            
+            if (institutionId) {
+                params.append('institutionId', institutionId);
+                console.log('ADMIN_INSTITUTION: filtering loans by institution ID:', institutionId);
+            } else {
+                console.warn('ADMIN_INSTITUTION: Could not determine institution ID from user info:', userInfo);
+            }
         } else {
             // For other roles, use the selected filters
             if (loansData.selectedRegional && loansData.selectedRegional !== 'all') {

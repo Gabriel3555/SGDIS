@@ -9,5 +9,6 @@ public record UserResponse(
         String imgUrl,
         String role,
         Boolean status,
-        String institution
+        String institution,
+        Long institutionId
 ) {}

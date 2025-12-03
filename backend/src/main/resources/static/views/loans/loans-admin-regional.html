@@ -567,6 +567,45 @@
         </div>
     </div>
 
+    <!-- Return Item Modal -->
+    <div id="returnItemModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
+            <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Devolver Item</h2>
+                <button onclick="closeReturnItemModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <form onsubmit="event.preventDefault(); submitReturnItem();" class="space-y-6">
+                    <input type="hidden" id="returnLoanId" value="">
+
+                    <!-- Details -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Detalles de Devolución (Opcional)
+                        </label>
+                        <textarea id="returnDetails" rows="3"
+                                  class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] dark:bg-gray-700 dark:text-white"
+                                  placeholder="Ingrese detalles sobre la devolución del item..."></textarea>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <button type="button" onclick="closeReturnItemModal()"
+                                class="px-6 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit"
+                                class="px-6 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                            Devolver Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="../../js/token-refresh.js"></script>
     <script src="../../js/websocket-client.js"></script>
     <script src="../../js/notifications-bell.js"></script>
@@ -577,6 +616,7 @@
     <script src="../../js/loans/loans-api.js"></script>
     <script src="../../js/loans/loans-filters.js"></script>
     <script src="../../js/loans/loans-ui.js"></script>
+    <script src="../../js/loans/loan-actions.js"></script>
     <!-- Load loans-warehouse.js for loan modal functionality -->
     <script src="../../js/loans/loans-warehouse.js"></script>
     <!-- Admin Regional specific loans functionality -->

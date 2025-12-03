@@ -150,6 +150,39 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-4">
+                    <div class="relative">
+                        <button onclick="toggleVerificationMenu(event)"
+                            class="bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg flex items-center gap-2">
+                            <i class="fas fa-plus"></i>
+                            <span>Nueva Verificación</span>
+                            <i class="fas fa-chevron-down text-sm"></i>
+                        </button>
+
+                        <!-- Dropdown Menu -->
+                        <div id="verificationMenu"
+                            class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                            <button onclick="showNewVerificationModal(); hideVerificationMenu();"
+                                class="w-full text-left px-4 py-3 hover:bg-green-50 transition-colors flex items-center gap-3 border-b border-gray-100">
+                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-green-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-800">Verificación Individual</div>
+                                    <div class="text-xs text-gray-500">Verificar un ítem a la vez</div>
+                                </div>
+                            </button>
+                            <button onclick="showBatchVerificationModal(); hideVerificationMenu();"
+                                class="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-layer-group text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-800">Verificación por Lotes</div>
+                                    <div class="text-xs text-gray-500">Verificar múltiples ítems</div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/admin_institution/info-me'">
@@ -169,7 +202,7 @@
                     <h1 class="text-3xl font-bold text-gray-800 mb-1">Verificación - Admin Institución</h1>
                     <p class="text-gray-600" id="verificationWelcomeMessage">Administración de verificaciones de la institución</p>
                 </div>
-                <button onclick="loadVerificationData()"
+                <button onclick="loadVerificationsForAdminInstitution()"
                     class="btn-update flex items-center gap-2 hover:bg-sena-verde-oscuro text-white px-4 py-2 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]">
                     <i class="fas fa-sync-alt" id="refreshIcon"></i>
                     <span id="refreshText">Actualizar</span>
@@ -238,7 +271,385 @@
                 display: block;
             }
         }
+
+        /* Verification Type Button Styles */
+        .verification-type-btn {
+            transition: all 0.3s ease;
+        }
+
+        .verification-type-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 175, 0, 0.15);
+        }
+
+        .verification-type-btn.selected {
+            border-color: #00AF00 !important;
+            background-color: rgb(240, 253, 244) !important;
+            color: #00AF00 !important;
+        }
     </style>
+
+    <!-- New Verification Modal -->
+    <div id="newVerificationModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 my-8">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Nueva Verificación</h2>
+                <button onclick="closeNewVerificationModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Tipo de Verificación -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3">Tipo de Verificación</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" id="serialTypeBtn" onclick="selectVerificationType('serial')"
+                        class="verification-type-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-[#00AF00] hover:bg-green-50 transition-all duration-200 flex flex-col items-center gap-2 selected">
+                        <i class="fas fa-barcode text-2xl"></i>
+                        <span class="font-semibold">Número de Serie</span>
+                    </button>
+                    <button type="button" id="plateTypeBtn" onclick="selectVerificationType('plate')"
+                        class="verification-type-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-[#00AF00] hover:bg-green-50 transition-all duration-200 flex flex-col items-center gap-2">
+                        <i class="fas fa-car text-2xl"></i>
+                        <span class="font-semibold">Placa</span>
+                    </button>
+                </div>
+            </div>
+
+            <form id="newVerificationForm" class="space-y-4">
+                <!-- Serial Number Form -->
+                <div id="serialNumberForm">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Serie</label>
+                        <input type="text" id="newVerificationSerial"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Ej: SN123456789">
+                    </div>
+                </div>
+
+                <!-- License Plate Form -->
+                <div id="licensePlateForm" style="display: none;">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Placa</label>
+                        <input type="text" id="newVerificationPlate"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Ej: ABC123">
+                    </div>
+                </div>
+
+                <!-- Evidence Section -->
+                <div class="border-t border-gray-200 pt-4 mt-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <i class="fas fa-camera mr-2 text-blue-600"></i>
+                        Evidencia (Opcional)
+                    </label>
+
+                    <!-- Evidence Preview -->
+                    <div id="newVerificationEvidencePreview" class="hidden mb-3">
+                        <div class="relative inline-block">
+                            <img id="newVerificationEvidenceImage" src="" alt="Vista previa"
+                                class="max-w-full h-48 rounded-lg shadow-md object-cover">
+                            <button type="button" onclick="clearNewVerificationEvidence()"
+                                class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition-colors">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Evidence Buttons -->
+                    <div id="newVerificationEvidenceButtons" class="flex gap-3">
+                        <label class="flex-1 cursor-pointer">
+                            <input type="file" id="newVerificationEvidenceFile" accept="image/*"
+                                onchange="handleNewVerificationFileChange(event)" class="hidden">
+                            <div
+                                class="w-full px-4 py-3 border-2 border-dashed border-gray-300 hover:border-blue-500 rounded-xl transition-colors text-center">
+                                <i class="fas fa-image text-blue-600 text-xl mb-1"></i>
+                                <div class="text-sm font-medium text-gray-700">Adjuntar Imagen</div>
+                                <div class="text-xs text-gray-500">JPG, PNG (máx. 5MB)</div>
+                            </div>
+                        </label>
+                        <button type="button" onclick="openNewVerificationCamera()"
+                            class="flex-1 px-4 py-3 border-2 border-dashed border-gray-300 hover:border-green-500 rounded-xl transition-colors">
+                            <i class="fas fa-camera text-green-600 text-xl mb-1"></i>
+                            <div class="text-sm font-medium text-gray-700">Tomar Foto</div>
+                            <div class="text-xs text-gray-500">Usar cámara</div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeNewVerificationModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Crear Verificación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Camera Modal for New Verification -->
+    <div id="newVerificationCameraModal"
+        class="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center hidden" style="z-index: 10005;">
+        <div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-800">
+                    <i class="fas fa-camera mr-2 text-blue-600"></i>
+                    Tomar Foto de Evidencia
+                </h3>
+                <button onclick="closeNewVerificationCamera()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="relative mb-4">
+                <video id="newVerificationCameraVideo" autoplay playsinline class="w-full rounded-lg bg-black"
+                    style="max-height: 400px;"></video>
+                <canvas id="newVerificationCameraCanvas" class="hidden"></canvas>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeNewVerificationCamera()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="captureNewVerificationPhoto()"
+                    class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors">
+                    <i class="fas fa-camera mr-2"></i>
+                    Capturar Foto
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Verification Modal -->
+    <div id="viewVerificationModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 10004;">
+        <div class="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Detalles de la Verificación</h2>
+                <button onclick="closeViewVerificationModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-6" id="viewVerificationContent">
+                <!-- Content loaded dynamically -->
+            </div>
+
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+                <button onclick="closeViewVerificationModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Evidence Modal -->
+    <div id="uploadEvidenceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Subir Evidencia</h2>
+                <button onclick="closeUploadEvidenceModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <form id="uploadEvidenceForm" class="space-y-4">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Archivo de Evidencia</label>
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1">
+                            <input type="file" id="evidenceFile" accept="image/*,application/pdf" class="hidden"
+                                onchange="handleEvidenceFileChange(event)">
+                            <button type="button" onclick="document.getElementById('evidenceFile').click()"
+                                class="w-full px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                                <i class="fas fa-file-upload mr-2"></i>
+                                Seleccionar Archivo
+                            </button>
+                            <p class="text-xs text-gray-500 mt-1" id="evidenceFileName">JPG, PNG, PDF. Máx. 5MB</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeUploadEvidenceModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Subir Evidencia
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Batch Verification Modal -->
+    <div id="batchVerificationModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
+        style="z-index: 10000;">
+        <div class="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Verificación por Lotes</h2>
+                <button onclick="closeBatchVerificationModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Scanner Section -->
+            <div id="batchScannerSection" class="mb-6">
+                <!-- Manual Input Section -->
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                        <i class="fas fa-keyboard mr-2 text-blue-600 dark:text-blue-400"></i>
+                        Entrada Manual de Placas
+                    </h3>
+                    <div class="flex gap-3">
+                        <input type="text" id="manualPlateInput" placeholder="Ingresa la placa (ej: ABC123)"
+                            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 placeholder-gray-500 dark:placeholder-gray-400"
+                            onkeypress="if(event.key === 'Enter') addManualPlate()">
+                        <button onclick="addManualPlate()"
+                            class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-xl transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            Agregar
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-3">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Escribe la placa y presiona Enter o haz clic en "Agregar"
+                    </p>
+                </div>
+
+                <div class="bg-gray-50 rounded-xl p-6 mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                        <i class="fas fa-camera mr-2 text-blue-600"></i>
+                        Escanear Placas con Cámara
+                    </h3>
+
+                    <!-- Camera View -->
+                    <div class="relative mb-4">
+                        <div id="cameraContainer" class="relative bg-black rounded-lg overflow-hidden"
+                            style="min-height: 250px;">
+                            <video id="cameraVideo" autoplay playsinline
+                                style="width: 100%; height: auto; display: none;"></video>
+                            <canvas id="cameraCanvas" style="width: 100%; height: auto; display: none;"></canvas>
+                            <div id="cameraPlaceholder" class="flex items-center justify-center h-64 text-gray-400">
+                                <div class="text-center">
+                                    <i class="fas fa-camera text-6xl mb-4"></i>
+                                    <p class="text-lg">Cámara no iniciada</p>
+                                    <p class="text-sm mt-2">Haz clic en "Abrir Cámara" para comenzar</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="scanOverlay" class="absolute top-0 left-0 right-0 bottom-0 pointer-events-none hidden">
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div class="border-4 border-blue-500 rounded-lg" style="width: 85%; height: 25%;"></div>
+                            </div>
+                            <div class="absolute bottom-4 left-0 right-0 text-center">
+                                <p class="text-white text-sm bg-black bg-opacity-50 px-4 py-2 rounded-lg inline-block">
+                                    <i class="fas fa-barcode mr-2"></i>
+                                    Coloca el código de barras o QR en el recuadro
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scanner Controls -->
+                    <div class="flex gap-3 justify-center">
+                        <button id="startCameraBtn" onclick="startBatchScanner()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-xl transition-colors">
+                            <i class="fas fa-video mr-2"></i>
+                            Abrir Cámara
+                        </button>
+                        <button id="stopCameraBtn" onclick="stopBatchScanner()"
+                            class="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-xl transition-colors hidden">
+                            <i class="fas fa-stop mr-2"></i>
+                            Detener Cámara
+                        </button>
+                        <button id="capturePhotoBtn" onclick="captureBatchPhoto()"
+                            class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-xl transition-colors hidden">
+                            <i class="fas fa-camera-retro mr-2"></i>
+                            Capturar Foto Manualmente
+                        </button>
+                    </div>
+
+                    <p class="text-sm text-gray-600 text-center mt-4">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Escanea códigos de barras o QR de placas. La foto se captura automáticamente al escanear.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Scanned Items List -->
+            <div id="scannedItemsSection" class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-list mr-2 text-blue-600"></i>
+                    Placas Escaneadas (<span id="scannedCount">0</span>)
+                </h3>
+                <div id="scannedItemsList" class="space-y-3 max-h-96 overflow-y-auto">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-2"></i>
+                        <p>No hay placas escaneadas aún</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex gap-3 pt-4 border-t border-gray-200">
+                <button onclick="closeBatchVerificationModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    Cancelar
+                </button>
+                <button id="finalizeBatchBtn" onclick="finalizeBatchVerification()"
+                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled>
+                    <i class="fas fa-check mr-2"></i>
+                    Finalizar Verificación (<span id="finalizeCount">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include html5-qrcode library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script>
+        // Toggle verification menu
+        function toggleVerificationMenu(event) {
+            event.stopPropagation();
+            const menu = document.getElementById('verificationMenu');
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
+        }
+
+        // Hide verification menu
+        function hideVerificationMenu() {
+            const menu = document.getElementById('verificationMenu');
+            if (menu) {
+                menu.classList.add('hidden');
+            }
+        }
+
+        // Close menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('verificationMenu');
+            const button = event.target.closest('button[onclick*="toggleVerificationMenu"]');
+            if (menu && !menu.contains(event.target) && !button) {
+                menu.classList.add('hidden');
+            }
+        });
+    </script>
 
     <script>
         function handleSidebarClick(event, link) {
@@ -378,6 +789,11 @@
     <script src="../../js/verification/verification-pagination.js"></script>
     <script src="../../js/verification/verification-toast.js"></script>
     <script src="../../js/verification/verification.js"></script>
+    <script src="../../js/verification/verification-batch.js"></script>
+    <!-- CustomSelect for inventory filter -->
+    <script src="../../js/users/users-modals.js"></script>
+    <!-- Admin Institution specific verification functionality -->
+    <script src="../../js/verification/verification-admin-institution.js"></script>
 </body>
 
 </html>

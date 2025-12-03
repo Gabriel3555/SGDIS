@@ -8,6 +8,32 @@ let batchVerificationState = {
     scanCooldown: 2000 // 2 seconds cooldown between scans
 };
 
+// Ensure toast functions are available (fallback if not loaded)
+if (typeof window.showSuccessToast === 'undefined') {
+    console.warn('showSuccessToast not available, using fallback');
+    window.showSuccessToast = function(title, message) {
+        alert(`${title}: ${message}`);
+    };
+}
+if (typeof window.showErrorToast === 'undefined') {
+    console.warn('showErrorToast not available, using fallback');
+    window.showErrorToast = function(title, message) {
+        alert(`ERROR: ${title}: ${message}`);
+    };
+}
+if (typeof window.showWarningToast === 'undefined') {
+    console.warn('showWarningToast not available, using fallback');
+    window.showWarningToast = function(title, message) {
+        alert(`ADVERTENCIA: ${title}: ${message}`);
+    };
+}
+if (typeof window.showInfoToast === 'undefined') {
+    console.warn('showInfoToast not available, using fallback');
+    window.showInfoToast = function(title, message) {
+        alert(`INFO: ${title}: ${message}`);
+    };
+}
+
 // Show Batch Verification Modal
 function showBatchVerificationModal() {
     const modal = document.getElementById('batchVerificationModal');
@@ -15,6 +41,8 @@ function showBatchVerificationModal() {
         modal.classList.remove('hidden');
         resetBatchVerificationState();
         updateScannedItemsList();
+    } else {
+        console.error('Batch verification modal not found');
     }
 }
 
@@ -39,6 +67,89 @@ function resetBatchVerificationState() {
     const manualInput = document.getElementById('manualPlateInput');
     if (manualInput) {
         manualInput.value = '';
+    }
+}
+
+// Validate item belongs to user's institution (for ADMIN_INSTITUTION only)
+async function validateItemInstitutionForAdminInstitution(item) {
+    // Check if we're on admin institution page
+    const path = window.location.pathname || '';
+    const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+    
+    if (!isAdminInstitutionPage) {
+        return true; // No validation needed for other roles
+    }
+    
+    if (!item || !item.inventoryId) {
+        showErrorToast('Error', 'El ítem no tiene información de inventario válida');
+        return false;
+    }
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            showErrorToast('Error', 'No se encontró token de autenticación');
+            return false;
+        }
+        
+        // Get user's institution ID from window or load it
+        let userInstitutionId = window.currentUserInstitutionId;
+        
+        // If not found, try to get it from current user data (from /api/v1/users/me)
+        if (!userInstitutionId && window.currentUserData && window.currentUserData.institutionId) {
+            userInstitutionId = window.currentUserData.institutionId;
+            window.currentUserInstitutionId = userInstitutionId;
+        }
+        
+        // If still not found, try to load it using the verification function
+        if (!userInstitutionId && typeof loadCurrentUserInfoForVerifications === 'function') {
+            await loadCurrentUserInfoForVerifications();
+            userInstitutionId = window.currentUserInstitutionId;
+        }
+        
+        // If we still don't have the institution ID, reject the item
+        if (!userInstitutionId) {
+            showErrorToast('Error', 'No se pudo obtener la información de tu institución. Por favor, recarga la página.');
+            return false;
+        }
+        
+        // Get inventory to check institution
+        const inventoryResponse = await fetch(`/api/v1/inventory/${item.inventoryId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!inventoryResponse.ok) {
+            showErrorToast('Error', 'No se pudo obtener la información del inventario');
+            return false;
+        }
+        
+        const inventory = await inventoryResponse.json();
+        
+        // Validate institution match - STRICT: must match exactly
+        if (!inventory.institutionId) {
+            showErrorToast('Error', 'El inventario no tiene información de institución válida');
+            return false;
+        }
+        
+        if (userInstitutionId.toString() !== inventory.institutionId.toString()) {
+            const institutionName = inventory.institutionName || 'otra institución';
+            showErrorToast(
+                'Ítem no pertenece a tu institución', 
+                `El ítem pertenece a ${institutionName}. Solo puedes verificar ítems de tu institución.`
+            );
+            return false;
+        }
+        
+        // All validations passed
+        return true;
+    } catch (error) {
+        console.error('Error validating item institution:', error);
+        showErrorToast('Error', 'Error al validar el ítem. Por favor, intenta de nuevo.');
+        return false; // Reject on error for security
     }
 }
 
@@ -80,6 +191,14 @@ async function addManualPlate() {
             return;
         }
         
+        // Validate item belongs to user's institution (for ADMIN_INSTITUTION only)
+        const isValid = await validateItemInstitutionForAdminInstitution(item);
+        if (!isValid) {
+            input.value = '';
+            input.focus();
+            return;
+        }
+        
         const itemName = item.productName;
         
         // Add item to list with name (using same structure as addScannedItem)
@@ -98,7 +217,10 @@ async function addManualPlate() {
         input.value = '';
         input.focus();
         
-        showSuccessToast('Placa agregada', `${itemName} agregado correctamente`);
+        const successMessage = itemName 
+            ? `Placa ${plateNumber} - ${itemName} agregada correctamente`
+            : `Placa ${plateNumber} agregada correctamente`;
+        showSuccessToast('Placa agregada', successMessage);
     } catch (error) {
         console.error('Error fetching item:', error);
         showErrorToast('Error', `Error al buscar la placa ${plateNumber}. Intenta de nuevo.`);
@@ -225,6 +347,12 @@ async function handleScannedCode(code) {
             return;
         }
         
+        // Validate item belongs to user's institution (for ADMIN_INSTITUTION only)
+        const isValid = await validateItemInstitutionForAdminInstitution(item);
+        if (!isValid) {
+            return;
+        }
+        
         const itemName = item.productName;
         
         // Capture photo automatically only if item exists
@@ -275,7 +403,7 @@ async function capturePhotoForScannedCode(licencePlate, itemName = null) {
 
         if (!container || !canvasElement || !batchVerificationState.isScanning || !batchVerificationState.html5QrCode) {
             // If camera not available, add without photo
-            addScannedItem(licencePlate, null, itemName);
+            await addScannedItem(licencePlate, null, itemName);
             return;
         }
 
@@ -284,7 +412,7 @@ async function capturePhotoForScannedCode(licencePlate, itemName = null) {
         
         if (!videoElement) {
             // If no video element found, add without photo
-            addScannedItem(licencePlate, null, itemName);
+            await addScannedItem(licencePlate, null, itemName);
             return;
         }
 
@@ -299,7 +427,7 @@ async function capturePhotoForScannedCode(licencePlate, itemName = null) {
 
     } catch (error) {
         console.error('Error capturing photo:', error);
-        addScannedItem(licencePlate, null, itemName);
+        await addScannedItem(licencePlate, null, itemName);
     }
 }
 
@@ -324,28 +452,32 @@ function captureFrameToCanvas(videoElement, canvasElement, licencePlate, isManua
                         try {
                             const item = await getItemByLicencePlate(licencePlate.trim());
                             const itemName = item ? item.productName : null;
-                            addScannedItem(licencePlate.trim(), file, itemName);
+                            await addScannedItem(licencePlate.trim(), file, itemName);
                         } catch (error) {
-                            addScannedItem(licencePlate.trim(), file, null);
+                            await addScannedItem(licencePlate.trim(), file, null);
                         }
                     } else {
                         showErrorToast('Error', 'Debes ingresar un número de placa');
                     }
                 } else {
-                    // Automatic capture from scan
+                    // Automatic capture from scan - item was already validated in handleScannedCode
                     const file = new File([blob], `plate_${licencePlate}_${Date.now()}.jpg`, { type: 'image/jpeg' });
-                    addScannedItem(licencePlate, file, itemName);
+                    await addScannedItem(licencePlate, file, itemName);
                 }
             } else {
                 if (!isManual) {
-                    addScannedItem(licencePlate, null, itemName);
+                    // Automatic capture - item was already validated in handleScannedCode
+                    await addScannedItem(licencePlate, null, itemName);
                 }
             }
         }, 'image/jpeg', 0.8);
     } catch (error) {
         console.error('Error capturing frame:', error);
         if (!isManual) {
-            addScannedItem(licencePlate, null, itemName);
+            // Use async IIFE to handle await in catch block
+            (async () => {
+                await addScannedItem(licencePlate, null, itemName);
+            })();
         }
     }
 }
@@ -382,7 +514,31 @@ function captureBatchPhoto() {
 }
 
 // Add Scanned Item
-function addScannedItem(licencePlate, photoFile, itemName = null) {
+async function addScannedItem(licencePlate, photoFile, itemName = null) {
+    // Validate item belongs to user's institution (for ADMIN_INSTITUTION only)
+    // We need to get the item again to validate
+    const path = window.location.pathname || '';
+    const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+    
+    if (isAdminInstitutionPage) {
+        try {
+            const item = await getItemByLicencePlate(licencePlate);
+            if (item) {
+                const isValid = await validateItemInstitutionForAdminInstitution(item);
+                if (!isValid) {
+                    return; // Don't add item if validation fails
+                }
+            }
+        } catch (error) {
+            console.error('Error validating item in addScannedItem:', error);
+            // If validation fails, don't add the item for admin institution
+            if (isAdminInstitutionPage) {
+                showErrorToast('Error de validación', 'No se pudo validar que el ítem pertenezca a tu institución');
+                return;
+            }
+        }
+    }
+    
     const item = {
         licencePlate: licencePlate,
         itemName: itemName,
@@ -549,10 +705,10 @@ function updateScannedItemsList() {
 async function finalizeBatchVerification() {
     const items = batchVerificationState.scannedItems;
 
-    if (items.length === 0) {
-        showErrorToast('Error', 'No hay placas escaneadas para verificar');
-        return;
-    }
+        if (items.length === 0) {
+            showErrorToast('Sin placas para verificar', 'Debes escanear o agregar al menos una placa antes de finalizar la verificación');
+            return;
+        }
 
     try {
         showLoadingState();
@@ -589,8 +745,34 @@ async function finalizeBatchVerification() {
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Error al crear las verificaciones');
+            let errorMessage = 'Error al crear las verificaciones';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+                
+                // Handle specific error cases
+                if (response.status === 400) {
+                    errorMessage = errorData.message || 'Datos inválidos. Verifica las placas ingresadas.';
+                } else if (response.status === 401) {
+                    errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+                } else if (response.status === 403) {
+                    errorMessage = errorData.message || 'No tienes permisos para realizar esta acción.';
+                } else if (response.status === 500) {
+                    errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
+                }
+            } catch (e) {
+                // If can't parse error, use status-based message
+                if (response.status === 400) {
+                    errorMessage = 'Datos inválidos en la solicitud';
+                } else if (response.status === 401) {
+                    errorMessage = 'Sesión expirada. Por favor, inicia sesión nuevamente.';
+                } else if (response.status === 403) {
+                    errorMessage = 'No tienes permisos para realizar esta acción';
+                } else if (response.status === 500) {
+                    errorMessage = 'Error del servidor. Por favor, intenta más tarde.';
+                }
+            }
+            throw new Error(errorMessage);
         }
 
         const result = await response.json();
@@ -638,44 +820,90 @@ async function finalizeBatchVerification() {
             if (evidenceUploadPromises.length > 0) {
                 await Promise.all(evidenceUploadPromises);
                 if (evidenceUploadCount > 0) {
-                    showSuccessToast('Evidencias subidas', `Se subieron ${evidenceUploadCount} evidencias adicionales`);
+                    const evidenceMessage = evidenceUploadCount === 1 
+                        ? 'Se subió 1 evidencia adicional correctamente'
+                        : `Se subieron ${evidenceUploadCount} evidencias adicionales correctamente`;
+                    showSuccessToast('Evidencias subidas', evidenceMessage);
                 }
             }
         }
 
-        // Show results
-        if (result.successfulItems === result.totalItems) {
-            showSuccessToast('Éxito', `Se crearon ${result.successfulItems} verificaciones exitosamente`);
-        } else {
-            showInfoToast(
+        // Show results with detailed messages
+        if (result.successfulItems === result.totalItems && result.totalItems > 0) {
+            const message = result.totalItems === 1 
+                ? 'Se creó 1 verificación exitosamente' 
+                : `Se crearon ${result.successfulItems} verificaciones exitosamente`;
+            showSuccessToast('Verificación completada', message);
+        } else if (result.successfulItems > 0) {
+            // Partial success
+            const failedDetails = result.results
+                .filter(r => !r.success)
+                .map(r => `${r.licencePlateNumber}: ${r.message || 'Error desconocido'}`)
+                .join(', ');
+            
+            showWarningToast(
                 'Verificación parcial', 
-                `Se crearon ${result.successfulItems} de ${result.totalItems} verificaciones. ${result.failedItems} fallaron.`
+                `Se crearon ${result.successfulItems} de ${result.totalItems} verificaciones. ${result.failedItems} fallaron.${failedDetails ? ' Detalles: ' + failedDetails : ''}`
+            );
+        } else {
+            // All failed
+            const errorDetails = result.results
+                .map(r => `${r.licencePlateNumber}: ${r.message || 'Error desconocido'}`)
+                .join(', ');
+            showErrorToast(
+                'Error en la verificación', 
+                `No se pudo crear ninguna verificación. ${errorDetails}`
             );
         }
 
         // Close modal and reload data
         closeBatchVerificationModal();
-        await loadVerificationData();
+        // Reload verifications - check if we're on admin institution page
+        const path = window.location.pathname || '';
+        const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+        if (isAdminInstitutionPage && typeof loadVerificationsForAdminInstitution === 'function') {
+            await loadVerificationsForAdminInstitution();
+        } else if (typeof loadVerificationData === 'function') {
+            await loadVerificationData();
+        }
 
     } catch (error) {
         console.error('Error finalizing batch verification:', error);
-        showErrorToast('Error', error.message || 'Error al crear las verificaciones');
+        let errorMessage = 'Error al crear las verificaciones';
+        
+        if (error.message) {
+            errorMessage = error.message;
+        } else if (error.response) {
+            try {
+                const errorData = await error.response.json();
+                errorMessage = errorData.message || errorMessage;
+            } catch (e) {
+                // If can't parse error response, use default
+            }
+        }
+        
+        showErrorToast('Error al procesar verificaciones', errorMessage);
     } finally {
         hideLoadingState();
     }
 }
 
-// Export functions
-window.showBatchVerificationModal = showBatchVerificationModal;
-window.closeBatchVerificationModal = closeBatchVerificationModal;
-window.addManualPlate = addManualPlate;
-window.startBatchScanner = startBatchScanner;
-window.stopBatchScanner = stopBatchScanner;
-window.captureBatchPhoto = captureBatchPhoto;
-window.removeScannedItem = removeScannedItem;
-window.handleEvidenceChange = handleEvidenceChange;
-window.removeEvidence = removeEvidence;
-window.takeEvidencePhoto = takeEvidencePhoto;
-window.handleEvidenceCameraChange = handleEvidenceCameraChange;
-window.finalizeBatchVerification = finalizeBatchVerification;
+// Export functions (already exported above, but keep this for consistency)
+// Export functions to global scope
+if (typeof window !== 'undefined') {
+    window.showBatchVerificationModal = showBatchVerificationModal;
+    window.closeBatchVerificationModal = closeBatchVerificationModal;
+    window.addManualPlate = addManualPlate;
+    window.startBatchScanner = startBatchScanner;
+    window.stopBatchScanner = stopBatchScanner;
+    window.captureBatchPhoto = captureBatchPhoto;
+    window.removeScannedItem = removeScannedItem;
+    window.handleEvidenceChange = handleEvidenceChange;
+    window.removeEvidence = removeEvidence;
+    window.takeEvidencePhoto = takeEvidencePhoto;
+    window.handleEvidenceCameraChange = handleEvidenceCameraChange;
+    window.finalizeBatchVerification = finalizeBatchVerification;
+    window.getItemByLicencePlate = getItemByLicencePlate;
+    window.validateItemInstitutionForAdminInstitution = validateItemInstitutionForAdminInstitution;
+}
 

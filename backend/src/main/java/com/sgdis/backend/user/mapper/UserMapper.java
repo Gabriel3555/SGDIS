@@ -22,8 +22,8 @@ public final class UserMapper {
                 entity.getImgUrl(),
                 entity.getRole().name(),
                 entity.isStatus(),
-                entity.getInstitution() != null ? entity.getInstitution().getName() : null
-
+                entity.getInstitution() != null ? entity.getInstitution().getName() : null,
+                entity.getInstitution() != null ? entity.getInstitution().getId() : null
         );
     }
 
