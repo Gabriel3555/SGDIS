@@ -42,19 +42,34 @@ function getStatusColor(status) {
 }
 
 async function setRegionalFilter(regionalId) {
-    verificationData.selectedRegional = regionalId || '';
+    // Prevent loop: check if value actually changed
+    const newValue = regionalId || '';
+    if (verificationData.selectedRegional === newValue) {
+        return;
+    }
+    
+    verificationData.selectedRegional = newValue;
     verificationData.selectedInstitution = ''; // Reset institution when regional changes
     verificationData.selectedInventory = 'all'; // Reset inventory filter
     
     // Clear institution custom select if available
     if (window.verificationInstitutionCustomSelect) {
-        window.verificationInstitutionCustomSelect.clear();
+        try {
+            window.verificationInstitutionCustomSelect.clear();
+        } catch (e) {
+            console.warn('Error clearing institution CustomSelect:', e);
+        }
     }
     
     // Load institutions for selected regional
     if (regionalId) {
         if (window.loadInstitutionsByRegional) {
-            await window.loadInstitutionsByRegional(regionalId);
+            try {
+                await window.loadInstitutionsByRegional(regionalId);
+            } catch (e) {
+                console.error('Error loading institutions:', e);
+                verificationData.institutions = [];
+            }
         }
     } else {
         verificationData.institutions = [];
@@ -62,7 +77,12 @@ async function setRegionalFilter(regionalId) {
     
     // Reload inventories based on new institution filter (empty now)
     if (window.loadInventories) {
-        await window.loadInventories();
+        try {
+            await window.loadInventories();
+        } catch (e) {
+            console.error('Error loading inventories:', e);
+            verificationData.inventories = [];
+        }
     }
     
     // Update filters UI - prefer populateVerificationCustomSelects to avoid regenerating HTML
@@ -89,12 +109,23 @@ async function setRegionalFilter(regionalId) {
 }
 
 async function setInstitutionFilter(institutionId) {
-    verificationData.selectedInstitution = institutionId || '';
+    // Prevent loop: check if value actually changed
+    const newValue = institutionId || '';
+    if (verificationData.selectedInstitution === newValue) {
+        return;
+    }
+    
+    verificationData.selectedInstitution = newValue;
     verificationData.selectedInventory = 'all'; // Reset inventory filter
     
     // Reload inventories based on selected institution
     if (window.loadInventories) {
-        await window.loadInventories();
+        try {
+            await window.loadInventories();
+        } catch (e) {
+            console.error('Error loading inventories:', e);
+            verificationData.inventories = [];
+        }
     }
     
     // Update filters UI - prefer populateVerificationCustomSelects to avoid regenerating HTML
@@ -121,6 +152,11 @@ async function setInstitutionFilter(institutionId) {
 }
 
 async function setInventoryFilter(inventoryId) {
+    // Prevent loop: check if value actually changed
+    if (verificationData.selectedInventory === inventoryId) {
+        return;
+    }
+    
     verificationData.selectedInventory = inventoryId;
     verificationData.currentPage = 1;
     
