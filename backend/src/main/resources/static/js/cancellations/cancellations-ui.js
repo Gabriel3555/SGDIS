@@ -376,10 +376,21 @@ function updateCancellationsTable() {
         const isApproved = cancellation.approved === true;
         const isPending = !isApproved && !isRejected;
         
+        // Botón de ver detalles (siempre visible)
+        const viewDetailsButton = `
+            <button onclick="openCancellationDetailsModal(${cancellation.id})" 
+                class="group relative px-3 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-lg"
+                title="Ver detalles de la baja">
+                <i class="fas fa-eye"></i>
+                <span class="hidden sm:inline">Ver</span>
+            </button>
+        `;
+        
         if (isPending) {
             // Pending cancellation - show accept/refuse buttons and upload format button
             actionsHtml = `
                 <div class="flex items-center justify-center gap-2 flex-wrap">
+                    ${viewDetailsButton}
                     <button onclick="openAcceptCancellationModal(${cancellation.id})" 
                         class="group relative px-3 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-lg"
                         title="Aprobar esta baja">
@@ -404,6 +415,7 @@ function updateCancellationsTable() {
             // Rejected cancellation - show format and example buttons
             actionsHtml = `
                 <div class="flex items-center justify-center gap-2 flex-wrap">
+                    ${viewDetailsButton}
                     ${cancellation.urlFormat ? `
                         <button onclick="downloadCancellationFormat(${cancellation.id})" 
                             class="group relative px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-lg"
@@ -440,6 +452,7 @@ function updateCancellationsTable() {
             // Approved cancellation - show only format button (no example button)
             actionsHtml = `
                 <div class="flex items-center justify-center gap-2 flex-wrap">
+                    ${viewDetailsButton}
                     ${cancellation.urlFormat ? `
                         <button onclick="downloadCancellationFormat(${cancellation.id})" 
                             class="group relative px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg text-xs font-semibold transition-all duration-200 transform hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-md hover:shadow-lg"
@@ -1376,6 +1389,250 @@ async function handleUploadFormatExample() {
     }
 }
 
+/**
+ * Open cancellation details modal
+ */
+function openCancellationDetailsModal(cancellationId) {
+    // Find the cancellation in the data
+    const cancellation = cancellationsData.cancellations.find(c => c.id === cancellationId) ||
+                        cancellationsData.filteredCancellations.find(c => c.id === cancellationId);
+    
+    if (!cancellation) {
+        if (typeof showInventoryErrorToast === 'function') {
+            showInventoryErrorToast('Error', 'No se pudo encontrar la información de la baja');
+        } else {
+            alert('No se pudo encontrar la información de la baja');
+        }
+        return;
+    }
+
+    // Populate modal with cancellation data
+    populateCancellationDetailsModal(cancellation);
+    
+    // Show modal
+    const modal = document.getElementById('cancellationDetailsModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Trigger animation
+        setTimeout(() => {
+            const modalContent = modal.querySelector('div > div');
+            if (modalContent) {
+                modalContent.style.transform = 'scale(1)';
+            }
+        }, 10);
+    }
+}
+
+/**
+ * Populate cancellation details modal with data
+ */
+function populateCancellationDetailsModal(cancellation) {
+    // Format dates
+    const formatDate = (dateStr) => {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('es-ES', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    const requesterName = cancellation.requesterFullName || cancellation.requester?.fullName || 'N/A';
+    const requesterEmail = cancellation.requesterEmail || cancellation.requester?.email || 'N/A';
+    const checkerName = cancellation.checkerFullName || cancellation.checker?.fullName || 'N/A';
+    const checkerEmail = cancellation.checkerEmail || cancellation.checker?.email || 'N/A';
+    
+    // Determine status
+    let statusText, statusColor, statusIcon;
+    if (cancellation.approved === true) {
+        statusText = 'Aprobada';
+        statusColor = 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 border-green-300 dark:border-green-700';
+        statusIcon = '<i class="fas fa-check-circle mr-2"></i>';
+    } else if (cancellation.refusedAt !== null) {
+        statusText = 'Rechazada';
+        statusColor = 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400 border-red-300 dark:border-red-700';
+        statusIcon = '<i class="fas fa-times-circle mr-2"></i>';
+    } else {
+        statusText = 'Pendiente';
+        statusColor = 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 border-yellow-300 dark:border-yellow-700';
+        statusIcon = '<i class="fas fa-clock mr-2"></i>';
+    }
+
+    // Build items list
+    const items = cancellation.items || [];
+    let itemsHtml = '';
+    if (items.length === 0) {
+        itemsHtml = `
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="fas fa-inbox text-4xl mb-3"></i>
+                <p>No hay items asociados a esta baja</p>
+            </div>
+        `;
+    } else {
+        itemsHtml = '<div class="space-y-3">';
+        items.forEach((item, index) => {
+            const itemName = item.productName || item.displayName || `Item ${item.id || index + 1}`;
+            const plateNumber = item.licencePlateNumber || 'Sin placa';
+            itemsHtml += `
+                <div class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-800/50 dark:to-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow">
+                    <div class="flex items-center gap-4 flex-1">
+                        <div class="w-10 h-10 bg-gradient-to-br from-[#00AF00] to-[#008800] rounded-lg flex items-center justify-center text-white font-bold">
+                            ${index + 1}
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200">${itemName}</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                <i class="fas fa-tag mr-1 text-[#00AF00]"></i>
+                                <span class="font-medium">Placa:</span> ${plateNumber}
+                            </p>
+                            ${item.id ? `<p class="text-xs text-gray-500 dark:text-gray-500 mt-1">ID: ${item.id}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        itemsHtml += '</div>';
+    }
+
+    // Build modal content
+    const modalContent = `
+        <div class="space-y-6">
+            <!-- Status Badge -->
+            <div class="flex items-center justify-center">
+                <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold ${statusColor} border-2">
+                    ${statusIcon}${statusText}
+                </span>
+            </div>
+
+            <!-- Request Information -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-5 border border-blue-200 dark:border-blue-800">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <i class="fas fa-info-circle mr-2 text-blue-600 dark:text-blue-400"></i>
+                    Información de la Solicitud
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">ID de la Baja</p>
+                        <p class="font-semibold text-gray-800 dark:text-white">#${cancellation.id}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Fecha de Solicitud</p>
+                        <p class="font-semibold text-gray-800 dark:text-white">${formatDate(cancellation.requestedAt)}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requester Information -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-5 border border-green-200 dark:border-green-800">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <i class="fas fa-user mr-2 text-green-600 dark:text-green-400"></i>
+                    Solicitante
+                </h3>
+                <div class="space-y-2">
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Nombre Completo</p>
+                        <p class="font-semibold text-gray-800 dark:text-white">${requesterName}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Correo Electrónico</p>
+                        <p class="font-semibold text-gray-800 dark:text-white">${requesterEmail}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reason -->
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-5 border border-purple-200 dark:border-purple-800">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                    <i class="fas fa-comment-alt mr-2 text-purple-600 dark:text-purple-400"></i>
+                    Razón de la Baja
+                </h3>
+                <p class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    ${cancellation.reason || 'Sin razón especificada'}
+                </p>
+            </div>
+
+            <!-- Items -->
+            <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-xl p-5 border border-orange-200 dark:border-orange-800">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white flex items-center">
+                        <i class="fas fa-boxes mr-2 text-orange-600 dark:text-orange-400"></i>
+                        Items de la Baja
+                    </h3>
+                    <span class="px-3 py-1 bg-orange-200 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300 rounded-full text-sm font-semibold">
+                        ${items.length} ${items.length === 1 ? 'item' : 'items'}
+                    </span>
+                </div>
+                <div class="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    ${itemsHtml}
+                </div>
+            </div>
+
+            <!-- Review Information (if exists) -->
+            ${(cancellation.checker || cancellation.checkerFullName || cancellation.approvedAt || cancellation.refusedAt) ? `
+                <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 rounded-xl p-5 border border-indigo-200 dark:border-indigo-800">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+                        <i class="fas fa-user-check mr-2 text-indigo-600 dark:text-indigo-400"></i>
+                        Información de Revisión
+                    </h3>
+                    <div class="space-y-3">
+                        ${checkerName !== 'N/A' ? `
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Revisado Por</p>
+                                <p class="font-semibold text-gray-800 dark:text-white">${checkerName}</p>
+                                ${checkerEmail !== 'N/A' ? `<p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${checkerEmail}</p>` : ''}
+                            </div>
+                        ` : ''}
+                        ${cancellation.approvedAt ? `
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Fecha de Aprobación</p>
+                                <p class="font-semibold text-green-700 dark:text-green-400">${formatDate(cancellation.approvedAt)}</p>
+                            </div>
+                        ` : ''}
+                        ${cancellation.refusedAt ? `
+                            <div>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Fecha de Rechazo</p>
+                                <p class="font-semibold text-red-700 dark:text-red-400">${formatDate(cancellation.refusedAt)}</p>
+                            </div>
+                        ` : ''}
+                        ${cancellation.comment ? `
+                            <div class="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Comentario</p>
+                                <p class="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap bg-white dark:bg-gray-800 p-3 rounded-lg border border-indigo-200 dark:border-indigo-700">
+                                    ${cancellation.comment}
+                                </p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    const modalBody = document.getElementById('cancellationDetailsModalBody');
+    if (modalBody) {
+        modalBody.innerHTML = modalContent;
+    }
+}
+
+/**
+ * Close cancellation details modal
+ */
+function closeCancellationDetailsModal() {
+    const modal = document.getElementById('cancellationDetailsModal');
+    if (modal) {
+        const modalContent = modal.querySelector('div > div');
+        if (modalContent) {
+            modalContent.style.transform = 'scale(0.95)';
+        }
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200);
+    }
+}
+
 // Export functions to global scope
 window.loadCancellationsData = loadCancellationsData;
 window.changeCancellationPage = changeCancellationPage;
@@ -1399,4 +1656,6 @@ window.openUploadFormatExampleModal = openUploadFormatExampleModal;
 window.closeUploadFormatExampleModal = closeUploadFormatExampleModal;
 window.handleUploadFormat = handleUploadFormat;
 window.handleUploadFormatExample = handleUploadFormatExample;
+window.openCancellationDetailsModal = openCancellationDetailsModal;
+window.closeCancellationDetailsModal = closeCancellationDetailsModal;
 

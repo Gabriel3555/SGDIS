@@ -645,6 +645,28 @@
     </div>
 </div>
 
+<!-- Cancellation Details Modal -->
+<div id="cancellationDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden transform transition-transform duration-200" style="transform: scale(0.95);">
+        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl z-10">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
+                <i class="fas fa-eye mr-3 text-indigo-600 dark:text-indigo-400"></i>
+                Detalles de la Baja
+            </h2>
+            <button onclick="closeCancellationDetailsModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6 overflow-y-auto max-h-[calc(90vh-80px)] custom-scrollbar" id="cancellationDetailsModalBody">
+            <!-- Content will be populated by JavaScript -->
+            <div class="flex items-center justify-center py-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-700"></div>
+                <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-[#00AF00] absolute"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Upload Format Modal -->
 <div id="uploadFormatModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full transform transition-all duration-300 scale-95">
@@ -1246,6 +1268,37 @@
     .stat-card:has(.custom-select.open) {
         z-index: 9998 !important;
         position: relative;
+    }
+
+    /* Custom Scrollbar Styles */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .dark .custom-scrollbar::-webkit-scrollbar-track {
+        background: #374151;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #6b7280;
+    }
+
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
     }
 </style>
 
