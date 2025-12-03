@@ -30,7 +30,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -45,9 +47,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -527,13 +531,85 @@ public class CancellationController {
     public ResponseEntity<Resource> downloadFormatTemplate() {
         try {
             String filename = "GIL-F-011FormatoConceptoTecnicodeBienes.xlsx";
-            Path filePath = Paths.get("uploads", "cancellation", "formats", filename);
+            // Usar la misma estrategia que FileUploadService para mantener consistencia
+            Path rootLocation = Paths.get("uploads");
+            Path formatsDir = rootLocation.resolve("cancellation").resolve("formats");
+            Path filePath = formatsDir.resolve(filename);
             
+            // Obtener la ruta absoluta para logging y verificación
+            Path absolutePath = filePath.toAbsolutePath();
+            
+            // Verificar si el archivo existe en uploads
             if (!Files.exists(filePath)) {
-                return ResponseEntity.notFound().build();
+                // Crear el directorio si no existe
+                if (!Files.exists(formatsDir)) {
+                    Files.createDirectories(formatsDir);
+                }
+                
+                // Intentar copiar el archivo desde los recursos del JAR si existe
+                try {
+                    ClassPathResource classPathResource = new ClassPathResource("templates/" + filename);
+                    if (classPathResource.exists()) {
+                        try (InputStream inputStream = classPathResource.getInputStream()) {
+                            Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+                            System.out.println("Format template copied from JAR resources to: " + absolutePath);
+                        }
+                    } else {
+                        // Si no está en templates/, intentar desde la raíz de recursos
+                        ClassPathResource altResource = new ClassPathResource(filename);
+                        if (altResource.exists()) {
+                            try (InputStream inputStream = altResource.getInputStream()) {
+                                Files.copy(inputStream, filePath, StandardCopyOption.REPLACE_EXISTING);
+                                System.out.println("Format template copied from JAR resources to: " + absolutePath);
+                            }
+                        } else {
+                            // Si tampoco existe en recursos, intentar servirlo directamente desde uploads del proyecto
+                            // (útil para desarrollo local)
+                            Path projectUploadsPath = Paths.get(System.getProperty("user.dir"), "uploads", "cancellation", "formats", filename);
+                            if (Files.exists(projectUploadsPath)) {
+                                Files.copy(projectUploadsPath, filePath, StandardCopyOption.REPLACE_EXISTING);
+                                System.out.println("Format template copied from project directory to: " + absolutePath);
+                            } else {
+                                System.err.println("Format template file not found in any location. Searched:");
+                                System.err.println("  - " + absolutePath);
+                                System.err.println("  - classpath:templates/" + filename);
+                                System.err.println("  - classpath:" + filename);
+                                System.err.println("  - " + projectUploadsPath);
+                                return ResponseEntity.notFound().build();
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error copying format template from resources: " + e.getMessage());
+                    // Continuar para intentar servir desde recursos directamente
+                }
             }
             
+            // Intentar servir el archivo desde uploads
             Resource resource = new org.springframework.core.io.FileSystemResource(filePath);
+            
+            // Si el archivo en uploads no es legible, intentar servirlo directamente desde recursos
+            if (!resource.exists() || !resource.isReadable()) {
+                try {
+                    ClassPathResource classPathResource = new ClassPathResource("templates/" + filename);
+                    if (classPathResource.exists() && classPathResource.isReadable()) {
+                        resource = classPathResource;
+                        System.out.println("Serving format template directly from JAR resources");
+                    } else {
+                        ClassPathResource altResource = new ClassPathResource(filename);
+                        if (altResource.exists() && altResource.isReadable()) {
+                            resource = altResource;
+                            System.out.println("Serving format template directly from JAR resources (root)");
+                        } else {
+                            System.err.println("Format template resource is not readable at: " + absolutePath);
+                            return ResponseEntity.notFound().build();
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error accessing format template from resources: " + e.getMessage());
+                    return ResponseEntity.notFound().build();
+                }
+            }
             
             // Codificar el nombre del archivo para evitar problemas con caracteres especiales
             String encodedFilename = java.net.URLEncoder.encode(filename, java.nio.charset.StandardCharsets.UTF_8)
@@ -544,7 +620,12 @@ public class CancellationController {
                     .header(HttpHeaders.CONTENT_DISPOSITION,
                             "attachment; filename=\"" + filename + "\"; filename*=UTF-8''" + encodedFilename)
                     .body(resource);
+        } catch (IOException e) {
+            System.err.println("Error accessing format template file: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         } catch (Exception e) {
+            System.err.println("Unexpected error downloading format template: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
