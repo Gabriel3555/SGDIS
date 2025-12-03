@@ -1,6 +1,15 @@
 function updateVerificationUI() {
     updateStatsCards();
-    updateFilters();
+    // Only update filters if CustomSelects are not initialized, otherwise just populate them
+    if (verificationRegionalCustomSelect || verificationInstitutionCustomSelect || verificationInventoryCustomSelect) {
+        // CustomSelects are already initialized, just populate them with current data
+        if (typeof populateVerificationCustomSelects === 'function') {
+            populateVerificationCustomSelects();
+        }
+    } else {
+        // CustomSelects not initialized, regenerate HTML
+        updateFilters();
+    }
     updateVerificationTable();
     updatePagination();
 }
@@ -343,24 +352,29 @@ function initializeVerificationCustomSelects() {
 
         const institutionSelect = document.getElementById('verificationInstitutionFilterSelect');
         if (institutionSelect && !verificationInstitutionCustomSelect) {
-            try {
-                verificationInstitutionCustomSelect = new CustomSelect('verificationInstitutionFilterSelect', {
-                    placeholder: 'Todos los centros',
-                    disabled: !verificationData.selectedRegional,
-                    onChange: (option) => {
-                        const value = option.value || '';
+            verificationInstitutionCustomSelect = new CustomSelect('verificationInstitutionFilterSelect', {
+                placeholder: 'Todos los centros',
+                disabled: !verificationData.selectedRegional,
+                onChange: (option) => {
+                    const value = option.value || '';
+                    document.getElementById('institutionFilter').value = value;
+                    setInstitutionFilter(value);
+                }
+            });
+            
+            // Restore selected value if it exists after initialization
+            if (verificationData.selectedInstitution) {
+                setTimeout(() => {
+                    const selectedValue = verificationData.selectedInstitution.toString();
+                    if (verificationInstitutionCustomSelect && verificationInstitutionCustomSelect.setValue) {
+                        verificationInstitutionCustomSelect.setValue(selectedValue);
+                        // Also update the hidden input directly to ensure it's synchronized
                         const hiddenInput = document.getElementById('institutionFilter');
                         if (hiddenInput) {
-                            hiddenInput.value = value;
-                        }
-                        // Prevent loop: only call setInstitutionFilter if value actually changed
-                        if (verificationData.selectedInstitution !== value) {
-                            setInstitutionFilter(value);
+                            hiddenInput.value = selectedValue;
                         }
                     }
-                });
-            } catch (e) {
-                console.error('Error initializing institution CustomSelect:', e);
+                }, 150);
             }
         }
     }
@@ -393,9 +407,22 @@ function initializeVerificationCustomSelects() {
     populateVerificationCustomSelects();
 }
 
+// Flag to prevent multiple simultaneous calls to populateVerificationCustomSelects
+let isPopulatingVerificationSelects = false;
+
 function populateVerificationCustomSelects() {
+    // Prevent multiple simultaneous calls
+    if (isPopulatingVerificationSelects) {
+        return;
+    }
+    
+    isPopulatingVerificationSelects = true;
+    
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+
+    // CRITICAL: Preserve the selected institution value BEFORE any operations
+    const preservedInstitutionValue = verificationData.selectedInstitution ? verificationData.selectedInstitution.toString() : '';
 
     // Populate Regional Filter
     if (isSuperAdmin && verificationRegionalCustomSelect) {
@@ -431,97 +458,163 @@ function populateVerificationCustomSelects() {
 
     // Populate Institution Filter
     if (isSuperAdmin && verificationInstitutionCustomSelect) {
-        try {
-            if (!verificationData.selectedRegional) {
-                verificationInstitutionCustomSelect.setDisabled(true);
-                verificationInstitutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
-                verificationInstitutionCustomSelect.clear();
-            } else {
-                verificationInstitutionCustomSelect.setDisabled(false);
-                const institutions = verificationData.institutions || [];
-                const options = [
-                    { value: '', label: 'Todos los centros' },
-                    ...institutions.map(institution => ({
-                        value: (institution.institutionId || institution.id).toString(),
-                        label: institution.name || `Centro ${institution.institutionId || institution.id}`
-                    }))
-                ];
-                
-                // Only set options if we have data or at least the "all" option
-                if (options.length > 0) {
-                    verificationInstitutionCustomSelect.setOptions(options);
-                    
-                    if (verificationData.selectedInstitution) {
-                        const selectedOption = options.find(opt => opt.value === verificationData.selectedInstitution.toString());
-                        if (selectedOption) {
-                            verificationInstitutionCustomSelect.selectOption(selectedOption);
-                        } else {
-                            verificationInstitutionCustomSelect.clear();
+        if (!verificationData.selectedRegional) {
+            verificationInstitutionCustomSelect.setDisabled(true);
+            verificationInstitutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
+            verificationInstitutionCustomSelect.clear();
+            // Also clear the hidden input
+            const hiddenInput = document.getElementById('institutionFilter');
+            if (hiddenInput) {
+                hiddenInput.value = '';
+            }
+            // Clear the preserved value since no regional is selected
+            verificationData.selectedInstitution = '';
+        } else {
+            verificationInstitutionCustomSelect.setDisabled(false);
+            const options = [
+                { value: '', label: 'Todos los centros' },
+                ...(verificationData.institutions || []).map(institution => ({
+                    value: (institution.institutionId || institution.id).toString(),
+                    label: institution.name
+                }))
+            ];
+            
+            verificationInstitutionCustomSelect.setOptions(options);
+            
+            // Restore selected value after setting options - use preserved value
+            if (preservedInstitutionValue) {
+                // Verify the option exists in the new options list
+                const selectedOption = options.find(opt => opt.value === preservedInstitutionValue);
+                if (selectedOption) {
+                    // Use multiple attempts to ensure the value is set
+                    const setInstitutionValue = () => {
+                        if (verificationInstitutionCustomSelect) {
+                            try {
+                                if (verificationInstitutionCustomSelect.setValue) {
+                                    verificationInstitutionCustomSelect.setValue(preservedInstitutionValue);
+                                } else if (verificationInstitutionCustomSelect.selectOption) {
+                                    verificationInstitutionCustomSelect.selectOption(selectedOption);
+                                }
+                                
+                                // Always update the hidden input directly
+                                const hiddenInput = document.getElementById('institutionFilter');
+                                if (hiddenInput) {
+                                    hiddenInput.value = preservedInstitutionValue;
+                                }
+                                
+                                // Also ensure the CustomSelect's internal hiddenInput is updated
+                                if (verificationInstitutionCustomSelect.hiddenInput) {
+                                    verificationInstitutionCustomSelect.hiddenInput.value = preservedInstitutionValue;
+                                }
+                                
+                                // Ensure verificationData is also updated
+                                verificationData.selectedInstitution = preservedInstitutionValue;
+                            } catch (error) {
+                                console.warn('Error setting institution value:', error);
+                            }
                         }
-                    } else {
-                        verificationInstitutionCustomSelect.clear();
-                    }
+                    };
+                    
+                    // Try immediately
+                    setInstitutionValue();
+                    
+                    // Try again after a short delay to ensure DOM is ready
+                    setTimeout(setInstitutionValue, 50);
+                    setTimeout(setInstitutionValue, 150);
                 } else {
-                    // No institutions available
-                    verificationInstitutionCustomSelect.setOptions([{ value: '', label: 'No hay centros disponibles' }]);
+                    // Option doesn't exist in the new list, clear it
                     verificationInstitutionCustomSelect.clear();
+                    verificationData.selectedInstitution = '';
+                    const hiddenInput = document.getElementById('institutionFilter');
+                    if (hiddenInput) {
+                        hiddenInput.value = '';
+                    }
+                }
+            } else {
+                verificationInstitutionCustomSelect.clear();
+                // Also clear the hidden input
+                const hiddenInput = document.getElementById('institutionFilter');
+                if (hiddenInput) {
+                    hiddenInput.value = '';
                 }
             }
         } catch (e) {
             console.error('Error populating institution CustomSelect:', e);
         }
     }
-
+    
     // Populate Inventory Filter
     if (verificationInventoryCustomSelect) {
-        try {
-            if (isSuperAdmin && !verificationData.selectedInstitution) {
-                verificationInventoryCustomSelect.setDisabled(true);
-            } else {
-                verificationInventoryCustomSelect.setDisabled(false);
-            }
+        if (isSuperAdmin && !verificationData.selectedInstitution) {
+            verificationInventoryCustomSelect.setDisabled(true);
+        } else {
+            verificationInventoryCustomSelect.setDisabled(false);
+        }
 
-            const inventories = verificationData.inventories || [];
-            const options = [
-                { value: 'all', label: 'Todos los Inventarios' },
-                ...inventories.map(inv => ({
-                    value: inv.id.toString(),
-                    label: inv.name || `Inventario ${inv.id}`
-                }))
-            ];
+        const options = [
+            { value: 'all', label: 'Todos los Inventarios' },
+            ...(verificationData.inventories || []).map(inv => ({
+                value: inv.id.toString(),
+                label: inv.name || `Inventario ${inv.id}`
+            }))
+        ];
+        verificationInventoryCustomSelect.setOptions(options);
+        
+        // Restore selected value - check if dropdown is open first
+        const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
+        const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
+        
+        if (selectedOption) {
+            // Check if dropdown is currently open
+            const isOpen = verificationInventoryCustomSelect.container && 
+                          (verificationInventoryCustomSelect.container.classList.contains('open') || 
+                           verificationInventoryCustomSelect.container.classList.contains('active'));
             
-            // Only set options if we have data or at least the "all" option
-            if (options.length > 0) {
-                verificationInventoryCustomSelect.setOptions(options);
+            if (isOpen) {
+                // If dropdown is open, update the value without closing it
+                verificationInventoryCustomSelect.selectedValue = selectedOption.value;
+                verificationInventoryCustomSelect.selectedText = selectedOption.label;
                 
-                if (verificationData.selectedInventory && verificationData.selectedInventory !== 'all') {
-                    const selectedOption = options.find(opt => opt.value === verificationData.selectedInventory.toString());
-                    if (selectedOption) {
-                        verificationInventoryCustomSelect.selectOption(selectedOption);
-                    } else {
-                        // Selected inventory no longer exists, select "all"
-                        const allOption = options.find(opt => opt.value === 'all');
-                        if (allOption) {
-                            verificationInventoryCustomSelect.selectOption(allOption);
-                        }
-                    }
-                } else {
-                    // Select "all" option
-                    const allOption = options.find(opt => opt.value === 'all');
-                    if (allOption) {
-                        verificationInventoryCustomSelect.selectOption(allOption);
-                    }
+                // Update the text element without closing
+                if (verificationInventoryCustomSelect.textElement) {
+                    verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
+                    verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
                 }
+                
+                // Update hidden input
+                const hiddenInput = document.getElementById('inventoryFilter');
+                if (hiddenInput) {
+                    hiddenInput.value = selectedOption.value;
+                }
+                if (verificationInventoryCustomSelect.hiddenInput) {
+                    verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
+                }
+                
+                // Mark the option as selected in the rendered options
+                const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
+                optionElements.forEach(el => {
+                    el.classList.remove('selected');
+                    if (el.dataset.value === selectedOption.value) {
+                        el.classList.add('selected');
+                    }
+                });
             } else {
-                // No inventories available
-                verificationInventoryCustomSelect.setOptions([{ value: 'all', label: 'No hay inventarios disponibles' }]);
-                const allOption = { value: 'all', label: 'No hay inventarios disponibles' };
-                verificationInventoryCustomSelect.selectOption(allOption);
+                // If dropdown is closed, use setValue normally
+                if (verificationInventoryCustomSelect.setValue) {
+                    verificationInventoryCustomSelect.setValue(selectedInventoryValue);
+                } else if (verificationInventoryCustomSelect.selectOption) {
+                    verificationInventoryCustomSelect.selectOption(selectedOption);
+                }
             }
         } catch (e) {
             console.error('Error populating inventory CustomSelect:', e);
         }
     }
+    
+    // Reset the flag after a short delay
+    setTimeout(() => {
+        isPopulatingVerificationSelects = false;
+    }, 200);
 }
 
 function updateVerificationTable() {

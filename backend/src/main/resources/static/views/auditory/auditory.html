@@ -196,10 +196,21 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Regional
                         </label>
-                        <select id="filterRegional" onchange="onRegionalChange()"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#00AF00] focus:border-transparent">
-                            <option value="">Todas las regionales</option>
-                        </select>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="auditoryRegionalFilterSelect">
+                                <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                                    <span class="custom-select-text custom-select-placeholder">Todas las regionales</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                    <div class="custom-select-options" id="auditoryRegionalFilterOptions">
+                                        <div class="custom-select-option selected" data-value="">Todas las regionales</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="filterRegional" value="">
+                        </div>
                     </div>
 
                     <!-- Institution Filter -->
@@ -207,10 +218,21 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Centro
                         </label>
-                        <select id="filterInstitution" onchange="onInstitutionChange()"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#00AF00] focus:border-transparent">
-                            <option value="">Todos los centros</option>
-                        </select>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="auditoryInstitutionFilterSelect">
+                                <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                                    <span class="custom-select-text custom-select-placeholder">Todos los centros</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar centro...">
+                                    <div class="custom-select-options" id="auditoryInstitutionFilterOptions">
+                                        <div class="custom-select-option selected" data-value="">Todos los centros</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="filterInstitution" value="">
+                        </div>
                     </div>
 
                     <!-- User Filter -->
@@ -218,10 +240,21 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Usuario
                         </label>
-                        <select id="filterUser" onchange="applyFilters()"
-                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#00AF00] focus:border-transparent">
-                            <option value="">Todos los usuarios</option>
-                        </select>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="auditoryUserFilterSelect">
+                                <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                                    <span class="custom-select-text custom-select-placeholder">Todos los usuarios</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
+                                    <div class="custom-select-options" id="auditoryUserFilterOptions">
+                                        <div class="custom-select-option selected" data-value="">Todos los usuarios</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <input type="hidden" id="filterUser" value="">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -263,6 +296,7 @@
     <!-- Token Auto-Refresh Script -->
     <script src="../../js/token-refresh.js"></script>
     <script src="../../js/dashboard.js"></script>
+    <script src="../../js/users/users-modals.js"></script>
     <script src="../../js/auditory/auditory.js"></script>
     <script src="../../js/notifications-bell.js"></script>
 
@@ -308,6 +342,132 @@
 
         .dark th {
             color: #d1d5db;
+        }
+
+        /* Fix para dropdowns de filtros en la página de auditoría */
+        #filtersSection .custom-select-container {
+            position: relative !important;
+            overflow: visible !important;
+            z-index: 1;
+        }
+
+        #filtersSection .custom-select-container.select-open,
+        #filtersSection .custom-select.open {
+            z-index: 999999 !important;
+            position: relative;
+            isolation: isolate;
+        }
+
+        /* Dropdowns de filtros - usar fixed positioning con z-index muy alto */
+        #filtersSection .custom-select-dropdown {
+            position: fixed !important;
+            z-index: 999999 !important;
+            background: white !important;
+            border: 2px solid #00AF00;
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-height: 250px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            min-width: 200px;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            transform: none !important;
+            inset: auto !important;
+            isolation: isolate !important;
+        }
+
+        .dark #filtersSection .custom-select-dropdown {
+            background-color: #1f2937 !important;
+            border-color: #00AF00;
+        }
+
+        #filtersSection .custom-select.open .custom-select-dropdown {
+            display: block !important;
+        }
+
+        /* Dropdown abriendo hacia arriba en filtros */
+        #filtersSection .custom-select.dropdown-up .custom-select-dropdown {
+            border-top: 2px solid #00AF00;
+            border-bottom: none;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark #filtersSection .custom-select.dropdown-up .custom-select-dropdown {
+            border-top-color: #00AF00;
+        }
+
+        /* Asegurar que el contenedor de filtros no corte los dropdowns */
+        #filtersSection {
+            overflow: visible !important;
+            position: relative;
+            z-index: 10;
+        }
+
+        #filtersSection > div {
+            overflow: visible !important;
+        }
+
+        /* Asegurar que el contenedor de la tabla no interfiera */
+        .stat-card > .overflow-x-auto {
+            position: relative;
+            z-index: 1 !important;
+            isolation: auto;
+        }
+
+        /* Asegurar que la tabla misma no tenga z-index alto */
+        .stat-card table {
+            position: relative;
+            z-index: 1 !important;
+        }
+
+        /* Asegurar que todos los elementos de la tabla estén por debajo */
+        .stat-card table * {
+            position: relative;
+            z-index: 1 !important;
+        }
+
+        /* Asegurar que la tabla tenga un z-index menor que los dropdowns */
+        .stat-card {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Asegurar que la tabla y sus elementos no interfieran con los dropdowns */
+        .stat-card table,
+        .stat-card table tbody,
+        .stat-card table tr,
+        .stat-card table td,
+        .stat-card table th {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Asegurar que las imágenes en la tabla no aparezcan sobre los dropdowns */
+        .stat-card table img {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Asegurar que el contenedor de opciones tenga el z-index más alto */
+        #filtersSection .custom-select-options {
+            position: relative;
+            z-index: 999999 !important;
+        }
+
+        /* Asegurar que todos los elementos del dropdown estén por encima */
+        #filtersSection .custom-select.open .custom-select-dropdown,
+        #filtersSection .custom-select.open .custom-select-options,
+        #filtersSection .custom-select.open .custom-select-option {
+            position: relative;
+            z-index: 999999 !important;
         }
     </style>
 

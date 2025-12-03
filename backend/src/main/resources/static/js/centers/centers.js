@@ -678,27 +678,23 @@ function renderCenters() {
     const currentPageCenters = centersData.slice(startIndex, endIndex);
 
     let html = `
-        <div>
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Centros del Sistema</h2>
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead>
-                        <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">ID</th>
-                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Nombre</th>
-                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Código</th>
-                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Regional</th>
-                            <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Ciudad</th>
-                            <th class="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Nombre</th>
+                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Código</th>
+                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Regional</th>
+                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Ciudad</th>
+                        <th class="text-right py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
     `;
 
     currentPageCenters.forEach(center => {
         html += `
             <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.institutionId || center.id || '-'}</td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.name || '-'}</td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.codeInstitution || '-'}</td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.regionalName || '-'}</td>
