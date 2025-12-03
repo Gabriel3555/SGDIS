@@ -412,15 +412,12 @@ function updateTransfersTable() {
             <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <td class="py-3 px-4">
                     <div class="font-medium text-gray-900 dark:text-gray-100">${transfer.itemName || 'N/A'}</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">ID: ${transfer.itemId || 'N/A'}</div>
                 </td>
                 <td class="py-3 px-4">
                     <div class="text-sm text-gray-900 dark:text-gray-100">${transfer.sourceInventoryName || 'N/A'}</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">ID: ${transfer.sourceInventoryId || 'N/A'}</div>
                 </td>
                 <td class="py-3 px-4">
                     <div class="text-sm text-gray-900 dark:text-gray-100">${transfer.destinationInventoryName || 'N/A'}</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">ID: ${transfer.destinationInventoryId || 'N/A'}</div>
                 </td>
                 <td class="py-3 px-4">
                     ${statusBadge}
@@ -500,7 +497,6 @@ function updateTransfersCards() {
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
                         <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-1">${transfer.itemName || 'N/A'}</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">ID Item: ${transfer.itemId || 'N/A'}</p>
                     </div>
                     ${statusBadge}
                 </div>

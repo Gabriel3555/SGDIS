@@ -39,7 +39,7 @@ async function filterUsers() {
     }
     const data = window.usersData;
     
-    // Check if filters are active (including regional and institution for super admin)
+    // Check if filters are active (including regional and institution for super admin and admin regional)
     const isSuperAdmin = (data.currentLoggedInUserRole && data.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
     const isAdminRegional = (data.currentLoggedInUserRole && data.currentLoggedInUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
@@ -47,7 +47,8 @@ async function filterUsers() {
     const hasFilters = data.searchTerm || 
                       data.selectedRole !== 'all' || 
                       data.selectedStatus !== 'all' ||
-                      (isSuperAdmin && (data.selectedRegional || data.selectedInstitution));
+                      (isSuperAdmin && (data.selectedRegional || data.selectedInstitution)) ||
+                      (isAdminRegional && data.selectedInstitution);
     
     if (hasFilters) {
         // Reload all users for filtering
@@ -148,8 +149,52 @@ async function filterUsers() {
 
             // Filter by institution (super admin and admin regional)
             if ((isSuperAdmin || isAdminRegional) && data.selectedInstitution) {
-                // Use cached institutions or load them
-                const allInstitutions = institutionsCache || await loadInstitutionsCache();
+                let allInstitutions = [];
+                
+                if (isAdminRegional) {
+                    // For Admin Regional, load institutions from their regional
+                    try {
+                        const token = localStorage.getItem('jwt');
+                        const headers = { 'Content-Type': 'application/json' };
+                        if (token) headers['Authorization'] = `Bearer ${token}`;
+                        
+                        // Get current user info to find their regional
+                        const currentUser = window.currentUserData || window.usersData?.currentLoggedInUser || null;
+                        let institutionName = null;
+                        
+                        if (currentUser && currentUser.institution) {
+                            institutionName = currentUser.institution;
+                        } else {
+                            const userResponse = await fetch('/api/v1/users/me', { headers });
+                            if (userResponse.ok) {
+                                const userData = await userResponse.json();
+                                institutionName = userData.institution;
+                            }
+                        }
+                        
+                        if (institutionName) {
+                            // Get all institutions to find the user's institution
+                            const allInstResponse = await fetch('/api/v1/institutions', { headers });
+                            if (allInstResponse.ok) {
+                                const allInst = await allInstResponse.json();
+                                const userInstitution = allInst.find(inst => inst.name === institutionName);
+                                
+                                if (userInstitution && userInstitution.regionalId) {
+                                    // Load institutions from the user's regional
+                                    const regionalInstResponse = await fetch(`/api/v1/institutions/institutionsByRegionalId/${userInstitution.regionalId}`, { headers });
+                                    if (regionalInstResponse.ok) {
+                                        allInstitutions = await regionalInstResponse.json();
+                                    }
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error loading institutions for admin regional filter:', error);
+                    }
+                } else {
+                    // For SuperAdmin, use cached institutions
+                    allInstitutions = institutionsCache || await loadInstitutionsCache();
+                }
                 
                 if (allInstitutions && Array.isArray(allInstitutions) && allInstitutions.length > 0) {
                     const selectedInstitution = allInstitutions.find(inst => 

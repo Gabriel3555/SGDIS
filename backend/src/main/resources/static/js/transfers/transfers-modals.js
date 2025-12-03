@@ -641,7 +641,6 @@ function populateViewTransferModal(transfer) {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item</label>
                     <p class="text-gray-900 dark:text-gray-100 font-semibold">${transfer.itemName || 'N/A'}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: ${transfer.itemId || 'N/A'}</p>
                 </div>
                 
                 <div>
@@ -652,19 +651,16 @@ function populateViewTransferModal(transfer) {
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario Origen</label>
                     <p class="text-gray-900 dark:text-gray-100">${transfer.sourceInventoryName || 'N/A'}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: ${transfer.sourceInventoryId || 'N/A'}</p>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario Destino</label>
                     <p class="text-gray-900 dark:text-gray-100">${transfer.destinationInventoryName || 'N/A'}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: ${transfer.destinationInventoryId || 'N/A'}</p>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Solicitado por</label>
                     <p class="text-gray-900 dark:text-gray-100">${transfer.requestedByName || 'N/A'}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: ${transfer.requestedById || 'N/A'}</p>
                 </div>
                 
                 <div>
@@ -676,7 +672,6 @@ function populateViewTransferModal(transfer) {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Aprobado por</label>
                         <p class="text-gray-900 dark:text-gray-100">${transfer.approvedByName}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: ${transfer.approvedById || 'N/A'}</p>
                     </div>
                     
                     <div>
@@ -689,7 +684,6 @@ function populateViewTransferModal(transfer) {
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rechazado por</label>
                         <p class="text-gray-900 dark:text-gray-100">${transfer.rejectedByName}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ID: ${transfer.rejectedById || 'N/A'}</p>
                     </div>
                     
                     <div>

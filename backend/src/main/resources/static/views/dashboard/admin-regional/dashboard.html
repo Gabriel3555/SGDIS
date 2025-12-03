@@ -849,59 +849,91 @@
         // Load inventory statistics for regional
         async function loadInventoryStatistics(headers) {
             try {
+                // Use the dedicated statistics endpoint for better performance
+                const statsResponse = await fetch(`/api/v1/inventory/regional/statistics`, { headers });
+                if (statsResponse.ok) {
+                    const statsData = await statsResponse.json();
+                    console.log('Inventory statistics from endpoint:', statsData);
+                    
+                    // Store statistics directly from the endpoint
+                    adminRegionalDashboardData.inventoryStats = {
+                        totalInventories: statsData.totalInventories || 0,
+                        activeInventories: statsData.activeInventories || 0,
+                        inactiveInventories: statsData.inactiveInventories || 0,
+                        totalItems: statsData.totalItems || 0,
+                        totalValue: statsData.totalValue || 0.0
+                    };
+                } else {
+                    console.warn('Failed to load inventory statistics from endpoint, falling back to calculation');
+                    // Fallback: load inventories and calculate (for charts)
+                    await loadInventoriesForCharts(headers);
+                }
+                
+                // Also load inventories for chart calculations (with smaller page size)
+                await loadInventoriesForCharts(headers);
+            } catch (error) {
+                console.error('Error loading inventory statistics:', error);
+                // Fallback: try to load inventories for charts
+                try {
+                    await loadInventoriesForCharts(headers);
+                } catch (fallbackError) {
+                    console.error('Error in fallback inventory loading:', fallbackError);
+                }
+            }
+        }
+        
+        // Load inventories for chart calculations (separate from statistics)
+        async function loadInventoriesForCharts(headers) {
+            try {
                 const regionalId = adminRegionalDashboardData.currentUserRegionalId;
-                const response = await fetch(`/api/v1/inventory/regionalAdminInventories/${regionalId}?page=0&size=10000`, { headers });
+                if (!regionalId) {
+                    console.warn('No regional ID available for loading inventories');
+                    return;
+                }
+                
+                const response = await fetch(`/api/v1/inventory/regionalAdminInventories/${regionalId}?page=0&size=1000`, { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Inventory statistics response:', data);
                     
                     // Handle both paginated response (Page) and direct array
                     let inventories = [];
                     if (Array.isArray(data)) {
                         inventories = data;
                     } else if (data && Array.isArray(data.content)) {
-                        // Spring Page response has 'content' property
                         inventories = data.content;
-                    } else if (data && typeof data === 'object') {
-                        // Try to extract array from response
-                        inventories = [];
                     }
                     
-                    console.log('Extracted inventories:', inventories.length);
-                    
-                    // Store all inventories for chart calculations
+                    // Store inventories for chart calculations
                     adminRegionalDashboardData.allInventories = inventories;
                     
-                    // Calculate statistics
-                    const totalInventories = inventories.length;
-                    const activeInventories = inventories.filter(inv => inv.status === true || inv.status === 'ACTIVE').length;
-                    const inactiveInventories = totalInventories - activeInventories;
-                    
-                    // Calculate total items and value
-                    // Use quantityItems and totalPrice from InventoryResponse
-                    let totalItems = 0;
-                    let totalValue = 0;
-                    inventories.forEach(inv => {
-                        // Use quantityItems from InventoryResponse
-                        if (inv.quantityItems) {
-                            totalItems += parseInt(inv.quantityItems) || 0;
-                        }
-                        // Use totalPrice from InventoryResponse
-                        if (inv.totalPrice) {
-                            totalValue += parseFloat(inv.totalPrice) || 0;
-                        }
-                    });
+                    // If statistics weren't loaded from endpoint, calculate from inventories
+                    if (!adminRegionalDashboardData.inventoryStats) {
+                        const totalInventories = inventories.length;
+                        const activeInventories = inventories.filter(inv => inv.status === true || inv.status === 'ACTIVE').length;
+                        const inactiveInventories = totalInventories - activeInventories;
+                        
+                        let totalItems = 0;
+                        let totalValue = 0;
+                        inventories.forEach(inv => {
+                            if (inv.quantityItems) {
+                                totalItems += parseInt(inv.quantityItems) || 0;
+                            }
+                            if (inv.totalPrice) {
+                                totalValue += parseFloat(inv.totalPrice) || 0;
+                            }
+                        });
 
-                    adminRegionalDashboardData.inventoryStats = {
-                        totalInventories,
-                        activeInventories,
-                        inactiveInventories,
-                        totalItems,
-                        totalValue
-                    };
+                        adminRegionalDashboardData.inventoryStats = {
+                            totalInventories,
+                            activeInventories,
+                            inactiveInventories,
+                            totalItems,
+                            totalValue
+                        };
+                    }
                 }
             } catch (error) {
-                console.error('Error loading inventory statistics:', error);
+                console.error('Error loading inventories for charts:', error);
             }
         }
 
