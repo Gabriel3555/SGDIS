@@ -631,6 +631,235 @@ function closeDeleteInventoryModal() {
   inventoryData.currentInventoryId = null;
 }
 
+// Show modal to remove roles (managers/signatories) - dedicated modal
+function showRemoveRoleModal(inventoryId) {
+  if (!inventoryId) {
+    showErrorToast("Error", "ID de inventario no válido");
+    return;
+  }
+
+  // Set current inventory ID
+  inventoryData.currentInventoryId = inventoryId;
+
+  // Get inventory name for display
+  const inventory = inventoryData.inventories.find((inv) => inv.id == inventoryId);
+  const inventoryName = inventory ? inventory.name : "Inventario";
+
+  const inventoryNameElement = document.getElementById("removeRoleInventoryName");
+  const inventoryIdElement = document.getElementById("removeRoleInventoryIdDisplay");
+
+  if (inventoryNameElement) {
+    inventoryNameElement.textContent = inventoryName;
+  }
+
+  if (inventoryIdElement) {
+    inventoryIdElement.textContent = inventoryId;
+  }
+
+  // Reset delete role selection
+  resetRemoveRoleSelection();
+
+  const modal = document.getElementById("removeRoleModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    
+    // Destroy existing CustomSelect instance if it exists
+    if (window.removeRoleUserSelect) {
+      try {
+        // Remove event listeners if there's a cleanup method
+        if (window.removeRoleUserSelect.destroy) {
+          window.removeRoleUserSelect.destroy();
+        }
+      } catch (error) {
+        console.warn("Error destroying existing CustomSelect:", error);
+      }
+      window.removeRoleUserSelect = null;
+    }
+    
+    // Initialize CustomSelect when modal is shown (wait a bit for DOM to be ready)
+    setTimeout(() => {
+      const selectElement = document.getElementById("removeRoleUserIdSelect");
+      if (selectElement) {
+        try {
+          const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+          if (!CustomSelectClass) {
+            console.error("CustomSelect class not available");
+            return;
+          }
+          
+          window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
+            placeholder: "Seleccionar usuario...",
+            searchable: true,
+          });
+        } catch (error) {
+          console.error("Error initializing CustomSelect for remove role modal:", error);
+        }
+      }
+    }, 150);
+  }
+}
+
+function closeRemoveRoleModal() {
+  const modal = document.getElementById("removeRoleModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+
+  // Reset delete role selection
+  resetRemoveRoleSelection();
+
+  // Clear remove role user select
+  if (window.removeRoleUserSelect) {
+    try {
+      window.removeRoleUserSelect.clear();
+    } catch (error) {
+      console.warn("Error clearing removeRoleUserSelect:", error);
+    }
+  }
+
+  inventoryData.currentInventoryId = null;
+}
+
+// Reset remove role selection (reuse same logic as delete role)
+function resetRemoveRoleSelection() {
+  const managerBtn = document.getElementById("removeManagerRoleBtn");
+  const signatoryBtn = document.getElementById("removeSignatoryRoleBtn");
+  const userSection = document.getElementById("removeRoleUserSection");
+  const roleDescription = document.getElementById("removeRoleDescription");
+
+  // Remove selected class from both buttons
+  if (managerBtn) {
+    managerBtn.classList.remove(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    managerBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+  if (signatoryBtn) {
+    signatoryBtn.classList.remove(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    signatoryBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+
+  // Hide user section
+  if (userSection) {
+    userSection.classList.add("hidden");
+  }
+
+  // Reset description
+  if (roleDescription) {
+    roleDescription.textContent =
+      "Selecciona el usuario al que se le quitará el rol";
+  }
+
+  // Clear selected role
+  window.selectedDeleteRole = null;
+}
+
+// Select role to remove (reuse same logic)
+async function selectRemoveRole(role) {
+  const managerBtn = document.getElementById("removeManagerRoleBtn");
+  const signatoryBtn = document.getElementById("removeSignatoryRoleBtn");
+  const userSection = document.getElementById("removeRoleUserSection");
+  const roleDescription = document.getElementById("removeRoleDescription");
+
+  // Remove selected class from both buttons
+  if (managerBtn) {
+    managerBtn.classList.remove(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    managerBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+  if (signatoryBtn) {
+    signatoryBtn.classList.remove(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    signatoryBtn.classList.add("border-gray-300", "text-gray-700");
+  }
+
+  // Add selected class to clicked button
+  if (role === "manager" && managerBtn) {
+    managerBtn.classList.remove("border-gray-300", "text-gray-700");
+    managerBtn.classList.add(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    if (roleDescription) {
+      roleDescription.textContent =
+        "Selecciona el manejador que deseas quitar de este inventario";
+    }
+  } else if (role === "signatory" && signatoryBtn) {
+    signatoryBtn.classList.remove("border-gray-300", "text-gray-700");
+    signatoryBtn.classList.add(
+      "border-red-600",
+      "bg-red-50",
+      "text-red-600",
+      "selected"
+    );
+    if (roleDescription) {
+      roleDescription.textContent =
+        "Selecciona el firmante que deseas quitar de este inventario";
+    }
+  }
+
+  // Store selected role
+  window.selectedDeleteRole = role;
+
+  // Show user section and load users for the selected role
+  if (userSection) {
+    userSection.classList.remove("hidden");
+    
+    // Wait a bit for the section to be visible before initializing CustomSelect
+    setTimeout(async () => {
+      // Ensure CustomSelect is initialized for remove role modal
+      const selectElement = document.getElementById("removeRoleUserIdSelect");
+      if (selectElement && !window.removeRoleUserSelect) {
+        try {
+          const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+          if (CustomSelectClass) {
+            window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
+              placeholder: "Seleccionar usuario...",
+              searchable: true,
+            });
+          }
+        } catch (error) {
+          console.error("Error initializing CustomSelect in selectRemoveRole:", error);
+        }
+      }
+      
+      // Load users based on role
+      if (!inventoryData.currentInventoryId) {
+        showErrorToast("Error", "No se ha seleccionado un inventario");
+        return;
+      }
+
+      await loadUsersForRemoveRole(role, inventoryData.currentInventoryId);
+    }, 150);
+  } else {
+    // If section doesn't exist, try loading anyway
+    if (!inventoryData.currentInventoryId) {
+      showErrorToast("Error", "No se ha seleccionado un inventario");
+      return;
+    }
+
+    await loadUsersForRemoveRole(role, inventoryData.currentInventoryId);
+  }
+}
+
 // Delete role selection function
 async function selectDeleteRole(role) {
   const managerBtn = document.getElementById("deleteManagerRoleBtn");
@@ -744,9 +973,25 @@ function resetDeleteRoleSelection() {
   window.selectedDeleteRole = null;
 }
 
-// Load users for delete role
-async function loadUsersForDeleteRole(role, inventoryId) {
-  showDeleteRoleUserSelectLoading();
+// Load users for remove role (dedicated function for remove role modal)
+async function loadUsersForRemoveRole(role, inventoryId) {
+  // Ensure CustomSelect is initialized before loading
+  const selectElement = document.getElementById("removeRoleUserIdSelect");
+  if (selectElement && !window.removeRoleUserSelect) {
+    try {
+      const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+      if (CustomSelectClass) {
+        window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
+          placeholder: "Seleccionar usuario...",
+          searchable: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error initializing CustomSelect in loadUsersForRemoveRole:", error);
+    }
+  }
+  
+  showRemoveRoleUserSelectLoading();
 
   try {
     let users = [];
@@ -773,7 +1018,7 @@ async function loadUsersForDeleteRole(role, inventoryId) {
     }
 
     if (!users || users.length === 0) {
-      populateDeleteRoleUserSelect([]);
+      populateRemoveRoleUserSelect([]);
       showInfoToast(
         "Sin usuarios",
         `No hay ${
@@ -783,10 +1028,10 @@ async function loadUsersForDeleteRole(role, inventoryId) {
       return;
     }
 
-    populateDeleteRoleUserSelect(users);
+    populateRemoveRoleUserSelect(users);
   } catch (error) {
-    console.error("Error loading users for delete role:", error);
-    populateDeleteRoleUserSelect([]);
+    console.error("Error loading users for remove role:", error);
+    populateRemoveRoleUserSelect([]);
     showErrorToast(
       "Error",
       `No se pudieron cargar los ${
@@ -794,18 +1039,149 @@ async function loadUsersForDeleteRole(role, inventoryId) {
       }`
     );
   } finally {
-    hideDeleteRoleUserSelectLoading();
+    hideRemoveRoleUserSelectLoading();
+  }
+}
+
+// Show loading state for remove role user select
+function showRemoveRoleUserSelectLoading() {
+  if (!window.removeRoleUserSelect) {
+    const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+    if (CustomSelectClass) {
+      try {
+        window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
+          placeholder: "Cargando usuarios...",
+          searchable: true,
+        });
+      } catch (error) {
+        console.error("Error initializing CustomSelect for loading state:", error);
+        return;
+      }
+    }
+  }
+  if (window.removeRoleUserSelect) {
+    window.removeRoleUserSelect.setOptions([
+      { value: "", label: "Cargando usuarios...", disabled: true },
+    ]);
+  }
+}
+
+// Hide loading state for remove role user select
+function hideRemoveRoleUserSelectLoading() {
+  // Loading state is cleared when populateRemoveRoleUserSelect is called
+}
+
+// Populate remove role user select
+function populateRemoveRoleUserSelect(users) {
+  // Initialize CustomSelect if not already done
+  const selectElement = document.getElementById("removeRoleUserIdSelect");
+  if (!selectElement) {
+    console.error("CustomSelect element not found: removeRoleUserIdSelect");
+    return;
+  }
+  
+  if (!window.removeRoleUserSelect) {
+    try {
+      const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+      if (CustomSelectClass) {
+        window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
+          placeholder: "Seleccionar usuario...",
+          searchable: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error initializing CustomSelect:", error);
+      // Try to reinitialize
+      setTimeout(() => {
+        try {
+          const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+          if (CustomSelectClass) {
+            window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
+              placeholder: "Seleccionar usuario...",
+              searchable: true,
+            });
+            // Retry populating after initialization
+            populateRemoveRoleUserSelect(users);
+          }
+        } catch (retryError) {
+          console.error("Error retrying CustomSelect initialization:", retryError);
+        }
+      }, 200);
+      return;
+    }
+  }
+
+  // Format users as options
+  const userOptions = [];
+
+  if (users && users.length > 0) {
+    users.forEach((user) => {
+      // Format display name
+      let displayName = "";
+      if (user.fullName && user.fullName.trim()) {
+        displayName = user.fullName;
+      } else if (user.email) {
+        displayName = user.email;
+      } else {
+        displayName = `Usuario ${user.id || "N/A"}`;
+      }
+
+      // Add additional info if available
+      if (user.email && user.fullName) {
+        displayName += ` (${user.email})`;
+      }
+
+      userOptions.push({
+        value: String(user.id),
+        label: displayName,
+      });
+    });
+  } else {
+    // Add no users option (will be shown as disabled in CustomSelect)
+    userOptions.push({
+      value: "",
+      label: "No hay usuarios disponibles",
+      disabled: true,
+    });
+  }
+
+  if (window.removeRoleUserSelect) {
+    window.removeRoleUserSelect.setOptions(userOptions);
   }
 }
 
 // Populate delete role user select
 function populateDeleteRoleUserSelect(users) {
   // Initialize CustomSelect if not already done
+  const selectElement = document.getElementById("deleteRoleUserIdSelect");
+  if (!selectElement) {
+    console.error("CustomSelect element not found: deleteRoleUserIdSelect");
+    return;
+  }
+  
   if (!window.deleteRoleUserSelect) {
-    window.deleteRoleUserSelect = new CustomSelect("deleteRoleUserIdSelect", {
-      placeholder: "Seleccionar usuario...",
-      searchable: true,
-    });
+    try {
+      window.deleteRoleUserSelect = new CustomSelect("deleteRoleUserIdSelect", {
+        placeholder: "Seleccionar usuario...",
+        searchable: true,
+      });
+    } catch (error) {
+      console.error("Error initializing CustomSelect:", error);
+      // Try to reinitialize
+      setTimeout(() => {
+        try {
+          window.deleteRoleUserSelect = new CustomSelect("deleteRoleUserIdSelect", {
+            placeholder: "Seleccionar usuario...",
+            searchable: true,
+          });
+          // Retry populating after initialization
+          populateDeleteRoleUserSelect(users);
+        } catch (retryError) {
+          console.error("Error retrying CustomSelect initialization:", retryError);
+        }
+      }, 200);
+      return;
+    }
   }
 
   // Format users as options
@@ -880,9 +1256,19 @@ async function confirmDeleteRole() {
   }
 
   // Get user ID from CustomSelect or hidden input
+  // Check both modals (delete and remove role)
   let userId = "";
-  if (window.deleteRoleUserSelect && window.deleteRoleUserSelect.getValue) {
+  if (window.removeRoleUserSelect && window.removeRoleUserSelect.getValue) {
+    userId = window.removeRoleUserSelect.getValue();
+  }
+  if (!userId && window.deleteRoleUserSelect && window.deleteRoleUserSelect.getValue) {
     userId = window.deleteRoleUserSelect.getValue();
+  }
+  if (!userId) {
+    const removeRoleUserIdElement = document.getElementById("removeRoleUserId");
+    if (removeRoleUserIdElement && removeRoleUserIdElement.value) {
+      userId = removeRoleUserIdElement.value;
+    }
   }
   if (!userId) {
     const userIdElement = document.getElementById("deleteRoleUserId");
@@ -942,6 +1328,12 @@ async function confirmDeleteRole() {
 
     // Close modal after successful deletion
     closeDeleteInventoryModal();
+    
+    // Also close remove role modal if it's open
+    const removeRoleModal = document.getElementById("removeRoleModal");
+    if (removeRoleModal && !removeRoleModal.classList.contains("hidden")) {
+      closeRemoveRoleModal();
+    }
 
     // Reload inventory data
     await loadInventoryData();
@@ -969,6 +1361,9 @@ async function confirmDeleteRole() {
 // Make selectDeleteRole and confirmDeleteRole available globally
 window.selectDeleteRole = selectDeleteRole;
 window.confirmDeleteRole = confirmDeleteRole;
+window.showRemoveRoleModal = showRemoveRoleModal;
+window.closeRemoveRoleModal = closeRemoveRoleModal;
+window.selectRemoveRole = selectRemoveRole;
 
 async function confirmDeleteInventory() {
   const inventoryId = parseInt(inventoryData.currentInventoryId);
