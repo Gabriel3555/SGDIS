@@ -48,7 +48,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 closeNewVerificationModal();
                 clearNewVerificationEvidence();
-                await loadVerificationData();
+                // Reload verifications - check if we're on admin institution page
+                const path = window.location.pathname || '';
+                const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+                if (isAdminInstitutionPage && typeof loadVerificationsForAdminInstitution === 'function') {
+                    await loadVerificationsForAdminInstitution();
+                } else if (typeof loadVerificationData === 'function') {
+                    await loadVerificationData();
+                }
                 
             } catch (error) {
                 console.error('Error creating verification:', error);
@@ -72,16 +79,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            if (!verificationData.currentVerificationId) {
+            // Check if we're on admin institution page and use the correct data source
+            const path = window.location.pathname || '';
+            const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+            
+            let currentVerificationId;
+            if (isAdminInstitutionPage && typeof verificationDataAdminInstitution !== 'undefined') {
+                currentVerificationId = verificationDataAdminInstitution.currentVerificationId;
+            } else if (typeof verificationData !== 'undefined') {
+                currentVerificationId = verificationData.currentVerificationId;
+            }
+            
+            if (!currentVerificationId) {
                 showErrorToast('Error', 'No se ha seleccionado una verificación');
                 return;
             }
             
             try {
-                await uploadEvidence(verificationData.currentVerificationId, file);
+                await uploadEvidence(currentVerificationId, file);
                 showSuccessToast('Evidencia subida', 'La evidencia se subió correctamente');
                 closeUploadEvidenceModal();
-                await loadVerificationData();
+                
+                // Reload verifications - check if we're on admin institution page
+                if (isAdminInstitutionPage && typeof loadVerificationsForAdminInstitution === 'function') {
+                    await loadVerificationsForAdminInstitution();
+                } else if (typeof loadVerificationData === 'function') {
+                    await loadVerificationData();
+                }
             } catch (error) {
                 console.error('Error uploading evidence:', error);
                 showErrorToast('Error al subir evidencia', error.message || 'Inténtalo de nuevo');

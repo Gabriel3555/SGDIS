@@ -107,7 +107,7 @@ public class UserService implements
 
     @Override
     public UserResponse getUserById(Long id) {
-        UserEntity user = userRepository.findById(id)
+        UserEntity user = userRepository.findByIdWithInstitution(id)
                 .orElseThrow(() -> new UserNotFoundException(id));
         return UserMapper.toResponse(user);
     }
