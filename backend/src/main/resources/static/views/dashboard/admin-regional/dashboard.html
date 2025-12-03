@@ -295,18 +295,18 @@
                     </div>
                 </div>
 
-                <!-- Notificaciones -->
+                <!-- Bajas -->
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-bell text-red-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-times-circle text-orange-600 text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-bold text-gray-800" id="unreadNotifications">-</div>
-                            <div class="text-sm text-gray-600">No leídas</div>
+                            <div class="text-2xl font-bold text-gray-800" id="totalCancellations">-</div>
+                            <div class="text-sm text-gray-600">Bajas</div>
                         </div>
                     </div>
-                    <a href="/admin_regional/notifications" class="text-xs text-blue-600 hover:underline">Ver todas</a>
+                    <a href="/admin_regional/cancellations" class="text-xs text-blue-600 hover:underline">Ver todas</a>
                 </div>
             </div>
 
@@ -828,7 +828,7 @@
                     loadRecentInventories(headers),
                     loadRecentTransfers(headers),
                     loadRecentVerifications(headers),
-                    loadUnreadNotifications(headers),
+                    loadCancellationsCount(headers),
                     loadVerificationCount(headers),
                     loadLoansCount(headers)
                 ]);
@@ -878,16 +878,17 @@
                     const inactiveInventories = totalInventories - activeInventories;
                     
                     // Calculate total items and value
+                    // Use quantityItems and totalPrice from InventoryResponse
                     let totalItems = 0;
                     let totalValue = 0;
                     inventories.forEach(inv => {
-                        if (inv.items) {
-                            totalItems += inv.items.length;
-                            inv.items.forEach(item => {
-                                if (item.value) {
-                                    totalValue += parseFloat(item.value) || 0;
-                                }
-                            });
+                        // Use quantityItems from InventoryResponse
+                        if (inv.quantityItems) {
+                            totalItems += parseInt(inv.quantityItems) || 0;
+                        }
+                        // Use totalPrice from InventoryResponse
+                        if (inv.totalPrice) {
+                            totalValue += parseFloat(inv.totalPrice) || 0;
                         }
                     });
 
@@ -1080,17 +1081,65 @@
             }
         }
 
-        // Load unread notifications count
-        async function loadUnreadNotifications(headers) {
+        // Load cancellations count for regional
+        async function loadCancellationsCount(headers) {
             try {
-                const response = await fetch('/api/v1/notifications/my-notifications/unread/count', { headers });
+                const regionalId = adminRegionalDashboardData.currentUserRegionalId;
+                if (!regionalId) {
+                    console.warn('No regional ID available for cancellations count');
+                    const totalCancellationsEl = document.getElementById('totalCancellations');
+                    if (totalCancellationsEl) {
+                        totalCancellationsEl.textContent = '0';
+                    }
+                    return;
+                }
+                
+                console.log('Loading cancellations count for regional:', regionalId);
+                
+                // Load cancellations - the backend should filter by regional for ADMIN_REGIONAL
+                const response = await fetch(`/api/v1/cancellations?page=0&size=10000`, { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('unreadNotifications').textContent = data.count || 0;
+                    console.log('Cancellations response:', data);
+                    
+                    let cancellations = [];
+                    let totalElements = 0;
+                    
+                    if (Array.isArray(data)) {
+                        cancellations = data;
+                        totalElements = data.length;
+                    } else if (data && Array.isArray(data.content)) {
+                        cancellations = data.content;
+                        totalElements = data.totalElements || data.content.length;
+                    } else if (data && data.totalElements !== undefined) {
+                        // If it's a page object but content is missing, use totalElements
+                        totalElements = data.totalElements;
+                    }
+                    
+                    console.log('Total cancellations found:', totalElements, 'Array length:', cancellations.length);
+                    
+                    // For ADMIN_REGIONAL, the backend should already filter by regional
+                    // So we can use the totalElements or count from the response
+                    const count = totalElements > 0 ? totalElements : cancellations.length;
+                    
+                    const totalCancellationsEl = document.getElementById('totalCancellations');
+                    if (totalCancellationsEl) {
+                        totalCancellationsEl.textContent = count || 0;
+                        console.log('Set totalCancellations to:', count);
+                    }
+                } else {
+                    console.error('Failed to load cancellations, status:', response.status);
+                    const totalCancellationsEl = document.getElementById('totalCancellations');
+                    if (totalCancellationsEl) {
+                        totalCancellationsEl.textContent = '0';
+                    }
                 }
             } catch (error) {
-                console.error('Error loading unread notifications:', error);
-                document.getElementById('unreadNotifications').textContent = '0';
+                console.error('Error loading cancellations count:', error);
+                const totalCancellationsEl = document.getElementById('totalCancellations');
+                if (totalCancellationsEl) {
+                    totalCancellationsEl.textContent = '0';
+                }
             }
         }
 
