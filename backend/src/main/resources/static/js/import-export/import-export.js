@@ -6,10 +6,56 @@ let inventories = {};
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    loadRegionals();
-    setupEventListeners();
-    setupModeToggle();
+    // Check if we're on admin_institution import-export page
+    const path = window.location.pathname || '';
+    const isAdminInstitutionPage = path.includes('/admin_institution/import-export');
+    
+    // Only run base initialization if not on admin-institution page
+    // (admin-institution page has its own initialization)
+    if (!isAdminInstitutionPage) {
+        loadRegionals();
+        setupEventListeners();
+        setupModeToggle();
+    }
 });
+
+// Make handleFileSelection global so it can be called from other scripts
+// Define it before setupEventListeners so it's available immediately
+window.handleFileSelection = function(file) {
+    const fileName = file?.name || 'Ningún archivo seleccionado';
+    const fileNameElement = document.getElementById('importFileName');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    
+    if (!fileNameElement || !fileUploadArea) {
+        console.error('File selection elements not found');
+        return;
+    }
+    
+    // Truncate long file names
+    const displayName = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
+    fileNameElement.textContent = displayName;
+    fileNameElement.title = fileName;
+    
+    if (file) {
+        fileNameElement.className = 'text-[11px] font-semibold text-green-700 dark:text-green-400 px-2 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-md inline-block max-w-full truncate';
+        fileUploadArea.classList.add('has-file');
+        fileUploadArea.classList.add('border-green-400', 'bg-green-50/70', 'dark:bg-green-900/20');
+        if (typeof window.previewExcelFile === 'function') {
+            window.previewExcelFile(file);
+        }
+    } else {
+        fileNameElement.className = 'text-[11px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md inline-block max-w-full truncate';
+        fileUploadArea.classList.remove('has-file');
+        fileUploadArea.classList.remove('border-green-400', 'bg-green-50/70', 'dark:bg-green-900/20');
+        if (typeof window.closePreview === 'function') {
+            window.closePreview();
+        }
+    }
+    
+    if (typeof window.updateImportButtonState === 'function') {
+        window.updateImportButtonState();
+    }
+};
 
 // Setup event listeners
 function setupEventListeners() {
@@ -79,7 +125,7 @@ function setupEventListeners() {
     const importFileInput = document.getElementById('importFileInput');
     if (importFileInput) {
         importFileInput.addEventListener('change', function(e) {
-        handleFileSelection(e.target.files[0]);
+        window.handleFileSelection(e.target.files[0]);
     });
     }
 
@@ -129,36 +175,11 @@ function setupEventListeners() {
                 const dataTransfer = new DataTransfer();
                 dataTransfer.items.add(file);
                 document.getElementById('importFileInput').files = dataTransfer.files;
-                handleFileSelection(file);
+                window.handleFileSelection(file);
             } else {
                 showErrorToastLocal('Error', 'Por favor seleccione un archivo Excel (.xls o .xlsx)');
             }
         }
-    }
-
-    function handleFileSelection(file) {
-        const fileName = file?.name || 'Ningún archivo seleccionado';
-        const fileNameElement = document.getElementById('importFileName');
-        const fileUploadArea = document.getElementById('fileUploadArea');
-        
-        // Truncate long file names
-        const displayName = fileName.length > 25 ? fileName.substring(0, 22) + '...' : fileName;
-        fileNameElement.textContent = displayName;
-        fileNameElement.title = fileName;
-        
-        if (file) {
-            fileNameElement.className = 'text-[11px] font-semibold text-green-700 dark:text-green-400 px-2 py-1.5 bg-green-100 dark:bg-green-900/30 rounded-md inline-block max-w-full truncate';
-            fileUploadArea.classList.add('has-file');
-            fileUploadArea.classList.add('border-green-400', 'bg-green-50/70', 'dark:bg-green-900/20');
-            previewExcelFile(file);
-        } else {
-            fileNameElement.className = 'text-[11px] font-medium text-gray-500 dark:text-gray-400 px-2 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md inline-block max-w-full truncate';
-            fileUploadArea.classList.remove('has-file');
-            fileUploadArea.classList.remove('border-green-400', 'bg-green-50/70', 'dark:bg-green-900/20');
-            closePreview();
-        }
-        
-        updateImportButtonState();
     }
 
     // Import button
@@ -461,25 +482,25 @@ function resetExportDropdowns(types) {
     }
 }
 
-// Update button states
-function updateImportButtonState() {
+// Update button states - make it global
+window.updateImportButtonState = function() {
     const inventoryId = document.getElementById('importInventorySelect').value;
     const fileInput = document.getElementById('importFileInput');
     const hasFile = fileInput.files.length > 0;
     const button = document.getElementById('importButton');
     
     button.disabled = !inventoryId || !hasFile;
-}
+};
 
-function updateExportButtonState() {
+window.updateExportButtonState = function() {
     const inventoryId = document.getElementById('exportInventorySelect').value;
     const button = document.getElementById('exportButton');
     
     button.disabled = !inventoryId;
-}
+};
 
-// Handle import
-async function handleImport() {
+// Handle import - make it global
+window.handleImport = async function() {
     const inventoryId = document.getElementById('importInventorySelect').value;
     const fileInput = document.getElementById('importFileInput');
     const file = fileInput.files[0];
@@ -551,9 +572,11 @@ async function handleImport() {
         resetImportProgress();
     } finally {
         button.disabled = false;
-        updateImportButtonState();
+        if (typeof updateImportButtonState === 'function') {
+            updateImportButtonState();
+        }
     }
-}
+};
 
 // Update import progress
 function updateImportProgress(percent, status) {
@@ -577,8 +600,8 @@ function resetImportProgress() {
     updateImportProgress(0, '');
 }
 
-// Handle export
-async function handleExport() {
+// Handle export - make it global
+window.handleExport = async function() {
     const inventoryId = document.getElementById('exportInventorySelect').value;
 
     if (!inventoryId) {
@@ -649,7 +672,7 @@ async function handleExport() {
     } finally {
         button.disabled = false;
     }
-}
+};
 
 // Update export progress
 function updateExportProgress(percent, status) {
@@ -726,8 +749,8 @@ function closeImportSuccessModal() {
     modal.classList.add('hidden');
 }
 
-// Preview Excel file
-function previewExcelFile(file) {
+// Preview Excel file - make it global
+window.previewExcelFile = function(file) {
     const reader = new FileReader();
     
     reader.onload = function(e) {
@@ -763,7 +786,7 @@ function previewExcelFile(file) {
     };
     
     reader.readAsArrayBuffer(file);
-}
+};
 
 // Display preview table
 function displayPreview(data) {
@@ -827,21 +850,24 @@ function displayPreview(data) {
     }
 }
 
-// Close preview
-function closePreview() {
+// Close preview - make it global
+window.closePreview = function() {
     const previewSection = document.getElementById('previewSection');
     const mainContainer = document.getElementById('mainContentContainer');
     previewSection.classList.add('hidden');
     if (mainContainer) {
         mainContainer.classList.remove('content-with-preview');
     }
-    document.getElementById('previewTableHeader').innerHTML = '';
-    document.getElementById('previewTableBody').innerHTML = '';
-    document.getElementById('previewRowCount').textContent = '';
-}
+    const previewTableHeader = document.getElementById('previewTableHeader');
+    const previewTableBody = document.getElementById('previewTableBody');
+    const previewRowCount = document.getElementById('previewRowCount');
+    if (previewTableHeader) previewTableHeader.innerHTML = '';
+    if (previewTableBody) previewTableBody.innerHTML = '';
+    if (previewRowCount) previewRowCount.textContent = '';
+};
 
-// Load export preview
-async function loadExportPreview(inventoryId) {
+// Load export preview - make it global
+window.loadExportPreview = async function(inventoryId) {
     const previewContent = document.getElementById('exportPreviewContent');
     const previewCount = document.getElementById('exportPreviewCount');
     
@@ -888,7 +914,7 @@ async function loadExportPreview(inventoryId) {
         `;
         previewCount.textContent = '';
     }
-}
+};
 
 // Display export preview
 function displayExportPreview(items, totalElements) {
@@ -936,8 +962,8 @@ function displayExportPreview(items, totalElements) {
     previewCount.innerHTML = `<i class="fas fa-boxes mr-1.5 text-blue-500 dark:text-blue-400"></i><span class="font-semibold">${totalElements}</span> ${totalElements === 1 ? 'item' : 'items'} en total`;
 }
 
-// Hide export preview (show empty state instead)
-function hideExportPreview() {
+// Hide export preview (show empty state instead) - make it global
+window.hideExportPreview = function() {
     const previewContent = document.getElementById('exportPreviewContent');
     const previewCount = document.getElementById('exportPreviewCount');
     
@@ -951,7 +977,7 @@ function hideExportPreview() {
         </div>
     `;
     previewCount.textContent = '0 items';
-}
+};
 
 // Toast functions - use global functions, avoid recursion
 const showSuccessToastLocal = function(title, message) {
