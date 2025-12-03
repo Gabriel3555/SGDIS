@@ -122,11 +122,18 @@ function updateLoansTable() {
         return;
     }
 
-    const startIndex = (loansData.currentPage - 1) * loansData.itemsPerPage;
-    const endIndex = startIndex + loansData.itemsPerPage;
+    // Check if we're on warehouse page and use 6 items per page
+    const isWarehouse = window.location.pathname && window.location.pathname.includes('/warehouse');
+    const itemsPerPage = isWarehouse ? 6 : loansData.itemsPerPage;
+    
+    const startIndex = (loansData.currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
     const currentLoans = loansData.filteredLoans.slice(startIndex, endIndex);
 
     let tableHtml = `
+        <div class="mb-4">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Préstamos del Sistema</h2>
+        </div>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
@@ -670,13 +677,17 @@ function updatePagination() {
     const container = document.getElementById('paginationContainer');
     if (!container) return;
 
-    const totalPages = Math.ceil(loansData.filteredLoans.length / loansData.itemsPerPage);
+    // Check if we're on warehouse page and use 6 items per page
+    const isWarehouse = window.location.pathname && window.location.pathname.includes('/warehouse');
+    const itemsPerPage = isWarehouse ? 6 : loansData.itemsPerPage;
+
+    const totalPages = Math.ceil(loansData.filteredLoans.length / itemsPerPage);
     const currentPage = loansData.currentPage;
     const totalElements = loansData.filteredLoans.length;
 
     // Calculate start and end items
-    const startItem = totalElements > 0 ? (currentPage - 1) * loansData.itemsPerPage + 1 : 0;
-    const endItem = Math.min(currentPage * loansData.itemsPerPage, totalElements);
+    const startItem = totalElements > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+    const endItem = Math.min(currentPage * itemsPerPage, totalElements);
 
     let paginationHtml = `
         <div class="text-sm text-gray-600">

@@ -68,7 +68,11 @@ function applySearchFilter() {
 }
 
 function changePage(page) {
-    if (page >= 1 && page <= Math.ceil(loansData.filteredLoans.length / loansData.itemsPerPage)) {
+    // Check if we're on warehouse page and use 6 items per page
+    const isWarehouse = window.location.pathname && window.location.pathname.includes('/warehouse');
+    const itemsPerPage = isWarehouse ? 6 : loansData.itemsPerPage;
+    
+    if (page >= 1 && page <= Math.ceil(loansData.filteredLoans.length / itemsPerPage)) {
         loansData.currentPage = page;
         updateLoansTable();
         updatePagination();
