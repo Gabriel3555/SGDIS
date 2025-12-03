@@ -78,6 +78,62 @@ async function searchItemForLoan() {
                 throw new Error('Item sin ID válido');
             }
             
+            // For ADMIN_INSTITUTION, validate that the item belongs to their institution
+            const path = window.location.pathname || '';
+            const isAdminInstitutionPage = path.includes('/admin_institution/loans');
+            
+            if (isAdminInstitutionPage) {
+                try {
+                    // Get current user info
+                    const userResponse = await fetch('/api/v1/users/me', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        const userInstitutionId = userData.institution?.id || userData.institutionId;
+                        
+                        if (userInstitutionId) {
+                            // Get inventory to check institution
+                            const inventoryId = item.inventoryId || item.inventory?.id;
+                            if (inventoryId) {
+                                const inventoryResponse = await fetch(`/api/v1/inventory/${inventoryId}`, {
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                
+                                if (inventoryResponse.ok) {
+                                    const inventory = await inventoryResponse.json();
+                                    const itemInstitutionId = inventory.institutionId || inventory.institution?.id;
+                                    
+                                    if (itemInstitutionId && userInstitutionId.toString() !== itemInstitutionId.toString()) {
+                                        const institutionName = inventory.institutionName || inventory.institution?.name || 'otra institución';
+                                        resultDiv.innerHTML = `
+                                            <div class="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                                <p class="text-sm text-red-800 font-medium mb-1">
+                                                    <i class="fas fa-exclamation-circle mr-2"></i>Item no pertenece a tu institución
+                                                </p>
+                                                <p class="text-xs text-red-700">Este item pertenece a ${institutionName}. Solo puedes prestar items de tu institución.</p>
+                                            </div>
+                                        `;
+                                        itemIdInput.value = '';
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (validationError) {
+                    console.error('Error validating item institution:', validationError);
+                    // Continue with loan check even if validation fails (backend will also validate)
+                }
+            }
+            
             // Check if item has an active loan
             const loanResponse = await fetch(`/api/v1/loan/item/${itemId}/last`, {
                 headers: {
