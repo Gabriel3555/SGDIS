@@ -2000,8 +2000,81 @@ async function loadUsersForNewInventory(institutionId = null) {
   showNewInventoryOwnerSelectLoading();
 
   try {
-    // Fetch users from API
-    const allUsers = await fetchUsers();
+    const token = localStorage.getItem("jwt");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    // Check if current user is ADMIN_INSTITUTION
+    let currentUser = null;
+    let currentUserRole = null;
+    try {
+      const userResponse = await fetch("/api/v1/users/me", {
+        method: "GET",
+        headers: headers,
+      });
+      if (userResponse.ok) {
+        currentUser = await userResponse.json();
+        currentUserRole = currentUser.role;
+      }
+    } catch (userError) {
+      console.warn("Could not get current user info:", userError);
+    }
+
+    let users = [];
+    const isAdminInstitution = currentUserRole === "ADMIN_INSTITUTION" ||
+                               (window.location.pathname && window.location.pathname.includes("/admin_institution"));
+
+    if (isAdminInstitution) {
+      // For ADMIN_INSTITUTION, load only users from their institution
+      let page = 0;
+      let hasMore = true;
+      const pageSize = 1000;
+
+      while (hasMore) {
+        const response = await fetch(`/api/v1/users/institution?page=${page}&size=${pageSize}`, {
+          method: "GET",
+          headers: headers,
+        });
+
+        if (!response.ok) {
+          let errorMessage = "Error al cargar los usuarios";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+            
+            if (response.status === 404) {
+              errorMessage = "No tienes una institución asignada. Contacta a un administrador.";
+            }
+          } catch (parseError) {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        const pageUsers = data.users || (Array.isArray(data) ? data : []);
+        
+        if (pageUsers.length > 0) {
+          users = users.concat(pageUsers);
+          // Check if there are more pages
+          hasMore = !data.last && pageUsers.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // Filter out current user
+      if (currentUser && currentUser.id) {
+        users = users.filter(user => user.id !== currentUser.id);
+      }
+    } else {
+      // For other roles, use the original fetchUsers function
+      users = await fetchUsers();
+    }
 
     if (allUsers.length === 0) {
       populateNewInventoryOwnerSelect([]);
