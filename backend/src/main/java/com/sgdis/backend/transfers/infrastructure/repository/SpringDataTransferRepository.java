@@ -89,5 +89,28 @@ public interface SpringDataTransferRepository extends JpaRepository<TransferEnti
            "(t.inventory.institution.regional.id = :regionalId OR t.sourceInventory.institution.regional.id = :regionalId) " +
            "AND t.approvalStatus = :status")
     Long countByRegionalIdAndStatus(@Param("regionalId") Long regionalId, @Param("status") TransferStatus status);
+    
+    // Institution statistics queries
+    @Query("SELECT COUNT(t) FROM TransferEntity t WHERE " +
+           "(t.inventory.institution.id = :institutionId OR t.sourceInventory.institution.id = :institutionId)")
+    Long countByInstitutionId(@Param("institutionId") Long institutionId);
+    
+    @Query("SELECT COUNT(t) FROM TransferEntity t WHERE " +
+           "(t.inventory.institution.id = :institutionId OR t.sourceInventory.institution.id = :institutionId) " +
+           "AND t.approvalStatus = :status")
+    Long countByInstitutionIdAndStatus(@Param("institutionId") Long institutionId, @Param("status") TransferStatus status);
+    
+    // Institution queries for recent transfers
+    @Query("""
+            SELECT DISTINCT t FROM TransferEntity t
+            LEFT JOIN FETCH t.item
+            LEFT JOIN FETCH t.inventory inv
+            LEFT JOIN FETCH t.sourceInventory srcInv
+            LEFT JOIN FETCH t.requestedBy
+            LEFT JOIN FETCH t.approvedBy
+            WHERE (inv.institution.id = :institutionId OR srcInv.institution.id = :institutionId)
+            ORDER BY t.requestedAt DESC
+            """)
+    Page<TransferEntity> findAllByInstitutionId(@Param("institutionId") Long institutionId, Pageable pageable);
 }
 

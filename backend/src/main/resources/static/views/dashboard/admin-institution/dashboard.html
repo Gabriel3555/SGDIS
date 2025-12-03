@@ -805,58 +805,44 @@
         // Load inventory statistics for institution
         async function loadInventoryStatistics(headers) {
             try {
-                // Get inventories for the institution - the API should filter by institution automatically
-                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                // Use the new institution statistics endpoint
+                const response = await fetch('/api/v1/inventory/institution/statistics', { headers });
                 if (response.ok) {
-                    const data = await response.json();
+                    const stats = await response.json();
                     
-                    // Handle both paginated response and direct array
-                    let inventories = [];
-                    if (Array.isArray(data)) {
-                        inventories = data;
-                    } else if (data && Array.isArray(data.content)) {
-                        inventories = data.content;
-                    }
-                    
-                    // Filter by institution ID if available
-                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        inventories = inventories.filter(inv => 
-                            inv.institutionId === institutionId || 
-                            (inv.institution && inv.institution.institutionId === institutionId) ||
-                            (inv.institution && inv.institution.id === institutionId)
-                        );
-                    }
-                    
-                    // Store all inventories for chart calculations
-                    adminInstitutionDashboardData.allInventories = inventories;
-                    
-                    // Calculate statistics
-                    const totalInventories = inventories.length;
-                    const activeInventories = inventories.filter(inv => inv.status === true || inv.status === 'ACTIVE').length;
-                    const inactiveInventories = totalInventories - activeInventories;
-                    
-                    // Calculate total items and value
-                    let totalItems = 0;
-                    let totalValue = 0;
-                    inventories.forEach(inv => {
-                        if (inv.items) {
-                            totalItems += inv.items.length;
-                            inv.items.forEach(item => {
-                                if (item.value) {
-                                    totalValue += parseFloat(item.value) || 0;
-                                }
-                            });
-                        }
-                    });
-
                     adminInstitutionDashboardData.inventoryStats = {
-                        totalInventories,
-                        activeInventories,
-                        inactiveInventories,
-                        totalItems,
-                        totalValue
+                        totalInventories: stats.totalInventories || 0,
+                        activeInventories: stats.activeInventories || 0,
+                        inactiveInventories: stats.inactiveInventories || 0,
+                        totalItems: stats.totalItems || 0,
+                        totalValue: stats.totalValue || 0
                     };
+                    
+                    // Also load inventories for chart calculations - need quantityItems for the chart
+                    const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                    if (inventoriesResponse.ok) {
+                        const data = await inventoriesResponse.json();
+                        let inventories = [];
+                        if (Array.isArray(data)) {
+                            inventories = data;
+                        } else if (data && Array.isArray(data.content)) {
+                            inventories = data.content;
+                        }
+                        
+                        // Filter by institution ID if available
+                        const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
+                        if (institutionId) {
+                            inventories = inventories.filter(inv => 
+                                inv.institutionId === institutionId || 
+                                (inv.institution && inv.institution.institutionId === institutionId) ||
+                                (inv.institution && inv.institution.id === institutionId)
+                            );
+                        }
+                        
+                        // If quantityItems is not available, try to get it from statistics endpoint for each inventory
+                        // But for performance, we'll use quantityItems if available, otherwise 0
+                        adminInstitutionDashboardData.allInventories = inventories;
+                    }
                 }
             } catch (error) {
                 console.error('Error loading inventory statistics:', error);
@@ -866,50 +852,16 @@
         // Load user statistics for institution
         async function loadUserStatistics(headers) {
             try {
-                // Get users - the API should filter by institution automatically for admin_institution
-                const response = await fetch('/api/v1/users?page=0&size=10000', { headers });
+                // Use the new institution statistics endpoint
+                const response = await fetch('/api/v1/users/institution/statistics', { headers });
                 if (response.ok) {
-                    const data = await response.json();
+                    const stats = await response.json();
                     
-                    // Handle both paginated response and direct array
-                    let users = [];
-                    if (Array.isArray(data)) {
-                        users = data;
-                    } else if (data && Array.isArray(data.content)) {
-                        users = data.content;
-                    }
-                    
-                    // Filter by institution
-                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
-                    const institutionName = document.getElementById('welcomeMessage').textContent.includes('institución') 
-                        ? document.getElementById('welcomeMessage').textContent.split('institución')[1]?.trim() 
-                        : null;
-                    
-                    if (institutionId || institutionName) {
-                        users = users.filter(u => {
-                            if (institutionId) {
-                                return u.institutionId === institutionId || 
-                                       (u.institution && (u.institution.institutionId === institutionId || u.institution.id === institutionId));
-                            }
-                            if (institutionName) {
-                                return u.institution === institutionName || 
-                                       (u.institution && u.institution.name === institutionName);
-                            }
-                            return true;
-                        });
-                    }
-                    
-                    // Calculate statistics
-                    const totalUsers = users.length;
-                    const adminInstitutionCount = users.filter(u => u.role === 'ADMIN_INSTITUTION').length;
-                    const warehouseCount = users.filter(u => u.role === 'WAREHOUSE').length;
-                    const userCount = users.filter(u => u.role === 'USER').length;
-
                     adminInstitutionDashboardData.userStats = {
-                        totalUsers,
-                        adminInstitutionCount,
-                        warehouseCount,
-                        userCount
+                        totalUsers: stats.totalUsers || 0,
+                        adminInstitutionCount: stats.adminInstitutionCount || 0,
+                        warehouseCount: stats.warehouseCount || 0,
+                        userCount: stats.userCount || 0
                     };
                 }
             } catch (error) {
@@ -920,43 +872,25 @@
         // Load transfer statistics for institution
         async function loadTransferStatistics(headers) {
             try {
-                // Get transfers - the API should filter by institution automatically
-                const response = await fetch('/api/v1/transfers?page=0&size=10000', { headers });
+                // Use the new institution statistics endpoint
+                const response = await fetch('/api/v1/transfers/institution/statistics', { headers });
                 if (response.ok) {
-                    const data = await response.json();
+                    const stats = await response.json();
                     
-                    // Handle both paginated response and direct array
-                    let transfers = [];
-                    if (Array.isArray(data)) {
-                        transfers = data;
-                    } else if (data && Array.isArray(data.content)) {
-                        transfers = data.content;
-                    }
-                    
-                    // Filter by institution if needed
-                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        transfers = transfers.filter(t => 
-                            t.institutionId === institutionId ||
-                            (t.institution && (t.institution.institutionId === institutionId || t.institution.id === institutionId))
-                        );
-                    }
-                    
-                    // Calculate statistics
-                    const total = transfers.length;
-                    const pending = transfers.filter(t => t.status === 'PENDING').length;
-                    const approved = transfers.filter(t => t.status === 'APPROVED').length;
-                    const rejected = transfers.filter(t => t.status === 'REJECTED').length;
-
                     adminInstitutionDashboardData.transferStats = {
-                        total,
-                        pending,
-                        approved,
-                        rejected
+                        total: stats.total || 0,
+                        pending: stats.pending || 0,
+                        approved: stats.approved || 0,
+                        rejected: stats.rejected || 0
                     };
+                    console.log('Transfer statistics loaded:', adminInstitutionDashboardData.transferStats);
+                } else {
+                    console.error('Failed to load transfer statistics:', response.status, response.statusText);
+                    adminInstitutionDashboardData.transferStats = { total: 0, pending: 0, approved: 0, rejected: 0 };
                 }
             } catch (error) {
                 console.error('Error loading transfer statistics:', error);
+                adminInstitutionDashboardData.transferStats = { total: 0, pending: 0, approved: 0, rejected: 0 };
             }
         }
 
@@ -987,20 +921,11 @@
         // Load recent transfers
         async function loadRecentTransfers(headers) {
             try {
-                const response = await fetch('/api/v1/transfers?page=0&size=5', { headers });
+                // Use the new institution recent transfers endpoint
+                const response = await fetch('/api/v1/transfers/institution/recent?page=0&size=5', { headers });
                 if (response.ok) {
                     const data = await response.json();
                     let transfers = Array.isArray(data) ? data : (data.content || []);
-                    
-                    // Filter by institution
-                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        transfers = transfers.filter(t => 
-                            t.institutionId === institutionId ||
-                            (t.institution && (t.institution.institutionId === institutionId || t.institution.id === institutionId))
-                        );
-                    }
-                    
                     adminInstitutionDashboardData.recentTransfers = transfers;
                 }
             } catch (error) {
@@ -1011,46 +936,15 @@
         // Load recent verifications
         async function loadRecentVerifications(headers) {
             try {
-                // Admin-institution may not have direct access to /api/v1/verifications
-                // Try to get verifications through inventories of the institution
-                const inventories = adminInstitutionDashboardData.allInventories || [];
-                
-                if (inventories.length === 0) {
-                    adminInstitutionDashboardData.recentVerifications = [];
-                    return;
+                // Use the new institution recent verifications endpoint
+                const response = await fetch('/api/v1/verifications/institution/recent?page=0&size=5', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    let verifications = Array.isArray(data) ? data : (data.content || []);
+                    adminInstitutionDashboardData.recentVerifications = verifications;
                 }
-
-                // Try to get verifications for each inventory (limit to first 5 inventories for performance)
-                let allVerifications = [];
-                const inventoriesToCheck = inventories.slice(0, 5);
-                
-                for (const inv of inventoriesToCheck) {
-                    try {
-                        const response = await fetch(`/api/v1/verifications/inventories/${inv.id}/verifications/latest`, { headers });
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (Array.isArray(data)) {
-                                allVerifications = allVerifications.concat(data);
-                            } else if (data) {
-                                allVerifications.push(data);
-                            }
-                        }
-                    } catch (err) {
-                        // Silently continue if this inventory doesn't have verifications endpoint
-                        continue;
-                    }
-                }
-                
-                // Sort by date and take most recent
-                allVerifications.sort((a, b) => {
-                    const dateA = new Date(a.createdAt || a.verificationDate || 0);
-                    const dateB = new Date(b.createdAt || b.verificationDate || 0);
-                    return dateB - dateA;
-                });
-                
-                adminInstitutionDashboardData.recentVerifications = allVerifications.slice(0, 5);
             } catch (error) {
-                // Silently handle error - admin-institution may not have direct access to verifications
+                console.error('Error loading recent verifications:', error);
                 adminInstitutionDashboardData.recentVerifications = [];
             }
         }
@@ -1072,40 +966,21 @@
         // Load verification count
         async function loadVerificationCount(headers) {
             try {
-                // Admin-institution may not have direct access to /api/v1/verifications
-                // Count verifications through inventories (limit to avoid too many requests)
-                const inventories = adminInstitutionDashboardData.allInventories || [];
-                let totalCount = 0;
-                
-                // Limit to first 10 inventories to avoid performance issues
-                const inventoriesToCheck = inventories.slice(0, 10);
-                
-                for (const inv of inventoriesToCheck) {
-                    try {
-                        const response = await fetch(`/api/v1/verifications/inventories/${inv.id}/verifications/latest`, { headers });
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (Array.isArray(data)) {
-                                totalCount += data.length;
-                            } else if (data) {
-                                totalCount += 1;
-                            }
-                        }
-                    } catch (err) {
-                        // Silently continue if this inventory doesn't have verifications
-                        continue;
-                    }
-                }
-                
-                // If we checked limited inventories, show approximate count
-                if (inventories.length > inventoriesToCheck.length) {
-                    document.getElementById('totalVerifications').textContent = `${totalCount}+`;
-                } else {
+                // Use the new institution statistics endpoint
+                const response = await fetch('/api/v1/verifications/institution/statistics', { headers });
+                if (response.ok) {
+                    const stats = await response.json();
+                    const totalCount = stats.total || 0;
                     document.getElementById('totalVerifications').textContent = totalCount;
+                    adminInstitutionDashboardData.verificationCount = totalCount;
+                    console.log('Verification count loaded:', totalCount);
+                } else {
+                    console.error('Failed to load verification statistics:', response.status, response.statusText);
+                    document.getElementById('totalVerifications').textContent = '0';
+                    adminInstitutionDashboardData.verificationCount = 0;
                 }
-                adminInstitutionDashboardData.verificationCount = totalCount;
             } catch (error) {
-                // Silently handle error - admin-institution may not have direct access to verifications
+                console.error('Error loading verification count:', error);
                 document.getElementById('totalVerifications').textContent = '0';
                 adminInstitutionDashboardData.verificationCount = 0;
             }
@@ -1114,32 +989,23 @@
         // Load loans count  
         async function loadLoansCount(headers) {
             try {
-                const response = await fetch('/api/v1/loan/filter', { headers });
+                // Use the new institution statistics endpoint
+                const response = await fetch('/api/v1/loan/institution/statistics', { headers });
                 if (response.ok) {
-                    const loans = await response.json();
-                    let loansArray = Array.isArray(loans) ? loans : [];
-                    
-                    // Filter by institution if needed
-                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        loansArray = loansArray.filter(loan => {
-                            if (loan.inventory) {
-                                return loan.inventory.institutionId === institutionId ||
-                                       (loan.inventory.institution && (loan.inventory.institution.institutionId === institutionId || loan.inventory.institution.id === institutionId));
-                            }
-                            return true;
-                        });
-                    }
-                    
-                    const totalCount = loansArray.length;
+                    const stats = await response.json();
+                    const totalCount = stats.total || 0;
                     document.getElementById('totalLoans').textContent = totalCount;
                     adminInstitutionDashboardData.loansCount = totalCount;
+                    console.log('Loans count loaded:', totalCount);
                 } else {
+                    console.error('Failed to load loan statistics:', response.status, response.statusText);
                     document.getElementById('totalLoans').textContent = '0';
+                    adminInstitutionDashboardData.loansCount = 0;
                 }
             } catch (error) {
                 console.error('Error loading loans count:', error);
                 document.getElementById('totalLoans').textContent = '0';
+                adminInstitutionDashboardData.loansCount = 0;
             }
         }
 
@@ -1159,6 +1025,12 @@
                     currency: 'COP',
                     minimumFractionDigits: 0
                 }).format(totalValue);
+            } else {
+                document.getElementById('totalInventories').textContent = '0';
+                document.getElementById('activeInventories').textContent = '0';
+                document.getElementById('inactiveInventories').textContent = '0';
+                document.getElementById('totalItems').textContent = '0';
+                document.getElementById('totalValue').textContent = '$0';
             }
 
             // Update user stats
@@ -1171,6 +1043,9 @@
                 if (adminInstitutionDashboardData.userStats.userCount > 0) rolesBreakdown.push(`${adminInstitutionDashboardData.userStats.userCount} Usuarios`);
                 
                 document.getElementById('userRolesBreakdown').textContent = rolesBreakdown.slice(0, 3).join(', ') || 'Sin datos';
+            } else {
+                document.getElementById('totalUsers').textContent = '0';
+                document.getElementById('userRolesBreakdown').textContent = 'Sin datos';
             }
 
             // Update transfer stats
@@ -1180,7 +1055,10 @@
                 if (adminInstitutionDashboardData.transferStats.pending > 0) transfersBreakdown.push(`${adminInstitutionDashboardData.transferStats.pending} pendientes`);
                 if (adminInstitutionDashboardData.transferStats.approved > 0) transfersBreakdown.push(`${adminInstitutionDashboardData.transferStats.approved} aprobadas`);
                 if (adminInstitutionDashboardData.transferStats.rejected > 0) transfersBreakdown.push(`${adminInstitutionDashboardData.transferStats.rejected} rechazadas`);
-                document.getElementById('transfersBreakdown').innerHTML = transfersBreakdown.join(', ') || 'Sin datos';
+                document.getElementById('transfersBreakdown').textContent = transfersBreakdown.join(', ') || 'Sin datos';
+            } else {
+                document.getElementById('totalTransfers').textContent = '0';
+                document.getElementById('transfersBreakdown').textContent = 'Sin datos';
             }
 
             // Update recent inventories
@@ -1232,15 +1110,17 @@
                 };
                 // Prioritize itemLicencePlate, then itemName, then itemId as fallback
                 const itemDisplay = transfer.itemLicencePlate || transfer.itemName || (transfer.itemId ? `Item #${transfer.itemId}` : 'N/A');
+                const status = transfer.status || transfer.approvalStatus || 'N/A';
+                const statusText = status === 'PENDING' ? 'Pendiente' : status === 'APPROVED' ? 'Aprobada' : status === 'REJECTED' ? 'Rechazada' : status;
                 return `
                     <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                         <div class="flex-1">
                             <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm">Item: ${itemDisplay}</div>
-                            <div class="text-xs text-gray-600 dark:text-gray-400">${new Date(transfer.requestedAt).toLocaleDateString('es-ES')}</div>
+                            <div class="text-xs text-gray-600 dark:text-gray-400">${transfer.requestedAt ? new Date(transfer.requestedAt).toLocaleDateString('es-ES') : 'N/A'}</div>
                         </div>
                         <div class="ml-3">
-                            <span class="px-2 py-1 text-xs rounded-full ${statusColors[transfer.status] || 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300'}">
-                                ${transfer.status || 'N/A'}
+                            <span class="px-2 py-1 text-xs rounded-full ${statusColors[status] || 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300'}">
+                                ${statusText}
                             </span>
                         </div>
                     </div>
@@ -1259,8 +1139,9 @@
             container.innerHTML = adminInstitutionDashboardData.recentVerifications.slice(0, 5).map(verif => {
                 // Format date
                 let dateStr = 'N/A';
-                if (verif.createdAt) {
-                    dateStr = new Date(verif.createdAt).toLocaleDateString('es-ES', {
+                if (verif.createdAt || verif.verifiedAt) {
+                    const date = verif.createdAt || verif.verifiedAt;
+                    dateStr = new Date(date).toLocaleDateString('es-ES', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric'
@@ -1268,7 +1149,10 @@
                 }
                 
                 // Get item identifier - prioritize itemLicencePlateNumber, then itemName, then itemId as fallback
-                const itemDisplay = verif.itemLicencePlateNumber || verif.itemName || (verif.itemId ? `Item #${verif.itemId}` : 'N/A');
+                const itemDisplay = verif.itemLicencePlateNumber || verif.itemLicencePlate || verif.itemName || (verif.itemId ? `Item #${verif.itemId}` : 'N/A');
+                const status = verif.status || (verif.photoUrl ? 'VERIFIED' : 'PENDING');
+                const statusText = status === 'VERIFIED' ? 'Verificado' : 'Pendiente';
+                const statusColor = status === 'VERIFIED' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300';
                 
                 return `
                     <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
@@ -1277,8 +1161,8 @@
                             <div class="text-xs text-gray-600 dark:text-gray-400">${dateStr}</div>
                         </div>
                         <div class="ml-3">
-                            <span class="px-2 py-1 text-xs rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300">
-                                Verificado
+                            <span class="px-2 py-1 text-xs rounded-full ${statusColor}">
+                                ${statusText}
                             </span>
                         </div>
                     </div>
@@ -1455,38 +1339,38 @@
                 }
             }
 
-            // Chart: Transfers by Status
-            if (adminInstitutionDashboardData.transferStats) {
-                const canvas = document.getElementById('transfersByStatusChart');
-                if (canvas) {
-                    const ctx2d = canvas.getContext('2d');
-                    const gradient1 = ctx2d.createLinearGradient(0, 0, 0, 400);
-                    gradient1.addColorStop(0, '#F59E0B');
-                    gradient1.addColorStop(1, '#D97706');
-                    
-                    const gradient2 = ctx2d.createLinearGradient(0, 0, 0, 400);
-                    gradient2.addColorStop(0, '#10B981');
-                    gradient2.addColorStop(1, '#059669');
-                    
-                    const gradient3 = ctx2d.createLinearGradient(0, 0, 0, 400);
-                    gradient3.addColorStop(0, '#EF4444');
-                    gradient3.addColorStop(1, '#DC2626');
+            // Chart: Transfers by Status - Always show, even if all values are 0
+            const canvasTransfers = document.getElementById('transfersByStatusChart');
+            if (canvasTransfers) {
+                const ctx2d = canvasTransfers.getContext('2d');
+                const gradient1 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                gradient1.addColorStop(0, '#F59E0B');
+                gradient1.addColorStop(1, '#D97706');
+                
+                const gradient2 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                gradient2.addColorStop(0, '#10B981');
+                gradient2.addColorStop(1, '#059669');
+                
+                const gradient3 = ctx2d.createLinearGradient(0, 0, 0, 400);
+                gradient3.addColorStop(0, '#EF4444');
+                gradient3.addColorStop(1, '#DC2626');
 
-                    adminInstitutionDashboardData.charts.transfersByStatus = new Chart(canvas, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['Pendientes', 'Aprobadas', 'Rechazadas'],
-                            datasets: [{
-                                data: [
-                                    adminInstitutionDashboardData.transferStats.pending || 0,
-                                    adminInstitutionDashboardData.transferStats.approved || 0,
-                                    adminInstitutionDashboardData.transferStats.rejected || 0
-                                ],
-                                backgroundColor: [gradient1, gradient2, gradient3],
-                                borderWidth: 0,
-                                hoverOffset: 8
-                            }]
-                        },
+                const transferStats = adminInstitutionDashboardData.transferStats || { pending: 0, approved: 0, rejected: 0 };
+                const pending = transferStats.pending || 0;
+                const approved = transferStats.approved || 0;
+                const rejected = transferStats.rejected || 0;
+
+                adminInstitutionDashboardData.charts.transfersByStatus = new Chart(canvasTransfers, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pendientes', 'Aprobadas', 'Rechazadas'],
+                        datasets: [{
+                            data: [pending, approved, rejected],
+                            backgroundColor: [gradient1, gradient2, gradient3],
+                            borderWidth: 0,
+                            hoverOffset: 8
+                        }]
+                    },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
@@ -1530,50 +1414,52 @@
                 }
             }
 
-            // Chart: Items by Inventory
-            if (adminInstitutionDashboardData.allInventories && adminInstitutionDashboardData.allInventories.length > 0) {
-                const canvas = document.getElementById('itemsByInventoryChart');
-                if (canvas) {
-                    // Group items by inventory
-                    const inventoryItems = {};
-                    adminInstitutionDashboardData.allInventories.forEach(inv => {
-                        const itemCount = inv.items ? inv.items.length : 0;
-                        if (itemCount > 0) {
-                            inventoryItems[inv.name || `Inventario ${inv.id}`] = itemCount;
-                        }
+            // Chart: Items by Inventory - Always show if there are inventories
+            const canvasItems = document.getElementById('itemsByInventoryChart');
+            if (canvasItems && adminInstitutionDashboardData.allInventories && adminInstitutionDashboardData.allInventories.length > 0) {
+                // Group items by inventory - use quantityItems if available, otherwise try items array
+                const inventoryItems = {};
+                adminInstitutionDashboardData.allInventories.forEach(inv => {
+                    // Try quantityItems first (from InventoryResponse), then items array, then 0
+                    const itemCount = inv.quantityItems || (inv.items ? inv.items.length : 0) || 0;
+                    if (itemCount > 0 || adminInstitutionDashboardData.allInventories.length <= 10) {
+                        // Include all inventories if there are 10 or fewer, or if they have items
+                        inventoryItems[inv.name || `Inventario ${inv.id}`] = itemCount;
+                    }
+                });
+
+                const labels = Object.keys(inventoryItems);
+                const values = Object.values(inventoryItems);
+
+                // Show chart even if all values are 0, but at least show the inventories
+                if (labels.length > 0) {
+                    const ctx2d = canvasItems.getContext('2d');
+                    const colorPalette = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#6366F1'];
+                    const barGradients = colorPalette.slice(0, labels.length).map((color, index) => {
+                        const gradient = ctx2d.createLinearGradient(0, 0, 0, 400);
+                        const hex = color.replace('#', '');
+                        const r = parseInt(hex.substring(0, 2), 16);
+                        const g = parseInt(hex.substring(2, 4), 16);
+                        const b = parseInt(hex.substring(4, 6), 16);
+                        gradient.addColorStop(0, color);
+                        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.7)`);
+                        return gradient;
                     });
 
-                    const labels = Object.keys(inventoryItems);
-                    const values = Object.values(inventoryItems);
-
-                    if (labels.length > 0) {
-                        const ctx2d = canvas.getContext('2d');
-                        const colorPalette = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#6366F1'];
-                        const barGradients = colorPalette.slice(0, labels.length).map((color, index) => {
-                            const gradient = ctx2d.createLinearGradient(0, 0, 0, 400);
-                            const hex = color.replace('#', '');
-                            const r = parseInt(hex.substring(0, 2), 16);
-                            const g = parseInt(hex.substring(2, 4), 16);
-                            const b = parseInt(hex.substring(4, 6), 16);
-                            gradient.addColorStop(0, color);
-                            gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.7)`);
-                            return gradient;
-                        });
-
-                        adminInstitutionDashboardData.charts.itemsByInventory = new Chart(canvas, {
-                            type: 'bar',
-                            data: {
-                                labels: labels,
-                                datasets: [{
-                                    label: 'Items',
-                                    data: values,
-                                    backgroundColor: barGradients,
-                                    borderColor: colorPalette.slice(0, labels.length),
-                                    borderWidth: 2,
-                                    borderRadius: 8,
-                                    borderSkipped: false
-                                }]
-                            },
+                    adminInstitutionDashboardData.charts.itemsByInventory = new Chart(canvasItems, {
+                        type: 'bar',
+                        data: {
+                            labels: labels.length > 0 ? labels : ['Sin datos'],
+                            datasets: [{
+                                label: 'Items',
+                                data: values.length > 0 ? values : [0],
+                                backgroundColor: values.length > 0 ? barGradients : ['rgba(156, 163, 175, 0.5)'],
+                                borderColor: values.length > 0 ? colorPalette.slice(0, labels.length) : ['rgba(156, 163, 175, 0.8)'],
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
+                            }]
+                        },
                             options: {
                                 responsive: true,
                                 maintainAspectRatio: false,
@@ -1637,7 +1523,27 @@
                                 }
                             }
                         });
+                    } else {
+                        // Show empty chart message if no data
+                        const isDarkMode = document.documentElement.classList.contains('dark');
+                        const textColor = isDarkMode ? '#CBD5E1' : '#374151';
+                        const ctx2d = canvasItems.getContext('2d');
+                        ctx2d.clearRect(0, 0, canvasItems.width, canvasItems.height);
+                        ctx2d.fillStyle = textColor;
+                        ctx2d.font = '14px Arial';
+                        ctx2d.textAlign = 'center';
+                        ctx2d.fillText('No hay datos disponibles', canvasItems.width / 2, canvasItems.height / 2);
                     }
+                } else {
+                    // Show empty chart if no inventories
+                    const isDarkMode = document.documentElement.classList.contains('dark');
+                    const textColor = isDarkMode ? '#CBD5E1' : '#374151';
+                    const ctx2d = canvasItems.getContext('2d');
+                    ctx2d.clearRect(0, 0, canvasItems.width, canvasItems.height);
+                    ctx2d.fillStyle = textColor;
+                    ctx2d.font = '14px Arial';
+                    ctx2d.textAlign = 'center';
+                    ctx2d.fillText('No hay inventarios disponibles', canvasItems.width / 2, canvasItems.height / 2);
                 }
             }
         }

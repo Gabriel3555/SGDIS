@@ -551,5 +551,82 @@ public class VerificationController {
         
         return ResponseEntity.ok(statistics);
     }
+
+    @Operation(
+            summary = "Get institution verification statistics",
+            description = "Retrieves total statistics of verifications in the current user's institution. " +
+                    "The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = VerificationStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/institution/statistics")
+    public ResponseEntity<VerificationStatisticsResponse> getInstitutionVerificationStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        Long total = verificationRepository.countByInstitutionId(institutionId);
+        // For completed and withEvidence, we use the same count since they're the same query
+        Long completed = verificationRepository.countByInstitutionId(institutionId);
+        Long withEvidence = verificationRepository.countByInstitutionId(institutionId);
+        
+        VerificationStatisticsResponse statistics = new VerificationStatisticsResponse(
+                total,
+                completed,
+                withEvidence
+        );
+        
+        return ResponseEntity.ok(statistics);
+    }
+
+    @Operation(
+            summary = "Get recent verifications for institution",
+            description = "Retrieves recent verifications for the current user's institution with pagination. " +
+                    "The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Recent verifications retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/institution/recent")
+    public ResponseEntity<Page<LatestVerificationResponse>> getInstitutionRecentVerifications(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "5") int size
+    ) {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<VerificationEntity> verificationPage = verificationRepository.findAllByInstitutionIdOrderedByCreatedAt(institutionId, pageable);
+        
+        List<LatestVerificationResponse> content = verificationPage.getContent().stream()
+                .map(VerificationMapper::toLatestDto)
+                .collect(java.util.stream.Collectors.toList());
+        
+        Page<LatestVerificationResponse> response = new PageImpl<>(
+                content,
+                pageable,
+                verificationPage.getTotalElements()
+        );
+        
+        return ResponseEntity.ok(response);
+    }
 }
 
