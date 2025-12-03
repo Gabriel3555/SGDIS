@@ -20,6 +20,8 @@ import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.ResourceNotFoundException;
 import com.sgdis.backend.transfers.domain.TransferStatus;
 import com.sgdis.backend.transfers.infrastructure.repository.SpringDataTransferRepository;
+import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
+import com.sgdis.backend.transfers.mapper.TransferMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -245,6 +247,78 @@ public class TransferController {
         
         TransferStatisticsResponse statistics = new TransferStatisticsResponse(total, pending, approved, rejected);
         return ResponseEntity.ok(statistics);
+    }
+
+    @Operation(
+            summary = "Get institution transfer statistics",
+            description = "Retrieves total statistics of transfers in the current user's institution by status. " +
+                    "The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = TransferStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/institution/statistics")
+    public ResponseEntity<TransferStatisticsResponse> getInstitutionTransferStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        Long total = transferRepository.countByInstitutionId(institutionId);
+        Long pending = transferRepository.countByInstitutionIdAndStatus(institutionId, TransferStatus.PENDING);
+        Long approved = transferRepository.countByInstitutionIdAndStatus(institutionId, TransferStatus.APPROVED);
+        Long rejected = transferRepository.countByInstitutionIdAndStatus(institutionId, TransferStatus.REJECTED);
+        
+        TransferStatisticsResponse statistics = new TransferStatisticsResponse(total, pending, approved, rejected);
+        return ResponseEntity.ok(statistics);
+    }
+
+    @Operation(
+            summary = "Get recent transfers for institution",
+            description = "Retrieves recent transfers for the current user's institution with pagination. " +
+                    "The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Recent transfers retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/institution/recent")
+    public ResponseEntity<Page<TransferSummaryResponse>> getInstitutionRecentTransfers(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "5") int size
+    ) {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "requestedAt"));
+        Page<TransferEntity> transferPage = transferRepository.findAllByInstitutionId(institutionId, pageable);
+        
+        List<TransferSummaryResponse> content = transferPage.getContent().stream()
+                .map(TransferMapper::toSummaryResponse)
+                .collect(java.util.stream.Collectors.toList());
+        
+        Page<TransferSummaryResponse> response = new org.springframework.data.domain.PageImpl<>(
+                content,
+                pageable,
+                transferPage.getTotalElements()
+        );
+        
+        return ResponseEntity.ok(response);
     }
 }
 

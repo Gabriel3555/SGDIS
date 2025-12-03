@@ -324,4 +324,34 @@ public class LoanController {
         return ResponseEntity.ok(statistics);
     }
 
+    @Operation(
+            summary = "Get institution loan statistics",
+            description = "Retrieves total statistics of loans in the current user's institution. " +
+                    "The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = LoanStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/institution/statistics")
+    public ResponseEntity<LoanStatisticsResponse> getInstitutionLoanStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        Long total = loanRepository.countByInstitutionId(institutionId);
+        Long active = loanRepository.countActiveByInstitutionId(institutionId);
+        Long returned = loanRepository.countReturnedByInstitutionId(institutionId);
+        
+        LoanStatisticsResponse statistics = new LoanStatisticsResponse(total, active, returned);
+        
+        return ResponseEntity.ok(statistics);
+    }
+
 }

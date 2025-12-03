@@ -499,6 +499,44 @@ public class UserController {
     }
 
     @Operation(
+            summary = "Get institution user statistics",
+            description = "Retrieves total statistics of users in the current user's institution by role. " +
+                    "Excludes SUPERADMIN and ADMIN_REGIONAL roles. The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = UserStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/institution/statistics")
+    public UserStatisticsResponse getInstitutionUserStatistics() {
+        UserEntity currentUser = authService.getCurrentUser();
+        
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("Current user does not have an institution assigned");
+        }
+        
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        // Count users by role in the institution (excluding SUPERADMIN and ADMIN_REGIONAL)
+        long totalUsers = userRepository.countByInstitutionIdExcludingRole(institutionId, Role.SUPERADMIN);
+        long adminInstitutionCount = userRepository.countByInstitutionIdAndRole(institutionId, Role.ADMIN_INSTITUTION);
+        long warehouseCount = userRepository.countByInstitutionIdAndRole(institutionId, Role.WAREHOUSE);
+        long userCount = userRepository.countByInstitutionIdAndRole(institutionId, Role.USER);
+        
+        return UserStatisticsResponse.builder()
+                .totalUsers(totalUsers)
+                .superadminCount(0L) // Always 0 for institution statistics
+                .adminInstitutionCount(adminInstitutionCount)
+                .adminRegionalCount(0L) // Always 0 for institution statistics
+                .warehouseCount(warehouseCount)
+                .userCount(userCount)
+                .build();
+    }
+
+    @Operation(
             summary = "Get my loans",
             description = "Retrieves all items that have been lent to the currently authenticated user"
     )

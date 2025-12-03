@@ -65,4 +65,14 @@ public interface SpringDataLoanRepository extends JpaRepository<LoanEntity, Long
     // Query for counting returned loans by regional
     @Query("SELECT COUNT(l) FROM LoanEntity l WHERE l.item.inventory.institution.regional.id = :regionalId AND l.returned = true")
     long countReturnedByRegionalId(@Param("regionalId") Long regionalId);
+    
+    // Institution statistics queries
+    @Query("SELECT COUNT(l) FROM LoanEntity l WHERE l.item.inventory.institution.id = :institutionId")
+    long countByInstitutionId(@Param("institutionId") Long institutionId);
+    
+    @Query("SELECT COUNT(l) FROM LoanEntity l WHERE l.item.inventory.institution.id = :institutionId AND (l.returned IS NULL OR l.returned = false)")
+    long countActiveByInstitutionId(@Param("institutionId") Long institutionId);
+    
+    @Query("SELECT COUNT(l) FROM LoanEntity l WHERE l.item.inventory.institution.id = :institutionId AND l.returned = true")
+    long countReturnedByInstitutionId(@Param("institutionId") Long institutionId);
 }
