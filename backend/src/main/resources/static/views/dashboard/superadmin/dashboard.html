@@ -1433,12 +1433,91 @@
         // Load transfer statistics
         async function loadTransferStatistics(headers) {
             try {
-                const response = await fetch('/api/v1/transfers/statistics', { headers });
-                if (response.ok) {
-                    superadminDashboardData.transferStats = await response.json();
+                let response;
+                let transfers = [];
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // For institution, get all inventories of the institution first
+                    const institution = superadminDashboardData.institutions.find(
+                        inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                    );
+                    if (institution) {
+                        // Get all inventories for this institution
+                        const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                        if (inventoriesResponse.ok) {
+                            const inventoriesData = await inventoriesResponse.json();
+                            const institutionInventories = (inventoriesData.content || []).filter(inv => 
+                                inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString()
+                            );
+                            const inventoryIds = institutionInventories.map(inv => inv.id);
+                            
+                            // Get transfers for each inventory and combine
+                            const transferPromises = inventoryIds.map(invId => 
+                                fetch(`/api/v1/transfers/inventory/${invId}`, { headers }).then(r => r.ok ? r.json() : [])
+                            );
+                            const transferArrays = await Promise.all(transferPromises);
+                            transfers = transferArrays.flat();
+                            
+                            // Remove duplicates by transfer id
+                            const uniqueTransfers = [];
+                            const seenIds = new Set();
+                            transfers.forEach(transfer => {
+                                if (transfer.id && !seenIds.has(transfer.id)) {
+                                    seenIds.add(transfer.id);
+                                    uniqueTransfers.push(transfer);
+                                }
+                            });
+                            transfers = uniqueTransfers;
+                        }
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get transfers by regional
+                    response = await fetch(`/api/v1/transfers/regional/${superadminDashboardData.selectedRegional}?page=0&size=10000`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        transfers = data.content || [];
+                    }
+                } else {
+                    // No filters, get all transfers
+                    response = await fetch('/api/v1/transfers?page=0&size=10000', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        transfers = data.content || [];
+                    }
+                }
+                
+                // Calculate statistics from transfers array
+                if (transfers.length > 0) {
+                    superadminDashboardData.transferStats = {
+                        total: transfers.length,
+                        pending: transfers.filter(t => t.status === 'PENDING').length,
+                        approved: transfers.filter(t => t.status === 'APPROVED').length,
+                        rejected: transfers.filter(t => t.status === 'REJECTED').length
+                    };
+                } else {
+                    // Fallback to general statistics if no transfers found or if filtered request failed
+                    response = await fetch('/api/v1/transfers/statistics', { headers });
+                    if (response.ok) {
+                        superadminDashboardData.transferStats = await response.json();
+                    } else {
+                        superadminDashboardData.transferStats = {
+                            total: 0,
+                            pending: 0,
+                            approved: 0,
+                            rejected: 0
+                        };
+                    }
                 }
             } catch (error) {
                 console.error('Error loading transfer statistics:', error);
+                // Set default values on error
+                superadminDashboardData.transferStats = {
+                    total: 0,
+                    pending: 0,
+                    approved: 0,
+                    rejected: 0
+                };
             }
         }
 
@@ -1940,27 +2019,112 @@
         // Load recent transfers
         async function loadRecentTransfers(headers) {
             try {
-                const response = await fetch('/api/v1/transfers?page=0&size=5', { headers });
-                if (response.ok) {
-                    const data = await response.json();
-                    superadminDashboardData.recentTransfers = data.content || [];
+                let response;
+                let transfers = [];
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // For institution, get all inventories of the institution first
+                    const institution = superadminDashboardData.institutions.find(
+                        inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                    );
+                    if (institution) {
+                        // Get all inventories for this institution
+                        const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                        if (inventoriesResponse.ok) {
+                            const inventoriesData = await inventoriesResponse.json();
+                            const institutionInventories = (inventoriesData.content || []).filter(inv => 
+                                inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString()
+                            );
+                            const inventoryIds = institutionInventories.map(inv => inv.id);
+                            
+                            // Get transfers for each inventory and combine (limit to first 10 per inventory for performance)
+                            const transferPromises = inventoryIds.slice(0, 20).map(invId => 
+                                fetch(`/api/v1/transfers/inventory/${invId}`, { headers }).then(r => r.ok ? r.json() : [])
+                            );
+                            const transferArrays = await Promise.all(transferPromises);
+                            transfers = transferArrays.flat();
+                            
+                            // Remove duplicates by transfer id
+                            const uniqueTransfers = [];
+                            const seenIds = new Set();
+                            transfers.forEach(transfer => {
+                                if (transfer.id && !seenIds.has(transfer.id)) {
+                                    seenIds.add(transfer.id);
+                                    uniqueTransfers.push(transfer);
+                                }
+                            });
+                            transfers = uniqueTransfers;
+                        }
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get transfers by regional
+                    response = await fetch(`/api/v1/transfers/regional/${superadminDashboardData.selectedRegional}?page=0&size=100`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        transfers = data.content || [];
+                    }
+                } else {
+                    // No filters, get all transfers
+                    response = await fetch('/api/v1/transfers?page=0&size=100', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        transfers = data.content || [];
+                    }
                 }
+                
+                // Sort by requestedAt descending and take first 5
+                transfers.sort((a, b) => {
+                    const dateA = new Date(a.requestedAt || 0);
+                    const dateB = new Date(b.requestedAt || 0);
+                    return dateB - dateA;
+                });
+                
+                superadminDashboardData.recentTransfers = transfers.slice(0, 5);
             } catch (error) {
                 console.error('Error loading recent transfers:', error);
+                superadminDashboardData.recentTransfers = [];
             }
         }
 
         // Load recent verifications
         async function loadRecentVerifications(headers) {
             try {
-                // Get recent verifications using the superadmin endpoint with pagination
-                const response = await fetch('/api/v1/verifications?page=0&size=5', { headers });
-                if (response.ok) {
-                    const data = await response.json();
-                    superadminDashboardData.recentVerifications = data.content || [];
+                let response;
+                let verifications = [];
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // Get verifications filtered by institution
+                    response = await fetch(`/api/v1/verifications?institutionId=${superadminDashboardData.selectedInstitution}&page=0&size=100`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        verifications = data.content || [];
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get verifications by regional
+                    response = await fetch(`/api/v1/verifications/regional/${superadminDashboardData.selectedRegional}?page=0&size=100`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        verifications = data.content || [];
+                    }
                 } else {
-                    superadminDashboardData.recentVerifications = [];
+                    // No filters, get all verifications
+                    response = await fetch('/api/v1/verifications?page=0&size=100', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        verifications = data.content || [];
+                    }
                 }
+                
+                // Sort by createdAt descending and take first 5
+                verifications.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || 0);
+                    const dateB = new Date(b.createdAt || 0);
+                    return dateB - dateA;
+                });
+                
+                superadminDashboardData.recentVerifications = verifications.slice(0, 5);
             } catch (error) {
                 console.error('Error loading recent verifications:', error);
                 superadminDashboardData.recentVerifications = [];
@@ -2619,63 +2783,130 @@
         // Load verification count
         async function loadVerificationCount(headers) {
             try {
-                // Get total count from the paginated endpoint (SUPERADMIN only)
-                // Using page=0 and size=1 to minimize data transfer, we only need the totalElements
-                const response = await fetch('/api/v1/verifications?page=0&size=1', { headers });
-                if (response.ok) {
-                    const data = await response.json();
-                    // Page response contains totalElements with the total count
-                    const totalCount = data.totalElements || 0;
-                    document.getElementById('totalVerifications').textContent = totalCount;
-                    superadminDashboardData.verificationCount = totalCount;
+                let response;
+                let totalCount = 0;
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // Get verifications filtered by institution
+                    response = await fetch(`/api/v1/verifications?institutionId=${superadminDashboardData.selectedInstitution}&page=0&size=1`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        totalCount = data.totalElements || 0;
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get verifications by regional
+                    response = await fetch(`/api/v1/verifications/regional/${superadminDashboardData.selectedRegional}?page=0&size=1`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        totalCount = data.totalElements || 0;
+                    }
                 } else {
-                    document.getElementById('totalVerifications').textContent = '0';
+                    // No filters, get all verifications
+                    response = await fetch('/api/v1/verifications?page=0&size=1', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        totalCount = data.totalElements || 0;
+                    }
                 }
+                
+                document.getElementById('totalVerifications').textContent = totalCount;
+                superadminDashboardData.verificationCount = totalCount;
             } catch (error) {
                 console.error('Error loading verification count:', error);
                 document.getElementById('totalVerifications').textContent = '0';
+                superadminDashboardData.verificationCount = 0;
             }
         }
 
         // Load loans count  
         async function loadLoansCount(headers) {
             try {
-                // Get all loans using the filter endpoint without parameters
-                // This returns all loans, then we count them
-                const response = await fetch('/api/v1/loan/filter', { headers });
-                if (response.ok) {
-                    const loans = await response.json();
-                    // Count total loans from the array
-                    const totalCount = loans ? loans.length : 0;
-                    document.getElementById('totalLoans').textContent = totalCount;
-                    superadminDashboardData.loansCount = totalCount;
+                let response;
+                let loans = [];
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // Get loans filtered by institution
+                    response = await fetch(`/api/v1/loan/filter?institutionId=${superadminDashboardData.selectedInstitution}`, { headers });
+                    if (response.ok) {
+                        loans = await response.json();
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get loans filtered by regional
+                    response = await fetch(`/api/v1/loan/filter?regionalId=${superadminDashboardData.selectedRegional}`, { headers });
+                    if (response.ok) {
+                        loans = await response.json();
+                    }
                 } else {
-                    document.getElementById('totalLoans').textContent = '0';
+                    // No filters, get all loans
+                    response = await fetch('/api/v1/loan/filter', { headers });
+                    if (response.ok) {
+                        loans = await response.json();
+                    }
                 }
+                
+                // Count total loans from the array
+                const totalCount = loans ? loans.length : 0;
+                document.getElementById('totalLoans').textContent = totalCount;
+                superadminDashboardData.loansCount = totalCount;
             } catch (error) {
                 console.error('Error loading loans count:', error);
                 document.getElementById('totalLoans').textContent = '0';
+                superadminDashboardData.loansCount = 0;
             }
         }
 
         // Load cancellations count
         async function loadCancellationsCount(headers) {
             try {
-                // Get total count from the paginated endpoint (SUPERADMIN only)
-                // Using page=0 and size=1 to minimize data transfer, we only need the totalElements
-                const response = await fetch('/api/v1/cancellations?page=0&size=1', { headers });
+                let response;
+                let cancellations = [];
+                let totalCount = 0;
+                
+                // Get all cancellations (no direct filter endpoint, so we filter client-side)
+                response = await fetch('/api/v1/cancellations?page=0&size=10000', { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    // Page response contains totalElements with the total count
-                    const totalCount = data.totalElements || 0;
-                    document.getElementById('totalCancellations').textContent = totalCount;
-                    superadminDashboardData.cancellationsCount = totalCount;
-                } else {
-                    document.getElementById('totalCancellations').textContent = '0';
+                    cancellations = data.content || [];
+                    
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        const institution = superadminDashboardData.institutions.find(
+                            inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                        );
+                        if (institution) {
+                            cancellations = cancellations.filter(cancellation => {
+                                return cancellation.institutionName === institution.name;
+                            });
+                        }
+                    }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
+                        const regional = superadminDashboardData.regionals.find(
+                            reg => reg.id.toString() === superadminDashboardData.selectedRegional.toString()
+                        );
+                        if (regional) {
+                            // Get institutions in this regional
+                            const regionalInstitutions = superadminDashboardData.institutions.filter(
+                                inst => inst.regionalId && inst.regionalId.toString() === superadminDashboardData.selectedRegional.toString()
+                            );
+                            const institutionNames = new Set(regionalInstitutions.map(inst => inst.name));
+                            cancellations = cancellations.filter(cancellation => {
+                                return institutionNames.has(cancellation.institutionName);
+                            });
+                        }
+                    }
+                    
+                    totalCount = cancellations.length;
                 }
+                
+                document.getElementById('totalCancellations').textContent = totalCount;
+                superadminDashboardData.cancellationsCount = totalCount;
             } catch (error) {
                 console.error('Error loading cancellations count:', error);
                 document.getElementById('totalCancellations').textContent = '0';
+                superadminDashboardData.cancellationsCount = 0;
             }
         }
     </script>
