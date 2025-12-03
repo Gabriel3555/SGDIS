@@ -30,8 +30,19 @@ function filterVerifications() {
         verificationData.currentPage = 1;
     }
     
-    updateVerificationTable();
-    updatePagination();
+    // Check if updateVerificationTable is available (may not be loaded yet)
+    if (typeof updateVerificationTable === 'function') {
+        updateVerificationTable();
+    } else if (typeof window.updateVerificationTable === 'function') {
+        window.updateVerificationTable();
+    }
+    
+    // Check if updatePagination is available
+    if (typeof updatePagination === 'function') {
+        updatePagination();
+    } else if (typeof window.updatePagination === 'function') {
+        window.updatePagination();
+    }
 }
 
 // Setup search input listener

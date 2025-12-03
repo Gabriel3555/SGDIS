@@ -248,10 +248,10 @@ function filterVerificationsForAdminInstitution() {
     const searchTerm = (verificationDataAdminInstitution.filters.searchTerm || '').toLowerCase();
     if (searchTerm) {
         filtered = filtered.filter(v => {
-            const itemName = (v.item?.productName || '').toLowerCase();
-            const serialNumber = (v.item?.serialNumber || '').toLowerCase();
-            const licencePlate = (v.item?.licencePlateNumber || '').toLowerCase();
-            const inventoryName = (v.item?.inventory?.name || '').toLowerCase();
+            const itemName = (v.itemName || v.item?.productName || '').toLowerCase();
+            const serialNumber = (v.serialNumber || v.item?.serialNumber || '').toLowerCase();
+            const licencePlate = (v.licensePlate || v.itemLicencePlateNumber || v.item?.licencePlateNumber || '').toLowerCase();
+            const inventoryName = (v.inventoryName || v.item?.inventory?.name || '').toLowerCase();
             const status = (v.status || '').toLowerCase();
             const verificationDate = (v.verificationDate || '').toLowerCase();
             
@@ -267,9 +267,30 @@ function filterVerificationsForAdminInstitution() {
     // Update filtered verifications
     verificationDataAdminInstitution.filteredVerifications = filtered;
     
+    // Update window.verificationData for compatibility with existing UI functions
+    if (!window.verificationData) {
+        window.verificationData = {};
+    }
+    window.verificationData.filteredVerifications = filtered;
+    window.verificationData.verifications = verificationDataAdminInstitution.verifications;
+    
     // Update pagination
     verificationDataAdminInstitution.totalPages = Math.ceil(filtered.length / verificationDataAdminInstitution.pageSize);
     verificationDataAdminInstitution.currentPage = 0; // Reset to first page after filtering
+    
+    // Update table if function is available
+    if (typeof updateVerificationTable === 'function') {
+        updateVerificationTable();
+    } else if (typeof window.updateVerificationTable === 'function') {
+        window.updateVerificationTable();
+    }
+    
+    // Update pagination if function is available
+    if (typeof updatePagination === 'function') {
+        updatePagination();
+    } else if (typeof window.updatePagination === 'function') {
+        window.updatePagination();
+    }
 }
 
 /**
@@ -710,10 +731,11 @@ async function loadVerificationsForAdminInstitutionByInventory(inventoryId) {
 /**
  * Handle status filter change for admin institution
  */
-function handleVerificationStatusFilterForAdminInstitution(status) {
+async function handleVerificationStatusFilterForAdminInstitution(status) {
     verificationDataAdminInstitution.filters.status = status;
     filterVerificationsForAdminInstitution();
-    updateVerificationUIForAdminInstitution();
+    // updateVerificationUIForAdminInstitution is async but we don't need to wait for it
+    updateVerificationUIForAdminInstitution().catch(err => console.error('Error updating UI:', err));
 }
 
 /**
