@@ -1032,6 +1032,13 @@ function updateInventoryTable() {
                             }'); }" class="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" title="Asignar Rol">
                                 <i class="fas fa-user-tie"></i>
                             </button>
+                            <button onclick="if(typeof window.showRemoveRoleModal === 'function') { window.showRemoveRoleModal('${
+                              inventory.id
+                            }'); } else if(typeof showRemoveRoleModal === 'function') { showRemoveRoleModal('${
+                              inventory.id
+                            }'); }" class="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded-lg transition-colors" title="Quitar Rol">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
                             <button onclick="if(typeof window.showInventoryTreeModal === 'function') { window.showInventoryTreeModal('${
                               inventory.id
                             }', '${(inventory.name || "").replace(
@@ -1302,6 +1309,13 @@ function updateInventoryCards() {
                               inventory.id
                             }'); }" class="text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 transition-colors" title="Asignar Rol">
                                 <i class="fas fa-user-tie text-lg"></i>
+                           </button>
+                           <button onclick="if(typeof window.showRemoveRoleModal === 'function') { window.showRemoveRoleModal('${
+                             inventory.id
+                            }'); } else if(typeof showRemoveRoleModal === 'function') { showRemoveRoleModal('${
+                             inventory.id
+                            }'); }" class="text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 transition-colors" title="Quitar Rol">
+                                <i class="fas fa-user-minus text-lg"></i>
                            </button>
                            <button onclick="if(typeof window.showInventoryTreeModal === 'function') { window.showInventoryTreeModal('${
                              inventory.id
