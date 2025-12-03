@@ -358,6 +358,39 @@
                             <p class="text-xs text-gray-500 mt-1">Usuario propietario de este inventario</p>
                         </div>
 
+                        <!-- Institution Selection (for ADMIN_INSTITUTION) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Institución del Inventario <span
+                                    class="text-red-500">*</span></label>
+                            <div class="custom-select-container">
+                                <div class="custom-select" id="newInventoryInstitutionIdSelect">
+                                    <div class="custom-select-trigger">
+                                        <span class="custom-select-text">Seleccionar institución...</span>
+                                        <div class="custom-select-arrow">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </div>
+                                    </div>
+                                    <div class="custom-select-dropdown">
+                                        <input type="text" class="custom-select-search"
+                                            placeholder="Buscar institución...">
+                                        <div class="custom-select-options" id="newInventoryInstitutionIdOptions">
+                                            <!-- Options loaded dynamically -->
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="newInventoryInstitutionId" name="institutionId" required>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1" id="newInventoryInstitutionHelper">
+                                Tu rol asigna los inventarios a tu institución actual
+                            </p>
+                            <div id="newInventoryInstitutionLockedInfo"
+                                class="hidden mt-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl text-sm text-blue-800 dark:text-blue-300">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Este inventario se asignará a: <span class="font-semibold"
+                                    id="newInventoryLockedInstitutionName"></span>
+                            </div>
+                        </div>
+
                         <!-- Regional Selection (if visible) -->
                         <div id="newInventoryRegionalField" class="hidden">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Regional del Inventario</label>
@@ -382,47 +415,6 @@
                             <p class="text-xs text-gray-500 mt-1" id="newInventoryRegionalHelper">
                                 Selecciona una regional para ver sus instituciones
                             </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Institución -->
-                <div>
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <i class="fas fa-building text-[#00AF00] mr-2"></i>
-                        Institución
-                    </h3>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Institución del Inventario <span
-                                    class="text-red-500">*</span></label>
-                            <div class="custom-select-container">
-                                <div class="custom-select" id="newInventoryInstitutionIdSelect">
-                                    <div class="custom-select-trigger">
-                                        <span class="custom-select-text">Seleccionar institución...</span>
-                                        <div class="custom-select-arrow">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </div>
-                                    </div>
-                                    <div class="custom-select-dropdown">
-                                        <input type="text" class="custom-select-search"
-                                            placeholder="Buscar institución...">
-                                        <div class="custom-select-options" id="newInventoryInstitutionIdOptions">
-                                            <!-- Options loaded dynamically -->
-                                        </div>
-                                    </div>
-                                </div>
-                                <input type="hidden" id="newInventoryInstitutionId" name="institutionId" required>
-                            </div>
-                            <p class="text-xs text-gray-500 mt-1" id="newInventoryInstitutionHelper">
-                                Selecciona la institución a la que pertenecerá el inventario
-                            </p>
-                            <div id="newInventoryInstitutionLockedInfo"
-                                class="hidden mt-2 px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl text-sm text-blue-800 dark:text-blue-300">
-                                <i class="fas fa-info-circle mr-2"></i>
-                                Este inventario se asignará a: <span class="font-semibold"
-                                    id="newInventoryLockedInstitutionName"></span>
-                            </div>
                         </div>
                     </div>
                 </div>
