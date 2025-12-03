@@ -146,17 +146,17 @@ public class CancellationController {
 
     @Operation(
             summary = "Get cancellations by current user's institution",
-            description = "Retrieves paginated cancellations for the current user's institution (Warehouse only)"
+            description = "Retrieves paginated cancellations for the current user's institution (Warehouse and Admin Institution)"
     )
     @ApiResponse(
             responseCode = "200",
             description = "Cancellations retrieved successfully",
             content = @Content(schema = @Schema(implementation = Page.class))
     )
-    @ApiResponse(responseCode = "403", description = "Access denied - WAREHOUSE role required")
+    @ApiResponse(responseCode = "403", description = "Access denied - WAREHOUSE or ADMIN_INSTITUTION role required")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('WAREHOUSE')")
+    @PreAuthorize("hasAnyRole('WAREHOUSE', 'ADMIN_INSTITUTION')")
     @GetMapping("/my-institution")
     public ResponseEntity<Page<CancellationResponse>> getCancellationsByMyInstitution(
             @Parameter(description = "Page number (0-indexed)")

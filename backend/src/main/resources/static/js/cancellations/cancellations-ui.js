@@ -12,9 +12,11 @@ async function loadCancellationsData() {
     showLoadingState();
 
     try {
-        // Detect role from URL first (warehouse view)
+        // Detect role from URL first (warehouse view or admin_institution view)
         if (window.location.pathname.includes('/warehouse/')) {
             cancellationsData.userRole = 'WAREHOUSE';
+        } else if (window.location.pathname.includes('/admin_institution/')) {
+            cancellationsData.userRole = 'ADMIN_INSTITUTION';
         }
         
         await loadCurrentUserInfo();
