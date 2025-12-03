@@ -15,20 +15,17 @@ async function loadCancellationsData() {
         // Detect role from URL first (warehouse view)
         if (window.location.pathname.includes('/warehouse/')) {
             cancellationsData.userRole = 'WAREHOUSE';
-            console.log('Detected WAREHOUSE role from URL');
         }
         
         await loadCurrentUserInfo();
         
         // Ensure userRole is set before loading cancellations
         if (!cancellationsData.userRole) {
-            console.warn('User role not set, attempting to get from window');
             cancellationsData.userRole = window.currentUserRole || 
                                         window.usersData?.currentLoggedInUserRole || 
                                         (window.location.pathname.includes('/warehouse/') ? 'WAREHOUSE' : 'SUPERADMIN');
         }
         
-        console.log('Loading cancellations with role:', cancellationsData.userRole);
         await loadCancellations();
         cancellationsData.isLoading = false;
         hideLoadingState();
@@ -65,7 +62,6 @@ async function loadCurrentUserInfo() {
         if (response.ok) {
             const userData = await response.json();
             cancellationsData.userRole = userData.role || 'SUPERADMIN';
-            console.log('User role detected:', cancellationsData.userRole);
             updateUserInfoDisplay(userData);
         } else {
             throw new Error('Failed to load user info');
@@ -80,7 +76,6 @@ async function loadCurrentUserInfo() {
             email: 'admin@sena.edu.co'
         });
         cancellationsData.userRole = fallbackRole;
-        console.log('Using fallback role:', cancellationsData.userRole);
     }
 }
 
@@ -92,8 +87,6 @@ async function loadCancellations() {
         // Ensure userRole is set, default to WAREHOUSE if in warehouse view
         const userRole = cancellationsData.userRole || 
                         (window.location.pathname.includes('/warehouse/') ? 'WAREHOUSE' : 'SUPERADMIN');
-        
-        console.log('Loading cancellations with role:', userRole);
         
         const pageData = await fetchAllCancellations(
             cancellationsData.currentPage,

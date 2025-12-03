@@ -64,67 +64,8 @@
         </div>
 
         <!-- Sidebar navigation -->
-        <nav class="flex-1 px-4 py-4 overflow-y-auto">
-            <a href="/superadmin/dashboard" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/dashboard')">
-                <i class="fas fa-chart-line text-lg"></i>
-                <span class="font-medium">Dashboard</span>
-            </a>
-            <a href="/superadmin/inventory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/inventory')">
-                <i class="fas fa-boxes text-lg"></i>
-                <span class="font-medium">Inventario</span>
-            </a>
-            <a href="/superadmin/users" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/users')">
-                <i class="fas fa-users text-lg"></i>
-                <span class="font-medium">Usuarios</span>
-            </a>
-            <a href="/superadmin/centers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/centers')">
-                <i class="fas fa-building text-lg"></i>
-                <span class="font-medium">Centros</span>
-            </a>
-            <a href="/superadmin/verification" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/verification')">
-                <i class="fas fa-clipboard-check text-lg"></i>
-                <span class="font-medium">Verificación</span>
-            </a>
-            <a href="/superadmin/loans" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/loans')">
-                <i class="fas fa-hand-holding text-lg"></i>
-                <span class="font-medium">Préstamos</span>
-            </a>
-            <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/reports')">
-                <i class="fas fa-chart-bar text-lg"></i>
-                <span class="font-medium">Reportes</span>
-            </a>
-            <a href="/superadmin/auditory" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/auditory')">
-                <i class="fas fa-clipboard-list text-lg"></i>
-                <span class="font-medium">Auditoría</span>
-            </a>
-            <a href="/superadmin/notifications" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/notifications')">
-                <i class="fas fa-bell text-lg"></i>
-                <span class="font-medium">Notificaciones</span>
-            </a>
-            <a href="/superadmin/import-export" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/import-export')">
-                <i class="fas fa-exchange-alt text-lg"></i>
-                <span class="font-medium">Importar/Exportar</span>
-            </a>
-            <a href="/superadmin/settings" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/superadmin/settings')">
-                <i class="fas fa-sliders-h text-lg"></i>
-                <span class="font-medium">Configuración</span>
-            </a>
-            <a href="/info-me" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
-                onclick="handleSidebarClick(event, '/info-me')">
-                <i class="fas fa-user-circle text-lg"></i>
-                <span class="font-medium">Mi Perfil</span>
-            </a>
+        <nav class="flex-1 px-4 py-4 overflow-y-auto" id="sidebarNavigation">
+            <!-- Navigation items will be populated dynamically based on user role -->
         </nav>
 
         <!-- Logout button -->
@@ -862,22 +803,94 @@
             window.location.href = '/';
         }
 
+        // Get base route based on current URL
+        function getBaseRoute() {
+            const path = window.location.pathname;
+            if (path.includes('/admin_regional/')) {
+                return '/admin_regional';
+            } else if (path.includes('/admin_institution/') || path.includes('/admininstitution/')) {
+                return '/admin_institution';
+            } else {
+                return '/superadmin';
+            }
+        }
+
         // Go back to inventory view
         function goBackToInventory() {
             const inventoryId = sessionStorage.getItem('currentInventoryId');
+            const baseRoute = getBaseRoute();
             if (inventoryId) {
                 // Navigate back to inventory page
                 // The inventory page will check for viewInventory parameter and open the modal
-                window.location.href = `/superadmin/inventory?viewInventory=${inventoryId}`;
+                window.location.href = `${baseRoute}/inventory?viewInventory=${inventoryId}`;
             } else {
-                window.location.href = '/superadmin/inventory';
+                window.location.href = `${baseRoute}/inventory`;
             }
         }
 
         window.goBackToInventory = goBackToInventory;
+        window.getBaseRoute = getBaseRoute;
+
+        // Populate sidebar navigation based on user role
+        function populateSidebarNavigation() {
+            const baseRoute = getBaseRoute();
+            const sidebarNav = document.getElementById('sidebarNavigation');
+            if (!sidebarNav) return;
+
+            const navItems = [
+                { href: `${baseRoute}/dashboard`, icon: 'fa-chart-line', text: 'Dashboard' },
+                { href: `${baseRoute}/inventory`, icon: 'fa-boxes', text: 'Inventario' },
+                { href: `${baseRoute}/users`, icon: 'fa-users', text: 'Usuarios' }
+            ];
+
+            // Add centers only for superadmin and admin_regional
+            if (baseRoute === '/superadmin' || baseRoute === '/admin_regional') {
+                navItems.push({ href: `${baseRoute}/centers`, icon: 'fa-building', text: 'Centros' });
+            }
+
+            navItems.push(
+                { href: `${baseRoute}/verification`, icon: 'fa-clipboard-check', text: 'Verificación' },
+                { href: `${baseRoute}/loans`, icon: 'fa-hand-holding', text: 'Préstamos' }
+            );
+
+            // Add cancellations for admin_regional and admin_institution
+            if (baseRoute === '/admin_regional' || baseRoute === '/admin_institution') {
+                navItems.push({ href: `${baseRoute}/cancellations`, icon: 'fa-times-circle', text: 'Bajas' });
+            }
+
+            navItems.push(
+                { href: `${baseRoute}/reports`, icon: 'fa-chart-bar', text: 'Reportes' },
+                { href: `${baseRoute}/auditory`, icon: 'fa-clipboard-list', text: 'Auditoría' },
+                { href: `${baseRoute}/notifications`, icon: 'fa-bell', text: 'Notificaciones' },
+                { href: `${baseRoute}/import-export`, icon: 'fa-exchange-alt', text: 'Importar/Exportar' },
+                { href: `${baseRoute}/settings`, icon: 'fa-sliders-h', text: 'Configuración' }
+            );
+
+            // Add info-me route (different for each role)
+            let infoMeRoute = '/info-me';
+            if (baseRoute === '/admin_regional') {
+                infoMeRoute = '/admin_regional/info-me';
+            } else if (baseRoute === '/admin_institution') {
+                infoMeRoute = '/admin_institution/info-me';
+            } else if (baseRoute === '/superadmin') {
+                infoMeRoute = '/superadmin/info-me';
+            }
+            navItems.push({ href: infoMeRoute, icon: 'fa-user-circle', text: 'Mi Perfil' });
+
+            // Generate HTML for navigation items
+            sidebarNav.innerHTML = navItems.map(item => `
+                <a href="${item.href}" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                    onclick="handleSidebarClick(event, '${item.href}')">
+                    <i class="fas ${item.icon} text-lg"></i>
+                    <span class="font-medium">${item.text}</span>
+                </a>
+            `).join('');
+        }
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', async function () {
+            // Populate sidebar navigation first
+            populateSidebarNavigation();
             // Get inventory ID from URL or sessionStorage
             const urlParams = new URLSearchParams(window.location.search);
             const inventoryId = urlParams.get('inventoryId') || sessionStorage.getItem('currentInventoryId');

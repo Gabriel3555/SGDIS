@@ -31,7 +31,6 @@ const NotificationSound = {
 
             if (this.audioContext.state === 'running') {
                 this.isInitialized = true;
-                console.log('AudioContext inicializado correctamente');
             }
         } catch (error) {
             console.log('Error al inicializar AudioContext:', error);
