@@ -65,12 +65,13 @@ async function setRegionalFilter(regionalId) {
         await window.loadInventories();
     }
     
-    // Update filters UI
-    if (typeof updateFilters === 'function') {
-        updateFilters();
-    } else if (typeof populateVerificationCustomSelects === 'function') {
+    // Update filters UI - prefer populateVerificationCustomSelects to avoid regenerating HTML
+    if (typeof populateVerificationCustomSelects === 'function') {
         // If custom selects are already initialized, just populate them
         populateVerificationCustomSelects();
+    } else if (typeof updateFilters === 'function') {
+        // Only regenerate HTML if custom selects are not initialized
+        updateFilters();
     }
     
     // Reload verifications
@@ -96,12 +97,13 @@ async function setInstitutionFilter(institutionId) {
         await window.loadInventories();
     }
     
-    // Update filters UI
-    if (typeof updateFilters === 'function') {
-        updateFilters();
-    } else if (typeof populateVerificationCustomSelects === 'function') {
+    // Update filters UI - prefer populateVerificationCustomSelects to avoid regenerating HTML
+    if (typeof populateVerificationCustomSelects === 'function') {
         // If custom selects are already initialized, just populate them
         populateVerificationCustomSelects();
+    } else if (typeof updateFilters === 'function') {
+        // Only regenerate HTML if custom selects are not initialized
+        updateFilters();
     }
     
     // Reload verifications

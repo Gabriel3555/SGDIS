@@ -671,7 +671,6 @@ function renderCenters() {
             <table class="w-full">
                 <thead>
                     <tr class="border-b border-gray-200 dark:border-gray-700">
-                        <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">ID</th>
                         <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Nombre</th>
                         <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Código</th>
                         <th class="text-left py-3 px-4 font-semibold text-gray-700 dark:text-gray-300">Regional</th>
@@ -685,7 +684,6 @@ function renderCenters() {
     centersData.forEach(center => {
         html += `
             <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.institutionId || center.id || '-'}</td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.name || '-'}</td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.codeInstitution || '-'}</td>
                 <td class="py-3 px-4 text-gray-700 dark:text-gray-300">${center.regionalName || '-'}</td>

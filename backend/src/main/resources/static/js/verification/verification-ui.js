@@ -1,6 +1,15 @@
 function updateVerificationUI() {
     updateStatsCards();
-    updateFilters();
+    // Only update filters if CustomSelects are not initialized, otherwise just populate them
+    if (verificationRegionalCustomSelect || verificationInstitutionCustomSelect || verificationInventoryCustomSelect) {
+        // CustomSelects are already initialized, just populate them with current data
+        if (typeof populateVerificationCustomSelects === 'function') {
+            populateVerificationCustomSelects();
+        }
+    } else {
+        // CustomSelects not initialized, regenerate HTML
+        updateFilters();
+    }
     updateVerificationTable();
     updatePagination();
 }
@@ -294,6 +303,21 @@ function initializeVerificationCustomSelects() {
                     setInstitutionFilter(value);
                 }
             });
+            
+            // Restore selected value if it exists after initialization
+            if (verificationData.selectedInstitution) {
+                setTimeout(() => {
+                    const selectedValue = verificationData.selectedInstitution.toString();
+                    if (verificationInstitutionCustomSelect && verificationInstitutionCustomSelect.setValue) {
+                        verificationInstitutionCustomSelect.setValue(selectedValue);
+                        // Also update the hidden input directly to ensure it's synchronized
+                        const hiddenInput = document.getElementById('institutionFilter');
+                        if (hiddenInput) {
+                            hiddenInput.value = selectedValue;
+                        }
+                    }
+                }, 150);
+            }
         }
     }
 
@@ -315,9 +339,22 @@ function initializeVerificationCustomSelects() {
     populateVerificationCustomSelects();
 }
 
+// Flag to prevent multiple simultaneous calls to populateVerificationCustomSelects
+let isPopulatingVerificationSelects = false;
+
 function populateVerificationCustomSelects() {
+    // Prevent multiple simultaneous calls
+    if (isPopulatingVerificationSelects) {
+        return;
+    }
+    
+    isPopulatingVerificationSelects = true;
+    
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+
+    // CRITICAL: Preserve the selected institution value BEFORE any operations
+    const preservedInstitutionValue = verificationData.selectedInstitution ? verificationData.selectedInstitution.toString() : '';
 
     // Populate Regional Filter
     if (isSuperAdmin && verificationRegionalCustomSelect) {
@@ -346,6 +383,13 @@ function populateVerificationCustomSelects() {
             verificationInstitutionCustomSelect.setDisabled(true);
             verificationInstitutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
             verificationInstitutionCustomSelect.clear();
+            // Also clear the hidden input
+            const hiddenInput = document.getElementById('institutionFilter');
+            if (hiddenInput) {
+                hiddenInput.value = '';
+            }
+            // Clear the preserved value since no regional is selected
+            verificationData.selectedInstitution = '';
         } else {
             verificationInstitutionCustomSelect.setDisabled(false);
             const options = [
@@ -355,19 +399,69 @@ function populateVerificationCustomSelects() {
                     label: institution.name
                 }))
             ];
+            
             verificationInstitutionCustomSelect.setOptions(options);
             
-            if (verificationData.selectedInstitution) {
-                const selectedOption = options.find(opt => opt.value === verificationData.selectedInstitution.toString());
+            // Restore selected value after setting options - use preserved value
+            if (preservedInstitutionValue) {
+                // Verify the option exists in the new options list
+                const selectedOption = options.find(opt => opt.value === preservedInstitutionValue);
                 if (selectedOption) {
-                    verificationInstitutionCustomSelect.selectOption(selectedOption);
+                    // Use multiple attempts to ensure the value is set
+                    const setInstitutionValue = () => {
+                        if (verificationInstitutionCustomSelect) {
+                            try {
+                                if (verificationInstitutionCustomSelect.setValue) {
+                                    verificationInstitutionCustomSelect.setValue(preservedInstitutionValue);
+                                } else if (verificationInstitutionCustomSelect.selectOption) {
+                                    verificationInstitutionCustomSelect.selectOption(selectedOption);
+                                }
+                                
+                                // Always update the hidden input directly
+                                const hiddenInput = document.getElementById('institutionFilter');
+                                if (hiddenInput) {
+                                    hiddenInput.value = preservedInstitutionValue;
+                                }
+                                
+                                // Also ensure the CustomSelect's internal hiddenInput is updated
+                                if (verificationInstitutionCustomSelect.hiddenInput) {
+                                    verificationInstitutionCustomSelect.hiddenInput.value = preservedInstitutionValue;
+                                }
+                                
+                                // Ensure verificationData is also updated
+                                verificationData.selectedInstitution = preservedInstitutionValue;
+                            } catch (error) {
+                                console.warn('Error setting institution value:', error);
+                            }
+                        }
+                    };
+                    
+                    // Try immediately
+                    setInstitutionValue();
+                    
+                    // Try again after a short delay to ensure DOM is ready
+                    setTimeout(setInstitutionValue, 50);
+                    setTimeout(setInstitutionValue, 150);
+                } else {
+                    // Option doesn't exist in the new list, clear it
+                    verificationInstitutionCustomSelect.clear();
+                    verificationData.selectedInstitution = '';
+                    const hiddenInput = document.getElementById('institutionFilter');
+                    if (hiddenInput) {
+                        hiddenInput.value = '';
+                    }
                 }
             } else {
                 verificationInstitutionCustomSelect.clear();
+                // Also clear the hidden input
+                const hiddenInput = document.getElementById('institutionFilter');
+                if (hiddenInput) {
+                    hiddenInput.value = '';
+                }
             }
         }
     }
-
+    
     // Populate Inventory Filter
     if (verificationInventoryCustomSelect) {
         if (isSuperAdmin && !verificationData.selectedInstitution) {
@@ -385,19 +479,59 @@ function populateVerificationCustomSelects() {
         ];
         verificationInventoryCustomSelect.setOptions(options);
         
-        if (verificationData.selectedInventory && verificationData.selectedInventory !== 'all') {
-            const selectedOption = options.find(opt => opt.value === verificationData.selectedInventory.toString());
-            if (selectedOption) {
-                verificationInventoryCustomSelect.selectOption(selectedOption);
-            }
-        } else {
-            // Select "all" option
-            const allOption = options.find(opt => opt.value === 'all');
-            if (allOption) {
-                verificationInventoryCustomSelect.selectOption(allOption);
+        // Restore selected value - check if dropdown is open first
+        const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
+        const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
+        
+        if (selectedOption) {
+            // Check if dropdown is currently open
+            const isOpen = verificationInventoryCustomSelect.container && 
+                          (verificationInventoryCustomSelect.container.classList.contains('open') || 
+                           verificationInventoryCustomSelect.container.classList.contains('active'));
+            
+            if (isOpen) {
+                // If dropdown is open, update the value without closing it
+                verificationInventoryCustomSelect.selectedValue = selectedOption.value;
+                verificationInventoryCustomSelect.selectedText = selectedOption.label;
+                
+                // Update the text element without closing
+                if (verificationInventoryCustomSelect.textElement) {
+                    verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
+                    verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
+                }
+                
+                // Update hidden input
+                const hiddenInput = document.getElementById('inventoryFilter');
+                if (hiddenInput) {
+                    hiddenInput.value = selectedOption.value;
+                }
+                if (verificationInventoryCustomSelect.hiddenInput) {
+                    verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
+                }
+                
+                // Mark the option as selected in the rendered options
+                const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
+                optionElements.forEach(el => {
+                    el.classList.remove('selected');
+                    if (el.dataset.value === selectedOption.value) {
+                        el.classList.add('selected');
+                    }
+                });
+            } else {
+                // If dropdown is closed, use setValue normally
+                if (verificationInventoryCustomSelect.setValue) {
+                    verificationInventoryCustomSelect.setValue(selectedInventoryValue);
+                } else if (verificationInventoryCustomSelect.selectOption) {
+                    verificationInventoryCustomSelect.selectOption(selectedOption);
+                }
             }
         }
     }
+    
+    // Reset the flag after a short delay
+    setTimeout(() => {
+        isPopulatingVerificationSelects = false;
+    }, 200);
 }
 
 function updateVerificationTable() {

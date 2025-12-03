@@ -67,21 +67,26 @@ public class InventoryService
         @Override
         @Transactional
         public CreateInventoryResponse createInventory(CreateInventoryRequest request) {
-                UserEntity owner = userRepository.findById(request.ownerId())
-                                .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
+                UserEntity owner = null;
+                
+                // Si ownerId es proporcionado, validar y buscar el usuario
+                if (request.ownerId() != null) {
+                        owner = userRepository.findById(request.ownerId())
+                                        .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
 
-                List<InventoryEntity> existingInventories = inventoryRepository
-                                .findInventoryEntitiesByOwnerId(owner.getId());
-                if (existingInventories != null && !existingInventories.isEmpty()) {
-                        InventoryEntity existingInventory = existingInventories.get(0);
-                        String inventoryName = existingInventory.getName() != null ? existingInventory.getName() : "sin nombre";
-                        throw new DomainConflictException(
-                                String.format("El usuario '%s' (ID: %d) ya tiene un inventario asignado como propietario: '%s' (ID: %d). Un usuario solo puede ser propietario de un inventario a la vez.",
-                                        owner.getFullName() != null ? owner.getFullName() : owner.getEmail(),
-                                        owner.getId(),
-                                        inventoryName,
-                                        existingInventory.getId())
-                        );
+                        List<InventoryEntity> existingInventories = inventoryRepository
+                                        .findInventoryEntitiesByOwnerId(owner.getId());
+                        if (existingInventories != null && !existingInventories.isEmpty()) {
+                                InventoryEntity existingInventory = existingInventories.get(0);
+                                String inventoryName = existingInventory.getName() != null ? existingInventory.getName() : "sin nombre";
+                                throw new DomainConflictException(
+                                        String.format("El usuario '%s' (ID: %d) ya tiene un inventario asignado como propietario: '%s' (ID: %d). Un usuario solo puede ser propietario de un inventario a la vez.",
+                                                owner.getFullName() != null ? owner.getFullName() : owner.getEmail(),
+                                                owner.getId(),
+                                                inventoryName,
+                                                existingInventory.getId())
+                                );
+                        }
                 }
 
                 // Validar que institutionId no sea null
@@ -99,20 +104,24 @@ public class InventoryService
 
                 InventoryEntity savedInventory = inventoryRepository.save(inventory);
                 
-                // Enviar notificación al dueño del inventario
-                notificationService.sendInventoryCreatedNotification(
-                        owner.getId(), 
-                        savedInventory.getName(), 
-                        savedInventory.getId()
-                );
+                // Enviar notificación al dueño del inventario solo si existe
+                if (owner != null) {
+                        notificationService.sendInventoryCreatedNotification(
+                                owner.getId(), 
+                                savedInventory.getName(), 
+                                savedInventory.getId()
+                        );
+                }
                 
                 // Registrar auditoría
+                String ownerInfo = owner != null 
+                        ? String.format("Propietario: %s (%s)", owner.getFullName(), owner.getEmail())
+                        : "Sin propietario asignado";
                 recordActionUseCase.recordAction(new RecordActionRequest(
-                        String.format("Inventario creado: %s (ID: %d) - Propietario: %s (%s)", 
+                        String.format("Inventario creado: %s (ID: %d) - %s", 
                                 savedInventory.getName() != null ? savedInventory.getName() : "sin nombre",
                                 savedInventory.getId(),
-                                owner.getFullName(),
-                                owner.getEmail())
+                                ownerInfo)
                 ));
                 
                 return InventoryMapper.toCreateResponse(savedInventory);
