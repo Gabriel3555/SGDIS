@@ -17,9 +17,9 @@ function updateUserInfoDisplay(userData) {
     if (headerUserRole) {
         const roleText = {
             'SUPERADMIN': 'Super Administrador',
-            'ADMIN_INSTITUTIONAL': 'Admin Institucional',
-            'ADMIN_INSTITUTION': 'Admin Institucional',
-            'ADMIN_REGIONAL': 'Admin Regional',
+            'ADMIN_INSTITUTIONAL': 'Administrador Institucional',
+            'ADMIN_INSTITUTION': 'Administrador Institucional',
+            'ADMIN_REGIONAL': 'Administrador Regional',
             'WAREHOUSE': 'Encargado de Almacén',
             'USER': 'Usuario'
         }[userData.role] || userData.role || 'Usuario';

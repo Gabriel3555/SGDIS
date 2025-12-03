@@ -299,10 +299,8 @@ function initializeWebSocket() {
         if (typeof SockJS === 'undefined' || typeof Stomp === 'undefined') {
             wsInitAttempts++;
             if (wsInitAttempts >= MAX_WS_INIT_ATTEMPTS) {
-                console.warn('SockJS o Stomp no están disponibles después de ' + MAX_WS_INIT_ATTEMPTS + ' intentos. WebSocket no se inicializará.');
                 return;
             }
-            console.warn('SockJS o Stomp no están disponibles, reintentando en 1 segundo... (intento ' + wsInitAttempts + '/' + MAX_WS_INIT_ATTEMPTS + ')');
             setTimeout(initializeWebSocket, 1000);
             return;
         }

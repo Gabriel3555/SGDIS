@@ -754,8 +754,8 @@ function updateUserInfoDisplay(userData) {
         const roleNames = {
             'SUPERADMIN': 'Super Administrador',
             'ADMIN_REGIONAL': 'Administrador Regional',
-            'ADMIN_INSTITUTION': 'Administrador de Institución',
-            'ADMIN_INSTITUTIONAL': 'Admin Institucional',
+            'ADMIN_INSTITUTION': 'Administrador Institucional',
+            'ADMIN_INSTITUTIONAL': 'Administrador Institucional',
             'WAREHOUSE': 'Encargado de Almacén',
             'USER': 'Usuario'
         };

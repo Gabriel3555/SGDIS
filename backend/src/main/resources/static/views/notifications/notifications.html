@@ -355,7 +355,17 @@
             const headerUserAvatar = document.getElementById('headerUserAvatar');
 
             if (headerUserName) headerUserName.textContent = userData.fullName || 'Usuario';
-            if (headerUserRole) headerUserRole.textContent = userData.role || 'USER';
+            if (headerUserRole) {
+                const roleText = {
+                    'SUPERADMIN': 'Super Administrador',
+                    'ADMIN_REGIONAL': 'Administrador Regional',
+                    'ADMIN_INSTITUTION': 'Administrador Institucional',
+                    'ADMIN_INSTITUTIONAL': 'Administrador Institucional',
+                    'WAREHOUSE': 'Encargado de Almacén',
+                    'USER': 'Usuario'
+                }[userData.role] || userData.role || 'Usuario';
+                headerUserRole.textContent = roleText;
+            }
             
             if (headerUserAvatar) {
                 if (userData.imgUrl) {
