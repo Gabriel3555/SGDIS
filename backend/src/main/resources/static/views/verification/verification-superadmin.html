@@ -182,25 +182,25 @@
 
                         <!-- Dropdown Menu -->
                         <div id="verificationMenu"
-                            class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                            class="hidden absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50">
                             <button onclick="showNewVerificationModal(); hideVerificationMenu();"
-                                class="w-full text-left px-4 py-3 hover:bg-green-50 transition-colors flex items-center gap-3 border-b border-gray-100">
-                                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-plus text-green-600"></i>
+                                class="w-full text-left px-4 py-3 hover:bg-green-50 dark:hover:bg-green-900/30 transition-colors flex items-center gap-3 border-b border-gray-100 dark:border-gray-700">
+                                <div class="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-plus text-green-600 dark:text-green-400"></i>
                                 </div>
                                 <div>
-                                    <div class="font-semibold text-gray-800">Verificación Individual</div>
-                                    <div class="text-xs text-gray-500">Verificar un ítem a la vez</div>
+                                    <div class="font-semibold text-gray-800 dark:text-gray-200">Verificación Individual</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">Verificar un ítem a la vez</div>
                                 </div>
                             </button>
                             <button onclick="showBatchVerificationModal(); hideVerificationMenu();"
-                                class="w-full text-left px-4 py-3 hover:bg-blue-50 transition-colors flex items-center gap-3">
-                                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-layer-group text-blue-600"></i>
+                                class="w-full text-left px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-3">
+                                <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/40 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-layer-group text-blue-600 dark:text-blue-400"></i>
                                 </div>
                                 <div>
-                                    <div class="font-semibold text-gray-800">Verificación por Lotes</div>
-                                    <div class="text-xs text-gray-500">Verificar múltiples ítems</div>
+                                    <div class="font-semibold text-gray-800 dark:text-gray-200">Verificación por Lotes</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">Verificar múltiples ítems</div>
                                 </div>
                             </button>
                         </div>
@@ -557,22 +557,22 @@
             <!-- Scanner Section -->
             <div id="batchScannerSection" class="mb-6">
                 <!-- Manual Input Section -->
-                <div class="bg-blue-50 rounded-xl p-6 mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">
-                        <i class="fas fa-keyboard mr-2 text-blue-600"></i>
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-6 mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                        <i class="fas fa-keyboard mr-2 text-blue-600 dark:text-blue-400"></i>
                         Entrada Manual de Placas
                     </h3>
                     <div class="flex gap-3">
                         <input type="text" id="manualPlateInput" placeholder="Ingresa la placa (ej: ABC123)"
-                            class="flex-1 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 placeholder-gray-500 dark:placeholder-gray-400"
                             onkeypress="if(event.key === 'Enter') addManualPlate()">
                         <button onclick="addManualPlate()"
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-xl transition-colors">
+                            class="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-xl transition-colors">
                             <i class="fas fa-plus mr-2"></i>
                             Agregar
                         </button>
                     </div>
-                    <p class="text-sm text-gray-600 mt-3">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-3">
                         <i class="fas fa-info-circle mr-1"></i>
                         Escribe la placa y presiona Enter o haz clic en "Agregar"
                     </p>

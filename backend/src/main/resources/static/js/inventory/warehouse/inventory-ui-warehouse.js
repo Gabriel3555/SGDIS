@@ -923,9 +923,6 @@ function updateInventoryTable() {
                             </button>
                             <div>
                                 <div class="font-semibold text-gray-800 dark:text-gray-200">${fullName}</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">ID: ${
-                                  inventory.id
-                                }</div>
                             </div>
                         </div>
                     </td>
@@ -1148,13 +1145,7 @@ function updateInventoryCards() {
                         }
                     </div>
 
-                    <div class="grid grid-cols-3 gap-4 mb-4">
-                        <div>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">ID</p>
-                            <p class="font-bold text-xl text-gray-800 dark:text-gray-200">${
-                              inventory.id || "N/A"
-                            }</p>
-                        </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">Items</p>
                             <div class="flex items-center gap-1">

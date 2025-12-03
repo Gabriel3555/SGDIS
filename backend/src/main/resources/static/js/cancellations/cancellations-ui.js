@@ -537,10 +537,14 @@ function updatePagination() {
     const currentPage = cancellationsData.currentPage;
     const totalElements = cancellationsData.totalElements;
 
+    // Calculate start and end items for current page
+    const startItem = totalElements === 0 ? 0 : (currentPage * cancellationsData.pageSize) + 1;
+    const endItem = Math.min((currentPage + 1) * cancellationsData.pageSize, totalElements);
+
     if (totalPages <= 1) {
         container.innerHTML = `
             <div class="text-sm text-gray-600 dark:text-gray-400">
-                Mostrando ${cancellationsData.filteredCancellations.length} de ${totalElements} bajas
+                Mostrando ${startItem}-${endItem} de ${totalElements} baja${totalElements !== 1 ? 's' : ''}
             </div>
             <div></div>
         `;
@@ -548,51 +552,86 @@ function updatePagination() {
     }
 
     let paginationHtml = `
-        <div class="text-sm text-gray-600 dark:text-gray-400">
-            Mostrando página ${currentPage + 1} de ${totalPages} (${totalElements} bajas)
-        </div>
-        <div class="flex gap-2">
+        <div class="flex items-center justify-between w-full">
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+                Mostrando ${startItem}-${endItem} de ${totalElements} baja${totalElements !== 1 ? 's' : ''}
+            </div>
+            <div class="flex items-center gap-2">
     `;
 
     // Previous button
     paginationHtml += `
         <button onclick="changeCancellationPage(${currentPage - 1})" 
             ${currentPage === 0 ? 'disabled' : ''}
-            class="px-3 py-2 rounded-lg ${currentPage === 0 
-                ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed' 
-                : 'bg-[#00AF00] hover:bg-[#008800] text-white'} transition-colors">
+            class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium">
             <i class="fas fa-chevron-left"></i>
         </button>
     `;
 
-    // Page numbers
-    for (let i = 0; i < totalPages; i++) {
-        if (i === 0 || i === totalPages - 1 || (i >= currentPage - 1 && i <= currentPage + 1)) {
+    // Page numbers - show max 5 visible pages
+    const maxVisiblePages = 5;
+    let startPage = Math.max(0, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(0, endPage - maxVisiblePages + 1);
+    }
+
+    // Show first page if not in range
+    if (startPage > 0) {
+        paginationHtml += `
+            <button onclick="changeCancellationPage(0)" 
+                    class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                1
+            </button>
+        `;
+        if (startPage > 1) {
             paginationHtml += `
-                <button onclick="changeCancellationPage(${i})" 
-                    class="px-3 py-2 rounded-lg ${i === currentPage 
-                        ? 'bg-[#00AF00] text-white' 
-                        : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'} transition-colors">
-                    ${i + 1}
-                </button>
+                <span class="px-2 text-gray-500 dark:text-gray-400">...</span>
             `;
-        } else if (i === currentPage - 2 || i === currentPage + 2) {
-            paginationHtml += `<span class="px-3 py-2 text-gray-400">...</span>`;
         }
+    }
+
+    // Show visible page numbers
+    for (let i = startPage; i <= endPage; i++) {
+        paginationHtml += `
+            <button onclick="changeCancellationPage(${i})" 
+                    class="px-4 py-2 border-2 ${i === currentPage 
+                        ? 'bg-[#00AF00] text-white border-[#00AF00] dark:bg-[#00AF00] dark:border-[#00AF00]' 
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300'} rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                ${i + 1}
+            </button>
+        `;
+    }
+
+    // Show last page if not in range
+    if (endPage < totalPages - 1) {
+        if (endPage < totalPages - 2) {
+            paginationHtml += `
+                <span class="px-2 text-gray-500 dark:text-gray-400">...</span>
+            `;
+        }
+        paginationHtml += `
+            <button onclick="changeCancellationPage(${totalPages - 1})" 
+                    class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium">
+                ${totalPages}
+            </button>
+        `;
     }
 
     // Next button
     paginationHtml += `
         <button onclick="changeCancellationPage(${currentPage + 1})" 
             ${currentPage >= totalPages - 1 ? 'disabled' : ''}
-            class="px-3 py-2 rounded-lg ${currentPage >= totalPages - 1 
-                ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed' 
-                : 'bg-[#00AF00] hover:bg-[#008800] text-white'} transition-colors">
+            class="px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium">
             <i class="fas fa-chevron-right"></i>
         </button>
     `;
 
-    paginationHtml += `</div>`;
+    paginationHtml += `
+            </div>
+        </div>
+    `;
     container.innerHTML = paginationHtml;
 }
 
@@ -834,6 +873,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 cancellationsData.filters.search = this.value;
+                cancellationsData.currentPage = 0; // Reset to first page when searching
                 filterCancellations();
                 updateCancellationsUI();
             }, 300);
@@ -891,6 +931,7 @@ function setupStatusFilter() {
                 onChange: (option) => {
                     const value = option.value || option.dataset?.value || 'all';
                     cancellationsData.filters.status = value;
+                    cancellationsData.currentPage = 0; // Reset to first page when filter changes
                     filterCancellations();
                     updateCancellationsUI();
                 }
@@ -1002,6 +1043,7 @@ function setupRequesterFilter() {
             requesterFilterSelect = new CustomSelect('requesterSelect', {
                 onChange: (option) => {
                     cancellationsData.filters.requester = option.value || 'all';
+                    cancellationsData.currentPage = 0; // Reset to first page when filter changes
                     filterCancellations();
                     updateCancellationsUI();
                 }
@@ -1103,6 +1145,7 @@ function setupDateRangeFilter() {
                 onChange: (option) => {
                     const value = option.value || option.dataset?.value || 'all';
                     cancellationsData.filters.dateRange = value;
+                    cancellationsData.currentPage = 0; // Reset to first page when filter changes
                     filterCancellations();
                     updateCancellationsUI();
                 }

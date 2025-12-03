@@ -30,10 +30,23 @@ async function loadVerificationData() {
         }
         
         // Update filters first to show inventories, then update UI
-        if (typeof updateFilters === 'function') {
-            updateFilters();
+        // Only regenerate HTML if CustomSelects are not initialized
+        if (window.verificationRegionalCustomSelect || window.verificationInstitutionCustomSelect || window.verificationInventoryCustomSelect) {
+            // CustomSelects are already initialized, just populate them with current data
+            if (typeof populateVerificationCustomSelects === 'function') {
+                populateVerificationCustomSelects();
+            }
+        } else {
+            // CustomSelects not initialized, regenerate HTML
+            if (typeof updateFilters === 'function') {
+                updateFilters();
+            }
         }
-        updateVerificationUI();
+        if (typeof updateVerificationUI === 'function') {
+            updateVerificationUI();
+        } else if (window.updateVerificationUI) {
+            window.updateVerificationUI();
+        }
 
     } catch (error) {
         console.error('Error loading verification data:', error);
@@ -53,7 +66,11 @@ async function loadVerificationData() {
         }
 
         showErrorState(errorMessage);
-        updateVerificationUI();
+        if (typeof updateVerificationUI === 'function') {
+            updateVerificationUI();
+        } else if (window.updateVerificationUI) {
+            window.updateVerificationUI();
+        }
     } finally {
         verificationData.isLoading = false;
         hideLoadingState();
@@ -128,17 +145,29 @@ async function loadCurrentUserInfo() {
 
         if (response.ok) {
             const userData = await response.json();
-            updateUserInfoDisplay(userData);
+            if (typeof updateUserInfoDisplay === 'function') {
+                updateUserInfoDisplay(userData);
+            } else if (window.updateUserInfoDisplay) {
+                window.updateUserInfoDisplay(userData);
+            }
         } else {
             throw new Error('Failed to load user info');
         }
     } catch (error) {
         console.error('Error loading current user info:', error);
-        updateUserInfoDisplay({
-            fullName: 'Super Admin',
-            role: 'ADMIN',
-            email: 'admin@sena.edu.co'
-        });
+        if (typeof updateUserInfoDisplay === 'function') {
+            updateUserInfoDisplay({
+                fullName: 'Super Admin',
+                role: 'ADMIN',
+                email: 'admin@sena.edu.co'
+            });
+        } else if (window.updateUserInfoDisplay) {
+            window.updateUserInfoDisplay({
+                fullName: 'Super Admin',
+                role: 'ADMIN',
+                email: 'admin@sena.edu.co'
+            });
+        }
     }
 }
 

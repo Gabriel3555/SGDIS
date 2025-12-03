@@ -86,13 +86,11 @@ async function setRegionalFilter(regionalId) {
     }
     
     // Update filters UI - prefer populateVerificationCustomSelects to avoid regenerating HTML
-    if (typeof populateVerificationCustomSelects === 'function' && 
-        window.verificationRegionalCustomSelect && 
-        window.verificationInstitutionCustomSelect) {
+    if (typeof populateVerificationCustomSelects === 'function') {
         // If custom selects are already initialized, just populate them
         populateVerificationCustomSelects();
     } else if (typeof updateFilters === 'function') {
-        // Only regenerate HTML if custom selects don't exist
+        // Only regenerate HTML if custom selects are not initialized
         updateFilters();
     }
     
@@ -131,13 +129,11 @@ async function setInstitutionFilter(institutionId) {
     }
     
     // Update filters UI - prefer populateVerificationCustomSelects to avoid regenerating HTML
-    if (typeof populateVerificationCustomSelects === 'function' && 
-        window.verificationInstitutionCustomSelect && 
-        window.verificationInventoryCustomSelect) {
+    if (typeof populateVerificationCustomSelects === 'function') {
         // If custom selects are already initialized, just populate them
         populateVerificationCustomSelects();
     } else if (typeof updateFilters === 'function') {
-        // Only regenerate HTML if custom selects don't exist
+        // Only regenerate HTML if custom selects are not initialized
         updateFilters();
     }
     

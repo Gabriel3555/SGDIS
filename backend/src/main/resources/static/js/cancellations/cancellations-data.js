@@ -5,7 +5,7 @@ const cancellationsData = {
     filteredCancellations: [],
     isLoading: false,
     currentPage: 0,
-    pageSize: 10,
+    pageSize: 6, // Changed from 10 to 6 for all roles
     totalPages: 0,
     totalElements: 0,
     filters: {

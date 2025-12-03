@@ -59,12 +59,15 @@ async function updateInventoryStats() {
   const isSuperAdmin = currentRole === 'SUPERADMIN';
   const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+  const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION' || 
+                             (window.location.pathname && window.location.pathname.includes('/admin_institution')) ||
+                             (window.location.pathname && window.location.pathname.includes('/admininstitution'));
 
-  // Use statistics from endpoint if available (for SUPERADMIN and ADMIN_REGIONAL), otherwise calculate from current page
+  // Use statistics from endpoint if available (for SUPERADMIN, ADMIN_REGIONAL, and ADMIN_INSTITUTION), otherwise calculate from all data
   let totalInventories, activeInventories, inactiveInventories, totalItems, totalValue;
 
-  // For SUPERADMIN and ADMIN_REGIONAL, always try to load statistics from endpoint if not available
-  if ((isSuperAdmin || isAdminRegional) && !window.inventoryData.statistics) {
+  // For SUPERADMIN, ADMIN_REGIONAL, and ADMIN_INSTITUTION, always try to load statistics from endpoint if not available
+  if ((isSuperAdmin || isAdminRegional || isAdminInstitution) && !window.inventoryData.statistics) {
     // Try to load statistics from endpoint
     if (typeof loadInventoryStatistics === 'function') {
       try {
@@ -75,7 +78,7 @@ async function updateInventoryStats() {
     }
   }
 
-  if ((isSuperAdmin || isAdminRegional) && window.inventoryData.statistics) {
+  if ((isSuperAdmin || isAdminRegional || isAdminInstitution) && window.inventoryData.statistics) {
     // Use total statistics from endpoint
     const stats = window.inventoryData.statistics;
     totalInventories = stats.totalInventories || 0;
@@ -84,16 +87,117 @@ async function updateInventoryStats() {
     totalItems = stats.totalItems || 0;
     totalValue = stats.totalValue || 0;
   } else {
-    // Fallback to local calculation from current page data
-    if (!window.inventoryData.inventories) {
-      return;
-    }
+    // Check if we're using server-side pagination
+    const useServerPagination = window.inventoryData.serverPagination !== null && 
+                               window.inventoryData.serverPagination !== undefined;
     
-    totalInventories = window.inventoryData.inventories.length;
-    activeInventories = window.inventoryData.inventories.filter(
-      (i) => i && i.status !== false
-    ).length;
-    inactiveInventories = totalInventories - activeInventories;
+    if (useServerPagination) {
+      // Use server pagination info for total count
+      const serverPagination = window.inventoryData.serverPagination;
+      totalInventories = serverPagination.totalElements || 0;
+      
+      // Try to fetch all inventories to calculate active/inactive accurately
+      try {
+        const token = localStorage.getItem('jwt');
+        if (token && totalInventories > 0) {
+          let allInventoriesEndpoint = '';
+          const path = window.location.pathname || '';
+          const role = window.currentUserRole || '';
+          
+          // Determine endpoint based on role or path
+          if (isAdminInstitution || path.includes('/admin_institution') || path.includes('/admininstitution') || 
+              role === 'ADMIN_INSTITUTION') {
+            const params = new URLSearchParams({
+              page: '0',
+              size: '10000'
+            });
+            allInventoriesEndpoint = `/api/v1/inventory/institutionAdminInventories?${params.toString()}`;
+          } else if (isAdminRegional || path.includes('/admin_regional') || role === 'ADMIN_REGIONAL') {
+            const params = new URLSearchParams({
+              page: '0',
+              size: '10000'
+            });
+            allInventoriesEndpoint = `/api/v1/inventory/regionalAdminInventories?${params.toString()}`;
+          } else {
+            const params = new URLSearchParams({
+              page: '0',
+              size: '10000'
+            });
+            allInventoriesEndpoint = `/api/v1/inventory?${params.toString()}`;
+          }
+          
+          const allResponse = await fetch(allInventoriesEndpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (allResponse.ok) {
+            const allData = await allResponse.json();
+            // Handle paginated response (Spring Boot Page format) or direct array
+            let allInventories = [];
+            if (Array.isArray(allData)) {
+              allInventories = allData;
+            } else if (allData.content && Array.isArray(allData.content)) {
+              allInventories = allData.content;
+            } else if (allData.inventories && Array.isArray(allData.inventories)) {
+              allInventories = allData.inventories;
+            }
+            
+            // Calculate active/inactive from all inventories
+            activeInventories = allInventories.filter((i) => i && i.status !== false).length;
+            inactiveInventories = allInventories.length - activeInventories;
+          } else {
+            // Fallback: estimate from current page
+            const currentPageInventories = window.inventoryData.inventories || [];
+            const currentPageActive = currentPageInventories.filter((i) => i && i.status !== false).length;
+            const currentPageInactive = currentPageInventories.length - currentPageActive;
+            
+            if (currentPageInventories.length > 0 && totalInventories > 0) {
+              const activeRatio = currentPageActive / currentPageInventories.length;
+              activeInventories = Math.round(totalInventories * activeRatio);
+              inactiveInventories = totalInventories - activeInventories;
+            } else {
+              activeInventories = 0;
+              inactiveInventories = 0;
+            }
+          }
+        } else {
+          activeInventories = 0;
+          inactiveInventories = 0;
+        }
+      } catch (error) {
+        console.error('Error fetching all inventories for active/inactive count:', error);
+        // Fallback: estimate from current page
+        const currentPageInventories = window.inventoryData.inventories || [];
+        const currentPageActive = currentPageInventories.filter((i) => i && i.status !== false).length;
+        const currentPageInactive = currentPageInventories.length - currentPageActive;
+        
+        if (currentPageInventories.length > 0 && totalInventories > 0) {
+          const activeRatio = currentPageActive / currentPageInventories.length;
+          activeInventories = Math.round(totalInventories * activeRatio);
+          inactiveInventories = totalInventories - activeInventories;
+        } else {
+          activeInventories = 0;
+          inactiveInventories = 0;
+        }
+      }
+    } else {
+      // Client-side pagination: use all inventories
+      if (!window.inventoryData.inventories) {
+        return;
+      }
+      
+      // Use filteredInventories if available (for search/filter), otherwise use all inventories
+      const allInventories = window.inventoryData.filteredInventories || window.inventoryData.inventories || [];
+      totalInventories = allInventories.length;
+      activeInventories = allInventories.filter(
+        (i) => i && i.status !== false
+      ).length;
+      inactiveInventories = totalInventories - activeInventories;
+    }
 
     // Calculate total value and total items of all inventories
     totalValue = 0;
@@ -101,33 +205,164 @@ async function updateInventoryStats() {
     try {
       const token = localStorage.getItem('jwt');
       if (token && totalInventories > 0) {
-        // Fetch statistics for each inventory to get its total value and total items
-        const statisticsPromises = window.inventoryData.inventories.map(async (inventory) => {
+        const useServerPagination = window.inventoryData.serverPagination !== null && 
+                                     window.inventoryData.serverPagination !== undefined;
+        
+        if (useServerPagination) {
+          // For server-side pagination, we need to fetch statistics for ALL inventories
+          // Fetch all inventory IDs first, then get statistics for each
           try {
-            const response = await fetch(`/api/v1/inventory/${inventory.id}/statistics`, {
+            // Try to get all inventories in one call with a large page size
+            // Use the same endpoint pattern as loadInventories but with large size
+            let allInventoriesEndpoint = '';
+            const path = window.location.pathname || '';
+            const role = window.currentUserRole || '';
+            
+            // Determine endpoint based on role or path
+            if (isAdminInstitution || path.includes('/admin_institution') || path.includes('/admininstitution') || 
+                role === 'ADMIN_INSTITUTION') {
+              const params = new URLSearchParams({
+                page: '0',
+                size: '10000'
+              });
+              allInventoriesEndpoint = `/api/v1/inventory/institutionAdminInventories?${params.toString()}`;
+            } else if (isAdminRegional || path.includes('/admin_regional') || role === 'ADMIN_REGIONAL') {
+              const params = new URLSearchParams({
+                page: '0',
+                size: '10000'
+              });
+              allInventoriesEndpoint = `/api/v1/inventory/regionalAdminInventories?${params.toString()}`;
+            } else {
+              // For other roles, use default endpoint
+              const params = new URLSearchParams({
+                page: '0',
+                size: '10000'
+              });
+              allInventoriesEndpoint = `/api/v1/inventory?${params.toString()}`;
+            }
+            
+            const allResponse = await fetch(allInventoriesEndpoint, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
               }
             });
-            if (response.ok) {
-              const stats = await response.json();
-              return {
-                totalValue: stats.totalValue || 0,
-                totalItems: stats.totalItems || 0
-              };
+            
+            if (allResponse.ok) {
+              const allData = await allResponse.json();
+              // Handle paginated response (Spring Boot Page format) or direct array
+              let allInventories = [];
+              if (Array.isArray(allData)) {
+                allInventories = allData;
+              } else if (allData.content && Array.isArray(allData.content)) {
+                allInventories = allData.content;
+              } else if (allData.inventories && Array.isArray(allData.inventories)) {
+                allInventories = allData.inventories;
+              } else {
+                allInventories = [];
+              }
+              
+              // Fetch statistics for each inventory
+              const statisticsPromises = allInventories.map(async (inventory) => {
+                try {
+                  const response = await fetch(`/api/v1/inventory/${inventory.id}/statistics`, {
+                    method: 'GET',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  if (response.ok) {
+                    const stats = await response.json();
+                    return {
+                      totalValue: stats.totalValue || 0,
+                      totalItems: stats.totalItems || 0
+                    };
+                  }
+                  return { totalValue: 0, totalItems: 0 };
+                } catch (error) {
+                  console.error(`Error fetching statistics for inventory ${inventory.id}:`, error);
+                  return { totalValue: 0, totalItems: 0 };
+                }
+              });
+              
+              const statistics = await Promise.all(statisticsPromises);
+              totalValue = statistics.reduce((sum, stat) => sum + (stat.totalValue || 0), 0);
+              totalItems = statistics.reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+            } else {
+              // Fallback: calculate from current page only (not ideal but better than nothing)
+              const currentPageInventories = window.inventoryData.inventories || [];
+              const statisticsPromises = currentPageInventories.map(async (inventory) => {
+                try {
+                  const response = await fetch(`/api/v1/inventory/${inventory.id}/statistics`, {
+                    method: 'GET',
+                    headers: {
+                      'Authorization': `Bearer ${token}`,
+                      'Content-Type': 'application/json'
+                    }
+                  });
+                  if (response.ok) {
+                    const stats = await response.json();
+                    return {
+                      totalValue: stats.totalValue || 0,
+                      totalItems: stats.totalItems || 0
+                    };
+                  }
+                  return { totalValue: 0, totalItems: 0 };
+                } catch (error) {
+                  console.error(`Error fetching statistics for inventory ${inventory.id}:`, error);
+                  return { totalValue: 0, totalItems: 0 };
+                }
+              });
+              
+              const statistics = await Promise.all(statisticsPromises);
+              const pageTotalValue = statistics.reduce((sum, stat) => sum + (stat.totalValue || 0), 0);
+              const pageTotalItems = statistics.reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+              
+              // Estimate total based on current page (approximate)
+              if (currentPageInventories.length > 0) {
+                const valuePerInventory = pageTotalValue / currentPageInventories.length;
+                const itemsPerInventory = pageTotalItems / currentPageInventories.length;
+                totalValue = Math.round(valuePerInventory * totalInventories);
+                totalItems = Math.round(itemsPerInventory * totalInventories);
+              }
             }
-            return { totalValue: 0, totalItems: 0 };
           } catch (error) {
-            console.error(`Error fetching statistics for inventory ${inventory.id}:`, error);
-            return { totalValue: 0, totalItems: 0 };
+            console.error('Error fetching all inventories for statistics:', error);
           }
-        });
-        
-        const statistics = await Promise.all(statisticsPromises);
-        totalValue = statistics.reduce((sum, stat) => sum + (stat.totalValue || 0), 0);
-        totalItems = statistics.reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+        } else {
+          // Client-side pagination: use all inventories
+          const allInventories = window.inventoryData.filteredInventories || window.inventoryData.inventories || [];
+          
+          // Fetch statistics for each inventory to get its total value and total items
+          const statisticsPromises = allInventories.map(async (inventory) => {
+            try {
+              const response = await fetch(`/api/v1/inventory/${inventory.id}/statistics`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+              if (response.ok) {
+                const stats = await response.json();
+                return {
+                  totalValue: stats.totalValue || 0,
+                  totalItems: stats.totalItems || 0
+                };
+              }
+              return { totalValue: 0, totalItems: 0 };
+            } catch (error) {
+              console.error(`Error fetching statistics for inventory ${inventory.id}:`, error);
+              return { totalValue: 0, totalItems: 0 };
+            }
+          });
+          
+          const statistics = await Promise.all(statisticsPromises);
+          totalValue = statistics.reduce((sum, stat) => sum + (stat.totalValue || 0), 0);
+          totalItems = statistics.reduce((sum, stat) => sum + (stat.totalItems || 0), 0);
+        }
       }
     } catch (error) {
       console.error('Error calculating total value and items:', error);
@@ -901,13 +1136,16 @@ function updateInventoryTable() {
   
   if (useServerPagination) {
     // For server-side pagination, use all inventories (they're already paginated from server)
-    // But limit to 6 for admin regional if server returned more
+    // But limit to 6 for admin regional and admin institution if server returned more
     const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    const isAdminInstitution = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_INSTITUTION') || 
+                              (window.location.pathname && window.location.pathname.includes('/admin_institution')) ||
+                              (window.location.pathname && window.location.pathname.includes('/admininstitution'));
     let allInventories = window.inventoryData.filteredInventories || [];
     
-    if (isAdminRegional && allInventories.length > 6) {
-      // Limit to 6 for admin regional if server returned more
+    if ((isAdminRegional || isAdminInstitution) && allInventories.length > 6) {
+      // Limit to 6 for admin regional and admin institution if server returned more
       paginatedInventories = allInventories.slice(0, 6);
     } else {
       paginatedInventories = allInventories;
@@ -985,9 +1223,6 @@ function updateInventoryTable() {
                             </button>
                             <div>
                                 <div class="font-semibold text-gray-800 dark:text-gray-200">${fullName}</div>
-                                <div class="text-sm text-gray-500 dark:text-gray-400">ID: ${
-                                  inventory.id
-                                }</div>
                             </div>
                         </div>
                     </td>
@@ -1179,15 +1414,18 @@ function updateInventoryCards() {
   
   if (useServerPagination) {
     // For server-side pagination, use all inventories (they're already paginated from server)
-    // But limit to 6 for admin regional and superadmin if server returned more
+    // But limit to 6 for admin regional, admin institution, and superadmin if server returned more
     const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    const isAdminInstitution = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_INSTITUTION') || 
+                              (window.location.pathname && window.location.pathname.includes('/admin_institution')) ||
+                              (window.location.pathname && window.location.pathname.includes('/admininstitution'));
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
     let allInventories = window.inventoryData.filteredInventories || [];
     
-    if ((isAdminRegional || isSuperAdmin) && allInventories.length > 6) {
-      // Limit to 6 for admin regional and superadmin if server returned more
+    if ((isAdminRegional || isAdminInstitution || isSuperAdmin) && allInventories.length > 6) {
+      // Limit to 6 for admin regional, admin institution, and superadmin if server returned more
       paginatedInventories = allInventories.slice(0, 6);
     } else {
       paginatedInventories = allInventories;
@@ -1262,13 +1500,7 @@ function updateInventoryCards() {
                         }
                     </div>
 
-                    <div class="grid grid-cols-3 gap-4 mb-4">
-                        <div>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">ID</p>
-                            <p class="font-bold text-xl text-gray-800 dark:text-gray-200">${
-                              inventory.id || "N/A"
-                            }</p>
-                        </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
                         <div>
                             <p class="text-gray-600 dark:text-gray-400 text-sm mb-1">Items</p>
                             <div class="flex items-center gap-1">
