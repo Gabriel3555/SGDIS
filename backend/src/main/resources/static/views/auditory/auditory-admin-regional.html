@@ -178,6 +178,42 @@
                 </button>
             </div>
 
+            <!-- Search and Filter Section -->
+            <div class="flex flex-col sm:flex-row gap-4 mb-6" id="searchFilterContainer">
+                <!-- Search Bar -->
+                <div class="flex-1">
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Buscar</label>
+                    <div class="relative">
+                        <input type="text" 
+                               id="auditorySearchAdminRegional" 
+                               placeholder="Buscar por usuario, acción o institución..."
+                               class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+                               style="height: 56px;">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Institution Filter -->
+                <div class="relative" style="min-width: 200px; flex-shrink: 0;">
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Filtrar por Centro</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="auditoryInstitutionFilterAdminRegionalSelect">
+                            <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                                <span class="custom-select-text custom-select-placeholder">Todos los Centros</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar centro...">
+                                <div class="custom-select-options" id="auditoryInstitutionFilterAdminRegionalOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="auditoryInstitutionFilterAdminRegional" value="all">
+                    </div>
+                </div>
+            </div>
+
             <!-- Auditoría Table -->
             <div class="stat-card">
                 <div class="overflow-x-auto">
@@ -386,6 +422,7 @@
     <script src="../../js/notifications-bell.js"></script>
     <!-- Admin Regional specific auditory functionality -->
     <!-- Note: We don't load auditory.js here to avoid conflicts with the generic loadAuditories function -->
+    <script src="../../js/users/users-modals.js"></script>
     <script src="../../js/auditory/auditory-admin-regional.js"></script>
 </body>
 

@@ -430,6 +430,43 @@ async function showNewLoanModal() {
             textElement.classList.add('custom-select-placeholder');
         }
     }
+    
+    // Setup automatic search on input (with debounce)
+    const itemSearchInput = document.getElementById('itemSearchInput');
+    if (itemSearchInput) {
+        let searchTimeout;
+        
+        // Remove existing event listeners by cloning the element
+        const newInput = itemSearchInput.cloneNode(true);
+        itemSearchInput.parentNode.replaceChild(newInput, itemSearchInput);
+        
+        // Add event listener for automatic search on input
+        newInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            const value = e.target.value.trim();
+            
+            if (value.length >= 3) { // Only search if at least 3 characters
+                searchTimeout = setTimeout(() => {
+                    searchItemForLoan();
+                }, 500); // Debounce: wait 500ms after user stops typing
+            } else if (value.length === 0) {
+                // Clear results if input is empty
+                const resultDiv = document.getElementById('itemSearchResult');
+                const itemIdInput = document.getElementById('selectedItemId');
+                if (resultDiv) resultDiv.innerHTML = '';
+                if (itemIdInput) itemIdInput.value = '';
+            }
+        });
+        
+        // Also allow Enter key to search immediately
+        newInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimeout);
+                searchItemForLoan();
+            }
+        });
+    }
 }
 
 // Close new loan modal

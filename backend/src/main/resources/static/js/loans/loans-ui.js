@@ -17,6 +17,9 @@ function updateLoansStats() {
     const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
     
+    // Use window.loansData if available (for Admin Regional), otherwise use local loansData
+    const dataSource = (window.loansData && window.loansData.filteredLoans) ? window.loansData : loansData;
+    
     let totalLoans, activeLoans, returnedLoans;
     
     if (isAdminRegional && window.loansData && window.loansData.statistics) {
@@ -26,13 +29,14 @@ function updateLoansStats() {
         activeLoans = stats.activeLoans || 0;
         returnedLoans = stats.returnedLoans || 0;
     } else {
-        // Fallback to local calculation from current page data
-        totalLoans = loansData.loans.length;
-        activeLoans = loansData.loans.filter(loan => !loan.returned || loan.returned === null || loan.returned === false).length;
-        returnedLoans = loansData.loans.filter(loan => loan.returned === true).length;
+        // Fallback to local calculation from all loans (not just current page)
+        const allLoans = dataSource.allLoans || dataSource.loans || [];
+        totalLoans = allLoans.length;
+        activeLoans = allLoans.filter(loan => !loan.returned || loan.returned === null || loan.returned === false).length;
+        returnedLoans = allLoans.filter(loan => loan.returned === true).length;
     }
     
-    const filteredLoans = loansData.filteredLoans.length;
+    const filteredLoans = (dataSource.filteredLoans || []).length;
 
     statsContainer.innerHTML = `
         <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
@@ -91,7 +95,10 @@ function updateLoansStats() {
 
 function updateLoansTable() {
     // If user is USER role, don't use this function - use updateUserLoansUI instead
-    if (loansData.userRole === 'USER') {
+    // Use window.loansData if available (for Admin Regional), otherwise use local loansData
+    const dataSource = (window.loansData && window.loansData.filteredLoans) ? window.loansData : loansData;
+    
+    if (dataSource.userRole === 'USER') {
         return;
     }
 
@@ -101,7 +108,7 @@ function updateLoansTable() {
         return;
     }
 
-    if (loansData.isLoading) {
+    if (dataSource.isLoading) {
         container.innerHTML = `
             <div class="flex items-center justify-center py-12">
                 <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00AF00]"></div>
@@ -110,8 +117,8 @@ function updateLoansTable() {
         return;
     }
 
-    if (!loansData.filteredLoans || loansData.filteredLoans.length === 0) {
-        console.log('No filtered loans to display');
+    if (!dataSource.filteredLoans || dataSource.filteredLoans.length === 0) {
+        console.log('No filtered loans to display', dataSource);
         container.innerHTML = `
             <div class="text-center py-12">
                 <i class="fas fa-inbox text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
@@ -124,11 +131,12 @@ function updateLoansTable() {
 
     // Check if we're on warehouse page and use 6 items per page
     const isWarehouse = window.location.pathname && window.location.pathname.includes('/warehouse');
-    const itemsPerPage = isWarehouse ? 6 : loansData.itemsPerPage;
+    const itemsPerPage = isWarehouse ? 6 : (dataSource.itemsPerPage || 10);
     
-    const startIndex = (loansData.currentPage - 1) * itemsPerPage;
+    const currentPage = dataSource.currentPage || 1;
+    const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const currentLoans = loansData.filteredLoans.slice(startIndex, endIndex);
+    const currentLoans = dataSource.filteredLoans.slice(startIndex, endIndex);
 
     let tableHtml = `
         <div class="mb-4">

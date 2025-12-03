@@ -3,12 +3,20 @@
 
 let currentUserRegionalIdForAuditory = null;
 let auditoryDataAdminRegional = {
+    allAuditories: [], // Store all auditories for client-side filtering
+    filteredAuditories: [], // Filtered auditories
+    institutions: [], // Store institutions for filtering
     currentPage: 0,
-    pageSize: 10,
+    pageSize: 6,
     totalPages: 0,
     totalAuditories: 0,
-    isLoading: false
+    isLoading: false,
+    filters: {
+        searchTerm: '',
+        institutionId: 'all'
+    }
 };
+let auditoryInstitutionCustomSelectAdminRegional = null;
 
 /**
  * Load current user info to get regional ID
@@ -111,6 +119,105 @@ function updateAuditoryWelcomeMessage(regionalName) {
 }
 
 /**
+ * Load institutions for the admin regional's regional
+ */
+async function loadInstitutionsForAuditoryAdminRegional() {
+    try {
+        if (!currentUserRegionalIdForAuditory) {
+            const regionalId = await loadCurrentUserInfoForAuditory();
+            if (!regionalId) {
+                return;
+            }
+        }
+
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${currentUserRegionalIdForAuditory}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const institutions = await response.json();
+            auditoryDataAdminRegional.institutions = institutions || [];
+            
+            // Update institution filter dropdown
+            updateInstitutionFilterForAdminRegional();
+        } else {
+            console.error('Error loading institutions for auditory');
+        }
+    } catch (error) {
+        console.error('Error loading institutions for auditory:', error);
+    }
+}
+
+/**
+ * Update institution filter dropdown
+ */
+function updateInstitutionFilterForAdminRegional() {
+    if (!auditoryInstitutionCustomSelectAdminRegional) {
+        initializeInstitutionCustomSelectForAdminRegional();
+    } else {
+        const institutionOptions = [
+            { value: 'all', label: 'Todos los Centros' },
+            ...auditoryDataAdminRegional.institutions.map(inst => ({
+                value: (inst.id || inst.institutionId || '').toString(),
+                label: inst.name || 'Sin nombre'
+            }))
+        ];
+        auditoryInstitutionCustomSelectAdminRegional.setOptions(institutionOptions);
+    }
+}
+
+/**
+ * Initialize institution custom select
+ */
+function initializeInstitutionCustomSelectForAdminRegional() {
+    const container = document.getElementById('auditoryInstitutionFilterAdminRegionalSelect');
+    if (!container) {
+        console.warn('Institution filter container not found');
+        return;
+    }
+
+    // Get CustomSelect class
+    const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+    if (!CustomSelectClass) {
+        console.error('CustomSelect class not found');
+        return;
+    }
+
+    const institutionOptions = [
+        { value: 'all', label: 'Todos los Centros' },
+        ...auditoryDataAdminRegional.institutions.map(inst => ({
+            value: (inst.id || inst.institutionId || '').toString(),
+            label: inst.name || 'Sin nombre'
+        }))
+    ];
+
+    auditoryInstitutionCustomSelectAdminRegional = new CustomSelectClass('auditoryInstitutionFilterAdminRegionalSelect', {
+        placeholder: 'Todos los Centros',
+        onChange: (option) => {
+            const value = option.value || 'all';
+            const hiddenInput = document.getElementById('auditoryInstitutionFilterAdminRegional');
+            if (hiddenInput) {
+                hiddenInput.value = value;
+            }
+            auditoryDataAdminRegional.filters.institutionId = value;
+            auditoryDataAdminRegional.currentPage = 0; // Reset to first page
+            filterAuditoriesForAdminRegional();
+        }
+    });
+
+    auditoryInstitutionCustomSelectAdminRegional.setOptions(institutionOptions);
+}
+
+/**
  * Load auditories for the admin regional's regional
  */
 async function loadAuditoriesForAdminRegional(page = 0) {
@@ -132,8 +239,9 @@ async function loadAuditoriesForAdminRegional(page = 0) {
         auditoryDataAdminRegional.isLoading = true;
         showLoadingStateForAdminRegional();
 
-        // Load auditories from the regional
-        const response = await fetch(`/api/v1/auditories/regional/${currentUserRegionalIdForAuditory}?page=${page}&size=${auditoryDataAdminRegional.pageSize}`, {
+        // Load all auditories from the regional (for client-side filtering)
+        // Use a large page size to get all records
+        const response = await fetch(`/api/v1/auditories/regional/${currentUserRegionalIdForAuditory}?page=0&size=10000`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -144,14 +252,14 @@ async function loadAuditoriesForAdminRegional(page = 0) {
         if (response.ok) {
             const data = await response.json();
             
-            // Update auditory data
-            auditoryDataAdminRegional.currentPage = data.currentPage || 0;
-            auditoryDataAdminRegional.totalPages = data.totalPages || 0;
-            auditoryDataAdminRegional.totalAuditories = data.totalAuditories || 0;
+            // Store all auditories
+            auditoryDataAdminRegional.allAuditories = data.auditories || [];
             
-            // Display auditories
-            displayAuditoriesForAdminRegional(data.auditories || []);
-            updatePaginationForAdminRegional();
+            // Load institutions to get cities
+            await loadInstitutionsForAuditoryAdminRegional();
+            
+            // Apply filters and paginate
+            filterAuditoriesForAdminRegional();
         } else {
             throw new Error('Error al cargar los registros de auditoría');
         }
@@ -177,6 +285,68 @@ async function loadAuditoriesForAdminRegional(page = 0) {
         auditoryDataAdminRegional.isLoading = false;
         hideLoadingStateForAdminRegional();
     }
+}
+
+/**
+ * Filter auditories based on search term and institution
+ */
+function filterAuditoriesForAdminRegional() {
+    let filtered = [...auditoryDataAdminRegional.allAuditories];
+    
+    // Filter by search term
+    const searchTerm = auditoryDataAdminRegional.filters.searchTerm.toLowerCase().trim();
+    if (searchTerm) {
+        filtered = filtered.filter(auditory => {
+            const performerName = (auditory.performerName || '').toLowerCase();
+            const performerEmail = (auditory.performerEmail || '').toLowerCase();
+            const action = (auditory.action || '').toLowerCase();
+            const institutionName = (auditory.institutionName || '').toLowerCase();
+            
+            return performerName.includes(searchTerm) ||
+                   performerEmail.includes(searchTerm) ||
+                   action.includes(searchTerm) ||
+                   institutionName.includes(searchTerm);
+        });
+    }
+    
+    // Filter by institution
+    const institutionFilter = auditoryDataAdminRegional.filters.institutionId;
+    if (institutionFilter && institutionFilter !== 'all') {
+        // Find the selected institution
+        const selectedInstitution = auditoryDataAdminRegional.institutions.find(inst => {
+            const instId = (inst.id || inst.institutionId || '').toString();
+            return instId === institutionFilter.toString();
+        });
+        
+        if (selectedInstitution) {
+            const institutionName = selectedInstitution.name;
+            // Filter auditories by institution name
+            filtered = filtered.filter(auditory => {
+                return auditory.institutionName === institutionName;
+            });
+        }
+    }
+    
+    // Store filtered auditories
+    auditoryDataAdminRegional.filteredAuditories = filtered;
+    
+    // Update pagination
+    auditoryDataAdminRegional.totalAuditories = filtered.length;
+    auditoryDataAdminRegional.totalPages = Math.ceil(filtered.length / auditoryDataAdminRegional.pageSize);
+    
+    // Reset to first page if current page is out of bounds
+    if (auditoryDataAdminRegional.currentPage >= auditoryDataAdminRegional.totalPages) {
+        auditoryDataAdminRegional.currentPage = 0;
+    }
+    
+    // Get paginated data
+    const startIndex = auditoryDataAdminRegional.currentPage * auditoryDataAdminRegional.pageSize;
+    const endIndex = startIndex + auditoryDataAdminRegional.pageSize;
+    const paginatedAuditories = filtered.slice(startIndex, endIndex);
+    
+    // Display paginated auditories
+    displayAuditoriesForAdminRegional(paginatedAuditories);
+    updatePaginationForAdminRegional();
 }
 
 /**
@@ -303,14 +473,33 @@ function updatePaginationForAdminRegional() {
 function previousPageForAdminRegional() {
     if (auditoryDataAdminRegional.currentPage > 0) {
         auditoryDataAdminRegional.currentPage--;
-        loadAuditoriesForAdminRegional(auditoryDataAdminRegional.currentPage);
+        filterAuditoriesForAdminRegional();
     }
 }
 
 function nextPageForAdminRegional() {
     if (auditoryDataAdminRegional.currentPage < auditoryDataAdminRegional.totalPages - 1) {
         auditoryDataAdminRegional.currentPage++;
-        loadAuditoriesForAdminRegional(auditoryDataAdminRegional.currentPage);
+        filterAuditoriesForAdminRegional();
+    }
+}
+
+/**
+ * Setup search and filter event listeners
+ */
+function setupSearchAndFiltersForAdminRegional() {
+    // Search input
+    const searchInput = document.getElementById('auditorySearchAdminRegional');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                auditoryDataAdminRegional.filters.searchTerm = e.target.value;
+                auditoryDataAdminRegional.currentPage = 0; // Reset to first page
+                filterAuditoriesForAdminRegional();
+            }, 300); // Debounce search
+        });
     }
 }
 
@@ -387,6 +576,9 @@ function initializeAdminRegionalAuditory() {
     if (isAdminRegionalPage) {
         // Override loadAuditories function
         window.loadAuditories = loadAuditoriesForAdminRegional;
+        
+        // Setup search and filters
+        setupSearchAndFiltersForAdminRegional();
         
         // Load auditories when page is ready
         if (document.readyState === 'loading') {

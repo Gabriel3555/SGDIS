@@ -22,16 +22,184 @@ function populateNewTransferForm(itemId = null) {
     const form = document.getElementById('newTransferForm');
     if (!form) return;
     
-    // Check if user is superadmin or warehouse
+    // Check if user is superadmin, warehouse, or admin regional
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
     const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
                        (window.location.pathname && window.location.pathname.includes('/warehouse'));
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
     
     // If itemId is provided, pre-fill it
     const itemIdValue = itemId || '';
     
-    if (isSuperAdmin) {
+    if (isAdminRegional) {
+        // For admin regional: use licence plate with verification, but only show inventories from admin regional's regional
+        form.innerHTML = `
+        <div class="space-y-4">
+            <!-- Error message container -->
+            <div id="transferFormError" class="hidden">
+                <!-- Error messages will be displayed here -->
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item a Transferir *</label>
+                <!-- Inventory Info Display (shown after verification) -->
+                <div id="itemInventoryInfo" class="mb-3 hidden">
+                    <!-- Will be populated when item is verified -->
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="newTransferLicencePlate" 
+                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
+                        placeholder="Placa del item" 
+                        onkeypress="if(event.key === 'Enter') { event.preventDefault(); verifyItemByLicencePlate(); }"
+                        required>
+                    <button type="button" onclick="verifyItemByLicencePlate()" 
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-search"></i>
+                        <span class="hidden sm:inline">Verificar</span>
+                    </button>
+                </div>
+                <input type="hidden" id="newTransferItemId" value="${itemIdValue}">
+                <div id="itemVerificationResult" class="mt-2"></div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ingresa la placa del item y verifica su existencia. Solo puedes transferir items de tu regional.</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario de Destino *</label>
+                
+                <!-- Inventario Dropdown (only inventories from admin regional's regional) -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Inventario</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="newTransferInventorySelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Seleccione un inventario</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
+                                <div class="custom-select-options" id="newTransferInventoryOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="newTransferDestinationInventoryId" value="" required>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Solo puedes transferir a inventarios de tu regional. La transferencia se aprobará automáticamente.</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Detalles / Observaciones</label>
+                <textarea id="newTransferDetails" 
+                    rows="4" 
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
+                    placeholder="Detalles adicionales sobre la transferencia (opcional, máximo 500 caracteres)"
+                    maxlength="500"></textarea>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Información adicional sobre la transferencia</p>
+            </div>
+        </div>
+
+        <div class="flex gap-3 pt-4 mt-6 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" onclick="closeNewTransferModal()" 
+                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancelar
+            </button>
+            <button type="submit" 
+                class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors font-semibold">
+                <i class="fas fa-check-circle mr-2"></i>
+                Crear Transferencia (Aprobación Automática)
+            </button>
+        </div>
+    `;
+        
+        // Initialize inventory select for admin regional
+        const initAdminRegionalSelect = (retries = 0, maxRetries = 30) => {
+            // Check if CustomSelect is available (check both window.CustomSelect and global CustomSelect)
+            const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+            
+            if (!CustomSelectClass && retries < maxRetries) {
+                setTimeout(() => initAdminRegionalSelect(retries + 1, maxRetries), 200);
+                return;
+            }
+            
+            if (!CustomSelectClass) {
+                console.error('CustomSelect not available. Please ensure users-modals.js is loaded before transfers-forms.js.');
+                return;
+            }
+            
+            const inventoryContainer = document.getElementById('newTransferInventorySelect');
+            
+            if (!inventoryContainer) {
+                if (retries < maxRetries) {
+                    setTimeout(() => initAdminRegionalSelect(retries + 1, maxRetries), 50);
+                }
+                return;
+            }
+            
+            const inventoryOptions = inventoryContainer.querySelector('.custom-select-options');
+            
+            if (!inventoryOptions) {
+                if (retries < maxRetries) {
+                    setTimeout(() => initAdminRegionalSelect(retries + 1, maxRetries), 50);
+                }
+                return;
+            }
+            
+            // Initialize inventory select
+            if (!newTransferInventorySelect) {
+                try {
+                    const selectInstance = new CustomSelectClass('newTransferInventorySelect', {
+                        placeholder: 'Seleccione un inventario',
+                        onChange: (option) => {
+                            if (option && option.value) {
+                                const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
+                                if (hiddenInput) {
+                                    hiddenInput.value = option.value;
+                                }
+                            } else {
+                                const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
+                                if (hiddenInput) {
+                                    hiddenInput.value = '';
+                                }
+                            }
+                        }
+                    });
+                    
+                    if (selectInstance && selectInstance.container) {
+                        newTransferInventorySelect = selectInstance;
+                    }
+                } catch (error) {
+                    console.error('Error initializing admin regional inventory select:', error);
+                    return;
+                }
+            }
+            
+            // Load inventories for admin regional's regional
+            setTimeout(() => {
+                loadInventoriesForAdminRegionalTransferForm();
+            }, 100);
+        };
+        
+        // Wait a bit more to ensure DOM and CustomSelect are ready
+        setTimeout(() => {
+            initAdminRegionalSelect();
+        }, 300);
+        
+        // Re-attach event listener after populating form HTML
+        setTimeout(() => {
+            const formElement = document.getElementById('newTransferForm');
+            if (formElement) {
+                // Remove existing listeners by cloning the form
+                const newForm = formElement.cloneNode(true);
+                formElement.parentNode.replaceChild(newForm, formElement);
+                // Re-attach the submit handler
+                newForm.addEventListener('submit', handleNewTransferSubmit);
+            }
+        }, 100);
+    } else if (isSuperAdmin) {
         // For superadmin: use licence plate number with verification button
         form.innerHTML = `
         <div class="space-y-4">
@@ -370,6 +538,172 @@ function populateNewTransferForm(itemId = null) {
                 newForm.addEventListener('submit', handleNewTransferSubmit);
             }
         }, 100);
+    } else if (isAdminRegional) {
+        // For admin regional: use licence plate with verification, but only show inventories from admin regional's regional
+        form.innerHTML = `
+        <div class="space-y-4">
+            <!-- Error message container -->
+            <div id="transferFormError" class="hidden">
+                <!-- Error messages will be displayed here -->
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item a Transferir *</label>
+                <!-- Inventory Info Display (shown after verification) -->
+                <div id="itemInventoryInfo" class="mb-3 hidden">
+                    <!-- Will be populated when item is verified -->
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="newTransferLicencePlate" 
+                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
+                        placeholder="Placa del item" 
+                        onkeypress="if(event.key === 'Enter') { event.preventDefault(); verifyItemByLicencePlate(); }"
+                        required>
+                    <button type="button" onclick="verifyItemByLicencePlate()" 
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-search"></i>
+                        <span class="hidden sm:inline">Verificar</span>
+                    </button>
+                </div>
+                <input type="hidden" id="newTransferItemId" value="${itemIdValue}">
+                <div id="itemVerificationResult" class="mt-2"></div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ingresa la placa del item y verifica su existencia. Solo puedes transferir items de tu regional.</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario de Destino *</label>
+                
+                <!-- Inventario Dropdown (only inventories from admin regional's regional) -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Inventario</label>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="newTransferInventorySelect">
+                            <div class="custom-select-trigger">
+                                <span class="custom-select-text">Seleccione un inventario</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
+                                <div class="custom-select-options" id="newTransferInventoryOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="newTransferDestinationInventoryId" value="" required>
+                    </div>
+                </div>
+                
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Solo puedes transferir a inventarios de tu regional. La transferencia se aprobará automáticamente.</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Detalles / Observaciones</label>
+                <textarea id="newTransferDetails" 
+                    rows="4" 
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
+                    placeholder="Detalles adicionales sobre la transferencia (opcional, máximo 500 caracteres)"
+                    maxlength="500"></textarea>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Información adicional sobre la transferencia</p>
+            </div>
+        </div>
+
+        <div class="flex gap-3 pt-4 mt-6 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" onclick="closeNewTransferModal()" 
+                class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                Cancelar
+            </button>
+            <button type="submit" 
+                class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors font-semibold">
+                <i class="fas fa-check-circle mr-2"></i>
+                Crear Transferencia (Aprobación Automática)
+            </button>
+        </div>
+    `;
+        
+        // Initialize inventory select for admin regional
+        const initAdminRegionalSelect = (retries = 0, maxRetries = 30) => {
+            // Check if CustomSelect is available (check both window.CustomSelect and global CustomSelect)
+            const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+            
+            if (!CustomSelectClass && retries < maxRetries) {
+                setTimeout(() => initAdminRegionalSelect(retries + 1, maxRetries), 200);
+                return;
+            }
+            
+            if (!CustomSelectClass) {
+                console.error('CustomSelect not available. Please ensure users-modals.js is loaded before transfers-forms.js.');
+                return;
+            }
+            
+            const inventoryContainer = document.getElementById('newTransferInventorySelect');
+            
+            if (!inventoryContainer) {
+                if (retries < maxRetries) {
+                    setTimeout(() => initAdminRegionalSelect(retries + 1, maxRetries), 50);
+                }
+                return;
+            }
+            
+            const inventoryOptions = inventoryContainer.querySelector('.custom-select-options');
+            
+            if (!inventoryOptions) {
+                if (retries < maxRetries) {
+                    setTimeout(() => initAdminRegionalSelect(retries + 1, maxRetries), 50);
+                }
+                return;
+            }
+            
+            // Initialize inventory select
+            if (!newTransferInventorySelect) {
+                try {
+                    const selectInstance = new CustomSelectClass('newTransferInventorySelect', {
+                        placeholder: 'Seleccione un inventario',
+                        onChange: (option) => {
+                            if (option && option.value) {
+                                const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
+                                if (hiddenInput) {
+                                    hiddenInput.value = option.value;
+                                }
+                            } else {
+                                const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
+                                if (hiddenInput) {
+                                    hiddenInput.value = '';
+                                }
+                            }
+                        }
+                    });
+                    
+                    if (selectInstance && selectInstance.container) {
+                        newTransferInventorySelect = selectInstance;
+                    }
+                } catch (error) {
+                    console.error('Error initializing admin regional inventory select:', error);
+                    return;
+                }
+            }
+            
+            // Load inventories for admin regional's regional
+            setTimeout(() => {
+                loadInventoriesForAdminRegionalTransferForm();
+            }, 100);
+        };
+        
+        // Wait a bit more to ensure DOM and CustomSelect are ready
+        setTimeout(() => {
+            initAdminRegionalSelect();
+        }, 300);
+        
+        // Re-attach event listener after populating form HTML
+        setTimeout(() => {
+            const formElement = document.getElementById('newTransferForm');
+            if (formElement) {
+                // Remove existing listeners by cloning the form
+                const newForm = formElement.cloneNode(true);
+                formElement.parentNode.replaceChild(newForm, formElement);
+                // Re-attach the submit handler
+                newForm.addEventListener('submit', handleNewTransferSubmit);
+            }
+        }, 100);
     } else {
         // For other users: use item ID (original behavior)
         form.innerHTML = `
@@ -639,14 +973,16 @@ async function verifyItemByLicencePlate() {
 async function handleNewTransferSubmit(event) {
     event.preventDefault();
     
-    // Check if user is superadmin or warehouse
+    // Check if user is superadmin, warehouse, or admin regional
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
     const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
                        (window.location.pathname && window.location.pathname.includes('/warehouse'));
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
     
-    // For superadmin and warehouse, verify item first if not already verified
-    if (isSuperAdmin || isWarehouse) {
+    // For superadmin, warehouse, and admin regional, verify item first if not already verified
+    if (isSuperAdmin || isWarehouse || isAdminRegional) {
         const licencePlateInput = document.getElementById('newTransferLicencePlate');
         const itemIdInput = document.getElementById('newTransferItemId');
         
@@ -668,8 +1004,8 @@ async function handleNewTransferSubmit(event) {
     }
     
     let itemId;
-    if (isSuperAdmin || isWarehouse) {
-        // For superadmin and warehouse, get itemId from hidden input
+    if (isSuperAdmin || isWarehouse || isAdminRegional) {
+        // For superadmin, warehouse, and admin regional, get itemId from hidden input
         itemId = document.getElementById('newTransferItemId')?.value?.trim();
     } else {
         // For other users, get from visible input
@@ -731,7 +1067,7 @@ async function handleNewTransferSubmit(event) {
         return;
     }
     
-    // Show summary modal instead of submitting directly
+    // Show summary modal for all roles (including Admin Regional)
     await showTransferSummaryModal(itemId, destinationInventoryId, details);
 }
 
@@ -953,18 +1289,38 @@ async function showTransferSummaryModal(itemId, destinationInventoryId, details)
             }
         }
         
+        // Check if user is admin regional for auto-approval message
+        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        
         // Build summary content
         content.innerHTML = `
             <div class="space-y-4">
-                <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
-                    <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Resumen de la Transferencia
-                    </h3>
-                    <p class="text-sm text-blue-700 dark:text-blue-400">
-                        Revisa los detalles antes de confirmar la transferencia
-                    </p>
-                </div>
+                ${isAdminRegional ? `
+                    <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
+                        <h3 class="text-lg font-semibold text-green-800 dark:text-green-300 mb-3">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Resumen de la Transferencia
+                        </h3>
+                        <p class="text-sm text-green-700 dark:text-green-400 font-medium mb-2">
+                            <i class="fas fa-bolt mr-2"></i>
+                            La transferencia será aprobada automáticamente al confirmar
+                        </p>
+                        <p class="text-xs text-green-600 dark:text-green-500">
+                            Revisa los detalles antes de confirmar la transferencia
+                        </p>
+                    </div>
+                ` : `
+                    <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                        <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Resumen de la Transferencia
+                        </h3>
+                        <p class="text-sm text-blue-700 dark:text-blue-400">
+                            Revisa los detalles antes de confirmar la transferencia
+                        </p>
+                    </div>
+                `}
                 
                 <div class="space-y-3">
                     <div class="p-4 border border-gray-200 dark:border-gray-700 rounded-xl">
@@ -1046,6 +1402,17 @@ async function showTransferSummaryModal(itemId, destinationInventoryId, details)
             details: details
         };
         
+        // Update button text for Admin Regional
+        if (isAdminRegional) {
+            const confirmButton = document.querySelector('#transferSummaryModal button[onclick="confirmTransferRequest()"]');
+            if (confirmButton) {
+                confirmButton.innerHTML = `
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Crear Transferencia (Aprobación Automática)
+                `;
+            }
+        }
+        
     } catch (error) {
         console.error('Error loading transfer summary:', error);
         content.innerHTML = `
@@ -1081,6 +1448,10 @@ async function confirmTransferRequest() {
         return;
     }
     
+    // Check if user is admin regional
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    
     const confirmButton = document.querySelector('#transferSummaryModal button[onclick="confirmTransferRequest()"]');
     const originalButtonText = confirmButton ? confirmButton.innerHTML : '';
     
@@ -1093,7 +1464,14 @@ async function confirmTransferRequest() {
         const response = await window.requestTransfer(window.pendingTransferData);
         
         if (window.showSuccessToast) {
-            window.showSuccessToast('Transferencia Solicitada', response.message || 'La transferencia ha sido solicitada exitosamente');
+            if (isAdminRegional) {
+                window.showSuccessToast(
+                    'Transferencia Aprobada Automáticamente',
+                    'La transferencia ha sido creada y aprobada automáticamente por el sistema.'
+                );
+            } else {
+                window.showSuccessToast('Transferencia Solicitada', response.message || 'La transferencia ha sido solicitada exitosamente');
+            }
         }
         
         closeTransferSummaryModal();
@@ -1102,6 +1480,8 @@ async function confirmTransferRequest() {
         // Reload transfers data
         if (window.loadTransfersData) {
             await window.loadTransfersData();
+        } else if (isAdminRegional && window.loadTransfersForAdminRegional) {
+            await window.loadTransfersForAdminRegional();
         }
     } catch (error) {
         console.error('Error requesting transfer:', error);
@@ -1548,6 +1928,107 @@ async function loadInstitutionsForTransferForm(regionalId) {
 /**
  * Load inventories for warehouse transfer form (from warehouse's regional)
  */
+async function loadInventoriesForAdminRegionalTransferForm() {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        // Get current user info to get regional ID
+        const userResponse = await fetch('/api/v1/users/me', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!userResponse.ok) {
+            throw new Error('Error al cargar la información del usuario');
+        }
+
+        const userData = await userResponse.json();
+        const institutionName = userData.institution;
+
+        if (!institutionName) {
+            throw new Error('Usuario no tiene una institución asignada');
+        }
+
+        // Fetch all institutions to find the user's institution
+        const institutionsResponse = await fetch('/api/v1/institutions', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!institutionsResponse.ok) {
+            throw new Error('Error al cargar las instituciones');
+        }
+
+        const institutions = await institutionsResponse.json();
+        const userInstitution = institutions.find(inst => inst.name === institutionName);
+
+        if (!userInstitution || !userInstitution.regionalId) {
+            throw new Error('No se pudo determinar la regional del usuario');
+        }
+
+        const regionalId = userInstitution.regionalId;
+
+        // Load inventories for the regional
+        const response = await fetch(`/api/v1/inventory/regionalAdminInventories?page=0&size=10000`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al cargar los inventarios');
+        }
+
+        const data = await response.json();
+        const inventories = Array.isArray(data.content) ? data.content : [];
+
+        if (!inventories || inventories.length === 0) {
+            if (newTransferInventorySelect) {
+                newTransferInventorySelect.setOptions([{
+                    value: '',
+                    label: 'No hay inventarios disponibles en tu regional'
+                }]);
+                newTransferInventorySelect.setDisabled(true);
+            }
+            if (window.showErrorToast) {
+                window.showErrorToast('Sin inventarios', 'No se encontraron inventarios en tu regional para realizar transferencias.');
+            }
+            return;
+        }
+
+        const inventoryOptions = inventories.map(inventory => ({
+            value: inventory.inventoryId ? inventory.inventoryId.toString() : inventory.id.toString(),
+            label: inventory.name || `Inventario ${inventory.inventoryId || inventory.id}`
+        }));
+
+        if (newTransferInventorySelect) {
+            newTransferInventorySelect.setOptions(inventoryOptions);
+            newTransferInventorySelect.setDisabled(false);
+        }
+    } catch (error) {
+        console.error('Error loading inventories for admin regional transfer form:', error);
+        if (newTransferInventorySelect) {
+            newTransferInventorySelect.setOptions([{
+                value: '',
+                label: 'Error al cargar inventarios'
+            }]);
+            newTransferInventorySelect.setDisabled(true);
+        }
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se pudieron cargar los inventarios: ' + error.message);
+        }
+    }
+}
+
 async function loadInventoriesForWarehouseTransferForm() {
     try {
         // Use the function from transfers-warehouse.js if available
@@ -1697,6 +2178,7 @@ window.verifyItemByLicencePlate = verifyItemByLicencePlate;
 window.initializeTransferFormSelects = initializeTransferFormSelects;
 window.loadRegionalsForTransferForm = loadRegionalsForTransferForm;
 window.loadInventoriesForWarehouseTransferForm = loadInventoriesForWarehouseTransferForm;
+window.loadInventoriesForAdminRegionalTransferForm = loadInventoriesForAdminRegionalTransferForm;
 window.showTransferSummaryModal = showTransferSummaryModal;
 window.closeTransferSummaryModal = closeTransferSummaryModal;
 window.confirmTransferRequest = confirmTransferRequest;

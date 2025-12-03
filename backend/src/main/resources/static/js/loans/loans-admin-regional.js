@@ -189,17 +189,45 @@ async function loadLoansForAdminRegional(page = 0) {
             const endIndex = startIndex + loansDataAdminRegional.pageSize;
             loansDataAdminRegional.loans = filteredLoans.slice(startIndex, endIndex);
             
+            // Ensure filteredLoans is set
+            loansDataAdminRegional.filteredLoans = filteredLoans;
+            
             // Update window.loansData for compatibility with existing UI functions
             if (!window.loansData) {
                 window.loansData = {};
             }
+            
+            // Ensure filteredLoans is set before updating window.loansData
+            const filteredLoans = loansDataAdminRegional.filteredLoans || loansDataAdminRegional.loans;
+            
+            // Update window.loansData
             window.loansData.loans = loansDataAdminRegional.loans;
-            window.loansData.filteredLoans = loansDataAdminRegional.filteredLoans;
+            window.loansData.filteredLoans = filteredLoans;
+            window.loansData.allLoans = loansDataAdminRegional.allLoans; // Store all loans for stats calculation
             window.loansData.totalElements = loansDataAdminRegional.totalElements;
-            window.loansData.currentPage = loansDataAdminRegional.currentPage;
+            window.loansData.currentPage = loansDataAdminRegional.currentPage + 1; // loans-ui.js uses 1-based pagination
             window.loansData.itemsPerPage = loansDataAdminRegional.pageSize;
             window.loansData.searchTerm = loansDataAdminRegional.filters.searchTerm;
             window.loansData.selectedStatus = loansDataAdminRegional.filters.status;
+            window.loansData.isLoading = false;
+            
+            // Also try to update the local loansData variable if it's accessible
+            // This is needed because loans-ui.js uses the local variable, not window.loansData
+            try {
+                // Check if loansData is defined in the current scope (from loans-data.js)
+                if (typeof loansData !== 'undefined') {
+                    loansData.loans = loansDataAdminRegional.loans;
+                    loansData.filteredLoans = filteredLoans;
+                    loansData.allLoans = loansDataAdminRegional.allLoans;
+                    loansData.currentPage = loansDataAdminRegional.currentPage + 1; // loans-ui.js uses 1-based pagination
+                    loansData.itemsPerPage = loansDataAdminRegional.pageSize;
+                    loansData.searchTerm = loansDataAdminRegional.filters.searchTerm;
+                    loansData.isLoading = false;
+                }
+            } catch (e) {
+                // loansData might not be accessible, that's okay
+                console.log('Note: loansData local variable not accessible, using window.loansData');
+            }
             
             // Update UI
             await updateLoansUIForAdminRegional();

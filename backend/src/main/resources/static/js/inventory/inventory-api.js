@@ -9,8 +9,17 @@ async function loadInventoryData() {
 
     try {
         await loadCurrentUserInfo();
-        // Load statistics for SUPERADMIN
-        await loadInventoryStatistics();
+        
+        // Load statistics for SUPERADMIN and ADMIN_REGIONAL (must be before loadInventories)
+        const currentRole = window.currentUserRole || '';
+        const isSuperAdmin = currentRole === 'SUPERADMIN';
+        const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        
+        if (isSuperAdmin || isAdminRegional) {
+            await loadInventoryStatistics();
+        }
+        
         await loadInventories();
         updateInventoryUI();
 

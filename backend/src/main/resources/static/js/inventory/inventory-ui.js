@@ -63,6 +63,18 @@ async function updateInventoryStats() {
   // Use statistics from endpoint if available (for SUPERADMIN and ADMIN_REGIONAL), otherwise calculate from current page
   let totalInventories, activeInventories, inactiveInventories, totalItems, totalValue;
 
+  // For SUPERADMIN and ADMIN_REGIONAL, always try to load statistics from endpoint if not available
+  if ((isSuperAdmin || isAdminRegional) && !window.inventoryData.statistics) {
+    // Try to load statistics from endpoint
+    if (typeof loadInventoryStatistics === 'function') {
+      try {
+        await loadInventoryStatistics();
+      } catch (error) {
+        console.error('Error loading inventory statistics:', error);
+      }
+    }
+  }
+
   if ((isSuperAdmin || isAdminRegional) && window.inventoryData.statistics) {
     // Use total statistics from endpoint
     const stats = window.inventoryData.statistics;
