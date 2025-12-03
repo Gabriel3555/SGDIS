@@ -5,6 +5,7 @@ import com.sgdis.backend.cancellation.application.dto.AcceptCancellationResponse
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationResponse;
 import com.sgdis.backend.cancellation.application.dto.CancellationResponse;
+import com.sgdis.backend.cancellation.application.dto.CancellationsByInventoryResponse;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationResponse;
 import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
@@ -20,6 +21,7 @@ import com.sgdis.backend.cancellation.application.port.UploadFormatExampleCancel
 import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -52,7 +54,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -629,5 +633,39 @@ public class CancellationController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
+    }
+
+    @Operation(
+            summary = "Get cancellations by inventory statistics for institution",
+            description = "Retrieves statistics of cancellations grouped by inventory for the current user's institution. " +
+                    "The institution is obtained from the current user. Only approved cancellations are counted."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = CancellationsByInventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/institution/statistics/by-inventory")
+    public ResponseEntity<CancellationsByInventoryResponse> getCancellationsByInventoryStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        List<Object[]> results = cancellationRepository.countCancellationsByInventoryForInstitution(institutionId);
+        
+        Map<String, Long> cancellationsByInventory = new java.util.HashMap<>();
+        for (Object[] result : results) {
+            String inventoryName = (String) result[0];
+            Long count = ((Number) result[1]).longValue();
+            cancellationsByInventory.put(inventoryName, count);
+        }
+        
+        CancellationsByInventoryResponse response = new CancellationsByInventoryResponse(cancellationsByInventory);
+        return ResponseEntity.ok(response);
     }
 }
