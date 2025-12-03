@@ -1073,6 +1073,11 @@ function setupCustomSelect(selectId, hiddenInputId, onChange) {
     const hiddenInput = document.getElementById(hiddenInputId);
     const textElement = select.querySelector('.custom-select-text');
 
+    if (!options || options.length === 0) {
+        console.warn('No options found for select:', selectId);
+        return;
+    }
+
     options.forEach(option => {
         option.addEventListener('click', () => {
             const value = option.dataset.value;

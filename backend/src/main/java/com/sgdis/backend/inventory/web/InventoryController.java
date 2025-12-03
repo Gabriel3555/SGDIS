@@ -9,6 +9,7 @@ import com.sgdis.backend.inventory.mapper.InventoryMapper;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.exception.ResourceNotFoundException;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.user.application.dto.InventoryManagerResponse;
 import com.sgdis.backend.user.application.dto.ManagedInventoryResponse;
 import com.sgdis.backend.file.service.FileUploadService;
@@ -64,6 +65,7 @@ public class InventoryController {
     private final FileUploadService fileUploadService;
     private final AuthService authService;
     private final SpringDataItemRepository itemRepository;
+    private final SpringDataUserRepository userRepository;
 
     @Operation(
             summary = "Create new inventory",
@@ -518,10 +520,19 @@ public class InventoryController {
             @RequestParam(defaultValue = "6") int size
     ) {
         var currentUser = authService.getCurrentUser();
-        if (currentUser.getInstitution() == null) {
+        
+        // Load user with institution to avoid lazy loading issues
+        var userWithInstitution = userRepository.findByIdWithInstitution(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        
+        if (userWithInstitution.getInstitution() == null) {
             throw new ResourceNotFoundException("User institution not found");
         }
-        Long institutionId = currentUser.getInstitution().getId();
+        
+        Long institutionId = userWithInstitution.getInstitution().getId();
+        if (institutionId == null) {
+            throw new ResourceNotFoundException("User institution ID not found");
+        }
         
         Pageable pageable = PageRequest.of(page, size);
         Page<InventoryEntity> inventoryPage = inventoryRepository.findPageByInstitutionId(institutionId, pageable);

@@ -5,7 +5,7 @@ import com.sgdis.backend.cancellation.application.dto.AcceptCancellationResponse
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationResponse;
 import com.sgdis.backend.cancellation.application.dto.CancellationResponse;
-import com.sgdis.backend.cancellation.application.dto.CancellationsByInventoryResponse;
+import com.sgdis.backend.cancellation.application.dto.CancellationStatisticsResponse;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationResponse;
 import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
@@ -21,7 +21,6 @@ import com.sgdis.backend.cancellation.application.port.UploadFormatExampleCancel
 import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
-import com.sgdis.backend.exception.ResourceNotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -54,9 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -175,17 +172,17 @@ public class CancellationController {
             
             // Get user's institution
             var userInstitution = userWithInstitution.getInstitution();
-            if (userInstitution == null || userInstitution.getName() == null || userInstitution.getName().isEmpty()) {
+            if (userInstitution == null || userInstitution.getId() == null) {
                 Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
                 Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
                 return ResponseEntity.ok(emptyPage);
             }
             
-            String institutionName = userInstitution.getName();
+            Long institutionId = userInstitution.getId();
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
             
-            // Use the repository method to get cancellations filtered by institution name
-            List<CancellationEntity> filteredCancellations = cancellationRepository.findAllByInstitutionNameWithJoins(institutionName);
+            // Use the repository method to get cancellations filtered by institution ID
+            List<CancellationEntity> filteredCancellations = cancellationRepository.findAllByInstitutionIdWithJoins(institutionId);
             
             // Handle empty list
             if (filteredCancellations.isEmpty()) {
@@ -225,6 +222,69 @@ public class CancellationController {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
             Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
             return ResponseEntity.ok(emptyPage);
+        }
+    }
+
+    @Operation(
+            summary = "Get cancellation statistics for current user's institution",
+            description = "Retrieves statistics about cancellations for the current user's institution (Warehouse only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = CancellationStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "403", description = "Access denied - WAREHOUSE role required")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @GetMapping("/my-institution/statistics")
+    public ResponseEntity<CancellationStatisticsResponse> getCancellationStatisticsByMyInstitution() {
+        try {
+            // Get current warehouse user
+            UserEntity currentUser = authService.getCurrentUser();
+            Long userId = currentUser.getId();
+            
+            // Load user with institution to avoid LazyInitializationException
+            UserEntity userWithInstitution = userRepository.findByIdWithInstitution(userId)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Get user's institution
+            var userInstitution = userWithInstitution.getInstitution();
+            if (userInstitution == null || userInstitution.getId() == null) {
+                return ResponseEntity.ok(new CancellationStatisticsResponse(0L, 0L, 0L, 0L));
+            }
+            
+            Long institutionId = userInstitution.getId();
+            
+            // Get all cancellations for this institution
+            List<CancellationEntity> allCancellations = cancellationRepository.findAllByInstitutionIdWithJoins(institutionId);
+            
+            // Calculate statistics
+            long total = allCancellations.size();
+            long pending = allCancellations.stream()
+                    .filter(c -> c.getApproved() == null || (!c.getApproved() && c.getRefusedAt() == null))
+                    .count();
+            long approved = allCancellations.stream()
+                    .filter(c -> c.getApproved() != null && c.getApproved() && c.getRefusedAt() == null)
+                    .count();
+            long rejected = allCancellations.stream()
+                    .filter(c -> c.getRefusedAt() != null)
+                    .count();
+            
+            CancellationStatisticsResponse statistics = new CancellationStatisticsResponse(
+                    total,
+                    pending,
+                    approved,
+                    rejected
+            );
+            
+            return ResponseEntity.ok(statistics);
+        } catch (Exception e) {
+            // Log error and return empty statistics
+            System.err.println("Error fetching cancellation statistics by institution: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(new CancellationStatisticsResponse(0L, 0L, 0L, 0L));
         }
     }
 
@@ -633,39 +693,5 @@ public class CancellationController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
-    }
-
-    @Operation(
-            summary = "Get cancellations by inventory statistics for institution",
-            description = "Retrieves statistics of cancellations grouped by inventory for the current user's institution. " +
-                    "The institution is obtained from the current user. Only approved cancellations are counted."
-    )
-    @ApiResponse(
-            responseCode = "200",
-            description = "Statistics retrieved successfully",
-            content = @Content(schema = @Schema(implementation = CancellationsByInventoryResponse.class))
-    )
-    @ApiResponse(responseCode = "404", description = "User institution not found")
-    @SecurityRequirement(name = "bearerAuth")
-    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
-    @GetMapping("/institution/statistics/by-inventory")
-    public ResponseEntity<CancellationsByInventoryResponse> getCancellationsByInventoryStatistics() {
-        var currentUser = authService.getCurrentUser();
-        if (currentUser.getInstitution() == null) {
-            throw new ResourceNotFoundException("User institution not found");
-        }
-        Long institutionId = currentUser.getInstitution().getId();
-        
-        List<Object[]> results = cancellationRepository.countCancellationsByInventoryForInstitution(institutionId);
-        
-        Map<String, Long> cancellationsByInventory = new java.util.HashMap<>();
-        for (Object[] result : results) {
-            String inventoryName = (String) result[0];
-            Long count = ((Number) result[1]).longValue();
-            cancellationsByInventory.put(inventoryName, count);
-        }
-        
-        CancellationsByInventoryResponse response = new CancellationsByInventoryResponse(cancellationsByInventory);
-        return ResponseEntity.ok(response);
     }
 }

@@ -3,8 +3,15 @@ function updateVerificationUI() {
     // Only update filters if CustomSelects are not initialized, otherwise just populate them
     if (verificationRegionalCustomSelect || verificationInstitutionCustomSelect || verificationInventoryCustomSelect) {
         // CustomSelects are already initialized, just populate them with current data
+        // But only if inventories are loaded (for warehouse and other roles)
         if (typeof populateVerificationCustomSelects === 'function') {
-            populateVerificationCustomSelects();
+            // Check if inventories are loaded before populating
+            if (verificationData.inventories !== undefined) {
+                console.log('updateVerificationUI: Populating CustomSelects, inventories available:', verificationData.inventories?.length || 0);
+                populateVerificationCustomSelects();
+            } else {
+                console.log('updateVerificationUI: Inventories not loaded yet, skipping populateVerificationCustomSelects');
+            }
         }
     } else {
         // CustomSelects not initialized, regenerate HTML
@@ -141,22 +148,9 @@ function updateStatsCards() {
     `;
 }
 
-// Flag to prevent multiple simultaneous calls to updateFilters
-let isUpdatingFilters = false;
-
 function updateFilters() {
-    // Prevent multiple simultaneous calls
-    if (isUpdatingFilters) {
-        return;
-    }
-    
-    isUpdatingFilters = true;
-    
     const container = document.getElementById('searchFilterContainer');
-    if (!container) {
-        isUpdatingFilters = false;
-        return;
-    }
+    if (!container) return;
 
     // Check if user is superadmin
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
@@ -264,47 +258,30 @@ function updateFilters() {
         </div>
     `;
 
-    // Destroy existing CustomSelect instances before regenerating HTML
-    if (verificationRegionalCustomSelect) {
-        try {
-            if (typeof verificationRegionalCustomSelect.destroy === 'function') {
-                verificationRegionalCustomSelect.destroy();
-            }
-        } catch (e) {
-            console.warn('Error destroying regional CustomSelect:', e);
-        }
-        verificationRegionalCustomSelect = null;
-    }
-    
-    if (verificationInstitutionCustomSelect) {
-        try {
-            if (typeof verificationInstitutionCustomSelect.destroy === 'function') {
-                verificationInstitutionCustomSelect.destroy();
-            }
-        } catch (e) {
-            console.warn('Error destroying institution CustomSelect:', e);
-        }
-        verificationInstitutionCustomSelect = null;
-    }
-    
-    if (verificationInventoryCustomSelect) {
-        try {
-            if (typeof verificationInventoryCustomSelect.destroy === 'function') {
-                verificationInventoryCustomSelect.destroy();
-            }
-        } catch (e) {
-            console.warn('Error destroying inventory CustomSelect:', e);
-        }
-        verificationInventoryCustomSelect = null;
-    }
-
     container.innerHTML = filtersHTML;
 
+    // Reset custom select instances since HTML was regenerated
+    verificationRegionalCustomSelect = null;
+    verificationInstitutionCustomSelect = null;
+    verificationInventoryCustomSelect = null;
+
     // Initialize Custom Selects after HTML is inserted
+    // Use setTimeout to ensure CustomSelect class is available
     setTimeout(() => {
-        initializeVerificationCustomSelects();
-        isUpdatingFilters = false;
-    }, 50);
+        if (typeof CustomSelect !== 'undefined') {
+            initializeVerificationCustomSelects();
+        } else {
+            console.warn('CustomSelect class not available, retrying...');
+            // Retry after a longer delay
+            setTimeout(() => {
+                if (typeof CustomSelect !== 'undefined') {
+                    initializeVerificationCustomSelects();
+                } else {
+                    console.error('CustomSelect class still not available after retry');
+                }
+            }, 500);
+        }
+    }, 100);
 }
 
 // Custom Select instances for verification filters
@@ -318,11 +295,6 @@ function initializeVerificationCustomSelects() {
         return;
     }
 
-    // Prevent re-initialization if already initialized
-    if (isUpdatingFilters && (verificationRegionalCustomSelect || verificationInstitutionCustomSelect || verificationInventoryCustomSelect)) {
-        return;
-    }
-
     // Initialize Regional Filter Custom Select (only for superadmin)
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
@@ -330,24 +302,14 @@ function initializeVerificationCustomSelects() {
     if (isSuperAdmin) {
         const regionalSelect = document.getElementById('verificationRegionalFilterSelect');
         if (regionalSelect && !verificationRegionalCustomSelect) {
-            try {
-                verificationRegionalCustomSelect = new CustomSelect('verificationRegionalFilterSelect', {
-                    placeholder: 'Todas las regionales',
-                    onChange: (option) => {
-                        const value = option.value || '';
-                        const hiddenInput = document.getElementById('regionalFilter');
-                        if (hiddenInput) {
-                            hiddenInput.value = value;
-                        }
-                        // Prevent loop: only call setRegionalFilter if value actually changed
-                        if (verificationData.selectedRegional !== value) {
-                            setRegionalFilter(value);
-                        }
-                    }
-                });
-            } catch (e) {
-                console.error('Error initializing regional CustomSelect:', e);
-            }
+            verificationRegionalCustomSelect = new CustomSelect('verificationRegionalFilterSelect', {
+                placeholder: 'Todas las regionales',
+                onChange: (option) => {
+                    const value = option.value || '';
+                    document.getElementById('regionalFilter').value = value;
+                    setRegionalFilter(value);
+                }
+            });
         }
 
         const institutionSelect = document.getElementById('verificationInstitutionFilterSelect');
@@ -382,29 +344,37 @@ function initializeVerificationCustomSelects() {
     // Initialize Inventory Filter Custom Select
     const inventorySelect = document.getElementById('verificationInventoryFilterSelect');
     if (inventorySelect && !verificationInventoryCustomSelect) {
-        try {
-            verificationInventoryCustomSelect = new CustomSelect('verificationInventoryFilterSelect', {
-                placeholder: 'Todos los Inventarios',
-                disabled: isSuperAdmin && !verificationData.selectedInstitution,
-                onChange: (option) => {
-                    const value = option.value || '';
-                    const hiddenInput = document.getElementById('inventoryFilter');
-                    if (hiddenInput) {
-                        hiddenInput.value = value;
-                    }
-                    // Prevent loop: only call setInventoryFilter if value actually changed
-                    if (verificationData.selectedInventory !== value) {
-                        setInventoryFilter(value);
-                    }
-                }
-            });
-        } catch (e) {
-            console.error('Error initializing inventory CustomSelect:', e);
-        }
+        verificationInventoryCustomSelect = new CustomSelect('verificationInventoryFilterSelect', {
+            placeholder: 'Todos los Inventarios',
+            disabled: isSuperAdmin && !verificationData.selectedInstitution,
+            onChange: (option) => {
+                const value = option.value || '';
+                document.getElementById('inventoryFilter').value = value;
+                setInventoryFilter(value);
+            }
+        });
     }
 
-    // Populate custom selects with options (only if they exist and have data)
-    populateVerificationCustomSelects();
+    // Populate custom selects with options
+    // Use setTimeout to ensure inventories are loaded before populating
+    // For warehouse and other non-superadmin roles, ensure inventories are loaded
+    setTimeout(() => {
+        // Double-check that inventories are loaded before populating
+        if (verificationData.inventories !== undefined) {
+            console.log('Initializing CustomSelects, inventories available:', verificationData.inventories?.length || 0);
+            populateVerificationCustomSelects();
+        } else {
+            console.warn('Inventories not loaded yet, retrying...');
+            // Retry after a longer delay
+            setTimeout(() => {
+                if (verificationData.inventories !== undefined) {
+                    populateVerificationCustomSelects();
+                } else {
+                    console.error('Inventories still not loaded after retry');
+                }
+            }, 500);
+        }
+    }, 200);
 }
 
 // Flag to prevent multiple simultaneous calls to populateVerificationCustomSelects
@@ -426,33 +396,22 @@ function populateVerificationCustomSelects() {
 
     // Populate Regional Filter
     if (isSuperAdmin && verificationRegionalCustomSelect) {
-        try {
-            const regionals = verificationData.regionals || [];
-            const options = [
-                { value: '', label: 'Todas las regionales' },
-                ...regionals.map(regional => ({
-                    value: regional.id.toString(),
-                    label: regional.name || `Regional ${regional.id}`
-                }))
-            ];
-            
-            // Only set options if we have data or at least the "all" option
-            if (options.length > 0) {
-                verificationRegionalCustomSelect.setOptions(options);
-                
-                if (verificationData.selectedRegional) {
-                    const selectedOption = options.find(opt => opt.value === verificationData.selectedRegional.toString());
-                    if (selectedOption) {
-                        verificationRegionalCustomSelect.selectOption(selectedOption);
-                    } else {
-                        verificationRegionalCustomSelect.clear();
-                    }
-                } else {
-                    verificationRegionalCustomSelect.clear();
-                }
+        const options = [
+            { value: '', label: 'Todas las regionales' },
+            ...(verificationData.regionals || []).map(regional => ({
+                value: regional.id.toString(),
+                label: regional.name
+            }))
+        ];
+        verificationRegionalCustomSelect.setOptions(options);
+        
+        if (verificationData.selectedRegional) {
+            const selectedOption = options.find(opt => opt.value === verificationData.selectedRegional.toString());
+            if (selectedOption) {
+                verificationRegionalCustomSelect.selectOption(selectedOption);
             }
-        } catch (e) {
-            console.error('Error populating regional CustomSelect:', e);
+        } else {
+            verificationRegionalCustomSelect.clear();
         }
     }
 
@@ -540,8 +499,6 @@ function populateVerificationCustomSelects() {
                     }
                 }
             }
-        } catch (e) {
-            console.error('Error populating institution CustomSelect:', e);
         }
     }
     
@@ -554,6 +511,72 @@ function populateVerificationCustomSelects() {
                 verificationInventoryCustomSelect.setDisabled(false);
             }
 
+        // Ensure inventories are loaded
+        const inventories = verificationData.inventories || [];
+        console.log('Populating inventory filter with', inventories.length, 'inventories');
+        console.log('Inventories data:', inventories);
+        console.log('verificationData:', verificationData);
+        
+        // Build options array
+        const options = [
+            { value: 'all', label: 'Todos los Inventarios' }
+        ];
+        
+        // Add inventory options
+        if (inventories && inventories.length > 0) {
+            inventories.forEach((inv, index) => {
+                console.log(`Processing inventory ${index}:`, inv);
+                const invId = inv.id || inv.inventoryId;
+                const invName = inv.name || inv.inventoryName || `Inventario ${invId}`;
+                if (invId) {
+                    options.push({
+                        value: invId.toString(),
+                        label: invName
+                    });
+                } else {
+                    console.warn(`Inventory at index ${index} has no ID:`, inv);
+                }
+            });
+        } else {
+            console.warn('No inventories found in verificationData.inventories');
+        }
+        
+        console.log('Inventory filter options:', options);
+        console.log('Options length:', options.length);
+        console.log('CustomSelect instance:', verificationInventoryCustomSelect);
+        
+        // Always set options, even if only 'all' is available
+        if (verificationInventoryCustomSelect && typeof verificationInventoryCustomSelect.setOptions === 'function') {
+            console.log('Setting', options.length, 'options to CustomSelect');
+            verificationInventoryCustomSelect.setOptions(options);
+            
+            // Verify options were set correctly
+            setTimeout(() => {
+                if (verificationInventoryCustomSelect.options && verificationInventoryCustomSelect.options.length > 0) {
+                    console.log('Options successfully set. CustomSelect has', verificationInventoryCustomSelect.options.length, 'options');
+                    console.log('CustomSelect options:', verificationInventoryCustomSelect.options);
+                } else {
+                    console.error('Options were not set correctly. CustomSelect.options is empty or undefined');
+                    console.log('CustomSelect state:', {
+                        options: verificationInventoryCustomSelect.options,
+                        filteredOptions: verificationInventoryCustomSelect.filteredOptions,
+                        container: verificationInventoryCustomSelect.container
+                    });
+                }
+            }, 100);
+        } else {
+            console.error('CustomSelect instance or setOptions method not available');
+        }
+        
+        // Restore selected value - check if dropdown is open first
+        const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
+        const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
+        
+        if (selectedOption) {
+            // Check if dropdown is currently open
+            const isOpen = verificationInventoryCustomSelect.container && 
+                          (verificationInventoryCustomSelect.container.classList.contains('open') || 
+                           verificationInventoryCustomSelect.container.classList.contains('active'));
             const options = [
                 { value: 'all', label: 'Todos los Inventarios' },
                 ...(verificationData.inventories || []).map(inv => ({
@@ -610,8 +633,6 @@ function populateVerificationCustomSelects() {
                     }
                 }
             }
-        } catch (e) {
-            console.error('Error populating inventory CustomSelect:', e);
         }
     }
     

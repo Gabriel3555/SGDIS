@@ -162,6 +162,25 @@ function updateTransfersSearchAndFilters() {
     const selectedRegional = (window.inventoryData || window.transfersData)?.selectedRegional || '';
     const selectedInstitution = (window.inventoryData || window.transfersData)?.selectedInstitution || '';
     
+    // Check if CustomSelect containers already exist (for warehouse and other roles)
+    const existingInventoryContainer = document.getElementById('transferInventorySelect');
+    const existingStatusContainer = document.getElementById('transferStatusSelect');
+    
+    // If CustomSelects are already initialized, just update values without regenerating HTML
+    if (existingInventoryContainer && existingStatusContainer && 
+        (window.transferInventorySelect || window.transferStatusSelect)) {
+        // Just update the search input value
+        const searchInput = document.getElementById('transferSearchInput');
+        if (searchInput) searchInput.value = currentSearchTerm;
+        
+        // Don't update CustomSelect values here - they are already set by onChange
+        // Updating them here can cause the dropdown to close immediately after selection
+        // The values are already stored in window.transfersData.filters and the CustomSelects
+        // maintain their own state through the onChange handler
+        
+        return; // Don't regenerate HTML
+    }
+    
     // Build filter dropdowns HTML
     let filterDropdowns = '';
     
@@ -298,7 +317,13 @@ function updateTransfersSearchAndFilters() {
         // Initialize inventory select
         if (typeof CustomSelect !== 'undefined' && document.getElementById('transferInventorySelect')) {
             window.transferInventorySelect = new CustomSelect('transferInventorySelect', {
-                onSelect: (value) => {
+                placeholder: 'Seleccionar inventario...',
+                onChange: (option) => {
+                    const value = option ? option.value : '';
+                    const hiddenInput = document.getElementById('transferInventoryFilter');
+                    if (hiddenInput) {
+                        hiddenInput.value = value;
+                    }
                     handleTransferInventorySelectionChange(value);
                 }
             });
@@ -306,11 +331,48 @@ function updateTransfersSearchAndFilters() {
         
         // Initialize status select
         if (typeof CustomSelect !== 'undefined' && document.getElementById('transferStatusSelect')) {
+            const statusOptions = [
+                { value: 'all', label: 'Todos los estados' },
+                { value: 'PENDING', label: 'Pendiente' },
+                { value: 'APPROVED', label: 'Aprobada' },
+                { value: 'REJECTED', label: 'Rechazada' }
+            ];
+            
             window.transferStatusSelect = new CustomSelect('transferStatusSelect', {
-                onSelect: (value) => {
+                placeholder: 'Todos los estados',
+                onChange: (option) => {
+                    const value = option ? option.value : 'all';
+                    const hiddenInput = document.getElementById('transferStatusFilter');
+                    if (hiddenInput) {
+                        hiddenInput.value = value;
+                    }
                     handleTransferStatusFilterChange(value);
                 }
             });
+            
+            // Set options after initialization
+            if (window.transferStatusSelect && typeof window.transferStatusSelect.setOptions === 'function') {
+                window.transferStatusSelect.setOptions(statusOptions);
+                
+                // Set initial value (only if not 'all' and dropdown is not open)
+                const currentStatus = currentStatusFilter || 'all';
+                if (currentStatus !== 'all') {
+                    // Use requestAnimationFrame to ensure DOM is ready
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            if (window.transferStatusSelect && typeof window.transferStatusSelect.setValue === 'function') {
+                                // Check if dropdown is open before setting value
+                                const isOpen = window.transferStatusSelect.container && 
+                                             (window.transferStatusSelect.container.classList.contains('open') || 
+                                              window.transferStatusSelect.container.classList.contains('active'));
+                                if (!isOpen) {
+                                    window.transferStatusSelect.setValue(currentStatus);
+                                }
+                            }
+                        }, 100);
+                    });
+                }
+            }
         }
         
         // Load filters data
@@ -367,10 +429,37 @@ function updateTransfersTable() {
     const container = document.getElementById('transferTableContainer');
     if (!container || !window.transfersData) return;
     
-    const transfers = window.transfersData.transfers || [];
+    // For warehouse, use allRegionalTransfers if available (for client-side filtering)
+    // Otherwise use transfers (for server-side pagination)
+    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
+    const transfers = (isWarehouse && window.transfersData.allRegionalTransfers) 
+        ? window.transfersData.allRegionalTransfers 
+        : (window.transfersData.transfers || []);
     const filteredTransfers = filterTransfers(transfers);
     
-    if (filteredTransfers.length === 0) {
+    // Apply client-side pagination for warehouse
+    let transfersToDisplay = filteredTransfers;
+    if (isWarehouse && window.transfersData.allRegionalTransfers) {
+        const pageSize = window.transfersData.pageSize || 6;
+        const currentPage = window.transfersData.currentPage || 0;
+        
+        // Update total elements and pages
+        window.transfersData.totalElements = filteredTransfers.length;
+        window.transfersData.totalPages = Math.ceil(filteredTransfers.length / pageSize);
+        
+        // Reset to first page if current page is out of bounds
+        if (currentPage >= window.transfersData.totalPages && window.transfersData.totalPages > 0) {
+            window.transfersData.currentPage = 0;
+        }
+        
+        // Get paginated data
+        const startIndex = (window.transfersData.currentPage || 0) * pageSize;
+        const endIndex = startIndex + pageSize;
+        transfersToDisplay = filteredTransfers.slice(startIndex, endIndex);
+    }
+    
+    if (transfersToDisplay.length === 0) {
         container.innerHTML = `
             <div class="text-center py-12">
                 <i class="fas fa-exchange-alt text-gray-300 dark:text-gray-600 text-5xl mb-4"></i>
@@ -402,7 +491,7 @@ function updateTransfersTable() {
                 <tbody>
     `;
     
-    filteredTransfers.forEach(transfer => {
+    transfersToDisplay.forEach(transfer => {
         const statusBadge = getTransferStatusBadge(transfer.status);
         const requestedDate = transfer.requestedAt 
             ? new Date(transfer.requestedAt).toLocaleDateString('es-ES')
@@ -466,10 +555,37 @@ function updateTransfersCards() {
     const container = document.getElementById('transferTableContainer');
     if (!container || !window.transfersData) return;
     
-    const transfers = window.transfersData.transfers || [];
+    // For warehouse, use allRegionalTransfers if available (for client-side filtering)
+    // Otherwise use transfers (for server-side pagination)
+    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
+    const transfers = (isWarehouse && window.transfersData.allRegionalTransfers) 
+        ? window.transfersData.allRegionalTransfers 
+        : (window.transfersData.transfers || []);
     const filteredTransfers = filterTransfers(transfers);
     
-    if (filteredTransfers.length === 0) {
+    // Apply client-side pagination for warehouse
+    let transfersToDisplay = filteredTransfers;
+    if (isWarehouse && window.transfersData.allRegionalTransfers) {
+        const pageSize = window.transfersData.pageSize || 6;
+        const currentPage = window.transfersData.currentPage || 0;
+        
+        // Update total elements and pages
+        window.transfersData.totalElements = filteredTransfers.length;
+        window.transfersData.totalPages = Math.ceil(filteredTransfers.length / pageSize);
+        
+        // Reset to first page if current page is out of bounds
+        if (currentPage >= window.transfersData.totalPages && window.transfersData.totalPages > 0) {
+            window.transfersData.currentPage = 0;
+        }
+        
+        // Get paginated data
+        const startIndex = (window.transfersData.currentPage || 0) * pageSize;
+        const endIndex = startIndex + pageSize;
+        transfersToDisplay = filteredTransfers.slice(startIndex, endIndex);
+    }
+    
+    if (transfersToDisplay.length === 0) {
         container.innerHTML = `
             <div class="text-center py-12">
                 <i class="fas fa-exchange-alt text-gray-300 dark:text-gray-600 text-5xl mb-4"></i>
@@ -486,7 +602,7 @@ function updateTransfersCards() {
     
     let cardsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
     
-    filteredTransfers.forEach(transfer => {
+    transfersToDisplay.forEach(transfer => {
         const statusBadge = getTransferStatusBadge(transfer.status);
         const requestedDate = transfer.requestedAt 
             ? new Date(transfer.requestedAt).toLocaleDateString('es-ES')
@@ -629,6 +745,15 @@ function filterTransfers(transfers) {
     let filtered = [...transfers];
     const { status, searchTerm } = window.transfersData.filters;
     
+    // Filter by inventory (if currentInventoryId is set)
+    if (window.transfersData.currentInventoryId) {
+        const inventoryId = parseInt(window.transfersData.currentInventoryId, 10);
+        filtered = filtered.filter(t => 
+            (t.sourceInventoryId && parseInt(t.sourceInventoryId, 10) === inventoryId) ||
+            (t.destinationInventoryId && parseInt(t.destinationInventoryId, 10) === inventoryId)
+        );
+    }
+    
     // Filter by status
     if (status && status !== 'all') {
         filtered = filtered.filter(t => t.status === status);
@@ -679,11 +804,35 @@ async function handleTransferStatusFilterChange(event) {
         window.transfersData.filters.status = statusValue;
         window.transfersData.currentPage = 0; // Reset to first page
         
-        // Reload transfers if we have a selected inventory
-        if (window.transfersData.currentInventoryId && window.loadTransfersData) {
-            await window.loadTransfersData();
+        // Check if we're in warehouse mode (client-side filtering)
+        const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                           (window.location.pathname && window.location.pathname.includes('/warehouse'));
+        
+        if (isWarehouse && window.transfersData.allRegionalTransfers) {
+            // For warehouse, just update table/cards and pagination without regenerating filters
+            // Respect the current viewMode
+            if (window.transfersData.viewMode === 'cards') {
+                if (window.updateTransfersCards) {
+                    window.updateTransfersCards();
+                }
+            } else {
+                if (window.updateTransfersTable) {
+                    window.updateTransfersTable();
+                }
+            }
+            if (window.updateTransfersStats) {
+                await window.updateTransfersStats();
+            }
+            if (window.updateTransfersPagination) {
+                window.updateTransfersPagination();
+            }
         } else {
-            updateTransfersUI();
+            // Reload transfers if we have a selected inventory
+            if (window.transfersData.currentInventoryId && window.loadTransfersData) {
+                await window.loadTransfersData();
+            } else {
+                updateTransfersUI();
+            }
         }
     }
 }

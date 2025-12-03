@@ -244,25 +244,53 @@ async function handleTransferInventorySelectionChange(inventoryId) {
     window.transfersData.currentInventoryId = inventoryId ? parseInt(inventoryId, 10) : null;
     window.transfersData.currentPage = 0;
     
-    // Load transfers for selected inventory
-    if (inventoryId && window.loadTransfersData) {
-        await window.loadTransfersData();
-    } else {
-        // Clear transfers display
-        const container = document.getElementById('transferTableContainer');
-        if (container) {
-            container.innerHTML = `
-                <div class="text-center py-12">
-                    <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 text-4xl mb-4"></i>
-                    <p class="text-gray-600 dark:text-gray-400 text-lg mb-2">Selecciona un inventario para ver sus transferencias</p>
-                </div>
-            `;
+    // Check if we're in warehouse mode (warehouse loads all transfers from regional, then filters client-side)
+    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
+    
+    if (isWarehouse && window.transfersData.allRegionalTransfers) {
+        // For warehouse, filter existing transfers client-side instead of reloading
+        // Update table/cards with filtered transfers
+        if (window.transfersData.viewMode === 'cards') {
+            if (window.updateTransfersCards) {
+                window.updateTransfersCards();
+            }
+        } else {
+            if (window.updateTransfersTable) {
+                window.updateTransfersTable();
+            }
         }
         
-        // Clear stats
-        const statsContainer = document.getElementById('transferStatsContainer');
-        if (statsContainer && window.updateTransfersStats) {
-            window.updateTransfersStats();
+        // Update stats with filtered transfers
+        if (window.updateTransfersStats) {
+            await window.updateTransfersStats();
+        }
+        
+        // Update pagination
+        if (window.updateTransfersPagination) {
+            window.updateTransfersPagination();
+        }
+    } else {
+        // For other roles (superadmin, etc.), load transfers for selected inventory
+        if (inventoryId && window.loadTransfersData) {
+            await window.loadTransfersData();
+        } else {
+            // Clear transfers display
+            const container = document.getElementById('transferTableContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-info-circle text-blue-500 dark:text-blue-400 text-4xl mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-400 text-lg mb-2">Selecciona un inventario para ver sus transferencias</p>
+                    </div>
+                `;
+            }
+            
+            // Clear stats
+            const statsContainer = document.getElementById('transferStatsContainer');
+            if (statsContainer && window.updateTransfersStats) {
+                window.updateTransfersStats();
+            }
         }
     }
 }
@@ -399,8 +427,22 @@ async function loadInventoriesForTransferFilter() {
                     });
                 }
                 window.transferInventorySelect.setOptions(options);
+                
+                // Restore selected value if exists (only if dropdown is not open)
                 if (currentInventoryId) {
-                    window.transferInventorySelect.setValue(currentInventoryId.toString());
+                    requestAnimationFrame(() => {
+                        setTimeout(() => {
+                            if (window.transferInventorySelect && typeof window.transferInventorySelect.setValue === 'function') {
+                                // Check if dropdown is open before setting value
+                                const isOpen = window.transferInventorySelect.container && 
+                                             (window.transferInventorySelect.container.classList.contains('open') || 
+                                              window.transferInventorySelect.container.classList.contains('active'));
+                                if (!isOpen) {
+                                    window.transferInventorySelect.setValue(currentInventoryId.toString());
+                                }
+                            }
+                        }, 100);
+                    });
                 }
             }
         }

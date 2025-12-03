@@ -631,7 +631,11 @@ async function handleNewLoanSubmit(e) {
         closeNewLoanModal();
         
         // Reload loans
-        if (typeof loadLoans === 'function') {
+        const isWarehouse = window.location.pathname && window.location.pathname.includes('/warehouse/loans');
+        if (isWarehouse) {
+            await loadAllLoansForWarehouse();
+            updateLoansSearchAndFiltersForWarehouse();
+        } else if (typeof loadLoans === 'function') {
             await loadLoans();
         } else if (typeof window.loadLoans === 'function') {
             await window.loadLoans();
@@ -671,9 +675,598 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Warehouse loans filters data
+let loansWarehouseFilters = {
+    searchTerm: '',
+    status: 'all',
+    responsibleId: 'all',
+    inventoryId: 'all',
+    allLoans: [],
+    filteredLoans: [],
+    inventories: [],
+    users: []
+};
+
+// Load users from institution for filters
+async function loadUsersForFilters() {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+
+        // Fetch all users from institution endpoint - load all pages
+        let allUsers = [];
+        let page = 0;
+        let hasMore = true;
+        const pageSize = 1000;
+
+        while (hasMore) {
+            const response = await fetch(`/api/v1/users/institution?page=${page}&size=${pageSize}`, {
+                headers: headers
+            });
+
+            if (!response.ok) {
+                console.error('Error loading users for filters:', response.status);
+                break;
+            }
+
+            const data = await response.json();
+            const users = data.users || (Array.isArray(data) ? data : []);
+            
+            if (users.length > 0) {
+                allUsers = allUsers.concat(users);
+                hasMore = !data.last && users.length === pageSize;
+                page++;
+            } else {
+                hasMore = false;
+            }
+        }
+
+        // Sort users by full name
+        allUsers.sort((a, b) => {
+            const nameA = (a.fullName || `${a.name || ''} ${a.lastName || ''}`.trim() || a.email || '').toLowerCase();
+            const nameB = (b.fullName || `${b.name || ''} ${b.lastName || ''}`.trim() || b.email || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        loansWarehouseFilters.users = allUsers;
+        console.log('Users loaded for filters:', allUsers.length);
+    } catch (error) {
+        console.error('Error loading users for filters:', error);
+        loansWarehouseFilters.users = [];
+    }
+}
+
+// Load inventories from institution for filters
+async function loadInventoriesForFilters() {
+    try {
+        // Use authenticatedFetch if available to handle token refresh automatically
+        const fetchFunction = (typeof authenticatedFetch !== 'undefined' && typeof authenticatedFetch === 'function') 
+            ? authenticatedFetch 
+            : fetch;
+
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            console.warn('No authentication token found for loading inventories');
+            loansWarehouseFilters.inventories = [];
+            return;
+        }
+
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+
+        // Get current user info to get institution ID
+        let userResponse;
+        try {
+            userResponse = await fetchFunction('/api/v1/users/me', {
+                method: 'GET',
+                headers: headers
+            });
+        } catch (userError) {
+            console.error('Error fetching user info for inventories:', userError);
+            loansWarehouseFilters.inventories = [];
+            return;
+        }
+        
+        let institutionId = null;
+        if (userResponse && userResponse.ok) {
+            try {
+                const userData = await userResponse.json();
+                institutionId = userData.institutionId || (userData.institution && userData.institution.id);
+            } catch (parseError) {
+                console.error('Error parsing user data for inventories:', parseError);
+            }
+        }
+
+        // Load all inventories from institution
+        // Use endpoint with institution ID if available, otherwise use endpoint without ID (backend will filter by user's institution)
+        let allInventories = [];
+        let page = 0;
+        let hasMore = true;
+        const pageSize = 1000;
+
+        while (hasMore) {
+            const endpoint = institutionId 
+                ? `/api/v1/inventory/institutionAdminInventories/${institutionId}?page=${page}&size=${pageSize}`
+                : `/api/v1/inventory/institutionAdminInventories?page=${page}&size=${pageSize}`;
+            
+            let response;
+            try {
+                response = await fetchFunction(endpoint, {
+                    method: 'GET',
+                    headers: headers
+                });
+            } catch (fetchError) {
+                console.error('Network error loading inventories:', fetchError);
+                // If it's a CORS error or network error, try without institution ID
+                if (institutionId && (fetchError.message.includes('CORS') || fetchError.message.includes('Failed to fetch'))) {
+                    console.log('Retrying without institution ID due to network error...');
+                    const fallbackEndpoint = `/api/v1/inventory/institutionAdminInventories?page=${page}&size=${pageSize}`;
+                    try {
+                        response = await fetchFunction(fallbackEndpoint, {
+                            method: 'GET',
+                            headers: headers
+                        });
+                    } catch (e) {
+                        console.error('Fallback endpoint also failed:', e);
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            if (!response.ok) {
+                console.error('Error loading inventories for filters:', response.status, response.statusText);
+                // If 404 or 403, try without institution ID
+                if ((response.status === 404 || response.status === 403) && institutionId) {
+                    console.log('Retrying without institution ID...');
+                    const fallbackEndpoint = `/api/v1/inventory/institutionAdminInventories?page=${page}&size=${pageSize}`;
+                    try {
+                        response = await fetch(fallbackEndpoint, {
+                            method: 'GET',
+                            headers: headers
+                        });
+                        if (!response.ok) {
+                            break;
+                        }
+                    } catch (e) {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+
+            let data;
+            try {
+                data = await response.json();
+            } catch (parseError) {
+                console.error('Error parsing inventories response:', parseError);
+                break;
+            }
+            
+            const inventories = data.content || (Array.isArray(data) ? data : []);
+            
+            if (inventories.length > 0) {
+                allInventories = allInventories.concat(inventories);
+                hasMore = !data.last && inventories.length === pageSize;
+                page++;
+            } else {
+                hasMore = false;
+            }
+        }
+
+        // Filter by institution ID to be sure
+        if (institutionId) {
+            allInventories = allInventories.filter(inv => {
+                const invInstitutionId = inv.institutionId || (inv.institution && inv.institution.id);
+                return invInstitutionId && invInstitutionId.toString() === institutionId.toString();
+            });
+        }
+
+        // Sort inventories by name
+        allInventories.sort((a, b) => {
+            const nameA = (a.name || `Inventario ${a.id}`).toLowerCase();
+            const nameB = (b.name || `Inventario ${b.id}`).toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        loansWarehouseFilters.inventories = allInventories;
+        console.log('Inventories loaded for filters:', allInventories.length);
+    } catch (error) {
+        console.error('Error loading inventories for filters:', error);
+        loansWarehouseFilters.inventories = [];
+    }
+}
+
+// Load all loans for client-side filtering
+async function loadAllLoansForWarehouse() {
+    try {
+        // Use authenticatedFetch if available to handle token refresh automatically
+        const fetchFunction = (typeof authenticatedFetch !== 'undefined' && typeof authenticatedFetch === 'function') 
+            ? authenticatedFetch 
+            : fetch;
+
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Get current user info to get institution ID
+        let userResponse;
+        try {
+            userResponse = await fetchFunction('/api/v1/users/me', {
+                method: 'GET',
+                headers: headers
+            });
+        } catch (userError) {
+            console.error('Error fetching user info:', userError);
+            loansWarehouseFilters.allLoans = [];
+            loansWarehouseFilters.filteredLoans = [];
+            return;
+        }
+        
+        let institutionId = null;
+        if (userResponse && userResponse.ok) {
+            try {
+                const userData = await userResponse.json();
+                institutionId = userData.institutionId || (userData.institution && userData.institution.id);
+            } catch (parseError) {
+                console.error('Error parsing user data:', parseError);
+            }
+        }
+
+        // Load users and inventories in parallel (with error handling)
+        try {
+            await Promise.all([
+                loadUsersForFilters().catch(err => {
+                    console.error('Error loading users for filters:', err);
+                    loansWarehouseFilters.users = [];
+                }),
+                loadInventoriesForFilters().catch(err => {
+                    console.error('Error loading inventories for filters:', err);
+                    loansWarehouseFilters.inventories = [];
+                })
+            ]);
+        } catch (parallelError) {
+            console.error('Error loading filter data:', parallelError);
+        }
+
+        const params = new URLSearchParams();
+        if (institutionId) {
+            params.append('institutionId', institutionId.toString());
+        }
+
+        let endpoint = '/api/v1/loan/filter';
+        const paramsString = params.toString();
+        if (paramsString) {
+            endpoint += `?${paramsString}`;
+        }
+
+        let response;
+        try {
+            response = await fetchFunction(endpoint, {
+                method: 'GET',
+                headers: headers
+            });
+        } catch (fetchError) {
+            console.error('Network error loading loans:', fetchError);
+            // Try alternative endpoint without filter
+            console.log('Trying alternative endpoint...');
+            try {
+                const altEndpoint = institutionId 
+                    ? `/api/v1/loan?institutionId=${institutionId}`
+                    : '/api/v1/loan';
+                response = await fetchFunction(altEndpoint, {
+                    method: 'GET',
+                    headers: headers
+                });
+            } catch (altError) {
+                console.error('Alternative endpoint also failed:', altError);
+                loansWarehouseFilters.allLoans = [];
+                loansWarehouseFilters.filteredLoans = [];
+                // Still update UI with empty data
+                filterLoansForWarehouse();
+                updateLoansSearchAndFiltersForWarehouse();
+                return;
+            }
+        }
+
+        if (response && response.ok) {
+            let loans;
+            try {
+                const data = await response.json();
+                // Handle both array and paginated response
+                loans = Array.isArray(data) ? data : (data.content || data.loans || []);
+            } catch (parseError) {
+                console.error('Error parsing loans response:', parseError);
+                loans = [];
+            }
+            
+            loansWarehouseFilters.allLoans = Array.isArray(loans) ? loans : [];
+            
+            // Update window.loansData for compatibility
+            if (window.loansData) {
+                window.loansData.loans = loansWarehouseFilters.allLoans;
+                window.loansData.filteredLoans = loansWarehouseFilters.allLoans;
+            }
+            
+            filterLoansForWarehouse();
+            
+            // Update filters UI after data is loaded
+            updateLoansSearchAndFiltersForWarehouse();
+        } else {
+            const status = response ? response.status : 'unknown';
+            const statusText = response ? response.statusText : 'Network error';
+            console.error('Error loading loans:', status, statusText);
+            loansWarehouseFilters.allLoans = [];
+            loansWarehouseFilters.filteredLoans = [];
+            // Still update UI with empty data
+            filterLoansForWarehouse();
+            updateLoansSearchAndFiltersForWarehouse();
+        }
+    } catch (error) {
+        console.error('Error loading loans:', error);
+        loansWarehouseFilters.allLoans = [];
+        loansWarehouseFilters.filteredLoans = [];
+        // Still update UI with empty data
+        filterLoansForWarehouse();
+        updateLoansSearchAndFiltersForWarehouse();
+    }
+}
+
+// Filter loans for warehouse
+function filterLoansForWarehouse() {
+    let filtered = [...loansWarehouseFilters.allLoans];
+
+    // Filter by search term
+    if (loansWarehouseFilters.searchTerm && loansWarehouseFilters.searchTerm.trim() !== '') {
+        const searchLower = loansWarehouseFilters.searchTerm.toLowerCase().trim();
+        filtered = filtered.filter(loan => {
+            const plateNumber = (loan.item?.licencePlateNumber || '').toLowerCase();
+            const serialNumber = (loan.item?.serialNumber || '').toLowerCase();
+            const responsibleName = (loan.responsible?.fullName || loan.responsibleName || '').toLowerCase();
+            const lenderName = (loan.lender?.fullName || loan.lenderName || '').toLowerCase();
+            const inventoryName = (loan.item?.inventory?.name || '').toLowerCase();
+            
+            return plateNumber.includes(searchLower) ||
+                   serialNumber.includes(searchLower) ||
+                   responsibleName.includes(searchLower) ||
+                   lenderName.includes(searchLower) ||
+                   inventoryName.includes(searchLower);
+        });
+    }
+
+    // Filter by status
+    if (loansWarehouseFilters.status && loansWarehouseFilters.status !== 'all') {
+        if (loansWarehouseFilters.status === 'active') {
+            filtered = filtered.filter(loan => !loan.returned);
+        } else if (loansWarehouseFilters.status === 'returned') {
+            filtered = filtered.filter(loan => loan.returned === true);
+        }
+    }
+
+    // Filter by responsible
+    if (loansWarehouseFilters.responsibleId && loansWarehouseFilters.responsibleId !== 'all') {
+        filtered = filtered.filter(loan => {
+            const responsibleId = loan.responsible?.id || loan.responsibleId;
+            return responsibleId && responsibleId.toString() === loansWarehouseFilters.responsibleId.toString();
+        });
+    }
+
+    // Filter by inventory
+    if (loansWarehouseFilters.inventoryId && loansWarehouseFilters.inventoryId !== 'all') {
+        filtered = filtered.filter(loan => {
+            const inventoryId = loan.item?.inventory?.id || loan.item?.inventoryId;
+            return inventoryId && inventoryId.toString() === loansWarehouseFilters.inventoryId.toString();
+        });
+    }
+
+    loansWarehouseFilters.filteredLoans = filtered;
+    
+    // Update window.loansData for compatibility
+    if (window.loansData) {
+        window.loansData.filteredLoans = filtered;
+        window.loansData.currentPage = 1;
+    }
+    
+    // Update UI
+    if (typeof updateLoansTable === 'function') {
+        updateLoansTable();
+    }
+    if (typeof updatePagination === 'function') {
+        updatePagination();
+    }
+    if (typeof updateLoansStats === 'function') {
+        updateLoansStats();
+    }
+}
+
+// Update search and filters HTML
+function updateLoansSearchAndFiltersForWarehouse() {
+    const container = document.getElementById('searchFilterContainer');
+    if (!container) return;
+
+    const currentSearchTerm = loansWarehouseFilters.searchTerm || '';
+    const currentStatus = loansWarehouseFilters.status || 'all';
+    const currentResponsibleId = loansWarehouseFilters.responsibleId || 'all';
+    const currentInventoryId = loansWarehouseFilters.inventoryId || 'all';
+
+    // Check if selects are already initialized
+    const existingStatusSelect = document.getElementById('loanStatusFilterWarehouse');
+    const existingResponsibleSelect = document.getElementById('loanResponsibleFilterWarehouse');
+    const existingInventorySelect = document.getElementById('loanInventoryFilterWarehouse');
+
+    if (existingStatusSelect && existingResponsibleSelect && existingInventorySelect) {
+        // Just update the search input value
+        const searchInput = document.getElementById('loanSearchInputWarehouse');
+        if (searchInput) searchInput.value = currentSearchTerm;
+        // Update select values
+        if (existingStatusSelect) existingStatusSelect.value = currentStatus;
+        if (existingResponsibleSelect) existingResponsibleSelect.value = currentResponsibleId;
+        if (existingInventorySelect) existingInventorySelect.value = currentInventoryId;
+        return; // Don't regenerate HTML
+    }
+
+    // Build status options
+    const statusOptions = `
+        <option value="all">Todos los estados</option>
+        <option value="active">Préstamos Activos</option>
+        <option value="returned">Préstamos Devueltos</option>
+    `;
+
+    // Build responsible options
+    const responsibleOptions = `
+        <option value="all">Todos los responsables</option>
+        ${(loansWarehouseFilters.users || []).map(user => 
+            `<option value="${user.id}">${user.fullName || `${user.name || ''} ${user.lastName || ''}`.trim() || `Usuario #${user.id}`}</option>`
+        ).join('')}
+    `;
+
+    // Build inventory options
+    const inventoryOptions = `
+        <option value="all">Todos los inventarios</option>
+        ${(loansWarehouseFilters.inventories || []).map(inv => 
+            `<option value="${inv.id}">${inv.name || `Inventario ${inv.id}`}</option>`
+        ).join('')}
+    `;
+
+    container.innerHTML = `
+        <div class="relative flex-1" style="min-width: 200px;">
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Buscar</label>
+            <div class="relative">
+                <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" 
+                    id="loanSearchInputWarehouse"
+                    placeholder="Buscar por placa, serie, responsable..." 
+                    value="${currentSearchTerm}"
+                    onkeyup="handleLoanSearchForWarehouse(event)"
+                    class="w-full pl-11 pr-4 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all"
+                    style="height: 56px; font-size: 0.9375rem;">
+            </div>
+        </div>
+        <div class="relative" style="min-width: 180px; flex-shrink: 0;">
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Estado</label>
+            <select 
+                id="loanStatusFilterWarehouse"
+                onchange="handleLoanStatusFilterChange(event)"
+                class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all"
+                style="height: 56px; font-size: 0.9375rem;">
+                ${statusOptions}
+            </select>
+        </div>
+        <div class="relative" style="min-width: 180px; flex-shrink: 0;">
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Responsable</label>
+            <select 
+                id="loanResponsibleFilterWarehouse"
+                onchange="handleLoanResponsibleFilterChange(event)"
+                class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all"
+                style="height: 56px; font-size: 0.9375rem;">
+                ${responsibleOptions}
+            </select>
+        </div>
+        <div class="relative" style="min-width: 180px; flex-shrink: 0;">
+            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Inventario</label>
+            <select 
+                id="loanInventoryFilterWarehouse"
+                onchange="handleLoanInventoryFilterChange(event)"
+                class="w-full px-4 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all"
+                style="height: 56px; font-size: 0.9375rem;">
+                ${inventoryOptions}
+            </select>
+        </div>
+    `;
+
+    // Set initial values
+    const statusSelect = document.getElementById('loanStatusFilterWarehouse');
+    const responsibleSelect = document.getElementById('loanResponsibleFilterWarehouse');
+    const inventorySelect = document.getElementById('loanInventoryFilterWarehouse');
+    
+    if (statusSelect) statusSelect.value = currentStatus;
+    if (responsibleSelect) responsibleSelect.value = currentResponsibleId;
+    if (inventorySelect) inventorySelect.value = currentInventoryId;
+}
+
+// Handle filter changes
+function handleLoanStatusFilterChange(event) {
+    const value = event.target.value || 'all';
+    loansWarehouseFilters.status = value;
+    filterLoansForWarehouse();
+}
+
+function handleLoanResponsibleFilterChange(event) {
+    const value = event.target.value || 'all';
+    loansWarehouseFilters.responsibleId = value;
+    filterLoansForWarehouse();
+}
+
+function handleLoanInventoryFilterChange(event) {
+    const value = event.target.value || 'all';
+    loansWarehouseFilters.inventoryId = value;
+    filterLoansForWarehouse();
+}
+
+// Handle search input
+function handleLoanSearchForWarehouse(event) {
+    if (event.key === 'Enter' || event.type === 'input') {
+        const searchInput = document.getElementById('loanSearchInputWarehouse');
+        if (searchInput) {
+            loansWarehouseFilters.searchTerm = searchInput.value.trim();
+            filterLoansForWarehouse();
+        }
+    }
+}
+
+// Override loadLoans to use client-side filtering for warehouse
+const originalLoadLoans = window.loadLoans;
+window.loadLoans = async function() {
+    const isWarehouse = (window.location.pathname && window.location.pathname.includes('/warehouse/loans')) ||
+                        (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE' && 
+                         window.location.pathname && window.location.pathname.includes('/loans'));
+    if (isWarehouse) {
+        await loadAllLoansForWarehouse();
+        // updateLoansSearchAndFiltersForWarehouse is called inside loadAllLoansForWarehouse after data is loaded
+    } else if (originalLoadLoans) {
+        return originalLoadLoans();
+    }
+};
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const isWarehouse = (window.location.pathname && window.location.pathname.includes('/warehouse/loans')) ||
+                        (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE' && 
+                         window.location.pathname && window.location.pathname.includes('/loans'));
+    if (isWarehouse) {
+        // Set itemsPerPage to 6 for warehouse
+        if (window.loansData) {
+            window.loansData.itemsPerPage = 6;
+        }
+        
+        // Load loans and initialize filters
+        // updateLoansSearchAndFiltersForWarehouse is called inside loadAllLoansForWarehouse after data is loaded
+        setTimeout(() => {
+            loadAllLoansForWarehouse();
+        }, 200);
+    }
+});
+
 // Expose functions globally
 window.showNewLoanModal = showNewLoanModal;
 window.closeNewLoanModal = closeNewLoanModal;
 window.searchItemForLoan = searchItemForLoan;
 window.loadUsersForLoan = loadUsersForLoan;
+window.handleLoanSearchForWarehouse = handleLoanSearchForWarehouse;
+window.filterLoansForWarehouse = filterLoansForWarehouse;
+window.updateLoansSearchAndFiltersForWarehouse = updateLoansSearchAndFiltersForWarehouse;
+window.handleLoanStatusFilterChange = handleLoanStatusFilterChange;
+window.handleLoanResponsibleFilterChange = handleLoanResponsibleFilterChange;
+window.handleLoanInventoryFilterChange = handleLoanInventoryFilterChange;
 
