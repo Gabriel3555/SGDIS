@@ -22,8 +22,6 @@ async function fetchAllCancellations(page = 0, size = 10, userRole = 'SUPERADMIN
             ? `/api/v1/cancellations/my-institution?page=${page}&size=${size}`
             : `/api/v1/cancellations?page=${page}&size=${size}`;
 
-        console.log('Fetching cancellations with role:', userRole, 'from endpoint:', endpoint);
-
         const response = await fetch(endpoint, {
             method: "GET",
             headers: headers,

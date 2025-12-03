@@ -77,12 +77,9 @@ if (
         this.trigger.addEventListener("click", (event) => {
           event.preventDefault();
           event.stopPropagation();
-          console.log('CustomSelect trigger clicked:', this.container.id, 'disabled:', this.isDisabled);
           if (this.isDisabled) {
-            console.log('CustomSelect is disabled, ignoring click');
             return;
           }
-          console.log('Toggling CustomSelect:', this.container.id);
           this.toggle();
         });
         
@@ -278,7 +275,6 @@ if (
       }
       
       const isOpen = this.container.classList.contains("open");
-      console.log('CustomSelect toggle:', this.container.id, 'isOpen:', isOpen);
 
       // Close all other selects
       document.querySelectorAll(".custom-select.open").forEach((select) => {
@@ -1036,24 +1032,20 @@ function navigateToItems() {
     // Store return URL
     sessionStorage.setItem("returnToInventory", "true");
 
-    // Check user role to determine the correct items page
-    const userRole = (window.currentUserRole || '').toUpperCase();
-    let targetPath;
-
-    if (userRole === 'WAREHOUSE') {
-      targetPath = `/warehouse/items?inventoryId=${currentInventoryId}`;
-    } else {
-      // For other roles, use the existing logic
-      targetPath = `/items?inventoryId=${currentInventoryId}`;
-      if (typeof window.buildAdminUrl === "function") {
-        window.location.href = window.buildAdminUrl(targetPath);
-      } else {
-        window.location.href = `/superadmin${targetPath}`;
-      }
-      return;
+    // Get base route based on current URL
+    const path = window.location.pathname;
+    let baseRoute = '/superadmin';
+    
+    if (path.includes('/admin_regional/')) {
+      baseRoute = '/admin_regional';
+    } else if (path.includes('/admin_institution/') || path.includes('/admininstitution/')) {
+      baseRoute = '/admin_institution';
+    } else if (path.includes('/warehouse/')) {
+      baseRoute = '/warehouse';
     }
 
     // Navigate to the appropriate items page
+    const targetPath = `${baseRoute}/items?inventoryId=${currentInventoryId}`;
     window.location.href = targetPath;
   }
 }
