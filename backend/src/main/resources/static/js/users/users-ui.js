@@ -1599,13 +1599,9 @@ window.deleteUser = function (userId) {
 
 // changeUserPhoto is implemented in users-images.js
 
-// Modal placeholder functions
-window.showNewUserModal = function () {
-  // Placeholder - should be implemented in users-modals.js
-};
-
-// closeNewUserModal, closeViewUserModal, and closeEditUserModal are implemented in users-modals.js
-// Don't override them here to avoid conflicts
+// Modal functions are implemented in users-modals.js
+// Don't override them here to avoid conflicts - users-modals.js loads before this file
+// and sets window.showNewUserModal, window.closeNewUserModal, etc.
 
 // loadUsersData is implemented in users-api.js
 

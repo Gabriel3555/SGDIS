@@ -308,19 +308,19 @@
                     </div>
                 </div>
 
-                <!-- Chart: Inventarios por Estado -->
-                <div class="chart-container bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg p-6 border border-green-100 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
-                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-green-200 dark:border-gray-600">
-                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md">
-                            <i class="fas fa-boxes text-white text-lg"></i>
+                <!-- Chart: Bajas por Inventario -->
+                <div class="chart-container bg-gradient-to-br from-white to-red-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg p-6 border border-red-100 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-red-200 dark:border-gray-600">
+                        <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-times-circle text-white text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Inventarios por Estado</h2>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Estado de los inventarios</p>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Bajas por Inventario</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Distribución de bajas por inventario</p>
                         </div>
                     </div>
                     <div class="relative h-64">
-                        <canvas id="inventoriesByStatusChart"></canvas>
+                        <canvas id="cancellationsByInventoryChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -695,7 +695,6 @@
 
         // Admin Institution Dashboard Data
         const adminInstitutionDashboardData = {
-            currentUserInstitutionId: null,
             inventoryStats: null,
             allInventories: [],
             userStats: null,
@@ -705,6 +704,7 @@
             recentVerifications: [],
             verificationCount: 0,
             loansCount: 0,
+            cancellationsByInventory: {},
             charts: {}
         };
 
@@ -739,7 +739,8 @@
             };
 
             try {
-                // First, get current user to get institution ID
+                // Get current user to get institution name for welcome message
+                // All endpoints automatically filter by institution using the token
                 const userResponse = await fetch('/api/v1/users/me', { headers });
                 if (!userResponse.ok) {
                     throw new Error('Failed to load user info');
@@ -754,32 +755,11 @@
                     throw new Error('Usuario no tiene una institución asignada');
                 }
 
-                // Fetch all institutions to find the user's institution
-                const institutionsResponse = await fetch('/api/v1/institutions', { headers });
-                if (!institutionsResponse.ok) {
-                    throw new Error('Error al cargar las instituciones');
-                }
-
-                const institutions = await institutionsResponse.json();
-                const userInstitution = institutions.find(inst => inst.name === institutionName);
-
-                if (!userInstitution) {
-                    throw new Error('Institución del usuario no encontrada: ' + institutionName);
-                }
-
-                // Get institution ID
-                const userInstitutionId = userInstitution.institutionId || userInstitution.id;
-
-                if (!userInstitutionId) {
-                    throw new Error('La institución no tiene un ID válido');
-                }
-
-                adminInstitutionDashboardData.currentUserInstitutionId = userInstitutionId;
-
                 // Update welcome message
                 document.getElementById('welcomeMessage').textContent = `Vista general de la institución ${institutionName || ''}`;
 
                 // Load all data in parallel
+                // All endpoints automatically filter by institution using the JWT token
                 await Promise.all([
                     loadInventoryStatistics(headers),
                     loadUserStatistics(headers),
@@ -789,7 +769,8 @@
                     loadRecentVerifications(headers),
                     loadUnreadNotifications(headers),
                     loadVerificationCount(headers),
-                    loadLoansCount(headers)
+                    loadLoansCount(headers),
+                    loadCancellationsByInventory(headers)
                 ]);
 
                 // Update UI
@@ -805,7 +786,7 @@
         // Load inventory statistics for institution
         async function loadInventoryStatistics(headers) {
             try {
-                // Use the new institution statistics endpoint
+                // Use the institution statistics endpoint - automatically filters by institution using token
                 const response = await fetch('/api/v1/inventory/institution/statistics', { headers });
                 if (response.ok) {
                     const stats = await response.json();
@@ -818,8 +799,8 @@
                         totalValue: stats.totalValue || 0
                     };
                     
-                    // Also load inventories for chart calculations - need quantityItems for the chart
-                    const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                    // Load inventories for chart calculations - endpoint automatically filters by institution
+                    const inventoriesResponse = await fetch('/api/v1/inventory/institutionAdminInventories?page=0&size=10000', { headers });
                     if (inventoriesResponse.ok) {
                         const data = await inventoriesResponse.json();
                         let inventories = [];
@@ -829,18 +810,6 @@
                             inventories = data.content;
                         }
                         
-                        // Filter by institution ID if available
-                        const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
-                        if (institutionId) {
-                            inventories = inventories.filter(inv => 
-                                inv.institutionId === institutionId || 
-                                (inv.institution && inv.institution.institutionId === institutionId) ||
-                                (inv.institution && inv.institution.id === institutionId)
-                            );
-                        }
-                        
-                        // If quantityItems is not available, try to get it from statistics endpoint for each inventory
-                        // But for performance, we'll use quantityItems if available, otherwise 0
                         adminInstitutionDashboardData.allInventories = inventories;
                     }
                 }
@@ -897,20 +866,11 @@
         // Load recent inventories
         async function loadRecentInventories(headers) {
             try {
-                const response = await fetch('/api/v1/inventory?page=0&size=5', { headers });
+                // Use institution-specific endpoint - automatically filters by institution using token
+                const response = await fetch('/api/v1/inventory/institutionAdminInventories?page=0&size=5', { headers });
                 if (response.ok) {
                     const data = await response.json();
                     let inventories = Array.isArray(data) ? data : (data.content || []);
-                    
-                    // Filter by institution
-                    const institutionId = adminInstitutionDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        inventories = inventories.filter(inv => 
-                            inv.institutionId === institutionId ||
-                            (inv.institution && (inv.institution.institutionId === institutionId || inv.institution.id === institutionId))
-                        );
-                    }
-                    
                     adminInstitutionDashboardData.recentInventories = inventories;
                 }
             } catch (error) {
@@ -1006,6 +966,24 @@
                 console.error('Error loading loans count:', error);
                 document.getElementById('totalLoans').textContent = '0';
                 adminInstitutionDashboardData.loansCount = 0;
+            }
+        }
+
+        // Load cancellations by inventory statistics
+        async function loadCancellationsByInventory(headers) {
+            try {
+                const response = await fetch('/api/v1/cancellations/institution/statistics/by-inventory', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    adminInstitutionDashboardData.cancellationsByInventory = data.cancellationsByInventory || {};
+                    console.log('Cancellations by inventory loaded:', adminInstitutionDashboardData.cancellationsByInventory);
+                } else {
+                    console.error('Failed to load cancellations by inventory statistics:', response.status, response.statusText);
+                    adminInstitutionDashboardData.cancellationsByInventory = {};
+                }
+            } catch (error) {
+                console.error('Error loading cancellations by inventory:', error);
+                adminInstitutionDashboardData.cancellationsByInventory = {};
             }
         }
 
@@ -1270,55 +1248,51 @@
                 }
             }
 
-            // Chart: Inventories by Status
-            if (adminInstitutionDashboardData.inventoryStats) {
-                const canvas = document.getElementById('inventoriesByStatusChart');
-                if (canvas) {
-                    const ctx2d = canvas.getContext('2d');
-                    const gradient1 = ctx2d.createLinearGradient(0, 0, 0, 400);
-                    gradient1.addColorStop(0, '#10B981');
-                    gradient1.addColorStop(1, '#059669');
-                    
-                    const gradient2 = ctx2d.createLinearGradient(0, 0, 0, 400);
-                    gradient2.addColorStop(0, '#EF4444');
-                    gradient2.addColorStop(1, '#DC2626');
+            // Chart: Cancellations by Inventory
+            const canvasCancellations = document.getElementById('cancellationsByInventoryChart');
+            if (canvasCancellations) {
+                const cancellationsData = adminInstitutionDashboardData.cancellationsByInventory || {};
+                const labels = Object.keys(cancellationsData);
+                const values = Object.values(cancellationsData);
+                
+                if (labels.length > 0) {
+                    const ctx2d = canvasCancellations.getContext('2d');
+                    const colorPalette = ['#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D', '#F87171', '#FCA5A5', '#FEE2E2'];
+                    const barGradients = colorPalette.slice(0, labels.length).map((color, index) => {
+                        const gradient = ctx2d.createLinearGradient(0, 0, 0, 400);
+                        const hex = color.replace('#', '');
+                        const r = parseInt(hex.substring(0, 2), 16);
+                        const g = parseInt(hex.substring(2, 4), 16);
+                        const b = parseInt(hex.substring(4, 6), 16);
+                        gradient.addColorStop(0, color);
+                        gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0.7)`);
+                        return gradient;
+                    });
 
-                    adminInstitutionDashboardData.charts.inventoriesByStatus = new Chart(canvas, {
-                        type: 'pie',
+                    adminInstitutionDashboardData.charts.cancellationsByInventory = new Chart(canvasCancellations, {
+                        type: 'bar',
                         data: {
-                            labels: ['Activos', 'Inactivos'],
+                            labels: labels,
                             datasets: [{
-                                data: [
-                                    adminInstitutionDashboardData.inventoryStats.activeInventories || 0,
-                                    adminInstitutionDashboardData.inventoryStats.inactiveInventories || 0
-                                ],
-                                backgroundColor: [gradient1, gradient2],
-                                borderWidth: 0,
-                                hoverOffset: 8
+                                label: 'Bajas',
+                                data: values,
+                                backgroundColor: values.length > 0 ? barGradients : ['rgba(156, 163, 175, 0.5)'],
+                                borderColor: values.length > 0 ? colorPalette.slice(0, labels.length) : ['rgba(156, 163, 175, 0.8)'],
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            borderRadius: 8,
                             animation: {
-                                animateRotate: true,
-                                animateScale: true,
-                                duration: 1000
+                                duration: 1000,
+                                easing: 'easeInOutQuart'
                             },
                             plugins: {
                                 legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        padding: 15,
-                                        usePointStyle: true,
-                                        pointStyle: 'circle',
-                                        font: {
-                                            size: 12,
-                                            weight: '500'
-                                        },
-                                        color: colors.textColor
-                                    }
+                                    display: false
                                 },
                                 tooltip: {
                                     backgroundColor: colors.tooltipBg,
@@ -1333,9 +1307,56 @@
                                         size: 13
                                     }
                                 }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 11
+                                        }
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 11
+                                        },
+                                        stepSize: 1
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Cantidad de Bajas',
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 12,
+                                            weight: '600'
+                                        }
+                                    }
+                                }
                             }
                         }
                     });
+                } else {
+                    // Show empty chart message if no data
+                    const isDarkMode = document.documentElement.classList.contains('dark');
+                    const textColor = isDarkMode ? '#CBD5E1' : '#374151';
+                    const ctx2d = canvasCancellations.getContext('2d');
+                    ctx2d.clearRect(0, 0, canvasCancellations.width, canvasCancellations.height);
+                    ctx2d.fillStyle = textColor;
+                    ctx2d.font = '14px Arial';
+                    ctx2d.textAlign = 'center';
+                    ctx2d.fillText('No hay bajas registradas', canvasCancellations.width / 2, canvasCancellations.height / 2);
                 }
             }
 
@@ -1371,47 +1392,46 @@
                             hoverOffset: 8
                         }]
                     },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '60%',
-                            borderRadius: 8,
-                            animation: {
-                                animateRotate: true,
-                                animateScale: true,
-                                duration: 1000
-                            },
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        padding: 15,
-                                        usePointStyle: true,
-                                        pointStyle: 'circle',
-                                        font: {
-                                            size: 12,
-                                            weight: '500'
-                                        },
-                                        color: colors.textColor
-                                    }
-                                },
-                                tooltip: {
-                                    backgroundColor: colors.tooltipBg,
-                                    borderColor: colors.tooltipBorder,
-                                    borderWidth: 1,
-                                    padding: 12,
-                                    titleFont: {
-                                        size: 14,
-                                        weight: 'bold'
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        borderRadius: 8,
+                        animation: {
+                            animateRotate: true,
+                            animateScale: true,
+                            duration: 1000
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    font: {
+                                        size: 12,
+                                        weight: '500'
                                     },
-                                    bodyFont: {
-                                        size: 13
-                                    }
+                                    color: colors.textColor
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: colors.tooltipBg,
+                                borderColor: colors.tooltipBorder,
+                                borderWidth: 1,
+                                padding: 12,
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                bodyFont: {
+                                    size: 13
                                 }
                             }
                         }
-                    });
-                }
+                    }
+                });
             }
 
             // Chart: Items by Inventory - Always show if there are inventories
@@ -1460,82 +1480,84 @@
                                 borderSkipped: false
                             }]
                         },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                animation: {
-                                    duration: 1000,
-                                    easing: 'easeInOutQuart'
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeInOutQuart'
+                            },
+                            plugins: {
+                                legend: {
+                                    display: false
                                 },
-                                plugins: {
-                                    legend: {
-                                        display: false
+                                tooltip: {
+                                    backgroundColor: colors.tooltipBg,
+                                    borderColor: colors.tooltipBorder,
+                                    borderWidth: 1,
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
                                     },
-                                    tooltip: {
-                                        backgroundColor: colors.tooltipBg,
-                                        borderColor: colors.tooltipBorder,
-                                        borderWidth: 1,
-                                        padding: 12,
-                                        titleFont: {
-                                            size: 14,
-                                            weight: 'bold'
-                                        },
-                                        bodyFont: {
-                                            size: 13
+                                    bodyFont: {
+                                        size: 13
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 11
                                         }
                                     }
                                 },
-                                scales: {
-                                    x: {
-                                        grid: {
-                                            color: colors.gridColor,
-                                            drawBorder: false
-                                        },
-                                        ticks: {
-                                            color: colors.textColor,
-                                            font: {
-                                                size: 11
-                                            }
+                                y: {
+                                    beginAtZero: true,
+                                    grid: {
+                                        color: colors.gridColor,
+                                        drawBorder: false
+                                    },
+                                    ticks: {
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 11
                                         }
                                     },
-                                    y: {
-                                        beginAtZero: true,
-                                        grid: {
-                                            color: colors.gridColor,
-                                            drawBorder: false
-                                        },
-                                        ticks: {
-                                            color: colors.textColor,
-                                            font: {
-                                                size: 11
-                                            }
-                                        },
-                                        title: {
-                                            display: true,
-                                            text: 'Cantidad de Items',
-                                            color: colors.textColor,
-                                            font: {
-                                                size: 12,
-                                                weight: '600'
-                                            }
+                                    title: {
+                                        display: true,
+                                        text: 'Cantidad de Items',
+                                        color: colors.textColor,
+                                        font: {
+                                            size: 12,
+                                            weight: '600'
                                         }
                                     }
                                 }
                             }
-                        });
-                    } else {
-                        // Show empty chart message if no data
-                        const isDarkMode = document.documentElement.classList.contains('dark');
-                        const textColor = isDarkMode ? '#CBD5E1' : '#374151';
-                        const ctx2d = canvasItems.getContext('2d');
-                        ctx2d.clearRect(0, 0, canvasItems.width, canvasItems.height);
-                        ctx2d.fillStyle = textColor;
-                        ctx2d.font = '14px Arial';
-                        ctx2d.textAlign = 'center';
-                        ctx2d.fillText('No hay datos disponibles', canvasItems.width / 2, canvasItems.height / 2);
-                    }
+                        }
+                    });
                 } else {
-                    // Show empty chart if no inventories
+                    // Show empty chart message if no data
+                    const isDarkMode = document.documentElement.classList.contains('dark');
+                    const textColor = isDarkMode ? '#CBD5E1' : '#374151';
+                    const ctx2d = canvasItems.getContext('2d');
+                    ctx2d.clearRect(0, 0, canvasItems.width, canvasItems.height);
+                    ctx2d.fillStyle = textColor;
+                    ctx2d.font = '14px Arial';
+                    ctx2d.textAlign = 'center';
+                    ctx2d.fillText('No hay datos disponibles', canvasItems.width / 2, canvasItems.height / 2);
+                }
+            } else {
+                // Show empty chart if no inventories
+                const canvasItems = document.getElementById('itemsByInventoryChart');
+                if (canvasItems) {
                     const isDarkMode = document.documentElement.classList.contains('dark');
                     const textColor = isDarkMode ? '#CBD5E1' : '#374151';
                     const ctx2d = canvasItems.getContext('2d');
