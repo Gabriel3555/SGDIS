@@ -632,7 +632,10 @@
             const headerUserRole = document.getElementById('headerUserRole');
             const headerUserAvatar = document.getElementById('headerUserAvatar');
             if (headerUserName) headerUserName.textContent = userData.fullName || 'Admin Institución';
-            if (headerUserRole) headerUserRole.textContent = userData.role || 'ADMIN_INSTITUTION';
+            if (headerUserRole) {
+                const role = userData.role || 'ADMIN_INSTITUTION';
+                headerUserRole.textContent = role === 'ADMIN_INSTITUTION' ? 'Administrador Institucional' : role;
+            }
             if (headerUserAvatar) {
                 if (userData.imgUrl) {
                     const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);

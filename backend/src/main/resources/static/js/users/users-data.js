@@ -21,9 +21,9 @@ function getRoleText(role) {
     case "SUPERADMIN":
       return "Super Admin";
     case "ADMIN_INSTITUTION":
-      return "Admin Institucional";
+      return "Administrador Institucional";
     case "ADMIN_REGIONAL":
-      return "Admin Regional";
+      return "Administrador Regional";
     case "WAREHOUSE":
       return "Almacenista";
     case "USER":

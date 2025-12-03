@@ -656,7 +656,15 @@ function updateUserInfoDisplay(userData) {
         headerUserName.textContent = userData.fullName || 'Usuario';
     }
     if (headerUserRole) {
-        headerUserRole.textContent = userData.role || '';
+        const roleText = {
+            'SUPERADMIN': 'Super Administrador',
+            'ADMIN_REGIONAL': 'Administrador Regional',
+            'ADMIN_INSTITUTION': 'Administrador Institucional',
+            'ADMIN_INSTITUTIONAL': 'Administrador Institucional',
+            'WAREHOUSE': 'Encargado de Almacén',
+            'USER': 'Usuario'
+        }[userData.role] || userData.role || '';
+        headerUserRole.textContent = roleText;
     }
     if (headerUserAvatar) {
         const avatarUrl = userData.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.fullName || 'User')}&background=00AF00&color=fff&size=128`;

@@ -152,8 +152,8 @@ async function updateInventoryStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Activos</p>
                     <h3 class="text-3xl font-bold text-gray-800">${activeInventories}</h3>
                 </div>
-                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-check-circle text-emerald-600 text-xl"></i>
+                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
+                    <i class="fas fa-check-circle text-emerald-600 dark:text-emerald-400 text-xl"></i>
                 </div>
             </div>
             <p class="text-emerald-600 text-sm font-medium">Inventarios activos</p>
@@ -1072,9 +1072,9 @@ function updateUserInfoDisplay(userData) {
   if (headerUserRole) {
     const roleText = {
       'SUPERADMIN': 'Super Administrador',
-      'ADMIN_INSTITUTIONAL': 'Admin Institucional',
-      'ADMIN_INSTITUTION': 'Admin Institucional',
-      'ADMIN_REGIONAL': 'Admin Regional',
+      'ADMIN_INSTITUTIONAL': 'Administrador Institucional',
+      'ADMIN_INSTITUTION': 'Administrador Institucional',
+      'ADMIN_REGIONAL': 'Administrador Regional',
       'WAREHOUSE': 'Encargado de Almacén',
       'USER': 'Usuario'
     }[userData.role] || userData.role || 'Admin';
