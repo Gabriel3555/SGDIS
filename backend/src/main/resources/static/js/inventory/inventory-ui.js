@@ -139,8 +139,8 @@ async function updateInventoryStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Total Inventarios</p>
                     <h3 class="text-3xl font-bold text-gray-800">${totalInventories}</h3>
                 </div>
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-boxes text-blue-600 text-xl"></i>
+                <div class="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-boxes text-white text-xl"></i>
                 </div>
             </div>
             <p class="text-blue-600 text-sm font-medium">Inventarios registrados</p>
@@ -152,8 +152,8 @@ async function updateInventoryStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Activos</p>
                     <h3 class="text-3xl font-bold text-gray-800">${activeInventories}</h3>
                 </div>
-                <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center">
-                    <i class="fas fa-check-circle text-emerald-600 dark:text-emerald-400 text-xl"></i>
+                <div class="w-12 h-12 bg-emerald-500 dark:bg-emerald-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-white text-xl"></i>
                 </div>
             </div>
             <p class="text-emerald-600 text-sm font-medium">Inventarios activos</p>
@@ -165,8 +165,8 @@ async function updateInventoryStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Total Items</p>
                     <h3 class="text-3xl font-bold text-gray-800">${totalItems.toLocaleString('es-CO')}</h3>
                 </div>
-                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-cubes text-orange-600 text-xl"></i>
+                <div class="w-12 h-12 bg-orange-500 dark:bg-orange-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-cubes text-white text-xl"></i>
                 </div>
             </div>
             <p class="text-orange-600 text-sm font-medium">Items en todos los inventarios</p>
@@ -178,8 +178,8 @@ async function updateInventoryStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Valor Total</p>
                     <h3 class="text-2xl font-bold text-gray-800">${formatCurrency(totalValue)}</h3>
                 </div>
-                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
+                <div class="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-dollar-sign text-white text-xl"></i>
                 </div>
             </div>
             <p class="text-purple-600 text-sm font-medium">Valor de todos los inventarios</p>
