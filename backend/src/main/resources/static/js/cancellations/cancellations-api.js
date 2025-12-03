@@ -7,7 +7,7 @@
  * @param {string} userRole - User role (SUPERADMIN or WAREHOUSE)
  * @returns {Promise<Object>} Page object with cancellations
  */
-async function fetchAllCancellations(page = 0, size = 10, userRole = 'SUPERADMIN') {
+async function fetchAllCancellations(page = 0, size = 6, userRole = 'SUPERADMIN') {
     try {
         const token = localStorage.getItem("jwt");
         const headers = {

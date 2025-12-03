@@ -14,6 +14,11 @@ let auditoryData = {
     }
 };
 
+// CustomSelect instances for filters
+let auditoryRegionalCustomSelect = null;
+let auditoryInstitutionCustomSelect = null;
+let auditoryUserCustomSelect = null;
+
 // Load auditories from API
 async function loadAuditories(page = 0) {
     try {
@@ -51,7 +56,11 @@ async function loadAuditories(page = 0) {
                 // Show/hide filters and load filter options for Superadmin
                 if (auditoryData.isSuperadmin) {
                     showFilters();
-                    loadFilterOptions();
+                    // Initialize CustomSelects first, then load options
+                    setTimeout(() => {
+                        initializeAuditoryCustomSelects();
+                        loadFilterOptions();
+                    }, 100);
                     
                     // Build endpoint with filters for SUPERADMIN
                     const params = new URLSearchParams();
@@ -424,10 +433,79 @@ function hideFilters() {
     }
 }
 
+// Initialize CustomSelects for filters
+function initializeAuditoryCustomSelects() {
+    // Initialize Regional CustomSelect
+    const regionalContainer = document.getElementById('auditoryRegionalFilterSelect');
+    if (regionalContainer && !auditoryRegionalCustomSelect) {
+        try {
+            auditoryRegionalCustomSelect = new CustomSelect('auditoryRegionalFilterSelect', {
+                placeholder: 'Todas las regionales',
+                searchable: true,
+                onChange: (option) => {
+                    const value = option ? option.value : '';
+                    const hiddenInput = document.getElementById('filterRegional');
+                    if (hiddenInput) {
+                        hiddenInput.value = value || '';
+                    }
+                    onRegionalChange();
+                }
+            });
+        } catch (error) {
+            console.error('Error initializing regional CustomSelect:', error);
+        }
+    }
+
+    // Initialize Institution CustomSelect
+    const institutionContainer = document.getElementById('auditoryInstitutionFilterSelect');
+    if (institutionContainer && !auditoryInstitutionCustomSelect) {
+        try {
+            auditoryInstitutionCustomSelect = new CustomSelect('auditoryInstitutionFilterSelect', {
+                placeholder: 'Todos los centros',
+                searchable: true,
+                onChange: (option) => {
+                    const value = option ? option.value : '';
+                    const hiddenInput = document.getElementById('filterInstitution');
+                    if (hiddenInput) {
+                        hiddenInput.value = value || '';
+                    }
+                    onInstitutionChange();
+                }
+            });
+        } catch (error) {
+            console.error('Error initializing institution CustomSelect:', error);
+        }
+    }
+
+    // Initialize User CustomSelect
+    const userContainer = document.getElementById('auditoryUserFilterSelect');
+    if (userContainer && !auditoryUserCustomSelect) {
+        try {
+            auditoryUserCustomSelect = new CustomSelect('auditoryUserFilterSelect', {
+                placeholder: 'Todos los usuarios',
+                searchable: true,
+                onChange: (option) => {
+                    const value = option ? option.value : '';
+                    const hiddenInput = document.getElementById('filterUser');
+                    if (hiddenInput) {
+                        hiddenInput.value = value || '';
+                    }
+                    applyFilters();
+                }
+            });
+        } catch (error) {
+            console.error('Error initializing user CustomSelect:', error);
+        }
+    }
+}
+
 // Load filter options
 async function loadFilterOptions() {
     const token = localStorage.getItem('jwt');
     if (!token) return;
+
+    // Initialize CustomSelects first
+    initializeAuditoryCustomSelects();
 
     // Prevent multiple loads for regionals
     if (auditoryData.regionalsLoaded) {
@@ -444,18 +522,18 @@ async function loadFilterOptions() {
         });
         if (regionalsResponse.ok) {
             const regionals = await regionalsResponse.json();
-            const regionalSelect = document.getElementById('filterRegional');
-            if (regionalSelect) {
-                // Clear existing options except the first one (default)
-                while (regionalSelect.options.length > 1) {
-                    regionalSelect.remove(1);
-                }
-                regionals.forEach(regional => {
-                    const option = document.createElement('option');
-                    option.value = regional.id;
-                    option.textContent = regional.name;
-                    regionalSelect.appendChild(option);
-                });
+            if (auditoryRegionalCustomSelect) {
+                // Build options array
+                const options = [
+                    { value: '', label: 'Todas las regionales' },
+                    ...regionals.map(regional => ({
+                        value: regional.id.toString(),
+                        label: regional.name
+                    }))
+                ];
+                
+                // Update CustomSelect options
+                auditoryRegionalCustomSelect.setOptions(options);
             }
         }
 
@@ -475,17 +553,12 @@ async function loadInstitutionsByRegional(regionalId) {
     const token = localStorage.getItem('jwt');
     if (!token) return;
 
-    const institutionSelect = document.getElementById('filterInstitution');
-    if (!institutionSelect) return;
-
-    // Clear existing options except the first one (default)
-    while (institutionSelect.options.length > 1) {
-        institutionSelect.remove(1);
-    }
+    if (!auditoryInstitutionCustomSelect) return;
 
     if (!regionalId || regionalId === '') {
         // Reset to default if no regional selected
-        institutionSelect.value = '';
+        auditoryInstitutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
+        auditoryInstitutionCustomSelect.setValue('');
         return;
     }
 
@@ -499,12 +572,19 @@ async function loadInstitutionsByRegional(regionalId) {
         
         if (institutionsResponse.ok) {
             const institutions = await institutionsResponse.json();
-            institutions.forEach(institution => {
-                const option = document.createElement('option');
-                option.value = institution.id;
-                option.textContent = institution.name;
-                institutionSelect.appendChild(option);
-            });
+            // Build options array
+            const options = [
+                { value: '', label: 'Todos los centros' },
+                ...institutions.map(institution => ({
+                    value: institution.id.toString(),
+                    label: institution.name
+                }))
+            ];
+            
+            // Update CustomSelect options
+            auditoryInstitutionCustomSelect.setOptions(options);
+            // Reset selection
+            auditoryInstitutionCustomSelect.clear();
         }
     } catch (error) {
         console.error('Error loading institutions by regional:', error);
@@ -519,15 +599,9 @@ async function loadUsers(regionalId = null, institutionId = null) {
         return;
     }
 
-    const userSelect = document.getElementById('filterUser');
-    if (!userSelect) {
+    if (!auditoryUserCustomSelect) {
         // Element not found, probably not on auditory page - silently return
         return;
-    }
-
-    // Clear existing options except the first one (default)
-    while (userSelect.options.length > 1) {
-        userSelect.remove(1);
     }
 
     try {
@@ -536,12 +610,11 @@ async function loadUsers(regionalId = null, institutionId = null) {
         
         // Get institution names to filter by
         if (institutionId && institutionId !== '') {
-            // Get the selected institution name
-            const institutionSelect = document.getElementById('filterInstitution');
-            if (institutionSelect) {
-                const selectedOption = institutionSelect.options[institutionSelect.selectedIndex];
-                if (selectedOption && selectedOption.textContent) {
-                    institutionNames = [selectedOption.textContent];
+            // Get the selected institution name from CustomSelect
+            if (auditoryInstitutionCustomSelect) {
+                const selectedOption = auditoryInstitutionCustomSelect.options.find(opt => opt.value === institutionId.toString());
+                if (selectedOption && selectedOption.label !== 'Todos los centros') {
+                    institutionNames = [selectedOption.label];
                 }
             }
         } else if (regionalId && regionalId !== '') {
@@ -588,13 +661,19 @@ async function loadUsers(regionalId = null, institutionId = null) {
             console.warn('Failed to load users:', usersResponse.status, usersResponse.statusText);
         }
 
-        // Populate user select
-        users.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.id;
-            option.textContent = user.fullName || user.email;
-            userSelect.appendChild(option);
-        });
+        // Build options array
+        const options = [
+            { value: '', label: 'Todos los usuarios' },
+            ...users.map(user => ({
+                value: user.id.toString(),
+                label: user.fullName || user.email
+            }))
+        ];
+        
+        // Update CustomSelect options
+        auditoryUserCustomSelect.setOptions(options);
+        // Reset selection
+        auditoryUserCustomSelect.clear();
     } catch (error) {
         // Only log if it's not a network/CORS error to avoid console spam
         if (error.name !== "TypeError" || !error.message.includes("Load failed")) {
@@ -605,13 +684,12 @@ async function loadUsers(regionalId = null, institutionId = null) {
 
 // Handle regional change
 async function onRegionalChange() {
-    const regionalSelect = document.getElementById('filterRegional');
-    const regionalId = regionalSelect && regionalSelect.value && regionalSelect.value !== '' ? regionalSelect.value : null;
+    const hiddenInput = document.getElementById('filterRegional');
+    const regionalId = hiddenInput && hiddenInput.value && hiddenInput.value !== '' ? hiddenInput.value : null;
     
     // Clear institution selection
-    const institutionSelect = document.getElementById('filterInstitution');
-    if (institutionSelect) {
-        institutionSelect.value = '';
+    if (auditoryInstitutionCustomSelect) {
+        auditoryInstitutionCustomSelect.clear();
     }
     
     // Load institutions for selected regional
@@ -626,11 +704,11 @@ async function onRegionalChange() {
 
 // Handle institution change
 async function onInstitutionChange() {
-    const regionalSelect = document.getElementById('filterRegional');
-    const institutionSelect = document.getElementById('filterInstitution');
+    const regionalHiddenInput = document.getElementById('filterRegional');
+    const institutionHiddenInput = document.getElementById('filterInstitution');
     
-    const regionalId = regionalSelect && regionalSelect.value && regionalSelect.value !== '' ? regionalSelect.value : null;
-    const institutionId = institutionSelect && institutionSelect.value && institutionSelect.value !== '' ? institutionSelect.value : null;
+    const regionalId = regionalHiddenInput && regionalHiddenInput.value && regionalHiddenInput.value !== '' ? regionalHiddenInput.value : null;
+    const institutionId = institutionHiddenInput && institutionHiddenInput.value && institutionHiddenInput.value !== '' ? institutionHiddenInput.value : null;
     
     // Update users based on institution
     await loadUsers(regionalId, institutionId);
@@ -641,14 +719,14 @@ async function onInstitutionChange() {
 
 // Apply filters
 function applyFilters() {
-    const regionalSelect = document.getElementById('filterRegional');
-    const institutionSelect = document.getElementById('filterInstitution');
-    const userSelect = document.getElementById('filterUser');
+    const regionalHiddenInput = document.getElementById('filterRegional');
+    const institutionHiddenInput = document.getElementById('filterInstitution');
+    const userHiddenInput = document.getElementById('filterUser');
 
     // Get values and convert to numbers, or null if empty
-    const regionalValue = regionalSelect && regionalSelect.value && regionalSelect.value !== '' ? parseInt(regionalSelect.value) : null;
-    const institutionValue = institutionSelect && institutionSelect.value && institutionSelect.value !== '' ? parseInt(institutionSelect.value) : null;
-    const userValue = userSelect && userSelect.value && userSelect.value !== '' ? parseInt(userSelect.value) : null;
+    const regionalValue = regionalHiddenInput && regionalHiddenInput.value && regionalHiddenInput.value !== '' ? parseInt(regionalHiddenInput.value) : null;
+    const institutionValue = institutionHiddenInput && institutionHiddenInput.value && institutionHiddenInput.value !== '' ? parseInt(institutionHiddenInput.value) : null;
+    const userValue = userHiddenInput && userHiddenInput.value && userHiddenInput.value !== '' ? parseInt(userHiddenInput.value) : null;
 
     // Update filters
     auditoryData.filters.regionalId = regionalValue;
@@ -671,6 +749,13 @@ window.onInstitutionChange = onInstitutionChange;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize CustomSelects with a small delay to ensure DOM is ready
+    setTimeout(() => {
+        if (auditoryData.isSuperadmin) {
+            initializeAuditoryCustomSelects();
+        }
+    }, 100);
+    
     loadAuditories(0);
 });
 

@@ -1423,52 +1423,96 @@ class CustomSelect {
             container.classList.add('select-open');
         }
         
+        // Check if we're in a filter section and set z-index explicitly
+        const isInFilterSection = this.container.closest('#filtersSection') !== null;
+        if (isInFilterSection && this.dropdown) {
+            this.dropdown.style.zIndex = '999999';
+            this.dropdown.style.isolation = 'isolate';
+            if (this.optionsContainer) {
+                this.optionsContainer.style.zIndex = '999999';
+            }
+        }
+        
         // Position dropdown using absolute positioning relative to container
         // Use setTimeout to ensure dropdown is rendered first
         setTimeout(() => {
             if (this.dropdown && this.trigger) {
-                // Reset positioning styles to use CSS defaults
-                this.dropdown.style.position = 'absolute';
-                this.dropdown.style.top = '';
-                this.dropdown.style.bottom = '';
-                this.dropdown.style.left = '';
-                this.dropdown.style.right = '';
-                this.dropdown.style.width = '';
-                
                 const triggerRect = this.trigger.getBoundingClientRect();
-                const containerRect = this.container.getBoundingClientRect();
                 const viewportHeight = window.innerHeight;
                 const spaceBelow = viewportHeight - triggerRect.bottom;
                 const spaceAbove = triggerRect.top;
                 const dropdownHeight = 250; // Approximate max height of dropdown
                 
-                // Always check if we're in the filter section (bottom half of viewport)
-                // If trigger is in bottom 40% of viewport, prefer opening upward
-                const isInBottomHalf = triggerRect.top > (viewportHeight * 0.6);
+                // Check if we're in a filter section (like #filtersSection)
+                const isInFilterSection = this.container.closest('#filtersSection') !== null;
                 
-                // Calculate if should open upward
-                const shouldOpenUp = (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) || 
-                                    (isInBottomHalf && spaceAbove > dropdownHeight);
-                
-                if (shouldOpenUp) {
-                    this.container.classList.add('dropdown-up');
-                    // Position above trigger using bottom
-                    this.dropdown.style.top = 'auto';
-                    this.dropdown.style.bottom = '100%';
-                    this.dropdown.style.marginTop = '0';
-                    this.dropdown.style.marginBottom = '4px';
+                if (isInFilterSection) {
+                    // Use fixed positioning for filter sections to avoid z-index issues
+                    this.dropdown.style.position = 'fixed';
+                    this.dropdown.style.left = `${triggerRect.left}px`;
+                    this.dropdown.style.width = `${triggerRect.width}px`;
+                    this.dropdown.style.minWidth = `${triggerRect.width}px`;
+                    this.dropdown.style.zIndex = '999999';
+                    this.dropdown.style.isolation = 'isolate';
+                    
+                    // Always check if we're in the filter section (bottom half of viewport)
+                    // If trigger is in bottom 40% of viewport, prefer opening upward
+                    const isInBottomHalf = triggerRect.top > (viewportHeight * 0.6);
+                    
+                    // Calculate if should open upward
+                    const shouldOpenUp = (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) || 
+                                        (isInBottomHalf && spaceAbove > dropdownHeight);
+                    
+                    if (shouldOpenUp) {
+                        this.container.classList.add('dropdown-up');
+                        this.dropdown.style.top = 'auto';
+                        this.dropdown.style.bottom = `${viewportHeight - triggerRect.top}px`;
+                        this.dropdown.style.marginTop = '0';
+                        this.dropdown.style.marginBottom = '4px';
+                    } else {
+                        this.container.classList.remove('dropdown-up');
+                        this.dropdown.style.top = `${triggerRect.bottom}px`;
+                        this.dropdown.style.bottom = 'auto';
+                        this.dropdown.style.marginTop = '4px';
+                        this.dropdown.style.marginBottom = '0';
+                    }
                 } else {
-                    this.container.classList.remove('dropdown-up');
-                    // Position below trigger (CSS default)
-                    this.dropdown.style.top = '100%';
-                    this.dropdown.style.bottom = 'auto';
-                    this.dropdown.style.marginTop = '4px';
-                    this.dropdown.style.marginBottom = '0';
+                    // Use absolute positioning for other sections
+                    this.dropdown.style.position = 'absolute';
+                    this.dropdown.style.top = '';
+                    this.dropdown.style.bottom = '';
+                    this.dropdown.style.left = '';
+                    this.dropdown.style.right = '';
+                    this.dropdown.style.width = '';
+                    
+                    // Always check if we're in the filter section (bottom half of viewport)
+                    // If trigger is in bottom 40% of viewport, prefer opening upward
+                    const isInBottomHalf = triggerRect.top > (viewportHeight * 0.6);
+                    
+                    // Calculate if should open upward
+                    const shouldOpenUp = (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) || 
+                                        (isInBottomHalf && spaceAbove > dropdownHeight);
+                    
+                    if (shouldOpenUp) {
+                        this.container.classList.add('dropdown-up');
+                        // Position above trigger using bottom
+                        this.dropdown.style.top = 'auto';
+                        this.dropdown.style.bottom = '100%';
+                        this.dropdown.style.marginTop = '0';
+                        this.dropdown.style.marginBottom = '4px';
+                    } else {
+                        this.container.classList.remove('dropdown-up');
+                        // Position below trigger (CSS default)
+                        this.dropdown.style.top = '100%';
+                        this.dropdown.style.bottom = 'auto';
+                        this.dropdown.style.marginTop = '4px';
+                        this.dropdown.style.marginBottom = '0';
+                    }
+                    
+                    // Ensure dropdown matches trigger width
+                    this.dropdown.style.width = '100%';
+                    this.dropdown.style.minWidth = `${triggerRect.width}px`;
                 }
-                
-                // Ensure dropdown matches trigger width
-                this.dropdown.style.width = '100%';
-                this.dropdown.style.minWidth = `${triggerRect.width}px`;
             }
         }, 10);
         

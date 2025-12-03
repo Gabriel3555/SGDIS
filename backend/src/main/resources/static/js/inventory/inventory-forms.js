@@ -67,15 +67,8 @@ async function handleNewInventorySubmit(e) {
     return;
   }
   
-  // Validate owner selection
-  if (!ownerId || ownerId.trim() === '') {
-    showErrorToast(
-      "Propietario requerido",
-      "Por favor selecciona un propietario para el inventario"
-    );
-    return;
-  }
-
+  // Owner is now optional, so we skip validation
+  
   if (!institutionId || institutionId.trim() === '') {
     showErrorToast(
       "Institución requerida",
@@ -84,14 +77,17 @@ async function handleNewInventorySubmit(e) {
     return;
   }
   
-  // Validate owner ID is a valid number
-  const numericOwnerId = parseInt(ownerId);
-  if (isNaN(numericOwnerId)) {
-    showErrorToast(
-      "ID de propietario inválido",
-      "El propietario seleccionado no es válido"
-    );
-    return;
+  // Validate owner ID is a valid number (only if ownerId is provided)
+  let numericOwnerId = null;
+  if (ownerId && ownerId.trim() !== '') {
+    numericOwnerId = parseInt(ownerId);
+    if (isNaN(numericOwnerId)) {
+      showErrorToast(
+        "ID de propietario inválido",
+        "El propietario seleccionado no es válido"
+      );
+      return;
+    }
   }
 
   const numericInstitutionId = parseInt(institutionId);
@@ -141,9 +137,13 @@ async function handleNewInventorySubmit(e) {
     const inventoryDataToCreate = {
       name: name.trim(),
       location: location.trim(),
-      ownerId: numericOwnerId,
       institutionId: numericInstitutionId,
     };
+
+    // Only include ownerId if it's not null
+    if (numericOwnerId !== null && numericOwnerId !== undefined) {
+      inventoryDataToCreate.ownerId = numericOwnerId;
+    }
 
     const result = await createInventory(inventoryDataToCreate);
 

@@ -8,7 +8,7 @@ let loansData = {
     inventories: [],
     userInventoriesWithPermission: [], // For USER role: list of inventory IDs where user is owner or signatory
     currentPage: 1,
-    itemsPerPage: 10,
+    itemsPerPage: 6, // Changed from 10 to 6 for superadmin
     searchTerm: '',
     selectedRegional: 'all',
     selectedInstitution: 'all',
@@ -70,7 +70,10 @@ function applySearchFilter() {
 function changePage(page) {
     // Check if we're on warehouse page and use 6 items per page
     const isWarehouse = window.location.pathname && window.location.pathname.includes('/warehouse');
-    const itemsPerPage = isWarehouse ? 6 : loansData.itemsPerPage;
+    const isSuperAdmin = (loansData.userRole === 'SUPERADMIN') || 
+                        (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    // Use 6 items per page for warehouse and superadmin, otherwise use default
+    const itemsPerPage = (isWarehouse || isSuperAdmin) ? 6 : loansData.itemsPerPage;
     
     if (page >= 1 && page <= Math.ceil(loansData.filteredLoans.length / itemsPerPage)) {
         loansData.currentPage = page;

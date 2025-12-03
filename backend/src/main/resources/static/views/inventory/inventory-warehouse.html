@@ -419,8 +419,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Owner Selection -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Propietario del Inventario <span
-                                    class="text-red-500">*</span></label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Propietario del Inventario</label>
                             <div class="custom-select-container">
                                 <div class="custom-select" id="newInventoryOwnerIdSelect">
                                     <div class="custom-select-trigger">
@@ -434,9 +433,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                <input type="hidden" id="newInventoryOwnerId" name="ownerId" required>
+                                <input type="hidden" id="newInventoryOwnerId" name="ownerId">
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Usuario propietario de este inventario</p>
+                            <p class="text-xs text-gray-500 mt-1">Usuario propietario de este inventario (opcional)</p>
                         </div>
 
                         <!-- Regional Selection (if visible) -->
@@ -1488,9 +1487,6 @@
             <div class="mb-4">
                 <p class="text-sm text-gray-600">
                     Inventario: <span class="font-semibold" id="assignManagerInventoryName">-</span>
-                </p>
-                <p class="text-sm text-gray-600">
-                    ID: <span class="font-semibold" id="assignManagerInventoryId">-</span>
                 </p>
             </div>
 

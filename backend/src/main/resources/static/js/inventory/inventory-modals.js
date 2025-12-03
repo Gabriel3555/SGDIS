@@ -1940,7 +1940,29 @@ async function showNewInventoryModal() {
 
   resetRegionalSelection();
 
-  const tasks = [loadUsersForNewInventory()];
+  // Don't load users initially - wait for institution selection
+  // Initialize owner select with placeholder message
+  if (window.newInventoryOwnerSelect) {
+    window.newInventoryOwnerSelect.setOptions([
+      { value: "", label: "Selecciona primero una institución", disabled: true },
+    ]);
+  } else {
+    // Initialize CustomSelect if not already done
+    if (!window.newInventoryOwnerSelect) {
+      window.newInventoryOwnerSelect = new CustomSelect(
+        "newInventoryOwnerIdSelect",
+        {
+          placeholder: "Selecciona primero una institución",
+          searchable: true,
+        }
+      );
+      window.newInventoryOwnerSelect.setOptions([
+        { value: "", label: "Selecciona primero una institución", disabled: true },
+      ]);
+    }
+  }
+
+  const tasks = [];
 
   if (isInventoryInstitutionLocked()) {
     hideRegionalField();
@@ -1948,6 +1970,14 @@ async function showNewInventoryModal() {
       loadInstitutionsForNewInventory({
         forceFullList: true,
         lockToCurrentInstitution: true,
+      }).then(() => {
+        // After institutions are loaded and auto-selected, load users for that institution
+        if (window.newInventoryInstitutionSelect) {
+          const selectedInstitutionId = window.newInventoryInstitutionSelect.getValue();
+          if (selectedInstitutionId) {
+            loadUsersForNewInventory(selectedInstitutionId);
+          }
+        }
       })
     );
   } else if (shouldDisplayInventoryRegionalSelect()) {
@@ -1957,12 +1987,15 @@ async function showNewInventoryModal() {
   } else {
     hideRegionalField();
     tasks.push(loadInstitutionsForNewInventory());
+    // For SUPERADMIN or similar, allow loading all users initially
+    // But they will be filtered when an institution is selected
+    // Don't load users here - wait for institution selection or load all if no institution is required
   }
 
   await Promise.all(tasks);
 }
 
-async function loadUsersForNewInventory() {
+async function loadUsersForNewInventory(institutionId = null) {
   // Show loading state
   showNewInventoryOwnerSelectLoading();
 
@@ -2043,13 +2076,88 @@ async function loadUsersForNewInventory() {
       users = await fetchUsers();
     }
 
-    if (users.length === 0) {
+    if (allUsers.length === 0) {
       populateNewInventoryOwnerSelect([]);
       return;
     }
 
-    // Populate the select with users
-    populateNewInventoryOwnerSelect(users);
+    // Filter users by institution if institutionId is provided
+    let filteredUsers = allUsers;
+    if (institutionId && institutionId !== '') {
+      const institutionIdNum = parseInt(institutionId);
+      
+      // First, try to get the institution name from the selected institution
+      let institutionName = null;
+      try {
+        const token = localStorage.getItem("jwt");
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        
+        const institutionsResponse = await fetch("/api/v1/institutions", {
+          method: "GET",
+          headers: headers,
+        });
+        
+        if (institutionsResponse.ok) {
+          const institutions = await institutionsResponse.json();
+          const selectedInstitution = institutions.find(inst => {
+            const instId = inst.id || inst.institutionId;
+            return instId && parseInt(instId) === institutionIdNum;
+          });
+          
+          if (selectedInstitution) {
+            institutionName = selectedInstitution.name || selectedInstitution.nombre;
+          }
+        }
+      } catch (error) {
+        console.warn("Error fetching institution name:", error);
+      }
+      
+      // Filter users by institution
+      filteredUsers = allUsers.filter(user => {
+        // Check different possible structures for institutionId in user object
+        const userInstitutionId = user.institutionId || 
+                                 user.institution?.id || 
+                                 (user.institution && typeof user.institution === 'object' ? user.institution.id : null);
+        
+        // If user has institutionId as number, compare directly
+        if (userInstitutionId !== null && userInstitutionId !== undefined) {
+          const matches = parseInt(userInstitutionId) === institutionIdNum;
+          if (matches) {
+            console.log('User matched by institutionId:', user.fullName || user.email, 'institutionId:', userInstitutionId);
+          }
+          return matches;
+        }
+        
+        // If user has institution as string (name), compare with institution name
+        if (institutionName && user.institution) {
+          const userInstitutionName = typeof user.institution === 'string' 
+            ? user.institution 
+            : (user.institution.name || user.institution.nombre);
+          const matches = userInstitutionName === institutionName;
+          if (matches) {
+            console.log('User matched by institution name:', user.fullName || user.email, 'institution:', userInstitutionName);
+          }
+          return matches;
+        }
+        
+        return false;
+      });
+      
+      console.log(`Filtered ${filteredUsers.length} users from ${allUsers.length} total users for institution ID ${institutionIdNum} (${institutionName || 'name not found'})`);
+
+      if (filteredUsers.length === 0) {
+        populateNewInventoryOwnerSelect([]);
+        showInfoToast(
+          "Sin usuarios",
+          "No hay usuarios disponibles en esta institución"
+        );
+        return;
+      }
+    }
+
+    // Populate the select with filtered users
+    populateNewInventoryOwnerSelect(filteredUsers);
   } catch (error) {
     console.error("Error loading users for new inventory:", error);
     populateNewInventoryOwnerSelect([]);
@@ -2142,6 +2250,26 @@ function ensureNewInventoryInstitutionSelect() {
       {
         placeholder: "Seleccionar institución...",
         searchable: true,
+        onChange: function(option) {
+          // When institution changes, reload users filtered by that institution
+          const institutionId = option ? option.value : null;
+          if (institutionId && institutionId !== '') {
+            // Clear current owner selection
+            if (window.newInventoryOwnerSelect) {
+              window.newInventoryOwnerSelect.clear();
+            }
+            // Reload users filtered by institution
+            loadUsersForNewInventory(institutionId);
+          } else {
+            // If no institution selected, clear owner select
+            if (window.newInventoryOwnerSelect) {
+              window.newInventoryOwnerSelect.clear();
+              window.newInventoryOwnerSelect.setOptions([
+                { value: "", label: "Selecciona primero una institución", disabled: true },
+              ]);
+            }
+          }
+        },
       }
     );
   }
@@ -2501,6 +2629,8 @@ function autoSelectInstitutionForCurrentUser(institutions) {
     const institutionId = getInstitutionIdFromResponse(matchingInstitution);
     if (institutionId) {
       window.newInventoryInstitutionSelect.setValue(String(institutionId));
+      // Load users for the auto-selected institution
+      loadUsersForNewInventory(String(institutionId));
     }
   }
 }
@@ -2755,16 +2885,160 @@ async function loadUsersForRoleAssignment(inventoryId) {
   showRoleUserSelectLoading();
 
   try {
-    // Fetch users from API
-    const users = await fetchUsers();
+    // Get inventory data to find its regional
+    const inventory = window.currentRoleAssignmentInventory || 
+                     inventoryData.inventories?.find(inv => inv.id == inventoryId);
+    
+    console.log("Loading users for role assignment - Inventory:", inventory);
+    
+    if (!inventory) {
+      console.warn("Inventory not found, loading all users");
+      const users = await fetchUsers();
+      populateRoleUserSelect(users);
+      return;
+    }
 
-    if (users.length === 0) {
+    // Get regional ID from inventory
+    let inventoryRegionalId = null;
+    
+    // Try different possible structures for regional ID
+    if (inventory.regionalId) {
+      inventoryRegionalId = inventory.regionalId;
+    } else if (inventory.regional?.id) {
+      inventoryRegionalId = inventory.regional.id;
+    } else if (inventory.institution?.regional?.id) {
+      inventoryRegionalId = inventory.institution.regional.id;
+    } else if (inventory.institutionId) {
+      // If we only have institutionId, fetch the institution to get its regional
+      try {
+        const token = localStorage.getItem("jwt");
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        
+        const institutionsResponse = await fetch("/api/v1/institutions", {
+          method: "GET",
+          headers: headers,
+        });
+        
+        if (institutionsResponse.ok) {
+          const institutions = await institutionsResponse.json();
+          const institution = institutions.find(inst => {
+            const instId = inst.id || inst.institutionId;
+            return instId && parseInt(instId) === parseInt(inventory.institutionId);
+          });
+          
+          if (institution) {
+            inventoryRegionalId = institution.regionalId || institution.regional?.id;
+          }
+        }
+      } catch (error) {
+        console.warn("Error fetching institution to get regional:", error);
+      }
+    }
+
+    console.log("Inventory Regional ID:", inventoryRegionalId);
+
+    // Fetch all users from API
+    const allUsers = await fetchUsers();
+    console.log("Total users fetched:", allUsers.length);
+
+    if (allUsers.length === 0) {
       populateRoleUserSelect([]);
       return;
     }
 
-    // Populate the user select with all users (backend now handles validation)
-    populateRoleUserSelect(users);
+    // Filter users by regional if we have a regional ID
+    let filteredUsers = allUsers;
+    if (inventoryRegionalId) {
+      const regionalIdNum = parseInt(inventoryRegionalId);
+      
+      // Get all institutions for this regional to filter users
+      let institutionIdsInRegional = [];
+      let institutionsInRegional = [];
+      try {
+        const token = localStorage.getItem("jwt");
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+        
+        const institutionsResponse = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalIdNum}`, {
+          method: "GET",
+          headers: headers,
+        });
+        
+        if (institutionsResponse.ok) {
+          institutionsInRegional = await institutionsResponse.json();
+          institutionIdsInRegional = institutionsInRegional.map(inst => {
+            return parseInt(inst.id || inst.institutionId);
+          }).filter(id => !isNaN(id));
+        }
+      } catch (error) {
+        console.warn("Error fetching institutions for regional:", error);
+      }
+      
+      console.log("Institutions in regional:", institutionIdsInRegional);
+      
+      // Filter users by regional
+      filteredUsers = allUsers.filter(user => {
+        // Check if user has institutionId that matches an institution in the regional
+        const userInstitutionId = user.institutionId || 
+                                 user.institution?.id || 
+                                 (user.institution && typeof user.institution === 'object' ? user.institution.id : null);
+        
+        if (userInstitutionId && institutionIdsInRegional.length > 0) {
+          const userInstIdNum = parseInt(userInstitutionId);
+          const matches = institutionIdsInRegional.includes(userInstIdNum);
+          if (matches) {
+            console.log("User matched by institutionId:", user.fullName || user.email, "institutionId:", userInstIdNum);
+          }
+          return matches;
+        }
+        
+        // Fallback: check if user has regionalId directly
+        const userRegionalId = user.regionalId || 
+                              user.regional?.id ||
+                              user.institution?.regional?.id;
+        
+        if (userRegionalId) {
+          const matches = parseInt(userRegionalId) === regionalIdNum;
+          if (matches) {
+            console.log("User matched by regionalId:", user.fullName || user.email, "regionalId:", userRegionalId);
+          }
+          return matches;
+        }
+        
+        // If user has institution as string (name), try to match by institution name
+        if (user.institution && typeof user.institution === 'string' && institutionsInRegional.length > 0) {
+          const userInstitutionName = user.institution;
+          const matchingInstitution = institutionsInRegional.find(inst => {
+            const instName = inst.name || inst.nombre;
+            return instName && instName === userInstitutionName;
+          });
+          
+          if (matchingInstitution) {
+            console.log("User matched by institution name:", user.fullName || user.email, "institution:", userInstitutionName);
+            return true;
+          }
+        }
+        
+        return false;
+      });
+
+      console.log(`Filtered ${filteredUsers.length} users from ${allUsers.length} total users for regional ID ${regionalIdNum}`);
+
+      if (filteredUsers.length === 0) {
+        populateRoleUserSelect([]);
+        showInfoToast(
+          "Sin usuarios",
+          "No hay usuarios disponibles en la regional de este inventario"
+        );
+        return;
+      }
+    } else {
+      console.warn("No regional ID found for inventory, showing all users");
+    }
+
+    // Populate the user select with filtered users
+    populateRoleUserSelect(filteredUsers);
   } catch (error) {
     console.error("Error loading users for role assignment:", error);
     populateRoleUserSelect([]);
