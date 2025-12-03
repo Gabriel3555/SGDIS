@@ -101,8 +101,8 @@ function updateUserStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Admin Institución</p>
                     <h3 class="text-3xl font-bold text-gray-800">${adminInstitutionCount}</h3>
                 </div>
-                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-building text-purple-600 text-xl"></i>
+                <div class="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-building text-white text-xl"></i>
                 </div>
             </div>
             <p class="text-purple-600 text-sm font-medium">Administradores de institución</p>
@@ -114,8 +114,8 @@ function updateUserStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Admin Regional</p>
                     <h3 class="text-3xl font-bold text-gray-800">${adminRegionalCount}</h3>
                 </div>
-                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-map-marker-alt text-orange-600 text-xl"></i>
+                <div class="w-12 h-12 bg-orange-500 dark:bg-orange-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-map-marker-alt text-white text-xl"></i>
                 </div>
             </div>
             <p class="text-orange-600 text-sm font-medium">Administradores regionales</p>
@@ -127,8 +127,8 @@ function updateUserStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Almacén</p>
                     <h3 class="text-3xl font-bold text-gray-800">${warehouseCount}</h3>
                 </div>
-                <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-warehouse text-yellow-600 text-xl"></i>
+                <div class="w-12 h-12 bg-yellow-500 dark:bg-yellow-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-warehouse text-white text-xl"></i>
                 </div>
             </div>
             <p class="text-yellow-600 text-sm font-medium">Administradores de almacén</p>
@@ -140,8 +140,8 @@ function updateUserStats() {
                     <p class="text-gray-600 text-sm font-medium mb-1">Usuarios</p>
                     <h3 class="text-3xl font-bold text-gray-800">${userCount}</h3>
                 </div>
-                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-users text-[#00AF00] text-xl"></i>
+                <div class="w-12 h-12 bg-green-500 dark:bg-green-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-white text-xl"></i>
                 </div>
             </div>
             <p class="text-[#00AF00] text-sm font-medium">Usuarios del sistema</p>
@@ -1599,13 +1599,9 @@ window.deleteUser = function (userId) {
 
 // changeUserPhoto is implemented in users-images.js
 
-// Modal placeholder functions
-window.showNewUserModal = function () {
-  // Placeholder - should be implemented in users-modals.js
-};
-
-// closeNewUserModal, closeViewUserModal, and closeEditUserModal are implemented in users-modals.js
-// Don't override them here to avoid conflicts
+// Modal functions are implemented in users-modals.js
+// Don't override them here to avoid conflicts - users-modals.js loads before this file
+// and sets window.showNewUserModal, window.closeNewUserModal, etc.
 
 // loadUsersData is implemented in users-api.js
 

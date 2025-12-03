@@ -129,9 +129,11 @@ function updateLoansTable() {
         return;
     }
 
-    // Check if we're on warehouse page and use 6 items per page
+    // Check if we're on warehouse page or superadmin and use 6 items per page
     const isWarehouse = window.location.pathname && window.location.pathname.includes('/warehouse');
-    const itemsPerPage = isWarehouse ? 6 : (dataSource.itemsPerPage || 10);
+    const isSuperAdmin = (dataSource.userRole === 'SUPERADMIN') || 
+                        (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const itemsPerPage = (isWarehouse || isSuperAdmin) ? 6 : (dataSource.itemsPerPage || 6);
     
     const currentPage = dataSource.currentPage || 1;
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -685,9 +687,11 @@ function updatePagination() {
     const container = document.getElementById('paginationContainer');
     if (!container) return;
 
-    // Check if we're on warehouse page and use 6 items per page
+    // Check if we're on warehouse page or superadmin and use 6 items per page
     const isWarehouse = window.location.pathname && window.location.pathname.includes('/warehouse');
-    const itemsPerPage = isWarehouse ? 6 : loansData.itemsPerPage;
+    const isSuperAdmin = (loansData.userRole === 'SUPERADMIN') || 
+                        (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const itemsPerPage = (isWarehouse || isSuperAdmin) ? 6 : loansData.itemsPerPage;
 
     const totalPages = Math.ceil(loansData.filteredLoans.length / itemsPerPage);
     const currentPage = loansData.currentPage;

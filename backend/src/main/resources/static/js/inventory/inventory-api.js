@@ -237,16 +237,19 @@ async function loadInventories(options = {}) {
         const page = typeof options.page === 'number' ? options.page : 0;
         const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
                                (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isAdminInstitution = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_INSTITUTION') || 
+                                  (window.location.pathname && window.location.pathname.includes('/admin_institution')) ||
+                                  (window.location.pathname && window.location.pathname.includes('/admininstitution'));
         const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                             (window.location.pathname && window.location.pathname.includes('/superadmin'));
         const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') || 
                            (window.location.pathname && window.location.pathname.includes('/warehouse'));
-        // Use default size of 6 for admin regional, superadmin, and warehouse, otherwise use the configured size or default
-        const defaultSize = (isAdminRegional || isSuperAdmin || isWarehouse) ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : DEFAULT_INSTITUTION_PAGE_SIZE;
+        // Use default size of 6 for admin regional, admin institution, superadmin, and warehouse, otherwise use the configured size or default
+        const defaultSize = (isAdminRegional || isAdminInstitution || isSuperAdmin || isWarehouse) ? DEFAULT_ADMIN_REGIONAL_PAGE_SIZE : DEFAULT_INSTITUTION_PAGE_SIZE;
         
-        // For admin regional, superadmin, and warehouse, always use 6 unless explicitly overridden
+        // For admin regional, admin institution, superadmin, and warehouse, always use 6 unless explicitly overridden
         let size;
-        if (isAdminRegional || isSuperAdmin || isWarehouse) {
+        if (isAdminRegional || isAdminInstitution || isSuperAdmin || isWarehouse) {
             size = typeof options.size === 'number' ? options.size : DEFAULT_ADMIN_REGIONAL_PAGE_SIZE;
         } else {
             size = typeof options.size === 'number' ? options.size : (inventoryData?.serverPageSize || defaultSize);
@@ -256,8 +259,8 @@ async function loadInventories(options = {}) {
         const endpoint = buildInventoryEndpoint(page, size);
 
         if (inventoryData) {
-            // For admin regional, superadmin, and warehouse, ensure serverPageSize is 6
-            if (isAdminRegional || isSuperAdmin || isWarehouse) {
+            // For admin regional, admin institution, superadmin, and warehouse, ensure serverPageSize is 6
+            if (isAdminRegional || isAdminInstitution || isSuperAdmin || isWarehouse) {
                 inventoryData.serverPageSize = DEFAULT_ADMIN_REGIONAL_PAGE_SIZE;
             } else {
                 inventoryData.serverPageSize = size;
@@ -1490,7 +1493,7 @@ async function handleInstitutionFilterChange(institutionId) {
     }
 }
 
-// Function to load inventory statistics (for SUPERADMIN and ADMIN_REGIONAL)
+// Function to load inventory statistics (for SUPERADMIN, ADMIN_REGIONAL, and ADMIN_INSTITUTION)
 async function loadInventoryStatistics() {
     try {
         const token = localStorage.getItem('jwt');
@@ -1501,8 +1504,11 @@ async function loadInventoryStatistics() {
         const isSuperAdmin = currentRole === 'SUPERADMIN';
         const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
                                (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION' || 
+                                  (window.location.pathname && window.location.pathname.includes('/admin_institution')) ||
+                                  (window.location.pathname && window.location.pathname.includes('/admininstitution'));
         
-        if (!isSuperAdmin && !isAdminRegional) {
+        if (!isSuperAdmin && !isAdminRegional && !isAdminInstitution) {
             // For other roles, return null to use local calculation
             return null;
         }
@@ -1521,6 +1527,10 @@ async function loadInventoryStatistics() {
             } else {
                 endpoint = '/api/v1/inventory/regional/statistics';
             }
+        } else if (isAdminInstitution) {
+            // For ADMIN_INSTITUTION, try to use institution statistics endpoint
+            // If endpoint doesn't exist, it will fall back to local calculation
+            endpoint = '/api/v1/inventory/institutionAdminStatistics';
         }
 
         const response = await fetch(endpoint, {
