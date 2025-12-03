@@ -163,6 +163,7 @@ public class VerificationService implements
      * - Es owner del inventario al que pertenece el ítem
      * - Es signatario del inventario al que pertenece el ítem
      * - Es WAREHOUSE y pertenece a la misma institución que el inventario
+     * - Es ADMIN_INSTITUTION y pertenece a la misma institución que el inventario
      */
     private void validateUserAuthorization(UserEntity user, ItemEntity item) {
         // SUPERADMIN puede verificar cualquier ítem
@@ -193,6 +194,21 @@ public class VerificationService implements
 
         // Verificar si el usuario es WAREHOUSE y pertenece a la misma institución que el inventario
         if (user.getRole() == Role.WAREHOUSE) {
+            // Load user with institution to avoid LazyInitializationException
+            UserEntity userWithInstitution = userRepository.findByIdWithInstitution(user.getId())
+                    .orElse(user);
+            
+            // The inventory should already have its institution loaded from the item query
+            // But if it's null, try to access it (will trigger lazy load if in transaction)
+            if (userWithInstitution.getInstitution() != null && inventory.getInstitution() != null) {
+                if (userWithInstitution.getInstitution().getId().equals(inventory.getInstitution().getId())) {
+                    return;
+                }
+            }
+        }
+
+        // Verificar si el usuario es ADMIN_INSTITUTION y pertenece a la misma institución que el inventario
+        if (user.getRole() == Role.ADMIN_INSTITUTION) {
             // Load user with institution to avoid LazyInitializationException
             UserEntity userWithInstitution = userRepository.findByIdWithInstitution(user.getId())
                     .orElse(user);

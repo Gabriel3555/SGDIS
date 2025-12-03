@@ -2,6 +2,8 @@
 // This file handles loading and displaying verifications for the admin institution's institution
 
 let currentUserInstitutionId = null;
+// Make it globally accessible for batch verification validation
+window.currentUserInstitutionId = currentUserInstitutionId;
 let verificationDataAdminInstitution = {
     verifications: [],
     filteredVerifications: [],
@@ -10,6 +12,7 @@ let verificationDataAdminInstitution = {
     pageSize: 6,
     totalPages: 0,
     totalElements: 0,
+    currentVerificationId: null, // For upload evidence modal
     filters: {
         status: 'all',
         searchTerm: '',
@@ -17,8 +20,11 @@ let verificationDataAdminInstitution = {
     }
 };
 
+// Make it globally accessible
+window.verificationDataAdminInstitution = verificationDataAdminInstitution;
+
 /**
- * Load current user info to get institution ID
+ * Load current user info to get institution ID from token/user
  */
 async function loadCurrentUserInfoForVerifications() {
     try {
@@ -27,6 +33,7 @@ async function loadCurrentUserInfoForVerifications() {
             throw new Error('No authentication token found');
         }
 
+        // Get user info to get institution name
         const response = await fetch('/api/v1/users/me', {
             method: 'GET',
             headers: {
@@ -48,40 +55,37 @@ async function loadCurrentUserInfoForVerifications() {
                 throw new Error('Usuario no tiene una institución asignada');
             }
 
-            // Fetch all institutions to find the user's institution
-            const institutionsResponse = await fetch('/api/v1/institutions', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            // Get institution ID directly from user data (now included in UserResponse)
+            if (userData.institutionId) {
+                currentUserInstitutionId = userData.institutionId;
+                window.currentUserInstitutionId = currentUserInstitutionId;
+            } else {
+                // Fallback: if institutionId is not available, try to get it from institutions list
+                const institutionsResponse = await fetch('/api/v1/institutions', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (institutionsResponse.ok) {
+                    const institutions = await institutionsResponse.json();
+                    const userInstitution = institutions.find(inst => inst.name === institutionName);
+
+                    if (userInstitution && userInstitution.id) {
+                        currentUserInstitutionId = userInstitution.id;
+                        window.currentUserInstitutionId = currentUserInstitutionId;
+                        window.currentUserInstitution = userInstitution;
+                    }
                 }
-            });
-
-            if (!institutionsResponse.ok) {
-                throw new Error('Error al cargar las instituciones');
             }
-
-            const institutions = await institutionsResponse.json();
-            const userInstitution = institutions.find(inst => inst.name === institutionName);
-
-            if (!userInstitution) {
-                throw new Error('Institución del usuario no encontrada: ' + institutionName);
-            }
-
-            // Get institution ID
-            const userInstitutionId = userInstitution.id;
-
-            if (!userInstitutionId) {
-                throw new Error('La institución no tiene un ID válido');
-            }
-
-            currentUserInstitutionId = userInstitutionId;
-            window.currentUserInstitution = userInstitution;
-
+            
             // Update welcome message with institution name
             updateVerificationWelcomeMessage(institutionName);
 
-            return currentUserInstitutionId;
+            // Return a marker that we'll use the current endpoint
+            return 'current';
         } else {
             throw new Error('Failed to load user info');
         }
@@ -107,10 +111,10 @@ function updateVerificationWelcomeMessage(institutionName) {
  */
 async function loadVerificationsForAdminInstitution(page = 0) {
     try {
-        // First, get the user's institution ID
-        if (!currentUserInstitutionId) {
-            const institutionId = await loadCurrentUserInfoForVerifications();
-            if (!institutionId) {
+        // First, get the user's info (to get institution name for welcome message)
+        if (currentUserInstitutionId === null) {
+            const result = await loadCurrentUserInfoForVerifications();
+            if (!result) {
                 return;
             }
         }
@@ -132,8 +136,8 @@ async function loadVerificationsForAdminInstitution(page = 0) {
             `;
         }
 
-        // Load verifications from the institution
-        const response = await fetch(`/api/v1/verifications/institution/${currentUserInstitutionId}?page=${page}&size=${verificationDataAdminInstitution.pageSize}`, {
+        // Load verifications from the current user's institution (backend gets it from token)
+        const response = await fetch(`/api/v1/verifications/institution/current?page=${page}&size=${verificationDataAdminInstitution.pageSize}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -144,8 +148,31 @@ async function loadVerificationsForAdminInstitution(page = 0) {
         if (response.ok) {
             const data = await response.json();
             
+            // Transform the response to match frontend expectations (same as fetchAllVerifications)
+            let verifications = Array.isArray(data.content) ? data.content : [];
+            verifications = verifications.map(v => ({
+                id: v.id || v.verificationId,
+                itemId: v.itemId,
+                licensePlate: v.itemLicencePlateNumber || v.licencePlateNumber || v.licensePlate,
+                itemName: v.itemName,
+                inventoryId: v.inventoryId,
+                inventoryName: v.inventoryName,
+                status: v.status || 'PENDING',
+                hasEvidence: v.photoUrl && v.photoUrl.length > 0,
+                verificationDate: v.verifiedAt || v.createdAt || v.verificationDate,
+                createdAt: v.createdAt || v.verifiedAt,
+                photoUrl: v.photoUrl || null,
+                photoUrls: v.photoUrl ? [v.photoUrl] : [],
+                userId: v.userId,
+                userFullName: v.userFullName,
+                userEmail: v.userEmail,
+                // Keep original fields for compatibility
+                itemLicencePlateNumber: v.itemLicencePlateNumber,
+                serialNumber: v.serialNumber || null
+            }));
+            
             // Update verifications data
-            verificationDataAdminInstitution.verifications = Array.isArray(data.content) ? data.content : [];
+            verificationDataAdminInstitution.verifications = verifications;
             verificationDataAdminInstitution.totalElements = data.totalElements || 0;
             verificationDataAdminInstitution.totalPages = data.totalPages || 0;
             verificationDataAdminInstitution.currentPage = data.number || 0;
@@ -597,10 +624,10 @@ async function handleVerificationInventoryFilterForAdminInstitution(inventoryId)
 async function loadVerificationsForAdminInstitutionByInventory(inventoryId) {
     // Instead of using the general endpoint (which requires superadmin permissions),
     // we load all verifications from the institution and filter by inventory on the client side
-    // First, ensure we have the institution ID
-    if (!currentUserInstitutionId) {
-        const institutionId = await loadCurrentUserInfoForVerifications();
-        if (!institutionId) {
+    // First, ensure we have loaded user info
+    if (currentUserInstitutionId === null) {
+        const result = await loadCurrentUserInfoForVerifications();
+        if (!result) {
             showError('No se pudo obtener la información de la institución');
             return;
         }
@@ -626,8 +653,8 @@ async function loadVerificationsForAdminInstitutionByInventory(inventoryId) {
             `;
         }
 
-        // Load verifications from institution (use a large page size to get all verifications)
-        const response = await fetch(`/api/v1/verifications/institution/${currentUserInstitutionId}?page=0&size=1000`, {
+        // Load verifications from current user's institution (use a large page size to get all verifications)
+        const response = await fetch(`/api/v1/verifications/institution/current?page=0&size=1000`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

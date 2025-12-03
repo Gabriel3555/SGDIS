@@ -62,7 +62,31 @@ async function showViewVerificationModal(verificationId) {
     `;
     
     try {
-        const verification = verificationData.verifications.find(v => v.id === verificationId);
+        // Check if we're on admin institution page and use the correct data source
+        const path = window.location.pathname || '';
+        const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+        
+        let verification;
+        if (isAdminInstitutionPage && typeof verificationDataAdminInstitution !== 'undefined' && verificationDataAdminInstitution.verifications) {
+            verification = verificationDataAdminInstitution.verifications.find(v => v.id === verificationId);
+        } else if (typeof verificationData !== 'undefined' && verificationData.verifications) {
+            verification = verificationData.verifications.find(v => v.id === verificationId);
+        } else {
+            // If not found in local data, try to fetch from API
+            const token = localStorage.getItem('jwt');
+            if (token) {
+                const response = await fetch(`/api/v1/verifications/${verificationId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (response.ok) {
+                    verification = await response.json();
+                }
+            }
+        }
         
         if (!verification) {
             content.innerHTML = `
@@ -88,22 +112,28 @@ async function showViewVerificationModal(verificationId) {
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Verificación</label>
-                        <p class="text-gray-900">${verification.verificationDate ? new Date(verification.verificationDate).toLocaleDateString('es-ES') : '-'}</p>
+                        <p class="text-gray-900">${verification.verificationDate || verification.createdAt ? new Date(verification.verificationDate || verification.createdAt).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) + ' ' + new Date(verification.verificationDate || verification.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '-'}</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">
                             ${verification.serialNumber ? 'Número de Serie' : 'Placa'}
                         </label>
-                        <p class="text-gray-900 font-semibold">${verification.serialNumber || verification.licensePlate || '-'}</p>
+                        <p class="text-gray-900 font-semibold">${verification.serialNumber || verification.licensePlate || verification.itemLicencePlateNumber || verification.licencePlateNumber || '-'}</p>
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Item</label>
-                        <p class="text-gray-900">${verification.itemName || '-'}</p>
+                        <p class="text-gray-900">${verification.itemName || verification.productName || '-'}</p>
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Inventario</label>
                         <p class="text-gray-900">${verification.inventoryName || '-'}</p>
                     </div>
+                    ${verification.userFullName ? `
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Verificado por</label>
+                        <p class="text-gray-900">${verification.userFullName}${verification.userEmail ? ` (${verification.userEmail})` : ''}</p>
+                    </div>
+                    ` : ''}
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Evidencia</label>
                         ${verification.hasEvidence ? `
@@ -251,12 +281,29 @@ function closeViewVerificationModal() {
 
 // Show Upload Evidence Modal
 function showUploadEvidenceModal(verificationId) {
-    verificationData.currentVerificationId = verificationId;
+    // Check if we're on admin institution page and use the correct data source
+    const path = window.location.pathname || '';
+    const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+    
+    if (isAdminInstitutionPage && typeof verificationDataAdminInstitution !== 'undefined') {
+        verificationDataAdminInstitution.currentVerificationId = verificationId;
+    } else if (typeof verificationData !== 'undefined') {
+        verificationData.currentVerificationId = verificationId;
+    }
+    
     const modal = document.getElementById('uploadEvidenceModal');
     if (modal) {
         modal.classList.remove('hidden');
-        document.getElementById('uploadEvidenceForm').reset();
-        document.getElementById('evidenceFileName').textContent = 'JPG, PNG, PDF. Máx. 5MB';
+        const form = document.getElementById('uploadEvidenceForm');
+        if (form) {
+            form.reset();
+        }
+        const fileNameDisplay = document.getElementById('evidenceFileName');
+        if (fileNameDisplay) {
+            fileNameDisplay.textContent = 'JPG, PNG, PDF. Máx. 5MB';
+        }
+    } else {
+        console.error('Upload evidence modal not found');
     }
 }
 
@@ -266,7 +313,16 @@ function closeUploadEvidenceModal() {
     if (modal) {
         modal.classList.add('hidden');
     }
-    verificationData.currentVerificationId = null;
+    
+    // Check if we're on admin institution page and use the correct data source
+    const path = window.location.pathname || '';
+    const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+    
+    if (isAdminInstitutionPage && typeof verificationDataAdminInstitution !== 'undefined') {
+        verificationDataAdminInstitution.currentVerificationId = null;
+    } else if (typeof verificationData !== 'undefined') {
+        verificationData.currentVerificationId = null;
+    }
 }
 
 // Handle Evidence File Change
