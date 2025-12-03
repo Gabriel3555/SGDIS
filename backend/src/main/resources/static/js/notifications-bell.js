@@ -591,9 +591,7 @@ const NotificationBell = {
             const wsConnected = window.wsNotificationClient && window.wsNotificationClient.isConnected;
             
             // Si el WebSocket no está conectado, hacer polling más agresivo
-            if (!wsConnected) {
-                console.log('WebSocket desconectado, usando polling para notificaciones');
-            }
+            // (sin logging para evitar ruido en consola)
             
             this.loadUnreadCount();
             if (this.isOpen) {
