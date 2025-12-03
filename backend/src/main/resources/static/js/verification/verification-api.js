@@ -26,20 +26,63 @@ async function loadVerificationData() {
             // Use client-side pagination for other roles
             verificationData.useBackendPagination = false;
             await loadInventories();
+            
+            // Log inventories for debugging
+            console.log('Inventories loaded for verification:', verificationData.inventories?.length || 0, verificationData.inventories);
+            
             await loadLatestVerifications();
+            
+            // After loading inventories, update filters
+            // Only regenerate HTML if CustomSelects are not initialized
+            if (window.verificationRegionalCustomSelect || window.verificationInstitutionCustomSelect || window.verificationInventoryCustomSelect) {
+                // CustomSelects are already initialized, just populate them with current data
+                // Use setTimeout to ensure CustomSelect class is available
+                setTimeout(() => {
+                    if (typeof populateVerificationCustomSelects === 'function') {
+                        console.log('Populating verification CustomSelects with', verificationData.inventories?.length || 0, 'inventories');
+                        populateVerificationCustomSelects();
+                    } else {
+                        console.warn('populateVerificationCustomSelects function not available');
+                    }
+                }, 100);
+            } else {
+                // CustomSelects not initialized, regenerate HTML
+                // Use setTimeout to ensure CustomSelect class is available
+                setTimeout(() => {
+                    if (typeof updateFilters === 'function') {
+                        updateFilters();
+                    } else {
+                        console.warn('updateFilters function not available');
+                    }
+                }, 100);
+            }
         }
         
-        // Update filters first to show inventories, then update UI
-        // Only regenerate HTML if CustomSelects are not initialized
-        if (window.verificationRegionalCustomSelect || window.verificationInstitutionCustomSelect || window.verificationInventoryCustomSelect) {
-            // CustomSelects are already initialized, just populate them with current data
-            if (typeof populateVerificationCustomSelects === 'function') {
-                populateVerificationCustomSelects();
-            }
-        } else {
-            // CustomSelects not initialized, regenerate HTML
-            if (typeof updateFilters === 'function') {
-                updateFilters();
+        // For superadmin, update filters after loading data
+        if (isSuperAdmin) {
+            // Update filters first to show inventories, then update UI
+            // Only regenerate HTML if CustomSelects are not initialized
+            if (window.verificationRegionalCustomSelect || window.verificationInstitutionCustomSelect || window.verificationInventoryCustomSelect) {
+                // CustomSelects are already initialized, just populate them with current data
+                // Use setTimeout to ensure inventories are loaded and CustomSelect class is available
+                setTimeout(() => {
+                    if (typeof populateVerificationCustomSelects === 'function') {
+                        console.log('Populating verification CustomSelects with', verificationData.inventories?.length || 0, 'inventories');
+                        populateVerificationCustomSelects();
+                    } else {
+                        console.warn('populateVerificationCustomSelects function not available');
+                    }
+                }, 300);
+            } else {
+                // CustomSelects not initialized, regenerate HTML
+                // Use setTimeout to ensure CustomSelect class is available
+                setTimeout(() => {
+                    if (typeof updateFilters === 'function') {
+                        updateFilters();
+                    } else {
+                        console.warn('updateFilters function not available');
+                    }
+                }, 200);
             }
         }
         if (typeof updateVerificationUI === 'function') {
@@ -286,8 +329,16 @@ async function loadInventories() {
             }
             
             verificationData.inventories = Array.isArray(inventories) ? inventories : [];
+            
+            // Log for debugging
+            console.log('Inventories loaded successfully:', verificationData.inventories.length, 'inventories');
+            if (verificationData.inventories.length > 0) {
+                console.log('Sample inventory:', verificationData.inventories[0]);
+            }
         } else {
             console.error('Error loading inventories:', response.status, response.statusText);
+            const errorText = await response.text().catch(() => 'Unknown error');
+            console.error('Error response:', errorText);
             verificationData.inventories = [];
         }
     } catch (error) {

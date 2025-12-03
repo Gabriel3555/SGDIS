@@ -382,10 +382,16 @@ function updateTransfersSearchAndFiltersForAdminRegional() {
     const existingRequesterContainer = document.getElementById('transferRequesterFilterAdminRegionalSelect');
     const existingStatusContainer = document.getElementById('transferStatusFilterAdminRegionalSelect');
     
-    if (existingOriginContainer && existingDestinationContainer && existingRequesterContainer && existingStatusContainer) {
-        // Just update the values without regenerating HTML
+    // If CustomSelects are already initialized, just update values without regenerating HTML
+    if (existingOriginContainer && existingDestinationContainer && existingRequesterContainer && existingStatusContainer &&
+        (transferOriginCustomSelectAdminRegional || transferDestinationCustomSelectAdminRegional || 
+         transferRequesterCustomSelectAdminRegional || transferStatusCustomSelectAdminRegional)) {
+        // Just update the search input value
         const searchInput = document.getElementById('transferSearchAdminRegional');
         if (searchInput) searchInput.value = currentSearchTerm;
+        
+        // Don't update CustomSelect values if dropdowns are open (to prevent closing them)
+        // The values are already stored in transfersDataAdminRegional.filters
         return;
     }
     

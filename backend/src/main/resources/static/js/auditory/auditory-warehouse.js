@@ -4,11 +4,17 @@ let auditoryDataWarehouse = {
     pageSize: 6,
     totalPages: 0,
     totalAuditories: 0,
-    isLoading: false
+    isLoading: false,
+    allAuditories: [], // Store all loaded auditories for client-side filtering
+    filteredAuditories: [], // Store filtered auditories
+    filters: {
+        user: 'all',
+        searchTerm: ''
+    }
 };
 
-// Load auditories from API for warehouse
-async function loadAuditories(page = 0) {
+// Load all auditories from API for warehouse (for filtering)
+async function loadAllAuditories() {
     try {
         const token = localStorage.getItem('jwt');
         if (!token) {
@@ -18,8 +24,8 @@ async function loadAuditories(page = 0) {
         auditoryDataWarehouse.isLoading = true;
         showLoadingState();
 
-        // Use warehouse-specific endpoint
-        const endpoint = `/api/v1/auditories/warehouse?page=${page}&size=${auditoryDataWarehouse.pageSize}`;
+        // Load all auditories with a large page size
+        const endpoint = `/api/v1/auditories/warehouse?page=0&size=10000`;
 
         const response = await fetch(endpoint, {
             method: 'GET',
@@ -35,12 +41,15 @@ async function loadAuditories(page = 0) {
 
         const data = await response.json();
         
-        auditoryDataWarehouse.currentPage = data.currentPage;
-        auditoryDataWarehouse.totalPages = data.totalPages;
-        auditoryDataWarehouse.totalAuditories = data.totalAuditories;
+        // Store all auditories for filtering
+        auditoryDataWarehouse.allAuditories = data.auditories || [];
+        auditoryDataWarehouse.totalAuditories = data.totalAuditories || auditoryDataWarehouse.allAuditories.length;
         
-        displayAuditories(data.auditories);
-        updatePagination();
+        // Update filter options
+        updateFilterOptions();
+        
+        // Apply filters and display
+        filterAuditories();
         
     } catch (error) {
         console.error('Error loading auditories:', error);
@@ -49,6 +58,12 @@ async function loadAuditories(page = 0) {
         auditoryDataWarehouse.isLoading = false;
         hideLoadingState();
     }
+}
+
+// Load auditories from API for warehouse (legacy function for compatibility)
+async function loadAuditories(page = 0) {
+    // Redirect to loadAllAuditories for filtering support
+    await loadAllAuditories();
 }
 
 // Helper function to create avatar HTML
@@ -82,6 +97,54 @@ function createUserAvatar(imgUrl, fullName, size = 'w-10 h-10') {
     }
 }
 
+// Filter auditories based on current filters
+function filterAuditories() {
+    const filters = auditoryDataWarehouse.filters;
+    let filtered = [...auditoryDataWarehouse.allAuditories];
+    
+    // Filter by user
+    if (filters.user !== 'all') {
+        filtered = filtered.filter(auditory => {
+            const performerEmail = auditory.performerEmail || '';
+            return performerEmail === filters.user;
+        });
+    }
+    
+    // Filter by search term
+    if (filters.searchTerm && filters.searchTerm.trim() !== '') {
+        const searchLower = filters.searchTerm.toLowerCase().trim();
+        filtered = filtered.filter(auditory => {
+            const action = (auditory.action || '').toLowerCase();
+            const performerName = (auditory.performerName || '').toLowerCase();
+            const performerEmail = (auditory.performerEmail || '').toLowerCase();
+            return action.includes(searchLower) || 
+                   performerName.includes(searchLower) || 
+                   performerEmail.includes(searchLower);
+        });
+    }
+    
+    // Store filtered results
+    auditoryDataWarehouse.filteredAuditories = filtered;
+    
+    // Update pagination
+    auditoryDataWarehouse.totalAuditories = filtered.length;
+    auditoryDataWarehouse.totalPages = Math.ceil(filtered.length / auditoryDataWarehouse.pageSize);
+    auditoryDataWarehouse.currentPage = 0; // Reset to first page after filtering
+    
+    // Display paginated results
+    displayPaginatedAuditories();
+}
+
+// Display paginated auditories
+function displayPaginatedAuditories() {
+    const startIndex = auditoryDataWarehouse.currentPage * auditoryDataWarehouse.pageSize;
+    const endIndex = startIndex + auditoryDataWarehouse.pageSize;
+    const pageAuditories = auditoryDataWarehouse.filteredAuditories.slice(startIndex, endIndex);
+    
+    displayAuditories(pageAuditories);
+    updatePagination();
+}
+
 // Display auditories in table (warehouse - no institution column)
 function displayAuditories(auditories) {
     const tbody = document.getElementById('auditoryTableBody');
@@ -94,7 +157,7 @@ function displayAuditories(auditories) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="${colspan}" class="py-8 text-center text-gray-500 dark:text-gray-400">
-                    No hay registros de auditoría disponibles
+                    No se encontraron registros de auditoría con los filtros aplicados
                 </td>
             </tr>
         `;
@@ -131,6 +194,63 @@ function displayAuditories(auditories) {
             </tr>
         `;
     }).join('');
+}
+
+// Update filter options based on loaded auditories
+function updateFilterOptions() {
+    const allAuditories = auditoryDataWarehouse.allAuditories;
+    
+    // Extract unique users
+    const uniqueUsers = new Map();
+    allAuditories.forEach(auditory => {
+        const email = auditory.performerEmail;
+        const name = auditory.performerName || 'N/A';
+        if (email && !uniqueUsers.has(email)) {
+            uniqueUsers.set(email, name);
+        }
+    });
+    
+    // Update user filter select
+    const userFilter = document.getElementById('auditoryUserFilter');
+    if (userFilter) {
+        const currentValue = userFilter.value;
+        userFilter.innerHTML = '<option value="all">Todos los usuarios</option>';
+        
+        // Sort users by name
+        const sortedUsers = Array.from(uniqueUsers.entries()).sort((a, b) => {
+            return a[1].localeCompare(b[1]);
+        });
+        
+        sortedUsers.forEach(([email, name]) => {
+            const option = document.createElement('option');
+            option.value = email;
+            option.textContent = name;
+            userFilter.appendChild(option);
+        });
+        
+        // Restore previous selection if still valid
+        if (currentValue && Array.from(uniqueUsers.keys()).includes(currentValue)) {
+            userFilter.value = currentValue;
+        }
+    }
+}
+
+// Handle user filter change
+function handleAuditoryUserFilterChange() {
+    const userFilter = document.getElementById('auditoryUserFilter');
+    if (userFilter) {
+        auditoryDataWarehouse.filters.user = userFilter.value;
+        filterAuditories();
+    }
+}
+
+// Handle search input change
+function handleAuditorySearchChange() {
+    const searchInput = document.getElementById('auditorySearchInput');
+    if (searchInput) {
+        auditoryDataWarehouse.filters.searchTerm = searchInput.value;
+        filterAuditories();
+    }
 }
 
 // Update pagination controls
@@ -208,7 +328,7 @@ function changePage(page) {
     // Convert from 1-based (UI) to 0-based (API)
     const apiPage = page - 1;
     auditoryDataWarehouse.currentPage = apiPage;
-    loadAuditories(apiPage);
+    displayPaginatedAuditories();
 }
 
 // Show loading state

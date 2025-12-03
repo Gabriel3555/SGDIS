@@ -3,8 +3,15 @@ function updateVerificationUI() {
     // Only update filters if CustomSelects are not initialized, otherwise just populate them
     if (verificationRegionalCustomSelect || verificationInstitutionCustomSelect || verificationInventoryCustomSelect) {
         // CustomSelects are already initialized, just populate them with current data
+        // But only if inventories are loaded (for warehouse and other roles)
         if (typeof populateVerificationCustomSelects === 'function') {
-            populateVerificationCustomSelects();
+            // Check if inventories are loaded before populating
+            if (verificationData.inventories !== undefined) {
+                console.log('updateVerificationUI: Populating CustomSelects, inventories available:', verificationData.inventories?.length || 0);
+                populateVerificationCustomSelects();
+            } else {
+                console.log('updateVerificationUI: Inventories not loaded yet, skipping populateVerificationCustomSelects');
+            }
         }
     } else {
         // CustomSelects not initialized, regenerate HTML
@@ -259,9 +266,22 @@ function updateFilters() {
     verificationInventoryCustomSelect = null;
 
     // Initialize Custom Selects after HTML is inserted
+    // Use setTimeout to ensure CustomSelect class is available
     setTimeout(() => {
-        initializeVerificationCustomSelects();
-    }, 50);
+        if (typeof CustomSelect !== 'undefined') {
+            initializeVerificationCustomSelects();
+        } else {
+            console.warn('CustomSelect class not available, retrying...');
+            // Retry after a longer delay
+            setTimeout(() => {
+                if (typeof CustomSelect !== 'undefined') {
+                    initializeVerificationCustomSelects();
+                } else {
+                    console.error('CustomSelect class still not available after retry');
+                }
+            }, 500);
+        }
+    }, 100);
 }
 
 // Custom Select instances for verification filters
@@ -336,7 +356,25 @@ function initializeVerificationCustomSelects() {
     }
 
     // Populate custom selects with options
-    populateVerificationCustomSelects();
+    // Use setTimeout to ensure inventories are loaded before populating
+    // For warehouse and other non-superadmin roles, ensure inventories are loaded
+    setTimeout(() => {
+        // Double-check that inventories are loaded before populating
+        if (verificationData.inventories !== undefined) {
+            console.log('Initializing CustomSelects, inventories available:', verificationData.inventories?.length || 0);
+            populateVerificationCustomSelects();
+        } else {
+            console.warn('Inventories not loaded yet, retrying...');
+            // Retry after a longer delay
+            setTimeout(() => {
+                if (verificationData.inventories !== undefined) {
+                    populateVerificationCustomSelects();
+                } else {
+                    console.error('Inventories still not loaded after retry');
+                }
+            }, 500);
+        }
+    }, 200);
 }
 
 // Flag to prevent multiple simultaneous calls to populateVerificationCustomSelects
@@ -470,14 +508,62 @@ function populateVerificationCustomSelects() {
             verificationInventoryCustomSelect.setDisabled(false);
         }
 
+        // Ensure inventories are loaded
+        const inventories = verificationData.inventories || [];
+        console.log('Populating inventory filter with', inventories.length, 'inventories');
+        console.log('Inventories data:', inventories);
+        console.log('verificationData:', verificationData);
+        
+        // Build options array
         const options = [
-            { value: 'all', label: 'Todos los Inventarios' },
-            ...(verificationData.inventories || []).map(inv => ({
-                value: inv.id.toString(),
-                label: inv.name || `Inventario ${inv.id}`
-            }))
+            { value: 'all', label: 'Todos los Inventarios' }
         ];
-        verificationInventoryCustomSelect.setOptions(options);
+        
+        // Add inventory options
+        if (inventories && inventories.length > 0) {
+            inventories.forEach((inv, index) => {
+                console.log(`Processing inventory ${index}:`, inv);
+                const invId = inv.id || inv.inventoryId;
+                const invName = inv.name || inv.inventoryName || `Inventario ${invId}`;
+                if (invId) {
+                    options.push({
+                        value: invId.toString(),
+                        label: invName
+                    });
+                } else {
+                    console.warn(`Inventory at index ${index} has no ID:`, inv);
+                }
+            });
+        } else {
+            console.warn('No inventories found in verificationData.inventories');
+        }
+        
+        console.log('Inventory filter options:', options);
+        console.log('Options length:', options.length);
+        console.log('CustomSelect instance:', verificationInventoryCustomSelect);
+        
+        // Always set options, even if only 'all' is available
+        if (verificationInventoryCustomSelect && typeof verificationInventoryCustomSelect.setOptions === 'function') {
+            console.log('Setting', options.length, 'options to CustomSelect');
+            verificationInventoryCustomSelect.setOptions(options);
+            
+            // Verify options were set correctly
+            setTimeout(() => {
+                if (verificationInventoryCustomSelect.options && verificationInventoryCustomSelect.options.length > 0) {
+                    console.log('Options successfully set. CustomSelect has', verificationInventoryCustomSelect.options.length, 'options');
+                    console.log('CustomSelect options:', verificationInventoryCustomSelect.options);
+                } else {
+                    console.error('Options were not set correctly. CustomSelect.options is empty or undefined');
+                    console.log('CustomSelect state:', {
+                        options: verificationInventoryCustomSelect.options,
+                        filteredOptions: verificationInventoryCustomSelect.filteredOptions,
+                        container: verificationInventoryCustomSelect.container
+                    });
+                }
+            }, 100);
+        } else {
+            console.error('CustomSelect instance or setOptions method not available');
+        }
         
         // Restore selected value - check if dropdown is open first
         const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';

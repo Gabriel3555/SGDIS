@@ -410,121 +410,113 @@ let originalFetchForExport = null;
     
     // Solo interceptar peticiones a la API (excepto el endpoint de refresh)
     if (isApiRequest && !isRefreshEndpoint) {
-      // Siempre obtener un token válido antes de hacer la petición
-      // Esto asegura que siempre usamos el token más reciente, incluso si ya hay uno en los headers
-      let token = null;
-      
-      if (window.getValidToken && typeof window.getValidToken === 'function') {
-        try {
-          token = await window.getValidToken();
-          if (token) {
-            // Siempre actualizar los headers con el token válido
-            options.headers = updateTokenInHeaders(options.headers || {}, token);
-          }
-        } catch (error) {
-          // Fallback: intentar usar token del localStorage
-          token = localStorage.getItem("jwt");
-          if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
-            options.headers = updateTokenInHeaders(options.headers || {}, token);
-          }
-        }
-      } else {
-        // Fallback: usar token del localStorage
-        token = localStorage.getItem("jwt");
-        if (token && token !== "undefined" && token !== "null" && token.trim() !== "") {
-          options.headers = updateTokenInHeaders(options.headers || {}, token);
-        }
-      }
-      
-      // Verificar que tenemos un token antes de hacer la petición
-      if (!token) {
-        // Intentar obtener token una vez más
+      // Obtener token válido de forma simple
+      let token = localStorage.getItem("jwt");
+      if (!token || token === "undefined" || token === "null" || token.trim() === "") {
+        token = null;
+        // Intentar refrescar si hay función disponible
         if (window.getValidToken && typeof window.getValidToken === 'function') {
           try {
             token = await window.getValidToken();
-            if (token) {
-              options.headers = updateTokenInHeaders(options.headers || {}, token);
-            } else {
-              // Retornar error en lugar de hacer la petición sin token
-              return new Response(JSON.stringify({ error: "No authentication token available" }), {
-                status: 401,
-                headers: { "Content-Type": "application/json" }
-              });
-            }
-          } catch (error) {
-            return new Response(JSON.stringify({ error: "Failed to get authentication token" }), {
-              status: 401,
-              headers: { "Content-Type": "application/json" }
-            });
+          } catch (e) {
+            // Ignorar error, continuar sin token
           }
         }
       }
       
-      // Hacer la petición
-      // Asegurarse de que las opciones estén correctamente formateadas
-      const fetchOptions = {
-        ...options,
-        headers: options.headers || {},
-        // Preserve credentials setting
-        credentials: options.credentials || 'include'
-      };
+      // Crear nuevas opciones solo modificando headers, dejando todo lo demás igual
+      // Esto evita problemas de CORS causados por modificar propiedades innecesarias
+      const fetchOptions = { ...options };
       
-      // Verificar si el body es FormData ANTES de agregar Content-Type
-      // FormData necesita que el navegador establezca automáticamente el Content-Type con boundary
-      const isFormData = options.body instanceof FormData;
-      
-      // Si headers es un objeto plano, asegurarse de que tenga Content-Type si no lo tiene
-      // PERO NO si el body es FormData (el navegador lo establece automáticamente)
-      if (!(fetchOptions.headers instanceof Headers)) {
-        // Si es FormData, NO establecer Content-Type (dejar que el navegador lo haga)
-        // Si no es FormData y no tiene Content-Type, establecer application/json
-        if (!isFormData && !fetchOptions.headers['Content-Type'] && !fetchOptions.headers['content-type']) {
-          fetchOptions.headers['Content-Type'] = 'application/json';
-        }
-        // Si es FormData y tiene Content-Type establecido manualmente, eliminarlo
-        if (isFormData && (fetchOptions.headers['Content-Type'] || fetchOptions.headers['content-type'])) {
-          delete fetchOptions.headers['Content-Type'];
-          delete fetchOptions.headers['content-type'];
-        }
-      } else {
-        // Si headers es una instancia de Headers y es FormData, eliminar Content-Type si existe
-        if (isFormData && fetchOptions.headers.has('Content-Type')) {
-          fetchOptions.headers.delete('Content-Type');
+      // Solo modificar headers si es necesario agregar el token
+      if (token) {
+        if (options.headers instanceof Headers) {
+          // Clonar Headers y agregar token
+          fetchOptions.headers = new Headers(options.headers);
+          fetchOptions.headers.set('Authorization', `Bearer ${token}`);
+        } else if (options.headers && typeof options.headers === 'object') {
+          // Copiar objeto de headers y agregar token
+          fetchOptions.headers = {
+            ...options.headers,
+            'Authorization': `Bearer ${token}`
+          };
+        } else {
+          // Si no hay headers o es otro tipo, crear headers con token
+          fetchOptions.headers = {
+            'Authorization': `Bearer ${token}`
+          };
         }
       }
+      // Si no hay token, dejar headers como están (o undefined si no existían)
       
+      // Hacer la petición
       let response;
       try {
         response = await originalFetch(url, fetchOptions);
       } catch (fetchError) {
-        // Si hay un error de red o CORS, re-lanzar el error para que el código que llama pueda manejarlo
-        throw fetchError;
+        // Si hay error de CORS, intentar con opciones aún más básicas
+        if (fetchError.message && (fetchError.message.includes('CORS') || fetchError.message.includes('Failed to fetch') || fetchError.message.includes('Load failed'))) {
+          console.warn('CORS error detected, trying with minimal options...');
+          try {
+            // Opciones absolutamente mínimas
+            const minimalOptions = {
+              method: options.method || 'GET'
+            };
+            if (token) {
+              minimalOptions.headers = {
+                'Authorization': `Bearer ${token}`
+              };
+            }
+            if (options.body !== undefined) {
+              minimalOptions.body = options.body;
+            }
+            response = await originalFetch(url, minimalOptions);
+          } catch (minimalError) {
+            // Si también falla, lanzar el error original
+            throw fetchError;
+          }
+        } else {
+          throw fetchError;
+        }
       }
       
       // Si recibimos 401 o 403, intentar refrescar el token y reintentar
       if (response.status === 401 || response.status === 403) {
-        // Intentar refrescar el token
         if (window.refreshJWTToken && typeof window.refreshJWTToken === 'function') {
-          const refreshed = await window.refreshJWTToken(true);
-          
-          if (refreshed) {
-            // Obtener el nuevo token
-            const newToken = await window.getValidToken();
+          try {
+            const refreshed = await window.refreshJWTToken(true);
             
-            if (newToken) {
-              // Actualizar el header de Authorization
-              const newOptions = { ...options };
-              newOptions.headers = updateTokenInHeaders(newOptions.headers || {}, newToken);
+            if (refreshed) {
+              const newToken = await window.getValidToken();
               
-              // Reintentar la petición con el nuevo token
-              response = await originalFetch(url, newOptions);
+              if (newToken) {
+                // Crear nuevas opciones con el nuevo token usando la misma lógica
+                const retryOptions = { ...fetchOptions };
+                if (retryOptions.headers instanceof Headers) {
+                  retryOptions.headers.set('Authorization', `Bearer ${newToken}`);
+                } else if (retryOptions.headers && typeof retryOptions.headers === 'object') {
+                  retryOptions.headers = {
+                    ...retryOptions.headers,
+                    'Authorization': `Bearer ${newToken}`
+                  };
+                } else {
+                  retryOptions.headers = {
+                    'Authorization': `Bearer ${newToken}`
+                  };
+                }
+                
+                // Reintentar
+                try {
+                  response = await originalFetch(url, retryOptions);
+                } catch (retryError) {
+                  // Si el reintento falla, continuar con la respuesta original
+                  console.warn('Retry after token refresh failed:', retryError);
+                }
+              }
             }
-          } else {
-            // No se pudo refrescar, verificar si hay refresh token
-            const refreshTokenValue = getCookie("refreshToken");
-            if (!refreshTokenValue) {
-              // No redirigir aquí, dejar que el código que llama maneje el error
-            }
+          } catch (refreshError) {
+            // Si el refresh falla, continuar con la respuesta original
+            console.warn('Token refresh failed:', refreshError);
           }
         }
       }
@@ -533,12 +525,8 @@ let originalFetchForExport = null;
     }
     
     // Para peticiones que no son a la API o son al endpoint de refresh, usar fetch normal
-    // Asegurarse de que las opciones incluyan credentials para CORS
-    const finalOptions = {
-      ...options,
-      credentials: options.credentials || 'include'
-    };
-    return originalFetch(url, finalOptions);
+    // Pasar las opciones directamente sin modificar para evitar problemas de CORS
+    return originalFetch(url, options);
   };
 })();
 

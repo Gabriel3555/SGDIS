@@ -196,15 +196,46 @@ async function loadWarehouseTransfersData() {
             window.transfersData.allRegionalTransfers = transfersPage.content || [];
         }
 
-        // Update UI
-        if (window.updateTransfersUI) {
-            window.updateTransfersUI();
-        }
+        // Update UI components
         if (window.updateTransfersStats) {
             await window.updateTransfersStats();
         }
-        if (window.updatePagination) {
-            window.updatePagination();
+        
+        // Only initialize filters and view mode buttons if containers are empty
+        const searchFilterContainer = document.getElementById('searchFilterContainer');
+        const viewModeButtonsContainer = document.getElementById('viewModeButtonsContainer');
+        
+        if (searchFilterContainer && (!searchFilterContainer.innerHTML.trim() || searchFilterContainer.children.length === 0)) {
+            if (window.updateTransfersSearchAndFilters) {
+                window.updateTransfersSearchAndFilters();
+            }
+        }
+        
+        if (viewModeButtonsContainer && (!viewModeButtonsContainer.innerHTML.trim() || viewModeButtonsContainer.children.length === 0)) {
+            if (window.updateTransfersViewModeButtons) {
+                window.updateTransfersViewModeButtons();
+            }
+        }
+        
+        // Update table/cards and pagination - respect the current viewMode
+        const viewMode = window.transfersData?.viewMode || 'table';
+        if (viewMode === 'cards') {
+            if (window.updateTransfersCards) {
+                window.updateTransfersCards();
+            }
+        } else {
+            if (window.updateTransfersTable) {
+                window.updateTransfersTable();
+            }
+        }
+        
+        if (window.updateTransfersPagination) {
+            window.updateTransfersPagination();
+        }
+        
+        // Update view mode buttons to ensure they reflect the current state
+        if (window.updateTransfersViewModeButtons) {
+            window.updateTransfersViewModeButtons();
         }
     } catch (error) {
         console.error('Error loading warehouse transfers data:', error);

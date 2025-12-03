@@ -1297,12 +1297,24 @@ class CustomSelect {
         this.textElement.textContent = this.placeholder;
         this.textElement.classList.add('custom-select-placeholder');
 
+        // Flag to prevent immediate closing when opening
+        this._isOpening = false;
+        
         // Event listeners
         if (this.trigger) {
             this.trigger.addEventListener('click', (e) => {
                 e.stopPropagation();
                 e.preventDefault();
-                this.toggle();
+                // Set flag to prevent outside click handler from closing immediately
+                this._isOpening = true;
+                // Small delay to ensure outside click handler doesn't interfere
+                setTimeout(() => {
+                    this.toggle();
+                    // Clear flag after a short delay to allow normal closing behavior
+                    setTimeout(() => {
+                        this._isOpening = false;
+                    }, 100);
+                }, 0);
             });
         }
         
@@ -1313,11 +1325,30 @@ class CustomSelect {
 
         // Close on outside click - use a unique identifier to avoid conflicts
         this._outsideClickHandler = (e) => {
-            if (!this.container.contains(e.target)) {
+            // Don't close if we're currently opening
+            if (this._isOpening) {
+                return;
+            }
+            
+            // Don't close if clicking on the trigger (it will toggle itself)
+            if (this.trigger && (this.trigger === e.target || this.trigger.contains(e.target))) {
+                return;
+            }
+            // Don't close if clicking inside the container or dropdown
+            if (this.container && this.container.contains(e.target)) {
+                return;
+            }
+            // Don't close if clicking inside the dropdown
+            if (this.dropdown && this.dropdown.contains(e.target)) {
+                return;
+            }
+            // Only close if dropdown is actually open
+            if (this.container && (this.container.classList.contains('open') || this.container.classList.contains('active'))) {
                 this.close();
             }
         };
-        document.addEventListener('click', this._outsideClickHandler);
+        // Use capture phase to handle clicks before they bubble
+        document.addEventListener('click', this._outsideClickHandler, true);
     }
 
     setOptions(options) {
@@ -1327,6 +1358,9 @@ class CustomSelect {
     }
 
     renderOptions() {
+        // Don't re-render if dropdown is open and we're just updating selected state
+        const wasOpen = this.container && (this.container.classList.contains('open') || this.container.classList.contains('active'));
+        
         this.optionsContainer.innerHTML = '';
 
         if (this.filteredOptions.length === 0) {
@@ -1334,6 +1368,11 @@ class CustomSelect {
             noResults.className = 'custom-select-option disabled';
             noResults.textContent = 'No se encontraron resultados';
             this.optionsContainer.appendChild(noResults);
+            // If dropdown was open, keep it open
+            if (wasOpen && this.container) {
+                this.container.classList.add('open');
+                this.container.classList.add('active');
+            }
             return;
         }
 
@@ -1343,13 +1382,22 @@ class CustomSelect {
             optionElement.textContent = option.label;
             optionElement.dataset.value = option.value;
 
-            if (option.value === this.selectedValue) {
+            if (option.value === this.selectedValue || option.value.toString() === String(this.selectedValue)) {
                 optionElement.classList.add('selected');
             }
 
-            optionElement.addEventListener('click', () => this.selectOption(option));
+            optionElement.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent event from bubbling to document
+                this.selectOption(option);
+            });
             this.optionsContainer.appendChild(optionElement);
         });
+        
+        // If dropdown was open, ensure it stays open after re-rendering
+        if (wasOpen && this.container) {
+            this.container.classList.add('open');
+            this.container.classList.add('active');
+        }
     }
 
     filterOptions(searchTerm) {
@@ -1385,7 +1433,13 @@ class CustomSelect {
             }
         }
 
-        this.close();
+        // Clear opening flag before closing
+        this._isOpening = false;
+        
+        // Close dropdown after a small delay to ensure onChange is called first
+        setTimeout(() => {
+            this.close();
+        }, 10);
 
         if (this.onChange) {
             this.onChange(option);
@@ -1397,23 +1451,50 @@ class CustomSelect {
         
         const isOpen = this.container.classList.contains('open') || this.container.classList.contains('active');
 
-        // Close all other selects
+        // Close all other selects first
         document.querySelectorAll('.custom-select.open, .custom-select.active').forEach(select => {
             if (select !== this.container) {
                 select.classList.remove('open');
                 select.classList.remove('active');
+                const otherContainer = select.closest('.custom-select-container');
+                if (otherContainer) {
+                    otherContainer.classList.remove('select-open');
+                }
             }
         });
 
+        // Use a small delay to ensure outside click handler doesn't interfere
         if (isOpen) {
+            this._isOpening = false; // Clear flag when closing
             this.close();
         } else {
-            this.open();
+            // Set flag to prevent immediate closing
+            this._isOpening = true;
+            // Prevent outside click handler from closing immediately
+            // Use a longer delay to ensure the click event has fully propagated
+            setTimeout(() => {
+                this.open();
+                // Clear flag after opening to allow normal closing behavior
+                // Use a longer delay to ensure dropdown is fully open
+                setTimeout(() => {
+                    this._isOpening = false;
+                }, 300);
+            }, 50);
         }
     }
 
     open() {
         if (!this.container) return;
+        
+        // Prevent opening if already open
+        if (this.container.classList.contains('open') || this.container.classList.contains('active')) {
+            this._isOpening = false; // Clear flag if already open
+            return;
+        }
+        
+        // Set flag to prevent immediate closing
+        this._isOpening = true;
+        
         this.container.classList.add('open');
         this.container.classList.add('active');
         
@@ -1438,22 +1519,75 @@ class CustomSelect {
         setTimeout(() => {
             if (this.dropdown && this.trigger) {
                 const triggerRect = this.trigger.getBoundingClientRect();
+                const containerRect = this.container.getBoundingClientRect();
                 const viewportHeight = window.innerHeight;
                 const spaceBelow = viewportHeight - triggerRect.bottom;
                 const spaceAbove = triggerRect.top;
                 const dropdownHeight = 250; // Approximate max height of dropdown
                 
-                // Check if we're in a filter section (like #filtersSection)
-                const isInFilterSection = this.container.closest('#filtersSection') !== null;
+                // Check if we're in a filter section (like #filtersSection or searchFilterContainer)
+                const isInFilterSection = this.container.closest('#filtersSection') !== null || 
+                                         this.container.closest('#searchFilterContainer') !== null;
                 
+                // Always try to use absolute positioning first (relative to container)
+                // Only use fixed if absolutely necessary for z-index issues
                 if (isInFilterSection) {
-                    // Use fixed positioning for filter sections to avoid z-index issues
+                    // For filter sections, use fixed positioning but store trigger position
+                    // and update on scroll/resize to keep it aligned
                     this.dropdown.style.position = 'fixed';
                     this.dropdown.style.left = `${triggerRect.left}px`;
                     this.dropdown.style.width = `${triggerRect.width}px`;
                     this.dropdown.style.minWidth = `${triggerRect.width}px`;
                     this.dropdown.style.zIndex = '999999';
                     this.dropdown.style.isolation = 'isolate';
+                    
+                    // Store initial trigger position for updates
+                    this._triggerPosition = {
+                        left: triggerRect.left,
+                        top: triggerRect.top,
+                        bottom: triggerRect.bottom,
+                        width: triggerRect.width
+                    };
+                    
+                    // Add scroll and resize listeners to update position
+                    // Remove existing handler if it exists to avoid duplicates
+                    if (this._positionUpdateHandler) {
+                        window.removeEventListener('scroll', this._positionUpdateHandler, true);
+                        window.removeEventListener('resize', this._positionUpdateHandler);
+                        window.removeEventListener('mousemove', this._positionUpdateHandler);
+                    }
+                    
+                    // Create handler that updates dropdown position based on current trigger position
+                    this._positionUpdateHandler = () => {
+                        if (this.container && this.container.classList.contains('open') && this.trigger && this.dropdown) {
+                            try {
+                                const currentTriggerRect = this.trigger.getBoundingClientRect();
+                                const currentViewportHeight = window.innerHeight;
+                                
+                                // Update horizontal position and width
+                                this.dropdown.style.left = `${currentTriggerRect.left}px`;
+                                this.dropdown.style.width = `${currentTriggerRect.width}px`;
+                                this.dropdown.style.minWidth = `${currentTriggerRect.width}px`;
+                                
+                                // Update top/bottom position
+                                if (this.container.classList.contains('dropdown-up')) {
+                                    this.dropdown.style.top = 'auto';
+                                    this.dropdown.style.bottom = `${currentViewportHeight - currentTriggerRect.top}px`;
+                                } else {
+                                    this.dropdown.style.bottom = 'auto';
+                                    this.dropdown.style.top = `${currentTriggerRect.bottom}px`;
+                                }
+                            } catch (error) {
+                                // Silently handle errors (element might have been removed)
+                            }
+                        }
+                    };
+                    
+                    // Add listeners for scroll, resize, and mousemove to keep dropdown aligned
+                    window.addEventListener('scroll', this._positionUpdateHandler, true);
+                    window.addEventListener('resize', this._positionUpdateHandler);
+                    // Also update on mousemove to handle cases where cursor movement affects layout
+                    document.addEventListener('mousemove', this._positionUpdateHandler, { passive: true });
                     
                     // Always check if we're in the filter section (bottom half of viewport)
                     // If trigger is in bottom 40% of viewport, prefer opening upward
@@ -1477,11 +1611,11 @@ class CustomSelect {
                         this.dropdown.style.marginBottom = '0';
                     }
                 } else {
-                    // Use absolute positioning for other sections
+                    // Use absolute positioning for other sections (stays relative to container)
                     this.dropdown.style.position = 'absolute';
                     this.dropdown.style.top = '';
                     this.dropdown.style.bottom = '';
-                    this.dropdown.style.left = '';
+                    this.dropdown.style.left = '0';
                     this.dropdown.style.right = '';
                     this.dropdown.style.width = '';
                     
@@ -1526,8 +1660,19 @@ class CustomSelect {
     }
 
     close() {
+        // Clear opening flag
+        this._isOpening = false;
+        
         this.container.classList.remove('open');
         this.container.classList.remove('active');
+        
+        // Remove scroll and resize listeners if they exist
+        if (this._positionUpdateHandler) {
+            window.removeEventListener('scroll', this._positionUpdateHandler, true);
+            window.removeEventListener('resize', this._positionUpdateHandler);
+            document.removeEventListener('mousemove', this._positionUpdateHandler);
+            this._positionUpdateHandler = null;
+        }
         
         // Remove class from parent container to restore z-index
         const container = this.container.closest('.custom-select-container');
@@ -1575,14 +1720,67 @@ class CustomSelect {
     }
 
     setValue(value) {
-        if (!value) return;
+        if (!value) {
+            this.clear();
+            return;
+        }
+        
+        // Don't update if we're currently opening (to prevent interference)
+        if (this._isOpening) {
+            return;
+        }
         
         // Convert value to string for comparison
         const stringValue = value.toString();
+        
+        // Check if value is already set to avoid unnecessary updates
+        const currentValue = this.selectedValue !== null && this.selectedValue !== undefined ? String(this.selectedValue) : '';
+        if (currentValue === stringValue) {
+            // Value is already set, just ensure UI is synced
+            const option = this.options.find(opt => opt.value === stringValue || opt.value.toString() === stringValue);
+            if (option && this.textElement) {
+                this.textElement.textContent = option.label;
+                this.textElement.classList.remove('custom-select-placeholder');
+            }
+            if (this.hiddenInput) {
+                this.hiddenInput.value = stringValue;
+            }
+            // Re-render to update selected state without closing dropdown
+            // Only if dropdown is not open to avoid interference
+            if (!this.container.classList.contains('open') && !this.container.classList.contains('active')) {
+                this.renderOptions();
+            }
+            return;
+        }
+        
         const option = this.options.find(opt => opt.value === stringValue || opt.value.toString() === stringValue);
         
         if (option) {
-            this.selectOption(option);
+            // Update values without closing dropdown if it's open
+            const wasOpen = this.container.classList.contains('open') || this.container.classList.contains('active');
+            
+            // Don't update if dropdown is open (to prevent closing it)
+            if (wasOpen) {
+                return;
+            }
+            
+            this.selectedValue = option.value;
+            this.selectedText = option.label;
+            
+            if (this.textElement) {
+                this.textElement.textContent = option.label;
+                this.textElement.classList.remove('custom-select-placeholder');
+            }
+            
+            if (this.hiddenInput) {
+                this.hiddenInput.value = option.value;
+            }
+            
+            // Re-render options to update selected state
+            this.renderOptions();
+            
+            // Don't trigger onChange when setting value programmatically
+            // onChange will be triggered when user actually selects an option
         } else {
             // If option not found, still update the hidden input and selected value
             // This can happen if setValue is called before options are loaded

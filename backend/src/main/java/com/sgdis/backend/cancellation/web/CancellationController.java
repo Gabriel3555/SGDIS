@@ -5,6 +5,7 @@ import com.sgdis.backend.cancellation.application.dto.AcceptCancellationResponse
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationResponse;
 import com.sgdis.backend.cancellation.application.dto.CancellationResponse;
+import com.sgdis.backend.cancellation.application.dto.CancellationStatisticsResponse;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationResponse;
 import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
@@ -171,17 +172,17 @@ public class CancellationController {
             
             // Get user's institution
             var userInstitution = userWithInstitution.getInstitution();
-            if (userInstitution == null || userInstitution.getName() == null || userInstitution.getName().isEmpty()) {
+            if (userInstitution == null || userInstitution.getId() == null) {
                 Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
                 Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
                 return ResponseEntity.ok(emptyPage);
             }
             
-            String institutionName = userInstitution.getName();
+            Long institutionId = userInstitution.getId();
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
             
-            // Use the repository method to get cancellations filtered by institution name
-            List<CancellationEntity> filteredCancellations = cancellationRepository.findAllByInstitutionNameWithJoins(institutionName);
+            // Use the repository method to get cancellations filtered by institution ID
+            List<CancellationEntity> filteredCancellations = cancellationRepository.findAllByInstitutionIdWithJoins(institutionId);
             
             // Handle empty list
             if (filteredCancellations.isEmpty()) {
@@ -221,6 +222,69 @@ public class CancellationController {
             Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
             Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
             return ResponseEntity.ok(emptyPage);
+        }
+    }
+
+    @Operation(
+            summary = "Get cancellation statistics for current user's institution",
+            description = "Retrieves statistics about cancellations for the current user's institution (Warehouse only)"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = CancellationStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "403", description = "Access denied - WAREHOUSE role required")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @GetMapping("/my-institution/statistics")
+    public ResponseEntity<CancellationStatisticsResponse> getCancellationStatisticsByMyInstitution() {
+        try {
+            // Get current warehouse user
+            UserEntity currentUser = authService.getCurrentUser();
+            Long userId = currentUser.getId();
+            
+            // Load user with institution to avoid LazyInitializationException
+            UserEntity userWithInstitution = userRepository.findByIdWithInstitution(userId)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Get user's institution
+            var userInstitution = userWithInstitution.getInstitution();
+            if (userInstitution == null || userInstitution.getId() == null) {
+                return ResponseEntity.ok(new CancellationStatisticsResponse(0L, 0L, 0L, 0L));
+            }
+            
+            Long institutionId = userInstitution.getId();
+            
+            // Get all cancellations for this institution
+            List<CancellationEntity> allCancellations = cancellationRepository.findAllByInstitutionIdWithJoins(institutionId);
+            
+            // Calculate statistics
+            long total = allCancellations.size();
+            long pending = allCancellations.stream()
+                    .filter(c -> c.getApproved() == null || (!c.getApproved() && c.getRefusedAt() == null))
+                    .count();
+            long approved = allCancellations.stream()
+                    .filter(c -> c.getApproved() != null && c.getApproved() && c.getRefusedAt() == null)
+                    .count();
+            long rejected = allCancellations.stream()
+                    .filter(c -> c.getRefusedAt() != null)
+                    .count();
+            
+            CancellationStatisticsResponse statistics = new CancellationStatisticsResponse(
+                    total,
+                    pending,
+                    approved,
+                    rejected
+            );
+            
+            return ResponseEntity.ok(statistics);
+        } catch (Exception e) {
+            // Log error and return empty statistics
+            System.err.println("Error fetching cancellation statistics by institution: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(new CancellationStatisticsResponse(0L, 0L, 0L, 0L));
         }
     }
 

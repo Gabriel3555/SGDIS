@@ -58,6 +58,62 @@ async function fetchAllCancellations(page = 0, size = 10, userRole = 'SUPERADMIN
 }
 
 /**
+ * Fetches cancellation statistics (for SUPERADMIN) or by institution (for WAREHOUSE)
+ * @param {string} userRole - User role (SUPERADMIN or WAREHOUSE)
+ * @returns {Promise<Object>} Statistics object
+ */
+async function fetchCancellationStatistics(userRole = 'SUPERADMIN') {
+    try {
+        const token = localStorage.getItem("jwt");
+        const headers = {
+            "Content-Type": "application/json",
+        };
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        // Use different endpoint for warehouse
+        const endpoint = (userRole === 'WAREHOUSE' || userRole === 'warehouse') 
+            ? `/api/v1/cancellations/my-institution/statistics`
+            : null; // Superadmin calculates stats from all cancellations
+
+        if (endpoint) {
+            const response = await fetch(endpoint, {
+                method: "GET",
+                headers: headers,
+            });
+
+            if (!response.ok) {
+                if (response.status === 404 || response.status === 500) {
+                    console.warn(`Failed to fetch cancellation statistics: ${response.status}`);
+                    return {
+                        totalCancellations: 0,
+                        pendingCancellations: 0,
+                        approvedCancellations: 0,
+                        rejectedCancellations: 0
+                    };
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data;
+        } else {
+            // For superadmin, calculate from all cancellations
+            return null; // Will be calculated from cancellationsData.cancellations
+        }
+    } catch (error) {
+        console.error("Error fetching cancellation statistics:", error);
+        return {
+            totalCancellations: 0,
+            pendingCancellations: 0,
+            approvedCancellations: 0,
+            rejectedCancellations: 0
+        };
+    }
+}
+
+/**
  * Accepts a cancellation request
  * @param {number} cancellationId - Cancellation ID
  * @param {string} comment - Comment for acceptance

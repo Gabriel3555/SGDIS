@@ -164,11 +164,6 @@
                     <p class="text-gray-600">Seguimiento de alertas y eventos del almacén</p>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="toggleNotificationSound()" id="soundToggleBtn"
-                        class="btn-update flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-all duration-200">
-                        <i class="fas fa-volume-up" id="soundIcon"></i>
-                        <span id="soundText">Sonido: ON</span>
-                    </button>
                     <button onclick="markAllAsRead()"
                         class="btn-update flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl transition-all duration-200">
                         <i class="fas fa-check-double"></i>
@@ -371,31 +366,6 @@
             }
         }
 
-        function toggleNotificationSound() {
-            if (window.NotificationSound) {
-                const isEnabled = window.NotificationSound.toggle();
-                updateSoundButton(isEnabled);
-                if (isEnabled) {
-                    window.NotificationSound.play();
-                }
-            }
-        }
-
-        function updateSoundButton(isEnabled) {
-            const soundIcon = document.getElementById('soundIcon');
-            const soundText = document.getElementById('soundText');
-
-            if (soundIcon && soundText) {
-                if (isEnabled) {
-                    soundIcon.className = 'fas fa-volume-up';
-                    soundText.textContent = 'Sonido: ON';
-                } else {
-                    soundIcon.className = 'fas fa-volume-mute';
-                    soundText.textContent = 'Sonido: OFF';
-                }
-            }
-        }
-
         // Scroll to active sidebar item
         function scrollToActiveSidebarItem() {
             const sidebarNav = document.querySelector('#sidebar nav');
@@ -417,10 +387,6 @@
             setupMobileMenuToggle();
             loadCurrentUserInfo();
             scrollToActiveSidebarItem();
-            if (window.NotificationSound) {
-                const isEnabled = window.NotificationSound.isEnabled();
-                updateSoundButton(isEnabled);
-            }
         });
     </script>
 </body>

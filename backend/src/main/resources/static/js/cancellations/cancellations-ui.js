@@ -15,6 +15,8 @@ async function loadCancellationsData() {
         // Detect role from URL first (warehouse view)
         if (window.location.pathname.includes('/warehouse/')) {
             cancellationsData.userRole = 'WAREHOUSE';
+            // Set pageSize to 6 for warehouse
+            cancellationsData.pageSize = 6;
         }
         
         await loadCurrentUserInfo();
@@ -26,7 +28,16 @@ async function loadCancellationsData() {
                                         (window.location.pathname.includes('/warehouse/') ? 'WAREHOUSE' : 'SUPERADMIN');
         }
         
+        // Set pageSize to 6 for warehouse if not already set
+        if (cancellationsData.userRole === 'WAREHOUSE' && cancellationsData.pageSize !== 6) {
+            cancellationsData.pageSize = 6;
+        }
+        
         await loadCancellations();
+        
+        // Ensure filters are synced with select values
+        syncFilterValues();
+        
         cancellationsData.isLoading = false;
         hideLoadingState();
         updateCancellationsUI();
@@ -98,11 +109,22 @@ async function loadCancellations() {
         cancellationsData.totalPages = pageData.totalPages || 0;
         cancellationsData.totalElements = pageData.totalElements || 0;
 
-        // Apply filters
-        filterCancellations();
-        
+        // Load statistics for warehouse (from API) or calculate for superadmin (from data)
+        if (userRole === 'WAREHOUSE' || userRole === 'warehouse') {
+            const statistics = await fetchCancellationStatistics(userRole);
+            if (statistics) {
+                cancellationsData.statistics = statistics;
+            }
+        }
+
         // Update requester filter options after loading cancellations
         updateRequesterFilterOptions();
+        
+        // Sync filter values from selects to ensure they're up to date
+        syncFilterValues();
+        
+        // Apply filters after updating options
+        filterCancellations();
     } catch (error) {
         console.error('Error loading cancellations:', error);
         cancellationsData.cancellations = [];
@@ -207,10 +229,25 @@ function updateCancellationsStats() {
     const statsContainer = document.getElementById('cancellationsStatsContainer');
     if (!statsContainer) return;
 
-    const total = cancellationsData.cancellations.length;
-    const pending = cancellationsData.cancellations.filter(c => !c.approved && !c.refusedAt).length;
-    const approved = cancellationsData.cancellations.filter(c => c.approved === true).length;
-    const refused = cancellationsData.cancellations.filter(c => c.refusedAt !== null).length;
+    // Use statistics from API for warehouse, or calculate from cancellations for superadmin
+    const userRole = cancellationsData.userRole || 
+                    (window.location.pathname.includes('/warehouse/') ? 'WAREHOUSE' : 'SUPERADMIN');
+    
+    let total, pending, approved, refused;
+    
+    if ((userRole === 'WAREHOUSE' || userRole === 'warehouse') && cancellationsData.statistics) {
+        // Use statistics from API
+        total = cancellationsData.statistics.totalCancellations || 0;
+        pending = cancellationsData.statistics.pendingCancellations || 0;
+        approved = cancellationsData.statistics.approvedCancellations || 0;
+        refused = cancellationsData.statistics.rejectedCancellations || 0;
+    } else {
+        // Calculate from cancellations data (for superadmin)
+        total = cancellationsData.cancellations.length;
+        pending = cancellationsData.cancellations.filter(c => !c.approved && !c.refusedAt).length;
+        approved = cancellationsData.cancellations.filter(c => c.approved === true).length;
+        refused = cancellationsData.cancellations.filter(c => c.refusedAt !== null).length;
+    }
 
     statsContainer.innerHTML = `
         <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
@@ -840,189 +877,92 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Setup status filter with CustomSelect
+    // Setup filters with native selects
     setupStatusFilter();
-    
-    // Setup requester filter
     setupRequesterFilter();
-    
-    // Setup date range filter
     setupDateRangeFilter();
 
     // Load initial data
     loadCancellationsData();
 });
 
-// Store status filter CustomSelect instance
-let statusFilterSelect = null;
+/**
+ * Sync filter values from selects to cancellationsData
+ */
+function syncFilterValues() {
+    const statusSelect = document.getElementById('statusSelect');
+    const requesterSelect = document.getElementById('requesterSelect');
+    const dateRangeSelect = document.getElementById('dateRangeSelect');
+    
+    if (statusSelect) {
+        cancellationsData.filters.status = statusSelect.value || 'all';
+    }
+    if (requesterSelect) {
+        cancellationsData.filters.requester = requesterSelect.value || 'all';
+    }
+    if (dateRangeSelect) {
+        cancellationsData.filters.dateRange = dateRangeSelect.value || 'all';
+    }
+}
 
 /**
- * Setup status filter
+ * Setup status filter with native select
  */
 function setupStatusFilter() {
     const statusSelect = document.getElementById('statusSelect');
     if (!statusSelect) return;
-
-    // Use CustomSelect if available
-    if (typeof CustomSelect !== 'undefined') {
-        try {
-            // First, set up options from HTML
-            const optionsContainer = document.getElementById('statusOptions');
-            const options = [];
-            if (optionsContainer) {
-                optionsContainer.querySelectorAll('.custom-select-option').forEach(opt => {
-                    const value = opt.dataset.value || 'all';
-                    // Extract clean label text - get text after icon
-                    let label = opt.textContent.trim();
-                    // Remove icon text, keep only the actual text
-                    const textMatch = label.match(/(?:Todos los estados|Pendientes|Aprobadas|Rechazadas)/);
-                    if (textMatch) {
-                        label = textMatch[0];
-                    } else {
-                        // Fallback: try to get text after removing common icon patterns
-                        label = label.replace(/^[^\w]*/, '').trim();
-                    }
-                    options.push({ value, label: label || value });
-                });
-            }
-            
-            statusFilterSelect = new CustomSelect('statusSelect', {
-                placeholder: 'Todos los estados',
-                onChange: (option) => {
-                    const value = option.value || option.dataset?.value || 'all';
-                    cancellationsData.filters.status = value;
-                    filterCancellations();
-                    updateCancellationsUI();
-                }
-            });
-            
-            // Set options if available - this will replace the HTML options
-            if (options.length > 0 && statusFilterSelect.setOptions) {
-                statusFilterSelect.setOptions(options);
-                // Set initial value to "all" after setting options
-                setTimeout(() => {
-                    if (statusFilterSelect && statusFilterSelect.setValue) {
-                        statusFilterSelect.setValue('all');
-                    }
-                }, 200);
-            } else {
-                // If setOptions doesn't work, manually set the text and use fallback
-                const textEl = document.querySelector('#statusSelect .custom-select-text');
-                if (textEl) {
-                    textEl.textContent = 'Todos los estados';
-                    textEl.classList.remove('custom-select-placeholder');
-                }
-                // Use fallback handler to ensure clicks work
-                setupStatusFilterFallback();
-            }
-        } catch (e) {
-            console.warn('Could not initialize CustomSelect for status filter, using fallback', e);
-            setupStatusFilterFallback();
-        }
-    } else {
-        setupStatusFilterFallback();
-    }
+    
+    // Set initial value
+    statusSelect.value = cancellationsData.filters.status || 'all';
+    
+    // Sync value back to cancellationsData
+    cancellationsData.filters.status = statusSelect.value;
 }
-
-function setupStatusFilterFallback() {
-    const statusSelect = document.getElementById('statusSelect');
-    if (!statusSelect) return;
-    
-    const trigger = statusSelect.querySelector('.custom-select-trigger');
-    const options = statusSelect.querySelectorAll('.custom-select-option');
-    const textElement = statusSelect.querySelector('.custom-select-text');
-    const dropdown = statusSelect.querySelector('.custom-select-dropdown');
-    
-    if (!trigger || !options || options.length === 0) {
-        console.error('Status filter elements not found');
-        return;
-    }
-    
-    // Remove any existing event listeners by cloning
-    const newTrigger = trigger.cloneNode(true);
-    trigger.parentNode.replaceChild(newTrigger, trigger);
-    
-    // Add click handler to trigger
-    newTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        statusSelect.classList.toggle('open');
-    });
-    
-    // Add click handlers to options
-    options.forEach(option => {
-        // Remove existing listeners
-        const newOption = option.cloneNode(true);
-        option.parentNode.replaceChild(newOption, option);
-        
-        newOption.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            
-            const value = newOption.dataset.value || 'all';
-            cancellationsData.filters.status = value;
-            
-            // Update text
-            const textContent = newOption.textContent.trim();
-            const textEl = statusSelect.querySelector('.custom-select-text');
-            if (textEl) {
-                textEl.textContent = textContent;
-            }
-            
-            // Close dropdown
-            statusSelect.classList.remove('open');
-            
-            // Apply filter
-            filterCancellations();
-            updateCancellationsUI();
-        });
-    });
-    
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!statusSelect.contains(e.target)) {
-            statusSelect.classList.remove('open');
-        }
-    });
-}
-
-// Store requester filter CustomSelect instance
-let requesterFilterSelect = null;
 
 /**
- * Setup requester filter
+ * Handle status filter change
+ */
+function handleStatusFilterChange(event) {
+    const value = event.target.value || 'all';
+    cancellationsData.filters.status = value;
+    filterCancellations();
+    updateCancellationsUI();
+}
+
+/**
+ * Setup requester filter with native select
  */
 function setupRequesterFilter() {
     const requesterSelect = document.getElementById('requesterSelect');
     if (!requesterSelect) return;
+    
+    // Set initial value
+    requesterSelect.value = cancellationsData.filters.requester || 'all';
+    
+    // Sync value back to cancellationsData
+    cancellationsData.filters.requester = requesterSelect.value;
+    
+    // Populate after data loads (will be called after loadCancellations)
+}
 
-    // Use CustomSelect if available
-    if (typeof CustomSelect !== 'undefined') {
-        try {
-            requesterFilterSelect = new CustomSelect('requesterSelect', {
-                onChange: (option) => {
-                    cancellationsData.filters.requester = option.value || 'all';
-                    filterCancellations();
-                    updateCancellationsUI();
-                }
-            });
-            
-            // Populate after data loads
-            updateRequesterFilterOptions();
-        } catch (e) {
-            console.warn('Could not initialize CustomSelect for requester filter', e);
-        }
-    }
+/**
+ * Handle requester filter change
+ */
+function handleRequesterFilterChange(event) {
+    const value = event.target.value || 'all';
+    cancellationsData.filters.requester = value;
+    filterCancellations();
+    updateCancellationsUI();
 }
 
 /**
  * Update requester filter options
  */
 function updateRequesterFilterOptions() {
-    const optionsContainer = document.getElementById('requesterOptions');
-    if (!optionsContainer) return;
+    const requesterSelect = document.getElementById('requesterSelect');
+    if (!requesterSelect) return;
 
-    // Get unique requesters
+    // Get unique requesters from cancellations
     const requestersMap = new Map();
     cancellationsData.cancellations.forEach(cancellation => {
         const requesterId = cancellation.requester?.id || cancellation.requesterId;
@@ -1033,173 +973,59 @@ function updateRequesterFilterOptions() {
         }
     });
 
-    // Create options array
-    const options = [
-        { value: 'all', label: 'Todos los solicitantes' }
-    ];
+    // Store current value
+    const currentValue = requesterSelect.value;
     
-    requestersMap.forEach((name, id) => {
-        options.push({
-            value: id.toString(),
-            label: name
-        });
+    // Clear and rebuild options
+    requesterSelect.innerHTML = '<option value="all">Todos los solicitantes</option>';
+    
+    // Sort requesters by name
+    const sortedRequesters = Array.from(requestersMap.entries()).sort((a, b) => {
+        return a[1].localeCompare(b[1]);
     });
-
-    // Update CustomSelect if available
-    if (requesterFilterSelect && typeof requesterFilterSelect.setOptions === 'function') {
-        requesterFilterSelect.setOptions(options);
+    
+    // Add requester options
+    sortedRequesters.forEach(([id, name]) => {
+        const option = document.createElement('option');
+        option.value = id.toString();
+        option.textContent = name;
+        requesterSelect.appendChild(option);
+    });
+    
+    // Restore previous value if it still exists
+    if (currentValue && Array.from(requesterSelect.options).some(opt => opt.value === currentValue)) {
+        requesterSelect.value = currentValue;
+        cancellationsData.filters.requester = currentValue;
     } else {
-        // Fallback: update HTML directly
-        optionsContainer.innerHTML = '';
-        options.forEach(opt => {
-            const option = document.createElement('div');
-            option.className = 'custom-select-option';
-            option.dataset.value = opt.value;
-            if (opt.value === 'all') {
-                option.innerHTML = `<i class="fas fa-users mr-2"></i>${opt.label}`;
-            } else {
-                option.innerHTML = `<i class="fas fa-user mr-2 text-[#00AF00]"></i>${opt.label}`;
-            }
-            optionsContainer.appendChild(option);
-        });
+        requesterSelect.value = 'all';
+        cancellationsData.filters.requester = 'all';
     }
 }
 
 // Store date range filter CustomSelect instance
-let dateRangeFilterSelect = null;
 
 /**
- * Setup date range filter
+ * Setup date range filter with native select
  */
 function setupDateRangeFilter() {
     const dateRangeSelect = document.getElementById('dateRangeSelect');
     if (!dateRangeSelect) return;
-
-    // Use CustomSelect if available
-    if (typeof CustomSelect !== 'undefined') {
-        try {
-            // First, set up options from HTML
-            const optionsContainer = document.getElementById('dateRangeOptions');
-            const options = [];
-            if (optionsContainer) {
-                optionsContainer.querySelectorAll('.custom-select-option').forEach(opt => {
-                    const value = opt.dataset.value || 'all';
-                    // Extract clean label text
-                    let label = opt.textContent.trim();
-                    // Remove icon text, keep only the actual text
-                    const textMatch = label.match(/(?:Todos los períodos|Hoy|Última semana|Último mes|Último año)/);
-                    if (textMatch) {
-                        label = textMatch[0];
-                    } else {
-                        // Fallback: try to get text after removing common icon patterns
-                        label = label.replace(/^[^\w]*/, '').trim();
-                    }
-                    options.push({ value, label: label || value });
-                });
-            }
-            
-            dateRangeFilterSelect = new CustomSelect('dateRangeSelect', {
-                placeholder: 'Todos los períodos',
-                onChange: (option) => {
-                    const value = option.value || option.dataset?.value || 'all';
-                    cancellationsData.filters.dateRange = value;
-                    filterCancellations();
-                    updateCancellationsUI();
-                }
-            });
-            
-            // Set options if available
-            if (options.length > 0 && dateRangeFilterSelect.setOptions) {
-                dateRangeFilterSelect.setOptions(options);
-                // Set initial value to "all" to show "Todos los períodos"
-                setTimeout(() => {
-                    if (dateRangeFilterSelect && dateRangeFilterSelect.setValue) {
-                        dateRangeFilterSelect.setValue('all');
-                    }
-                }, 150);
-            } else {
-                // If setOptions doesn't work, manually set the text to avoid "Seleccionar..."
-                const textEl = document.querySelector('#dateRangeSelect .custom-select-text');
-                if (textEl) {
-                    textEl.textContent = 'Todos los períodos';
-                    textEl.classList.remove('custom-select-placeholder');
-                }
-                // Try setting value directly
-                setTimeout(() => {
-                    if (dateRangeFilterSelect && dateRangeFilterSelect.setValue) {
-                        dateRangeFilterSelect.setValue('all');
-                    }
-                }, 200);
-            }
-        } catch (e) {
-            console.warn('Could not initialize CustomSelect for date range filter, using fallback', e);
-            setupDateRangeFilterFallback();
-        }
-    } else {
-        setupDateRangeFilterFallback();
-    }
+    
+    // Set initial value
+    dateRangeSelect.value = cancellationsData.filters.dateRange || 'all';
+    
+    // Sync value back to cancellationsData
+    cancellationsData.filters.dateRange = dateRangeSelect.value;
 }
 
-function setupDateRangeFilterFallback() {
-    const dateRangeSelect = document.getElementById('dateRangeSelect');
-    if (!dateRangeSelect) return;
-    
-    const trigger = dateRangeSelect.querySelector('.custom-select-trigger');
-    const options = dateRangeSelect.querySelectorAll('.custom-select-option');
-    const textElement = dateRangeSelect.querySelector('.custom-select-text');
-    
-    if (!trigger || !options || options.length === 0) {
-        console.error('Date range filter elements not found');
-        return;
-    }
-    
-    // Remove any existing event listeners by cloning
-    const newTrigger = trigger.cloneNode(true);
-    trigger.parentNode.replaceChild(newTrigger, trigger);
-    
-    // Add click handler to trigger
-    newTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        dateRangeSelect.classList.toggle('open');
-    });
-    
-    // Add click handlers to options
-    options.forEach(option => {
-        // Remove existing listeners
-        const newOption = option.cloneNode(true);
-        option.parentNode.replaceChild(newOption, option);
-        
-        newOption.addEventListener('click', (e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            
-            const value = newOption.dataset.value || 'all';
-            cancellationsData.filters.dateRange = value;
-            
-            // Update text - remove icons from text content
-            let textContent = newOption.textContent.trim();
-            // Remove icon text if present
-            textContent = textContent.replace(/^[^\w]*/, '').trim();
-            if (textElement) {
-                textElement.textContent = textContent;
-            }
-            
-            // Close dropdown
-            dateRangeSelect.classList.remove('open');
-            
-            // Apply filter
-            filterCancellations();
-            updateCancellationsUI();
-        });
-    });
-    
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!dateRangeSelect.contains(e.target)) {
-            dateRangeSelect.classList.remove('open');
-        }
-    });
+/**
+ * Handle date range filter change
+ */
+function handleDateRangeFilterChange(event) {
+    const value = event.target.value || 'all';
+    cancellationsData.filters.dateRange = value;
+    filterCancellations();
+    updateCancellationsUI();
 }
 
 /**
@@ -1651,6 +1477,9 @@ window.setupStatusFilter = setupStatusFilter;
 window.setupRequesterFilter = setupRequesterFilter;
 window.setupDateRangeFilter = setupDateRangeFilter;
 window.updateRequesterFilterOptions = updateRequesterFilterOptions;
+window.handleStatusFilterChange = handleStatusFilterChange;
+window.handleRequesterFilterChange = handleRequesterFilterChange;
+window.handleDateRangeFilterChange = handleDateRangeFilterChange;
 window.openUploadFormatModal = openUploadFormatModal;
 window.closeUploadFormatModal = closeUploadFormatModal;
 window.openUploadFormatExampleModal = openUploadFormatExampleModal;
