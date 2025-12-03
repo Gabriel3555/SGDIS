@@ -79,6 +79,59 @@ async function searchItemByPlate() {
             const item = await response.json();
             const itemId = item.itemId || item.id;
             
+            // For ADMIN_INSTITUTION, validate that the item belongs to their institution
+            const path = window.location.pathname || '';
+            const isAdminInstitutionPage = path.includes('/admin_institution/cancellations');
+            
+            if (isAdminInstitutionPage) {
+                try {
+                    // Get current user info
+                    const userResponse = await fetch('/api/v1/users/me', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (userResponse.ok) {
+                        const userData = await userResponse.json();
+                        const userInstitutionId = userData.institution?.id || userData.institutionId;
+                        
+                        if (userInstitutionId) {
+                            // Get inventory to check institution
+                            const inventoryId = item.inventoryId || item.inventory?.id;
+                            if (inventoryId) {
+                                const inventoryResponse = await fetch(`/api/v1/inventory/${inventoryId}`, {
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+                                
+                                if (inventoryResponse.ok) {
+                                    const inventory = await inventoryResponse.json();
+                                    const itemInstitutionId = inventory.institutionId || inventory.institution?.id;
+                                    
+                                    if (itemInstitutionId && userInstitutionId.toString() !== itemInstitutionId.toString()) {
+                                        const institutionName = inventory.institutionName || inventory.institution?.name || 'otra institución';
+                                        if (typeof showToast === 'function') {
+                                            showToast(`Este item pertenece a ${institutionName}. Solo puedes cancelar items de tu institución.`, 'error');
+                                        } else {
+                                            alert(`Este item pertenece a ${institutionName}. Solo puedes cancelar items de tu institución.`);
+                                        }
+                                        plateInput.value = '';
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch (validationError) {
+                    console.error('Error validating item institution:', validationError);
+                    // Continue with selection even if validation fails (backend will also validate)
+                }
+            }
+            
             // Check if item is already selected
             if (askCancellationData.selectedItems.includes(itemId)) {
                 if (typeof showToast === 'function') {
@@ -251,10 +304,33 @@ function openAskCancellationModal() {
         plateInput.value = '';
     }
     
-    // Load regionals after a short delay to ensure DOM is ready
-    setTimeout(() => {
-        loadRegionalsForCancellation();
-    }, 100);
+    // Check if user is ADMIN_INSTITUTION
+    const path = window.location.pathname || '';
+    const isAdminInstitutionPage = path.includes('/admin_institution/cancellations');
+    
+    // For ADMIN_INSTITUTION, hide regional and institution filters, load inventories directly
+    if (isAdminInstitutionPage) {
+        const regionalContainer = document.querySelector('#inventoryModeContent > div:first-child');
+        const institutionContainer = document.querySelector('#inventoryModeContent > div:nth-child(2)');
+        if (regionalContainer) regionalContainer.style.display = 'none';
+        if (institutionContainer) institutionContainer.style.display = 'none';
+        
+        // Clear hidden inputs for regional and institution (not needed for admin_institution)
+        const regionalIdInput = document.getElementById('askCancellationSelectedRegionalId');
+        const institutionIdInput = document.getElementById('askCancellationSelectedInstitutionId');
+        if (regionalIdInput) regionalIdInput.value = '';
+        if (institutionIdInput) institutionIdInput.value = '';
+        
+        // Load inventories directly for admin institution
+        setTimeout(() => {
+            loadInventoriesForAdminInstitution();
+        }, 100);
+    } else {
+        // Load regionals after a short delay to ensure DOM is ready
+        setTimeout(() => {
+            loadRegionalsForCancellation();
+        }, 100);
+    }
 }
 
 /**
@@ -594,6 +670,39 @@ function populateInstitutionSelectForCancellation() {
 }
 
 /**
+ * Load inventories for admin institution (directly from their institution)
+ */
+async function loadInventoriesForAdminInstitution() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        // Use endpoint that gets inventories for current user's institution
+        const endpoint = '/api/v1/inventory/institutionAdminInventories?page=0&size=1000';
+
+        const response = await fetch(endpoint, {
+            method: 'GET',
+            headers: headers
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            askCancellationData.inventories = Array.isArray(data) ? data : (data.content || []);
+            populateInventorySelectForCancellation();
+        } else {
+            console.error('Failed to load inventories for admin institution');
+            askCancellationData.inventories = [];
+            populateInventorySelectForCancellation();
+        }
+    } catch (error) {
+        console.error('Error loading inventories for admin institution:', error);
+        askCancellationData.inventories = [];
+        populateInventorySelectForCancellation();
+    }
+}
+
+/**
  * Load inventories for cancellation form
  */
 async function loadInventoriesForCancellation(regionalId, institutionId) {
@@ -843,17 +952,36 @@ async function handleAskCancellation() {
 
     // Validate inventory mode requirements (only if in inventory mode)
     if (askCancellationData.currentMode === 'inventory') {
-        const regionalId = document.getElementById('askCancellationSelectedRegionalId')?.value;
-        const institutionId = document.getElementById('askCancellationSelectedInstitutionId')?.value;
-        const inventoryId = document.getElementById('askCancellationSelectedInventoryId')?.value;
+        // Check if user is ADMIN_INSTITUTION
+        const path = window.location.pathname || '';
+        const isAdminInstitutionPage = path.includes('/admin_institution/cancellations');
         
-        if (!regionalId || !institutionId || !inventoryId) {
-            if (typeof showToast === 'function') {
-                showToast('Por favor complete todos los campos requeridos (Regional, Institución e Inventario)', 'error');
-            } else {
-                alert('Por favor complete todos los campos requeridos');
+        if (isAdminInstitutionPage) {
+            // For ADMIN_INSTITUTION, only validate inventory (regional and institution are hidden)
+            const inventoryId = document.getElementById('askCancellationSelectedInventoryId')?.value;
+            
+            if (!inventoryId) {
+                if (typeof showToast === 'function') {
+                    showToast('Por favor seleccione un inventario', 'error');
+                } else {
+                    alert('Por favor seleccione un inventario');
+                }
+                return;
             }
-            return;
+        } else {
+            // For other roles, validate all fields
+            const regionalId = document.getElementById('askCancellationSelectedRegionalId')?.value;
+            const institutionId = document.getElementById('askCancellationSelectedInstitutionId')?.value;
+            const inventoryId = document.getElementById('askCancellationSelectedInventoryId')?.value;
+            
+            if (!regionalId || !institutionId || !inventoryId) {
+                if (typeof showToast === 'function') {
+                    showToast('Por favor complete todos los campos requeridos (Regional, Institución e Inventario)', 'error');
+                } else {
+                    alert('Por favor complete todos los campos requeridos');
+                }
+                return;
+            }
         }
     }
 

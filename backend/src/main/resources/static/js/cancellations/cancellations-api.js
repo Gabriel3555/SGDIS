@@ -17,8 +17,9 @@ async function fetchAllCancellations(page = 0, size = 6, userRole = 'SUPERADMIN'
             headers["Authorization"] = `Bearer ${token}`;
         }
 
-        // Use different endpoint for warehouse
-        const endpoint = (userRole === 'WAREHOUSE' || userRole === 'warehouse') 
+        // Use different endpoint for warehouse and admin_institution
+        const endpoint = (userRole === 'WAREHOUSE' || userRole === 'warehouse' || 
+                          userRole === 'ADMIN_INSTITUTION' || userRole === 'ADMIN_INSTITUTIONAL') 
             ? `/api/v1/cancellations/my-institution?page=${page}&size=${size}`
             : `/api/v1/cancellations?page=${page}&size=${size}`;
 
