@@ -283,14 +283,14 @@ async function showViewUserModal(userId) {
                     ` : ''}
                 </div>
                 
-                <!-- Action buttons for Admin Regional and Warehouse -->
+                <!-- Action buttons for all roles except Admin Regional and Warehouse -->
                 ${(() => {
                     const currentRole = window.currentUserRole || window.usersData?.currentLoggedInUserRole || '';
                     const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
                                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
                     const isWarehouse = currentRole === 'WAREHOUSE' ||
                                        (window.location.pathname && window.location.pathname.includes('/warehouse'));
-                    if (isAdminRegional || isWarehouse) {
+                    if (!isAdminRegional && !isWarehouse) {
                         return `
                             <div class="mt-6 pt-6 border-t border-gray-200">
                                 <h4 class="text-sm font-semibold text-gray-700 mb-3">Acciones</h4>
