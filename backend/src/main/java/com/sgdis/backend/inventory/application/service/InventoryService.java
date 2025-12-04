@@ -18,6 +18,7 @@ import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import com.sgdis.backend.user.mapper.UserMapper;
+import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.notification.service.NotificationService;
 // Auditoría
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
@@ -97,6 +98,21 @@ public class InventoryService
                 InstitutionEntity institution = institutionRepository.findById(request.institutionId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Institution not found with id " + request.institutionId()));
+
+                // Validate that ADMIN_REGIONAL can only create inventories in their own regional
+                UserEntity currentUser = authService.getCurrentUser();
+                if (currentUser.getRole() == Role.ADMIN_REGIONAL) {
+                    if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+                        throw new DomainValidationException("El administrador regional no tiene una institución o regional asignada");
+                    }
+                    
+                    Long currentUserRegionalId = currentUser.getInstitution().getRegional().getId();
+                    Long institutionRegionalId = institution.getRegional() != null ? institution.getRegional().getId() : null;
+                    
+                    if (institutionRegionalId == null || !institutionRegionalId.equals(currentUserRegionalId)) {
+                        throw new DomainValidationException("Un administrador regional solo puede crear inventarios en su propia regional");
+                    }
+                }
 
                 InventoryEntity inventory = InventoryMapper.fromCreateRequest(request);
                 inventory.setOwner(owner);

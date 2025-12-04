@@ -5,7 +5,9 @@ let currentUserRegionalId = null;
 let verificationDataAdminRegional = {
     verifications: [],
     filteredVerifications: [],
-    inventories: [],
+    inventories: [], // Filtered inventories for the dropdown
+    allInventories: [], // All inventories for filtering verifications
+    institutions: [],
     currentPage: 0,
     pageSize: 6,
     totalPages: 0,
@@ -13,6 +15,7 @@ let verificationDataAdminRegional = {
     filters: {
         status: 'all',
         searchTerm: '',
+        institutionId: 'all',
         inventoryId: 'all'
     }
 };
@@ -163,8 +166,32 @@ async function loadVerificationsForAdminRegional(page = 0) {
         if (response.ok) {
             const data = await response.json();
             
+            // Transform the response to match frontend expectations
+            let verifications = Array.isArray(data.content) ? data.content : [];
+            verifications = verifications.map(v => ({
+                id: v.id || v.verificationId,
+                itemId: v.itemId,
+                licensePlate: v.itemLicencePlateNumber || v.licencePlateNumber || v.licensePlate || null,
+                serialNumber: v.serialNumber || null,
+                itemName: v.itemName || '-',
+                inventoryId: v.inventoryId,
+                inventoryName: v.inventoryName || '-',
+                status: v.status || 'PENDING',
+                hasEvidence: v.photoUrl && v.photoUrl.length > 0,
+                verificationDate: v.verifiedAt || v.createdAt || v.verificationDate || null,
+                createdAt: v.createdAt || v.verifiedAt,
+                photoUrl: v.photoUrl || null,
+                photoUrls: v.photoUrl ? [v.photoUrl] : [],
+                userId: v.userId,
+                userFullName: v.userFullName,
+                userEmail: v.userEmail,
+                // Keep original fields for compatibility
+                itemLicencePlateNumber: v.itemLicencePlateNumber,
+                item: v.item || null
+            }));
+            
             // Update verifications data
-            verificationDataAdminRegional.verifications = Array.isArray(data.content) ? data.content : [];
+            verificationDataAdminRegional.verifications = verifications;
             verificationDataAdminRegional.totalElements = data.totalElements || 0;
             verificationDataAdminRegional.totalPages = data.totalPages || 0;
             verificationDataAdminRegional.currentPage = data.number || 0;
@@ -184,10 +211,13 @@ async function loadVerificationsForAdminRegional(page = 0) {
             window.verificationData.searchTerm = verificationDataAdminRegional.filters.searchTerm;
             window.verificationData.selectedStatus = verificationDataAdminRegional.filters.status;
             
-            // Load inventories for filter (must complete before updating UI)
-            await loadInventoriesForAdminRegional();
+            // Load institutions for filter (must complete before updating UI)
+            await loadInstitutionsForAdminRegional();
             
-            // Update UI (inventories should be loaded by now)
+            // Load all inventories for the regional (needed for filtering, but won't show in filter until center is selected)
+            await loadAllInventoriesForAdminRegional();
+            
+            // Update UI
             await updateVerificationUIForAdminRegional();
         } else {
             throw new Error('Error al cargar las verificaciones');
@@ -217,6 +247,64 @@ async function loadVerificationsForAdminRegional(page = 0) {
  */
 function filterVerificationsForAdminRegional() {
     let filtered = [...verificationDataAdminRegional.verifications];
+    
+    console.log('Filtering verifications. Total:', filtered.length);
+    console.log('Current filters:', verificationDataAdminRegional.filters);
+    
+    // Create a map of inventoryId to institutionId from all loaded inventories
+    const inventoryToInstitutionMap = new Map();
+    const allInventories = verificationDataAdminRegional.allInventories || [];
+    
+    allInventories.forEach(inv => {
+        const invId = inv.id || inv.inventoryId;
+        const instId = inv.institutionId || inv.institution?.id;
+        if (invId && instId) {
+            inventoryToInstitutionMap.set(invId.toString(), instId.toString());
+        }
+    });
+    
+    console.log('Inventory to Institution map:', Array.from(inventoryToInstitutionMap.entries()));
+    
+    // Filter by institution
+    const institutionFilter = verificationDataAdminRegional.filters.institutionId;
+    if (institutionFilter && institutionFilter !== 'all') {
+        console.log('Filtering by institution:', institutionFilter);
+        const beforeCount = filtered.length;
+        filtered = filtered.filter(v => {
+            // Get inventory ID from verification
+            const vInventoryId = v.inventoryId || v.item?.inventoryId || v.item?.inventory?.id;
+            
+            if (!vInventoryId) {
+                console.log('Verification has no inventoryId:', v);
+                return false;
+            }
+            
+            // Get institution ID from the map
+            const vInstitutionId = inventoryToInstitutionMap.get(vInventoryId.toString());
+            
+            if (!vInstitutionId) {
+                console.log('No institution found for inventory:', {
+                    verificationId: v.id,
+                    inventoryId: vInventoryId,
+                    availableInventories: Array.from(inventoryToInstitutionMap.keys())
+                });
+                return false;
+            }
+            
+            const matches = vInstitutionId.toString() === institutionFilter.toString();
+            
+            if (!matches) {
+                console.log('Verification institution ID mismatch:', {
+                    verificationId: v.id,
+                    verificationInstitutionId: vInstitutionId,
+                    filterInstitutionId: institutionFilter
+                });
+            }
+            
+            return matches;
+        });
+        console.log('After institution filter:', filtered.length, '(removed', beforeCount - filtered.length, ')');
+    }
     
     // Filter by inventory
     const inventoryFilter = verificationDataAdminRegional.filters.inventoryId;
@@ -259,16 +347,155 @@ function filterVerificationsForAdminRegional() {
     // Update filtered verifications
     verificationDataAdminRegional.filteredVerifications = filtered;
     
+    // Also update window.verificationData for compatibility with existing UI functions
+    if (window.verificationData) {
+        window.verificationData.filteredVerifications = filtered;
+        window.verificationData.verifications = verificationDataAdminRegional.verifications;
+    }
+    
     // Update pagination
     verificationDataAdminRegional.totalPages = Math.ceil(filtered.length / verificationDataAdminRegional.pageSize);
     verificationDataAdminRegional.currentPage = 0; // Reset to first page after filtering
+    
+    console.log('Filtered verifications count:', filtered.length);
+    console.log('Filtered verifications:', filtered);
+}
+
+/**
+ * Load institutions for admin regional filter
+ */
+async function loadInstitutionsForAdminRegional() {
+    try {
+        // First, ensure we have the regional ID
+        if (!currentUserRegionalId) {
+            const regionalId = await loadCurrentUserInfoForVerifications();
+            if (!regionalId) {
+                console.warn('No regional ID available for loading institutions');
+                verificationDataAdminRegional.institutions = [];
+                return;
+            }
+        }
+
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            console.warn('No token found for loading institutions');
+            verificationDataAdminRegional.institutions = [];
+            return;
+        }
+
+        // Load institutions for the regional
+        const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${currentUserRegionalId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const institutions = await response.json();
+            console.log('Loaded institutions count for regional', currentUserRegionalId, ':', institutions.length);
+            
+            // Ensure institutions is an array
+            if (!Array.isArray(institutions)) {
+                console.warn('Institutions is not an array, converting:', institutions);
+                verificationDataAdminRegional.institutions = [];
+            } else {
+                verificationDataAdminRegional.institutions = institutions;
+            }
+            
+            console.log('Institutions saved to verificationDataAdminRegional:', verificationDataAdminRegional.institutions.length);
+        } else {
+            const errorText = await response.text();
+            console.error('Failed to load institutions for admin regional. Status:', response.status, 'Error:', errorText);
+            verificationDataAdminRegional.institutions = [];
+        }
+    } catch (error) {
+        console.error('Error loading institutions for admin regional:', error);
+        verificationDataAdminRegional.institutions = [];
+    }
+}
+
+/**
+ * Load all inventories for admin regional (for filtering purposes, not for display)
+ */
+async function loadAllInventoriesForAdminRegional() {
+    try {
+        // First, ensure we have the regional ID
+        if (!currentUserRegionalId) {
+            const regionalId = await loadCurrentUserInfoForVerifications();
+            if (!regionalId) {
+                console.warn('No regional ID available for loading all inventories');
+                verificationDataAdminRegional.allInventories = [];
+                return;
+            }
+        }
+
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            console.warn('No token found for loading all inventories');
+            verificationDataAdminRegional.allInventories = [];
+            return;
+        }
+
+        // Use the endpoint with explicit regionalId to get all inventories
+        const response = await fetch(`/api/v1/inventory/regionalAdminInventories/${currentUserRegionalId}?page=0&size=10000`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Handle paginated response (Page object) or direct array
+            let inventories = [];
+            if (Array.isArray(data)) {
+                inventories = data;
+            } else if (data && Array.isArray(data.content)) {
+                inventories = data.content;
+            } else if (data && typeof data === 'object' && data.content) {
+                inventories = Array.isArray(data.content) ? data.content : [];
+            }
+            
+            // Ensure inventories is an array
+            if (!Array.isArray(inventories)) {
+                console.warn('Inventories is not an array, converting:', inventories);
+                inventories = [];
+            }
+            
+            verificationDataAdminRegional.allInventories = inventories;
+            console.log('Loaded all inventories for filtering:', inventories.length);
+        } else {
+            const errorText = await response.text();
+            console.error('Failed to load all inventories. Status:', response.status, 'Error:', errorText);
+            verificationDataAdminRegional.allInventories = [];
+        }
+    } catch (error) {
+        console.error('Error loading all inventories:', error);
+        verificationDataAdminRegional.allInventories = [];
+    }
 }
 
 /**
  * Load inventories for admin regional filter
+ * Only loads inventories if an institution is selected
  */
 async function loadInventoriesForAdminRegional() {
     try {
+        // Check if an institution is selected
+        const selectedInstitutionId = verificationDataAdminRegional.filters.institutionId;
+        if (!selectedInstitutionId || selectedInstitutionId === 'all') {
+            console.log('No institution selected, clearing inventories');
+            verificationDataAdminRegional.inventories = [];
+            if (window.verificationData) {
+                window.verificationData.inventories = [];
+            }
+            return;
+        }
+
         // First, ensure we have the regional ID
         if (!currentUserRegionalId) {
             const regionalId = await loadCurrentUserInfoForVerifications();
@@ -311,12 +538,29 @@ async function loadInventoriesForAdminRegional() {
             }
             
             console.log('Loaded inventories count for regional', currentUserRegionalId, ':', inventories.length);
+            
+            // Ensure inventories is an array
+            if (!Array.isArray(inventories)) {
+                console.warn('Inventories is not an array, converting:', inventories);
+                inventories = [];
+            }
+            
+            // Filter inventories by selected institution
+            inventories = inventories.filter(inv => {
+                const invInstitutionId = inv.institutionId || inv.institution?.id || 
+                                       (inv.institution && inv.institution.id ? inv.institution.id.toString() : null);
+                return invInstitutionId && invInstitutionId.toString() === selectedInstitutionId.toString();
+            });
+            console.log('Filtered inventories by institution', selectedInstitutionId, ':', inventories.length);
+            
             verificationDataAdminRegional.inventories = inventories;
             
             // Also update window.verificationData for compatibility
             if (window.verificationData) {
                 window.verificationData.inventories = inventories;
             }
+            
+            console.log('Inventories saved to verificationDataAdminRegional:', verificationDataAdminRegional.inventories.length);
         } else {
             const errorText = await response.text();
             console.error('Failed to load inventories for admin regional. Status:', response.status, 'Error:', errorText);
@@ -384,6 +628,13 @@ async function updateVerificationUIForAdminRegional() {
         window.updateStatsCards();
     }
     
+    // Update search and filters FIRST to ensure they're set up before table updates
+    // This prevents other functions from regenerating the filter HTML
+    updateVerificationSearchAndFiltersForAdminRegional();
+    
+    // Small delay to ensure filters are rendered before table update
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
     // Update table
     if (window.updateVerificationTable) {
         window.updateVerificationTable();
@@ -394,13 +645,18 @@ async function updateVerificationUIForAdminRegional() {
         window.updatePagination();
     }
     
-    // Update search and filters (simplified for admin regional)
-    updateVerificationSearchAndFiltersForAdminRegional();
+    // Re-update filters after table update to ensure they persist
+    // Use a small delay to avoid race conditions
+    setTimeout(() => {
+        updateVerificationSearchAndFiltersForAdminRegional();
+    }, 100);
 }
 
-// Custom Select instance for admin regional inventory filter
+// Custom Select instances for admin regional filters
+let verificationInstitutionCustomSelectAdminRegional = null;
 let verificationInventoryCustomSelectAdminRegional = null;
-// Flag to prevent infinite loops during initialization
+// Flags to prevent infinite loops during initialization
+let isInitializingInstitutionFilter = false;
 let isInitializingInventoryFilter = false;
 
 /**
@@ -415,42 +671,111 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
     
     const currentSearchTerm = verificationDataAdminRegional.filters.searchTerm || '';
     const currentStatusFilter = verificationDataAdminRegional.filters.status || 'all';
+    const currentInstitutionFilter = verificationDataAdminRegional.filters.institutionId || 'all';
     const currentInventoryFilter = verificationDataAdminRegional.filters.inventoryId || 'all';
+    
+    // Build institution options
+    let institutions = verificationDataAdminRegional.institutions || [];
+    if (!Array.isArray(institutions)) {
+        institutions = [];
+    }
     
     // Build inventory options - check both verificationDataAdminRegional and window.verificationData
     let inventories = verificationDataAdminRegional.inventories || [];
     if (inventories.length === 0 && window.verificationData && window.verificationData.inventories) {
         inventories = window.verificationData.inventories;
-        console.log('Using inventories from window.verificationData');
+        console.log('Using inventories from window.verificationData:', inventories.length);
     }
     
-    console.log('Updating filters with inventories:', inventories.length);
+    // Ensure inventories is an array
+    if (!Array.isArray(inventories)) {
+        console.warn('Inventories is not an array, converting:', inventories);
+        inventories = [];
+    }
+    
+    console.log('Updating filters with institutions:', institutions.length, 'and inventories:', inventories.length);
     
     // Check if the container already has the filters (to avoid regenerating unnecessarily)
     const existingInventorySelect = document.getElementById('verificationInventoryFilterAdminRegionalSelect');
+    const existingInstitutionSelect = document.getElementById('verificationInstitutionFilterAdminRegionalSelect');
     const existingSearchInput = document.getElementById('verificationSearchAdminRegional');
     
-    // Only regenerate HTML if it doesn't exist or if inventories changed
-    const needsRegeneration = !existingInventorySelect || !existingSearchInput;
+    // Only regenerate HTML if it doesn't exist
+    const needsRegeneration = !existingInventorySelect || !existingInstitutionSelect || !existingSearchInput;
     
-    if (!needsRegeneration && verificationInventoryCustomSelectAdminRegional) {
+    if (!needsRegeneration && verificationInventoryCustomSelectAdminRegional && verificationInstitutionCustomSelectAdminRegional) {
         // Just update the options without regenerating HTML
-        const options = [
-            { value: 'all', label: 'Todos los Inventarios' },
-            ...inventories.map(inv => ({
-                value: (inv.id || inv.inventoryId).toString(),
-                label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+        
+        // Update institution filter options
+        const institutionOptions = [
+            { value: 'all', label: 'Todos los Centros' },
+            ...institutions.map(inst => ({
+                value: (inst.id || inst.institutionId).toString(),
+                label: inst.name || `Centro ${inst.id || inst.institutionId}`
             }))
         ];
         
-        isInitializingInventoryFilter = true;
-        verificationInventoryCustomSelectAdminRegional.setOptions(options);
+        isInitializingInstitutionFilter = true;
+        try {
+            verificationInstitutionCustomSelectAdminRegional.setOptions(institutionOptions);
+            if (currentInstitutionFilter && currentInstitutionFilter !== 'all') {
+                verificationInstitutionCustomSelectAdminRegional.setValue(currentInstitutionFilter.toString());
+            } else {
+                verificationInstitutionCustomSelectAdminRegional.setValue('all');
+            }
+        } catch (error) {
+            console.error('Error updating institution options:', error);
+        }
+        setTimeout(() => {
+            isInitializingInstitutionFilter = false;
+        }, 100);
         
-        // Update selected value if needed
-        if (currentInventoryFilter && currentInventoryFilter !== 'all') {
-            verificationInventoryCustomSelectAdminRegional.setValue(currentInventoryFilter.toString());
+        // Update inventory filter options
+        // Check if a center is selected
+        const hasSelectedCenter = currentInstitutionFilter && currentInstitutionFilter !== 'all';
+        
+        if (hasSelectedCenter && inventories.length > 0) {
+            const inventoryOptions = [
+                { value: 'all', label: 'Todos los Inventarios' },
+                ...inventories.map(inv => ({
+                    value: (inv.id || inv.inventoryId).toString(),
+                    label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+                }))
+            ];
+            
+            console.log('Updating existing CustomSelect with', inventoryOptions.length, 'options');
+            
+            isInitializingInventoryFilter = true;
+            
+            try {
+                verificationInventoryCustomSelectAdminRegional.setOptions(inventoryOptions);
+                verificationInventoryCustomSelectAdminRegional.setDisabled(false);
+                console.log('Options updated successfully');
+            } catch (error) {
+                console.error('Error updating options:', error);
+            }
+            
+            // Update selected value if needed
+            if (currentInventoryFilter && currentInventoryFilter !== 'all') {
+                verificationInventoryCustomSelectAdminRegional.setValue(currentInventoryFilter.toString());
+            } else {
+                verificationInventoryCustomSelectAdminRegional.setValue('all');
+            }
         } else {
-            verificationInventoryCustomSelectAdminRegional.setValue('all');
+            // No center selected or no inventories, disable and show placeholder
+            const emptyOptions = [
+                { value: 'all', label: 'Seleccione un centro primero' }
+            ];
+            
+            isInitializingInventoryFilter = true;
+            
+            try {
+                verificationInventoryCustomSelectAdminRegional.setOptions(emptyOptions);
+                verificationInventoryCustomSelectAdminRegional.setDisabled(true);
+                verificationInventoryCustomSelectAdminRegional.setValue('all');
+            } catch (error) {
+                console.error('Error updating inventory options:', error);
+            }
         }
         
         setTimeout(() => {
@@ -460,8 +785,9 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
         return;
     }
     
-    // Reset custom select instance since HTML will be regenerated
+    // Reset custom select instances since HTML will be regenerated
     verificationInventoryCustomSelectAdminRegional = null;
+    verificationInstitutionCustomSelectAdminRegional = null;
     
     container.innerHTML = `
         <div class="relative flex-1" style="min-width: 200px;">
@@ -478,11 +804,29 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
             </div>
         </div>
         <div class="relative" style="min-width: 200px; flex-shrink: 0;">
+            <label class="block text-xs font-medium text-gray-600 mb-1.5">Filtrar por Centro</label>
+            <div class="custom-select-container">
+                <div class="custom-select" id="verificationInstitutionFilterAdminRegionalSelect">
+                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                        <span class="custom-select-text custom-select-placeholder">Todos los Centros</span>
+                        <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    </div>
+                    <div class="custom-select-dropdown">
+                        <input type="text" class="custom-select-search" placeholder="Buscar centro...">
+                        <div class="custom-select-options" id="verificationInstitutionFilterAdminRegionalOptions">
+                            <!-- Options loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="verificationInstitutionFilterAdminRegional" value="${currentInstitutionFilter}">
+            </div>
+        </div>
+        <div class="relative" style="min-width: 200px; flex-shrink: 0;">
             <label class="block text-xs font-medium text-gray-600 mb-1.5">Filtrar por Inventario</label>
             <div class="custom-select-container">
                 <div class="custom-select" id="verificationInventoryFilterAdminRegionalSelect">
                     <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
-                        <span class="custom-select-text custom-select-placeholder">Todos los Inventarios</span>
+                        <span class="custom-select-text custom-select-placeholder">${currentInstitutionFilter && currentInstitutionFilter !== 'all' ? 'Todos los Inventarios' : 'Seleccione un centro primero'}</span>
                         <i class="fas fa-chevron-down custom-select-arrow"></i>
                     </div>
                     <div class="custom-select-dropdown">
@@ -511,10 +855,127 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
         </div>
     `;
     
-    // Initialize Custom Select after HTML is inserted
+    // Initialize Custom Selects after HTML is inserted
+    // Ensure data is available and DOM is ready before initializing
     setTimeout(() => {
-        initializeInventoryCustomSelectForAdminRegional(inventories, currentInventoryFilter);
-    }, 50);
+        // Initialize Institution Custom Select
+        let finalInstitutions = verificationDataAdminRegional.institutions || [];
+        if (!Array.isArray(finalInstitutions)) {
+            finalInstitutions = [];
+        }
+        initializeInstitutionCustomSelectForAdminRegional(finalInstitutions, currentInstitutionFilter);
+        
+        // Initialize Inventory Custom Select
+        let finalInventories = verificationDataAdminRegional.inventories || [];
+        if (finalInventories.length === 0 && window.verificationData && window.verificationData.inventories) {
+            finalInventories = window.verificationData.inventories;
+            console.log('Retrying with inventories from window.verificationData:', finalInventories.length);
+        }
+        
+        if (!Array.isArray(finalInventories)) {
+            finalInventories = [];
+        }
+        
+        console.log('Initializing CustomSelect with final inventories:', finalInventories.length);
+        initializeInventoryCustomSelectForAdminRegional(finalInventories, currentInventoryFilter);
+    }, 100);
+}
+
+/**
+ * Initialize Custom Select for institution filter (Admin Regional)
+ */
+function initializeInstitutionCustomSelectForAdminRegional(institutions, currentInstitutionFilter) {
+    // Check if CustomSelect is available
+    if (typeof CustomSelect === 'undefined' && typeof window.CustomSelect === 'undefined') {
+        console.warn('CustomSelect class not available, falling back to regular select');
+        return;
+    }
+    
+    const CustomSelectClass = window.CustomSelect || CustomSelect;
+    const institutionSelect = document.getElementById('verificationInstitutionFilterAdminRegionalSelect');
+    
+    if (!institutionSelect) {
+        console.warn('Institution select container not found');
+        return;
+    }
+    
+    // Validate institutions parameter
+    if (!Array.isArray(institutions)) {
+        console.warn('Institutions is not an array:', institutions);
+        institutions = [];
+    }
+    
+    console.log('Initializing Institution CustomSelect with', institutions.length, 'institutions');
+    
+    // Initialize Custom Select if not already initialized
+    if (!verificationInstitutionCustomSelectAdminRegional) {
+        verificationInstitutionCustomSelectAdminRegional = new CustomSelectClass('verificationInstitutionFilterAdminRegionalSelect', {
+            placeholder: 'Todos los Centros',
+            onChange: (option) => {
+                // Don't trigger filter change during initialization
+                if (isInitializingInstitutionFilter) {
+                    return;
+                }
+                const value = option.value || 'all';
+                const hiddenInput = document.getElementById('verificationInstitutionFilterAdminRegional');
+                if (hiddenInput) {
+                    hiddenInput.value = value;
+                }
+                handleVerificationInstitutionFilterForAdminRegional(value);
+            }
+        });
+    }
+    
+    // Build options array - always include "all" option
+    const options = [
+        { value: 'all', label: 'Todos los Centros' },
+        ...institutions.map(inst => ({
+            value: (inst.id || inst.institutionId).toString(),
+            label: inst.name || `Centro ${inst.id || inst.institutionId}`
+        }))
+    ];
+    
+    console.log('Setting Institution CustomSelect options. Total options:', options.length);
+    
+    // Verify CustomSelect instance has setOptions method
+    if (!verificationInstitutionCustomSelectAdminRegional || typeof verificationInstitutionCustomSelectAdminRegional.setOptions !== 'function') {
+        console.error('Institution CustomSelect instance or setOptions method not available');
+        return;
+    }
+    
+    // Set flag to prevent onChange during initialization
+    isInitializingInstitutionFilter = true;
+    
+    // Set options
+    try {
+        verificationInstitutionCustomSelectAdminRegional.setOptions(options);
+        console.log('Institution options set successfully');
+    } catch (error) {
+        console.error('Error setting institution options:', error);
+    }
+    
+    // Set selected value without triggering onChange
+    if (currentInstitutionFilter && currentInstitutionFilter !== 'all') {
+        const selectedOption = options.find(opt => opt.value === currentInstitutionFilter.toString());
+        if (selectedOption) {
+            verificationInstitutionCustomSelectAdminRegional.setValue(selectedOption.value);
+        }
+    } else {
+        const allOption = options.find(opt => opt.value === 'all');
+        if (allOption) {
+            verificationInstitutionCustomSelectAdminRegional.setValue('all');
+        }
+    }
+    
+    // Reset flag after initialization
+    setTimeout(() => {
+        isInitializingInstitutionFilter = false;
+        if (verificationInstitutionCustomSelectAdminRegional.options && verificationInstitutionCustomSelectAdminRegional.options.length > 0) {
+            console.log('Institution CustomSelect initialized successfully with', verificationInstitutionCustomSelectAdminRegional.options.length, 'options');
+        } else {
+            console.error('Institution CustomSelect options are empty after initialization');
+        }
+    }, 100);
 }
 
 /**
@@ -535,10 +996,19 @@ function initializeInventoryCustomSelectForAdminRegional(inventories, currentInv
         return;
     }
     
+    // Validate inventories parameter
+    if (!Array.isArray(inventories)) {
+        console.warn('Inventories is not an array:', inventories);
+        inventories = [];
+    }
+    
+    console.log('Initializing CustomSelect with', inventories.length, 'inventories');
+    console.log('Inventories data:', inventories);
+    
     // Initialize Custom Select if not already initialized
     if (!verificationInventoryCustomSelectAdminRegional) {
         verificationInventoryCustomSelectAdminRegional = new CustomSelectClass('verificationInventoryFilterAdminRegionalSelect', {
-            placeholder: 'Todos los Inventarios',
+            placeholder: 'Seleccione un centro primero',
             onChange: (option) => {
                 // Don't trigger filter change during initialization
                 if (isInitializingInventoryFilter) {
@@ -554,41 +1024,75 @@ function initializeInventoryCustomSelectForAdminRegional(inventories, currentInv
         });
     }
     
-    // Build options array
-    const options = [
-        { value: 'all', label: 'Todos los Inventarios' },
-        ...inventories.map(inv => ({
-            value: (inv.id || inv.inventoryId).toString(),
-            label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
-        }))
-    ];
+    // Check if a center is selected
+    const selectedInstitutionId = verificationDataAdminRegional.filters.institutionId;
+    const hasSelectedCenter = selectedInstitutionId && selectedInstitutionId !== 'all';
     
-    console.log('Setting CustomSelect options:', options.length);
+    // Verify CustomSelect instance has setOptions method
+    if (!verificationInventoryCustomSelectAdminRegional || typeof verificationInventoryCustomSelectAdminRegional.setOptions !== 'function') {
+        console.error('CustomSelect instance or setOptions method not available');
+        return;
+    }
     
     // Set flag to prevent onChange during initialization
     isInitializingInventoryFilter = true;
     
-    // Set options
-    verificationInventoryCustomSelectAdminRegional.setOptions(options);
-    
-    // Set selected value without triggering onChange
-    if (currentInventoryFilter && currentInventoryFilter !== 'all') {
-        const selectedOption = options.find(opt => opt.value === currentInventoryFilter.toString());
-        if (selectedOption) {
-            // Use setValue instead of selectOption to avoid triggering onChange
-            verificationInventoryCustomSelectAdminRegional.setValue(selectedOption.value);
+    if (hasSelectedCenter && inventories.length > 0) {
+        // Build options array - always include "all" option
+        const options = [
+            { value: 'all', label: 'Todos los Inventarios' },
+            ...inventories.map(inv => ({
+                value: (inv.id || inv.inventoryId).toString(),
+                label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+            }))
+        ];
+        
+        console.log('Setting CustomSelect options. Total options:', options.length);
+        
+        // Set options and enable
+        try {
+            verificationInventoryCustomSelectAdminRegional.setOptions(options);
+            verificationInventoryCustomSelectAdminRegional.setDisabled(false);
+            console.log('Options set successfully. CustomSelect options count:', verificationInventoryCustomSelectAdminRegional.options?.length || 0);
+        } catch (error) {
+            console.error('Error setting options:', error);
+        }
+        
+        // Set selected value without triggering onChange
+        if (currentInventoryFilter && currentInventoryFilter !== 'all') {
+            const selectedOption = options.find(opt => opt.value === currentInventoryFilter.toString());
+            if (selectedOption) {
+                verificationInventoryCustomSelectAdminRegional.setValue(selectedOption.value);
+            }
+        } else {
+            const allOption = options.find(opt => opt.value === 'all');
+            if (allOption) {
+                verificationInventoryCustomSelectAdminRegional.setValue('all');
+            }
         }
     } else {
-        // Select "all" option
-        const allOption = options.find(opt => opt.value === 'all');
-        if (allOption) {
+        // No center selected, disable and show placeholder
+        const emptyOptions = [
+            { value: 'all', label: 'Seleccione un centro primero' }
+        ];
+        
+        try {
+            verificationInventoryCustomSelectAdminRegional.setOptions(emptyOptions);
+            verificationInventoryCustomSelectAdminRegional.setDisabled(true);
             verificationInventoryCustomSelectAdminRegional.setValue('all');
+            console.log('Inventory filter disabled - no center selected');
+        } catch (error) {
+            console.error('Error setting empty options:', error);
         }
     }
     
     // Reset flag after initialization
     setTimeout(() => {
         isInitializingInventoryFilter = false;
+        // Verify options were set correctly
+        if (verificationInventoryCustomSelectAdminRegional.options && verificationInventoryCustomSelectAdminRegional.options.length > 0) {
+            console.log('CustomSelect initialized successfully with', verificationInventoryCustomSelectAdminRegional.options.length, 'options');
+        }
     }, 100);
 }
 
@@ -605,19 +1109,88 @@ function handleVerificationSearchForAdminRegional(event) {
 }
 
 /**
+ * Handle institution filter change for admin regional
+ */
+async function handleVerificationInstitutionFilterForAdminRegional(institutionId) {
+    verificationDataAdminRegional.filters.institutionId = institutionId;
+    // Reset inventory filter when institution changes
+    verificationDataAdminRegional.filters.inventoryId = 'all';
+    
+    // Check if a center is selected
+    const hasSelectedCenter = institutionId && institutionId !== 'all';
+    
+    if (hasSelectedCenter) {
+        // Reload inventories filtered by institution
+        await loadInventoriesForAdminRegional();
+        
+        // Update inventory filter options
+        if (verificationInventoryCustomSelectAdminRegional) {
+            const inventories = verificationDataAdminRegional.inventories || [];
+            
+            if (inventories.length > 0) {
+                const options = [
+                    { value: 'all', label: 'Todos los Inventarios' },
+                    ...inventories.map(inv => ({
+                        value: (inv.id || inv.inventoryId).toString(),
+                        label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+                    }))
+                ];
+                
+                isInitializingInventoryFilter = true;
+                verificationInventoryCustomSelectAdminRegional.setOptions(options);
+                verificationInventoryCustomSelectAdminRegional.setDisabled(false);
+                verificationInventoryCustomSelectAdminRegional.setValue('all');
+                setTimeout(() => {
+                    isInitializingInventoryFilter = false;
+                }, 100);
+            } else {
+                // No inventories found for this center
+                const emptyOptions = [
+                    { value: 'all', label: 'No hay inventarios disponibles' }
+                ];
+                
+                isInitializingInventoryFilter = true;
+                verificationInventoryCustomSelectAdminRegional.setOptions(emptyOptions);
+                verificationInventoryCustomSelectAdminRegional.setDisabled(true);
+                verificationInventoryCustomSelectAdminRegional.setValue('all');
+                setTimeout(() => {
+                    isInitializingInventoryFilter = false;
+                }, 100);
+            }
+        }
+    } else {
+        // No center selected, clear inventories and disable filter
+        verificationDataAdminRegional.inventories = [];
+        
+        if (verificationInventoryCustomSelectAdminRegional) {
+            const emptyOptions = [
+                { value: 'all', label: 'Seleccione un centro primero' }
+            ];
+            
+            isInitializingInventoryFilter = true;
+            verificationInventoryCustomSelectAdminRegional.setOptions(emptyOptions);
+            verificationInventoryCustomSelectAdminRegional.setDisabled(true);
+            verificationInventoryCustomSelectAdminRegional.setValue('all');
+            setTimeout(() => {
+                isInitializingInventoryFilter = false;
+            }, 100);
+        }
+    }
+    
+    // Filter verifications
+    filterVerificationsForAdminRegional();
+    updateVerificationUIForAdminRegional();
+}
+
+/**
  * Handle inventory filter change for admin regional
  */
 async function handleVerificationInventoryFilterForAdminRegional(inventoryId) {
     verificationDataAdminRegional.filters.inventoryId = inventoryId;
     
-    // Reload verifications with inventory filter
-    if (inventoryId && inventoryId !== 'all') {
-        // Load verifications filtered by inventory
-        await loadVerificationsForAdminRegionalByInventory(inventoryId);
-    } else {
-        // Load all verifications for regional
-        await loadVerificationsForAdminRegional(0);
-    }
+    // Filter verifications
+    filterVerificationsForAdminRegional();
+    updateVerificationUIForAdminRegional();
 }
 
 /**
@@ -670,6 +1243,29 @@ async function loadVerificationsForAdminRegionalByInventory(inventoryId) {
             
             // Get all verifications (handle pagination if needed)
             let allVerifications = Array.isArray(data.content) ? data.content : [];
+            
+            // Transform the response to match frontend expectations
+            allVerifications = allVerifications.map(v => ({
+                id: v.id || v.verificationId,
+                itemId: v.itemId,
+                licensePlate: v.itemLicencePlateNumber || v.licencePlateNumber || v.licensePlate || null,
+                serialNumber: v.serialNumber || null,
+                itemName: v.itemName || '-',
+                inventoryId: v.inventoryId,
+                inventoryName: v.inventoryName || '-',
+                status: v.status || 'PENDING',
+                hasEvidence: v.photoUrl && v.photoUrl.length > 0,
+                verificationDate: v.verifiedAt || v.createdAt || v.verificationDate || null,
+                createdAt: v.createdAt || v.verifiedAt,
+                photoUrl: v.photoUrl || null,
+                photoUrls: v.photoUrl ? [v.photoUrl] : [],
+                userId: v.userId,
+                userFullName: v.userFullName,
+                userEmail: v.userEmail,
+                // Keep original fields for compatibility
+                itemLicencePlateNumber: v.itemLicencePlateNumber,
+                item: v.item || null
+            }));
             
             // If there are more pages, we might need to load them, but for now we'll work with what we have
             // Filter by inventory on client side
@@ -769,7 +1365,9 @@ if (document.readyState === 'loading') {
 window.loadVerificationsForAdminRegional = loadVerificationsForAdminRegional;
 window.loadVerificationStatisticsForAdminRegional = loadVerificationStatisticsForAdminRegional;
 window.loadInventoriesForAdminRegional = loadInventoriesForAdminRegional;
+window.loadInstitutionsForAdminRegional = loadInstitutionsForAdminRegional;
 window.handleVerificationSearchForAdminRegional = handleVerificationSearchForAdminRegional;
+window.handleVerificationInstitutionFilterForAdminRegional = handleVerificationInstitutionFilterForAdminRegional;
 window.handleVerificationInventoryFilterForAdminRegional = handleVerificationInventoryFilterForAdminRegional;
 window.handleVerificationStatusFilterForAdminRegional = handleVerificationStatusFilterForAdminRegional;
 window.initializeAdminRegionalVerifications = initializeAdminRegionalVerifications;

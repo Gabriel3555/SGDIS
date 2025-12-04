@@ -1,0 +1,134 @@
+/* Estilos para el sistema de notificaciones toast del módulo de verificación */
+
+/* Variables de colores */
+:root {
+    --verification-toast-success: #10b981;
+    --verification-toast-error: #ef4444;
+    --verification-toast-info: #3b82f6;
+    --verification-toast-warning: #f59e0b;
+}
+
+/* Toast base */
+.custom-toast {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    min-width: 320px !important;
+    max-width: 500px !important;
+    padding: 16px 20px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+    z-index: 10000 !important;
+    opacity: 0 !important;
+    transform: translateX(400px) !important;
+    transition: all 0.3s ease-in-out !important;
+    pointer-events: auto !important;
+    display: block !important;
+}
+
+.custom-toast.show {
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+}
+
+/* Tipos de toast */
+.custom-toast-success {
+    background: var(--verification-toast-success);
+    color: white;
+    border-left: 4px solid #059669;
+}
+
+.custom-toast-error {
+    background: var(--verification-toast-error);
+    color: white;
+    border-left: 4px solid #dc2626;
+}
+
+.custom-toast-info {
+    background: var(--verification-toast-info);
+    color: white;
+    border-left: 4px solid #2563eb;
+}
+
+.custom-toast-warning {
+    background: var(--verification-toast-warning);
+    color: white;
+    border-left: 4px solid #d97706;
+}
+
+/* Contenido del toast */
+.custom-toast .flex {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.custom-toast .flex-1 {
+    flex: 1;
+}
+
+.custom-toast .font-semibold {
+    font-weight: 600;
+}
+
+.custom-toast .text-lg {
+    font-size: 1.125rem;
+    line-height: 1.5;
+}
+
+.custom-toast .text-sm {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.custom-toast .mb-1 {
+    margin-bottom: 0.25rem;
+}
+
+.custom-toast .opacity-90 {
+    opacity: 0.9;
+}
+
+.custom-toast .text-2xl {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.custom-toast button {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: opacity 0.2s;
+    opacity: 0.8;
+}
+
+.custom-toast button:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .custom-toast {
+        right: 10px;
+        left: 10px;
+        min-width: auto;
+        max-width: none;
+        transform: translateY(-100px);
+    }
+    
+    .custom-toast.show {
+        transform: translateY(0);
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .custom-toast {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+}
+

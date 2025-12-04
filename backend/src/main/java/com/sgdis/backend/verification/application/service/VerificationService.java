@@ -184,6 +184,7 @@ public class VerificationService implements
      * - Es signatario del inventario al que pertenece el ítem
      * - Es WAREHOUSE y pertenece a la misma institución que el inventario
      * - Es ADMIN_INSTITUTION y pertenece a la misma institución que el inventario
+     * - Es ADMIN_REGIONAL y pertenece a la misma regional que el inventario
      */
     private void validateUserAuthorization(UserEntity user, ItemEntity item) {
         // SUPERADMIN puede verificar cualquier ítem
@@ -238,6 +239,29 @@ public class VerificationService implements
             if (userWithInstitution.getInstitution() != null && inventory.getInstitution() != null) {
                 if (userWithInstitution.getInstitution().getId().equals(inventory.getInstitution().getId())) {
                     return;
+                }
+            }
+        }
+
+        // Verificar si el usuario es ADMIN_REGIONAL y pertenece a la misma regional que el inventario
+        if (user.getRole() == Role.ADMIN_REGIONAL) {
+            // Load user with institution to get regional
+            UserEntity userWithInstitution = userRepository.findByIdWithInstitution(user.getId())
+                    .orElse(user);
+            
+            // Get user's regional from their institution
+            if (userWithInstitution.getInstitution() != null && 
+                userWithInstitution.getInstitution().getRegional() != null) {
+                Long userRegionalId = userWithInstitution.getInstitution().getRegional().getId();
+                
+                // Get inventory's regional (through institution)
+                if (inventory.getInstitution() != null && 
+                    inventory.getInstitution().getRegional() != null) {
+                    Long inventoryRegionalId = inventory.getInstitution().getRegional().getId();
+                    
+                    if (userRegionalId.equals(inventoryRegionalId)) {
+                        return;
+                    }
                 }
             }
         }

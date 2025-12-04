@@ -1,5 +1,28 @@
 function updateVerificationUI() {
     try {
+        // Check if we're on admin_regional or admin_institution verification page - if so, skip this function
+        // as they have their own filter systems
+        const path = window.location.pathname || '';
+        const isAdminRegionalPage = path.includes('/admin_regional/verification');
+        const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+        
+        if (isAdminRegionalPage || isAdminInstitutionPage) {
+            // Admin Regional/Institution have their own filter systems, don't interfere
+            // Only update stats, table, and pagination
+            updateStatsCards();
+            if (typeof updateVerificationTable === 'function') {
+                updateVerificationTable();
+            } else if (typeof window.updateVerificationTable === 'function') {
+                window.updateVerificationTable();
+            }
+            if (typeof updatePagination === 'function') {
+                updatePagination();
+            } else if (typeof window.updatePagination === 'function') {
+                window.updatePagination();
+            }
+            return;
+        }
+        
         updateStatsCards();
         // Only update filters if CustomSelects are not initialized, otherwise just populate them
         if (verificationRegionalCustomSelect || verificationInstitutionCustomSelect || verificationInventoryCustomSelect) {
@@ -162,6 +185,17 @@ function updateStatsCards() {
 }
 
 function updateFilters() {
+    // Check if we're on admin_regional or admin_institution verification page - if so, skip this function
+    // as they have their own filter systems
+    const path = window.location.pathname || '';
+    const isAdminRegionalPage = path.includes('/admin_regional/verification');
+    const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+    
+    if (isAdminRegionalPage || isAdminInstitutionPage) {
+        // Admin Regional/Institution have their own filter systems, don't interfere
+        return;
+    }
+    
     const container = document.getElementById('searchFilterContainer');
     if (!container) return;
 
@@ -549,6 +583,8 @@ function populateVerificationCustomSelects() {
             // Set options in CustomSelect
             if (verificationInventoryCustomSelect.setOptions) {
                 verificationInventoryCustomSelect.setOptions(options);
+            } else {
+                console.error('CustomSelect instance or setOptions method not available');
             }
             
             // Verify options were set correctly
@@ -565,59 +601,54 @@ function populateVerificationCustomSelects() {
                     });
                 }
             }, 100);
-        } else {
-            console.error('CustomSelect instance or setOptions method not available');
-        }
-        
-        // Restore selected value - check if dropdown is open first
-        const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
-        const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
-        
-        if (selectedOption) {
-            // Check if dropdown is currently open
-            const isOpen = verificationInventoryCustomSelect.container && 
-                          (verificationInventoryCustomSelect.container.classList.contains('open') || 
-                           verificationInventoryCustomSelect.container.classList.contains('active'));
             
-            if (isOpen) {
-                // If dropdown is open, update the value without closing it
-                verificationInventoryCustomSelect.selectedValue = selectedOption.value;
-                verificationInventoryCustomSelect.selectedText = selectedOption.label;
+            // Restore selected value - check if dropdown is open first
+            const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
+            const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
+            
+            if (selectedOption) {
+                // Check if dropdown is currently open
+                const isOpen = verificationInventoryCustomSelect.container && 
+                              (verificationInventoryCustomSelect.container.classList.contains('open') || 
+                               verificationInventoryCustomSelect.container.classList.contains('active'));
                 
-                // Update the text element without closing
-                if (verificationInventoryCustomSelect.textElement) {
-                    verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
-                    verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
-                }
-                
-                // Update hidden input
-                const hiddenInput = document.getElementById('inventoryFilter');
-                if (hiddenInput) {
-                    hiddenInput.value = selectedOption.value;
-                }
-                if (verificationInventoryCustomSelect.hiddenInput) {
-                    verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
-                }
-                
-                // Mark the option as selected in the rendered options
-                const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
-                optionElements.forEach(el => {
-                    el.classList.remove('selected');
-                    if (el.dataset.value === selectedOption.value) {
-                        el.classList.add('selected');
+                if (isOpen) {
+                    // If dropdown is open, update the value without closing it
+                    verificationInventoryCustomSelect.selectedValue = selectedOption.value;
+                    verificationInventoryCustomSelect.selectedText = selectedOption.label;
+                    
+                    // Update the text element without closing
+                    if (verificationInventoryCustomSelect.textElement) {
+                        verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
+                        verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
                     }
-                });
-            } else {
-                // If dropdown is closed, use setValue normally
-                if (verificationInventoryCustomSelect.setValue) {
-                    verificationInventoryCustomSelect.setValue(selectedInventoryValue);
-                } else if (verificationInventoryCustomSelect.selectOption) {
-                    verificationInventoryCustomSelect.selectOption(selectedOption);
+                    
+                    // Update hidden input
+                    const hiddenInput = document.getElementById('inventoryFilter');
+                    if (hiddenInput) {
+                        hiddenInput.value = selectedOption.value;
+                    }
+                    if (verificationInventoryCustomSelect.hiddenInput) {
+                        verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
+                    }
+                    
+                    // Mark the option as selected in the rendered options
+                    const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
+                    optionElements.forEach(el => {
+                        el.classList.remove('selected');
+                        if (el.dataset.value === selectedOption.value) {
+                            el.classList.add('selected');
+                        }
+                    });
+                } else {
+                    // If dropdown is closed, use setValue normally
+                    if (verificationInventoryCustomSelect.setValue) {
+                        verificationInventoryCustomSelect.setValue(selectedInventoryValue);
+                    } else if (verificationInventoryCustomSelect.selectOption) {
+                        verificationInventoryCustomSelect.selectOption(selectedOption);
+                    }
                 }
             }
-        } catch (error) {
-            console.error('Error populating inventory filter:', error);
-        }
         } catch (error) {
             console.error('Error populating inventory filter:', error);
         }
@@ -678,8 +709,8 @@ function updateVerificationTable() {
         return `
             <tr class="border-b border-gray-200 hover:bg-gray-50 transition-colors">
                 <td class="px-6 py-4">
-                    <div class="text-gray-800">${verification.licensePlate || verification.serialNumber || '-'}</div>
-                    <div class="text-xs text-gray-500">${verification.licensePlate ? 'Placa' : (verification.serialNumber ? 'Serie' : '-')}</div>
+                    <div class="text-gray-800">${verification.licensePlate || verification.serialNumber || verification.id || '-'}</div>
+                    <div class="text-xs text-gray-500">${verification.licensePlate ? 'Placa' : (verification.serialNumber ? 'Serie' : (verification.id ? 'ID' : '-'))}</div>
                 </td>
                 <td class="px-6 py-4">
                     <div class="text-gray-800">${verification.itemName || '-'}</div>
