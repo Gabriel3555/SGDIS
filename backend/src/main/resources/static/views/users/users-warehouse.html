@@ -150,6 +150,11 @@
                     </button>
                 </div>
                 <div class="flex items-center gap-4">
+                    <button onclick="showNewUserModal()"
+                        class="bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Nuevo Usuario
+                    </button>
                     <!-- Notification bell will be inserted here by notifications-bell.js -->
                     <div class="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                         onclick="window.location.href='/warehouse/info-me'">
@@ -507,7 +512,7 @@
                             placeholder="usuario@ejemplo.com" required>
                     </div>
 
-                    <div>
+                    <div id="newUserRoleContainer" style="display: none;">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Rol *</label>
                         <div class="custom-select-container">
                             <div class="custom-select" id="newUserRoleSelect">
@@ -522,7 +527,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <input type="hidden" id="newUserRole" name="role" required>
+                            <input type="hidden" id="newUserRole" name="role" value="USER">
                         </div>
                     </div>
 

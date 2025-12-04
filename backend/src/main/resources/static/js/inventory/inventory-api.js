@@ -312,6 +312,17 @@ async function loadInventories(options = {}) {
             }
             const data = window.inventoryData;
             data.inventories = Array.isArray(inventories) ? inventories : [];
+            
+            // For warehouse, backend already sorts by quantityItems, so no need to sort again
+            // For others, sort by ID descending (largest ID first)
+            if (!isWarehouse) {
+                data.inventories.sort((a, b) => {
+                    const idA = a.id || 0;
+                    const idB = b.id || 0;
+                    return idB - idA; // Descending order
+                });
+            }
+            
             data.filteredInventories = [...data.inventories];
             
             // Also update the local inventoryData reference

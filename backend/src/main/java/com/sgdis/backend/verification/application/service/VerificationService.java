@@ -29,6 +29,7 @@ import com.sgdis.backend.verification.application.port.in.GetVerificationsByItem
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import com.sgdis.backend.verification.infrastructure.repository.SpringDataVerificationRepository;
 import com.sgdis.backend.verification.mapper.VerificationMapper;
+import com.sgdis.backend.cancellation.infrastructure.repository.SpringDataCancellationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -55,6 +56,7 @@ public class VerificationService implements
     private final SpringDataItemRepository itemRepository;
     private final SpringDataInventoryRepository inventoryRepository;
     private final SpringDataUserRepository userRepository;
+    private final SpringDataCancellationRepository cancellationRepository;
     private final FileUploadService fileUploadService;
 
     @Override
@@ -67,6 +69,15 @@ public class VerificationService implements
         ItemEntity item = itemRepository.findByAttribute(Attribute.SERIAL, request.serial())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Item not found with serial: " + request.serial()));
+
+        // Verificar que el item no esté dado de baja
+        List<com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity> approvedCancellations = 
+                cancellationRepository.findApprovedCancellationsByItemId(item.getId());
+        if (approvedCancellations != null && !approvedCancellations.isEmpty()) {
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item ID " + item.getId();
+            String plateNumber = item.getLicencePlateNumber() != null ? " (Placa: " + item.getLicencePlateNumber() + ")" : "";
+            throw new DomainValidationException("No se puede verificar el item \"" + itemName + "\"" + plateNumber + " porque está dado de baja.");
+        }
 
         // Validar que el usuario está autorizado a verificar este ítem
         validateUserAuthorization(user, item);
@@ -96,6 +107,15 @@ public class VerificationService implements
         ItemEntity item = itemRepository.findByLicencePlateNumber(request.licencePlateNumber())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Item not found with licence plate number: " + request.licencePlateNumber()));
+
+        // Verificar que el item no esté dado de baja
+        List<com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity> approvedCancellations = 
+                cancellationRepository.findApprovedCancellationsByItemId(item.getId());
+        if (approvedCancellations != null && !approvedCancellations.isEmpty()) {
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item ID " + item.getId();
+            String plateNumber = item.getLicencePlateNumber() != null ? " (Placa: " + item.getLicencePlateNumber() + ")" : "";
+            throw new DomainValidationException("No se puede verificar el item \"" + itemName + "\"" + plateNumber + " porque está dado de baja.");
+        }
 
         // Validar que el usuario está autorizado a verificar este ítem
         validateUserAuthorization(user, item);
@@ -242,6 +262,15 @@ public class VerificationService implements
                 ItemEntity item = itemRepository.findByLicencePlateNumber(itemRequest.licencePlateNumber())
                         .orElseThrow(() -> new ResourceNotFoundException(
                                 "Item not found with licence plate number: " + itemRequest.licencePlateNumber()));
+
+                // Verificar que el item no esté dado de baja
+                List<com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity> approvedCancellations = 
+                        cancellationRepository.findApprovedCancellationsByItemId(item.getId());
+                if (approvedCancellations != null && !approvedCancellations.isEmpty()) {
+                    String itemName = item.getProductName() != null ? item.getProductName() : "Item ID " + item.getId();
+                    String plateNumber = item.getLicencePlateNumber() != null ? " (Placa: " + item.getLicencePlateNumber() + ")" : "";
+                    throw new DomainValidationException("No se puede verificar el item \"" + itemName + "\"" + plateNumber + " porque está dado de baja.");
+                }
 
                 // Validar que el usuario está autorizado a verificar este ítem
                 validateUserAuthorization(user, item);

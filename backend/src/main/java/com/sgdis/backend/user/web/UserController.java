@@ -16,7 +16,9 @@ import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository
 import com.sgdis.backend.exception.userExceptions.UserNotFoundException;
 import com.sgdis.backend.inventory.application.dto.InventoryResponse;
 import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.inventory.mapper.InventoryMapper;
+import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -58,6 +60,8 @@ public class UserController {
     private final AuthService authService;
     private final GetMyLoansUseCase getMyLoansUseCase;
     private final LoanService loanService;
+    private final SpringDataInventoryRepository inventoryRepository;
+    private final SpringDataItemRepository itemRepository;
 
     @Operation(
             summary = "Get user by ID",
@@ -533,6 +537,56 @@ public class UserController {
                 .adminRegionalCount(0L) // Always 0 for institution statistics
                 .warehouseCount(warehouseCount)
                 .userCount(userCount)
+                .build();
+    }
+
+    @Operation(
+            summary = "Get warehouse statistics",
+            description = "Retrieves combined statistics for warehouse section including users and inventories " +
+                    "in the current warehouse user's institution. The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = WarehouseStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @GetMapping("/warehouse/statistics")
+    public WarehouseStatisticsResponse getWarehouseStatistics() {
+        UserEntity currentUser = authService.getCurrentUser();
+        
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("Current user does not have an institution assigned");
+        }
+        
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        // User statistics
+        long totalUsers = userRepository.countByInstitutionIdExcludingRole(institutionId, Role.SUPERADMIN);
+        long warehouseManagersCount = userRepository.countByInstitutionIdAndRole(institutionId, Role.WAREHOUSE);
+        long systemUsersCount = userRepository.countByInstitutionIdAndRole(institutionId, Role.USER);
+        
+        // Inventory statistics
+        long totalInventories = inventoryRepository.countByInstitutionId(institutionId);
+        long activeInventories = inventoryRepository.countByInstitutionIdAndStatus(institutionId, true);
+        long inactiveInventories = inventoryRepository.countByInstitutionIdAndStatus(institutionId, false);
+        Double totalValue = inventoryRepository.sumTotalPriceByInstitutionId(institutionId);
+        long totalItems = itemRepository.countByInstitutionId(institutionId);
+        
+        if (totalValue == null) {
+            totalValue = 0.0;
+        }
+        
+        return WarehouseStatisticsResponse.builder()
+                .totalUsers(totalUsers)
+                .warehouseManagersCount(warehouseManagersCount)
+                .systemUsersCount(systemUsersCount)
+                .totalInventories(totalInventories)
+                .activeInventories(activeInventories)
+                .inactiveInventories(inactiveInventories)
+                .totalItems(totalItems)
+                .totalValue(totalValue)
                 .build();
     }
 

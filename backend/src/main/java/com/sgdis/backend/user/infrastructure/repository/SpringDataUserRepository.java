@@ -27,7 +27,7 @@ public interface SpringDataUserRepository extends JpaRepository<UserEntity, Long
             @Param("role2") Role role2
     );
     
-    @Query("SELECT u FROM UserEntity u WHERE u.institution = :institution AND u.role != :role1 AND u.role != :role2")
+    @Query("SELECT u FROM UserEntity u WHERE u.institution = :institution AND u.role != :role1 AND u.role != :role2 ORDER BY u.id DESC")
     org.springframework.data.domain.Page<UserEntity> findByInstitutionExcludingRoles(
             @Param("institution") InstitutionEntity institution,
             @Param("role1") Role role1,

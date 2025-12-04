@@ -395,13 +395,8 @@ async function requestTransferForWarehouse(transferData) {
 
         const result = await response.json();
         
-        // Show success message indicating auto-approval
-        if (window.showSuccessToast) {
-            window.showSuccessToast(
-                'Transferencia Aprobada Automáticamente',
-                'La transferencia ha sido creada y aprobada automáticamente por el sistema.'
-            );
-        }
+        // Note: Success toast is shown by confirmTransferRequest in transfers-forms.js
+        // to avoid duplicate notifications
 
         return result;
     } catch (error) {

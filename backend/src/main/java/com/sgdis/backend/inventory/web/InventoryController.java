@@ -754,4 +754,43 @@ public class InventoryController {
                 .build();
     }
 
+    @Operation(
+            summary = "Get warehouse inventory statistics",
+            description = "Retrieves total statistics of inventories in the current warehouse user's institution. " +
+                    "The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = GeneralInventoryStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @GetMapping("/warehouse/statistics")
+    public GeneralInventoryStatisticsResponse getWarehouseInventoryStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        long totalInventories = inventoryRepository.countByInstitutionId(institutionId);
+        long activeInventories = inventoryRepository.countByInstitutionIdAndStatus(institutionId, true);
+        long inactiveInventories = inventoryRepository.countByInstitutionIdAndStatus(institutionId, false);
+        Double totalValue = inventoryRepository.sumTotalPriceByInstitutionId(institutionId);
+        long totalItems = itemRepository.countByInstitutionId(institutionId);
+        
+        if (totalValue == null) {
+            totalValue = 0.0;
+        }
+        
+        return GeneralInventoryStatisticsResponse.builder()
+                .totalInventories(totalInventories)
+                .activeInventories(activeInventories)
+                .inactiveInventories(inactiveInventories)
+                .totalItems(totalItems)
+                .totalValue(totalValue)
+                .build();
+    }
+
 }

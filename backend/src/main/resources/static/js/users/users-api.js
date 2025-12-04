@@ -6,7 +6,7 @@ async function loadUsersData() {
 
     try {
         await loadCurrentUserInfo();
-        // Load statistics for SUPERADMIN
+        // Load statistics for SUPERADMIN, ADMIN_REGIONAL, and WAREHOUSE
         await loadUserStatistics();
         // Update welcome message based on role
         updateUsersWelcomeMessage();
@@ -220,11 +220,11 @@ async function loadUsers(page = 0) {
                 loadedUsers = loadedUsers.filter(user => user && user.role !== 'SUPERADMIN');
             }
             
-            // For warehouse, exclude all SUPERADMIN users (additional filter for safety)
+            // For warehouse, only show USER role users
             const isWarehouse = (usersData.currentLoggedInUserRole === 'WAREHOUSE') ||
                                (window.location.pathname && window.location.pathname.includes('/warehouse'));
             if (isWarehouse) {
-                loadedUsers = loadedUsers.filter(user => user && user.role !== 'SUPERADMIN');
+                loadedUsers = loadedUsers.filter(user => user && user.role === 'USER');
             }
             
             // Limit to itemsPerPage after filtering to ensure consistent page size
@@ -1080,7 +1080,7 @@ window.loadInstitutionsForUserFilter = loadInstitutionsForUserFilter;
 window.handleUserRegionalFilterChange = handleUserRegionalFilterChange;
 window.handleUserInstitutionFilterChange = handleUserInstitutionFilterChange;
 
-// Function to load user statistics (only for SUPERADMIN)
+// Function to load user statistics (for SUPERADMIN, ADMIN_REGIONAL, and WAREHOUSE)
 async function loadUserStatistics() {
     try {
         const token = localStorage.getItem('jwt');
@@ -1093,8 +1093,10 @@ async function loadUserStatistics() {
         const isSuperAdmin = currentRole === 'SUPERADMIN';
         const isAdminRegional = currentRole === 'ADMIN_REGIONAL' || 
                                (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isWarehouse = currentRole === 'WAREHOUSE' ||
+                           (window.location.pathname && window.location.pathname.includes('/warehouse'));
         
-        if (!isSuperAdmin && !isAdminRegional) {
+        if (!isSuperAdmin && !isAdminRegional && !isWarehouse) {
             // For other roles, return null to use local calculation
             return null;
         }
@@ -1104,6 +1106,8 @@ async function loadUserStatistics() {
             endpoint = '/api/v1/users/statistics';
         } else if (isAdminRegional) {
             endpoint = '/api/v1/users/regional/statistics';
+        } else if (isWarehouse) {
+            endpoint = '/api/v1/users/warehouse/statistics';
         }
 
         const response = await fetch(endpoint, {

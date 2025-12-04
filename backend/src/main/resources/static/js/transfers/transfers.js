@@ -2,6 +2,16 @@
 
 // Initialize transfers page when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on admin institution or admin regional pages (they handle their own initialization)
+    const path = window.location.pathname || '';
+    const isAdminInstitutionPage = path.includes('/admin_institution/transfers') || path.includes('/admininstitution/transfers');
+    const isAdminRegionalPage = path.includes('/admin_regional/transfers') || path.includes('/adminregional/transfers');
+    
+    // Skip initialization for admin institution and admin regional pages
+    if (isAdminInstitutionPage || isAdminRegionalPage) {
+        return;
+    }
+    
     // Initialize transfers data if not already initialized
     if (!window.transfersData) {
         window.transfersData = {

@@ -325,15 +325,6 @@ async function loadUsersForLoan() {
         const optionsContainer = selectContainer.querySelector('.custom-select-options');
         const textElement = selectContainer.querySelector('.custom-select-text');
         
-        console.log('Checking CustomSelect elements:', {
-            trigger: !!trigger,
-            dropdown: !!dropdown,
-            searchInput: !!searchInput,
-            optionsContainer: !!optionsContainer,
-            textElement: !!textElement,
-            container: !!selectContainer
-        });
-        
         if (!trigger || !dropdown || !searchInput || !optionsContainer || !textElement) {
             console.error('Required CustomSelect elements not found:', {
                 trigger: !!trigger,
@@ -353,18 +344,15 @@ async function loadUsersForLoan() {
                 // Check if it's still valid
                 if (!window.newLoanResponsibleSelect.container || 
                     typeof window.newLoanResponsibleSelect.setOptions !== 'function') {
-                    console.log('Existing CustomSelect instance is invalid, recreating...');
                     window.newLoanResponsibleSelect = null;
                 }
             } catch (e) {
-                console.log('Existing CustomSelect instance is broken, recreating...');
                 window.newLoanResponsibleSelect = null;
             }
         }
         
         if (!window.newLoanResponsibleSelect) {
             try {
-                console.log('Initializing CustomSelect with class:', CustomSelectClass);
                 window.newLoanResponsibleSelect = new CustomSelectClass('newLoanResponsibleSelect', {
                     placeholder: allUsers.length === 0 ? 'No hay usuarios disponibles' : 'Seleccionar responsable...',
                     onChange: (option) => {
@@ -389,8 +377,6 @@ async function loadUsersForLoan() {
                     console.error('Prototype methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.newLoanResponsibleSelect)));
                     throw new Error('setOptions method not available on CustomSelect instance');
                 }
-                
-                console.log('CustomSelect initialized successfully');
             } catch (error) {
                 console.error('Error initializing CustomSelect:', error);
                 console.error('Error stack:', error.stack);
@@ -415,7 +401,6 @@ async function loadUsersForLoan() {
                     } else {
                         window.newLoanResponsibleSelect.setOptions(userOptions);
                     }
-                    console.log('Options set successfully:', userOptions.length);
                 } catch (error) {
                     console.error('Error setting options:', error);
                     console.error('Error stack:', error.stack);
@@ -446,10 +431,30 @@ async function loadUsersForLoan() {
 // Show new loan modal
 async function showNewLoanModal() {
     const modal = document.getElementById('newLoanModal');
-    if (!modal) return;
+    if (!modal) {
+        if (window.showErrorToast) {
+            window.showErrorToast(
+                'Error', 
+                'El modal de préstamo no está disponible. Por favor, recarga la página.',
+                true,
+                4000
+            );
+        }
+        return;
+    }
     
     // Show modal first
     modal.classList.remove('hidden');
+    
+    // Show info notification
+    if (window.showInfoToast) {
+        window.showInfoToast(
+            'Realizar Préstamo', 
+            'Busca un item por placa o serie y selecciona un responsable para crear el préstamo.',
+            true,
+            3000
+        );
+    }
     
     // Wait a bit for modal to be visible
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -566,7 +571,12 @@ async function handleNewLoanSubmit(e) {
     
     if (!itemId || !responsibleId) {
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'Por favor busque un item y seleccione un responsable');
+            window.showErrorToast(
+                'Error de Validación', 
+                'Por favor busque un item y seleccione un responsable antes de crear el préstamo.',
+                true,
+                4000
+            );
         } else {
             alert('Por favor busque un item y seleccione un responsable');
         }
@@ -586,6 +596,11 @@ async function handleNewLoanSubmit(e) {
     }
     
     try {
+        // Show processing notification
+        if (window.showInfoToast) {
+            window.showInfoToast('Procesando', 'Creando el préstamo...', true, 2000);
+        }
+        
         const token = localStorage.getItem('jwt');
         if (!token) {
             throw new Error('No authentication token found');
@@ -625,7 +640,12 @@ async function handleNewLoanSubmit(e) {
         const result = await response.json();
         
         if (window.showSuccessToast) {
-            window.showSuccessToast('Préstamo creado', 'El préstamo se ha creado exitosamente');
+            window.showSuccessToast(
+                'Préstamo Creado Exitosamente', 
+                result.message || 'El préstamo se ha creado exitosamente. El item ha sido asignado al responsable.',
+                true,
+                5000
+            );
         }
         
         closeNewLoanModal();
@@ -643,7 +663,12 @@ async function handleNewLoanSubmit(e) {
     } catch (error) {
         console.error('Error creating loan:', error);
         if (window.showErrorToast) {
-            window.showErrorToast('Error', error.message || 'No se pudo crear el préstamo');
+            window.showErrorToast(
+                'Error al Crear Préstamo', 
+                error.message || 'No se pudo crear el préstamo. Por favor, verifica los datos e intenta nuevamente.',
+                true,
+                5000
+            );
         } else {
             alert(error.message || 'No se pudo crear el préstamo');
         }

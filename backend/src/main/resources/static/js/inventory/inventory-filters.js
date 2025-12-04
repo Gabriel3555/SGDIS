@@ -83,6 +83,21 @@ function filterInventories() {
         });
     }
 
+    // Sort filtered inventories
+    // For warehouse, backend already sorts by quantityItems, so maintain that order
+    // For others, sort by ID descending (largest ID first)
+    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') || 
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
+    
+    if (!isWarehouse) {
+        filtered.sort((a, b) => {
+            const idA = a.id || 0;
+            const idB = b.id || 0;
+            return idB - idA; // Descending order
+        });
+    }
+    // For warehouse, don't sort - backend already sorted by quantityItems globally
+    
     data.filteredInventories = filtered;
     data.currentPage = 1;
     

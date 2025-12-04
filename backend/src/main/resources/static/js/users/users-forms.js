@@ -1,24 +1,52 @@
 async function handleNewUserSubmit(e) {
      e.preventDefault();
 
+     // Disable submit button to prevent multiple submissions
+     const form = e.target;
+     const submitButton = form.querySelector('button[type="submit"]');
+     let originalButtonText = '';
+     if (submitButton) {
+         originalButtonText = submitButton.innerHTML;
+         submitButton.disabled = true;
+         submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creando...';
+     }
+
      const fullName = document.getElementById('newUserFullName')?.value?.trim();
      const email = document.getElementById('newUserEmail')?.value?.trim();
-     // Get role from hidden input (CustomSelect)
-    const roleInput = document.getElementById('newUserRole');
-    const role = roleInput?.value || (window.roleSelect ? window.roleSelect.getValue() : '');
-     const password = document.getElementById('newUserPassword')?.value?.trim();
      
-     // Check if current user is ADMIN_INSTITUTION
+     // Check if current user is ADMIN_INSTITUTION or WAREHOUSE
      const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
      const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+     const isWarehouse = currentRole === 'WAREHOUSE' ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
+     
+     // Get role from hidden input (CustomSelect) or set to USER for warehouse
+     const roleInput = document.getElementById('newUserRole');
+     let role = '';
+     if (isWarehouse) {
+         // For warehouse, always use USER role
+         role = 'USER';
+         if (roleInput) {
+             roleInput.value = 'USER';
+         }
+     } else {
+         role = roleInput?.value || (window.roleSelect ? window.roleSelect.getValue() : '');
+     }
+     
+     const password = document.getElementById('newUserPassword')?.value?.trim();
      
      let institutionId;
      
-     if (isAdminInstitution) {
+     if (isAdminInstitution || isWarehouse) {
          // Use the stored institution ID from current user
          institutionId = window.currentUserInstitutionId;
          if (!institutionId) {
              showErrorToast('Error', 'No se pudo obtener la información de la institución. Por favor recarga la página.');
+             // Re-enable button on validation error
+             if (submitButton) {
+                 submitButton.disabled = false;
+                 submitButton.innerHTML = originalButtonText;
+             }
              return;
          }
      } else {
@@ -47,6 +75,14 @@ async function handleNewUserSubmit(e) {
          if (!regional || regional === '') missingFields.push('Regional');
          if (!institution || institution === '') missingFields.push('Institución');
          if (!password) missingFields.push('Contraseña');
+         
+         // For warehouse, role is always USER, so don't validate it
+         if (isWarehouse && (!role || role === '')) {
+             role = 'USER';
+             if (roleInput) {
+                 roleInput.value = 'USER';
+             }
+         }
 
          if (missingFields.length > 0) {
              const fieldsList = missingFields.join(', ');
@@ -75,6 +111,11 @@ async function handleNewUserSubmit(e) {
              }
              if (!password) document.getElementById('newUserPassword')?.classList.add('border-red-500');
              
+             // Re-enable button on validation error
+             if (submitButton) {
+                 submitButton.disabled = false;
+                 submitButton.innerHTML = originalButtonText;
+             }
              return;
          }
          
@@ -97,17 +138,27 @@ async function handleNewUserSubmit(e) {
             if (institutionSelect) {
                 institutionSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
             }
+            // Re-enable button on validation error
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            }
             return;
         }
      }
      
-     // Validate required fields for ADMIN_INSTITUTION
-     if (isAdminInstitution) {
+     // Validate required fields for ADMIN_INSTITUTION and WAREHOUSE
+     if (isAdminInstitution || isWarehouse) {
          const missingFields = [];
          if (!fullName) missingFields.push('Nombre Completo');
          if (!email) missingFields.push('Email');
-         if (!role || role === '') missingFields.push('Rol');
          if (!password) missingFields.push('Contraseña');
+         
+         // For warehouse, role is always USER (already set above)
+         // For admin institution, validate role
+         if (isAdminInstitution && (!role || role === '')) {
+             missingFields.push('Rol');
+         }
          
          if (missingFields.length > 0) {
              const fieldsList = missingFields.join(', ');
@@ -116,7 +167,7 @@ async function handleNewUserSubmit(e) {
              // Highlight missing fields visually
              if (!fullName) document.getElementById('newUserFullName')?.classList.add('border-red-500');
              if (!email) document.getElementById('newUserEmail')?.classList.add('border-red-500');
-             if (!role) {
+             if (isAdminInstitution && !role) {
                 const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
                 if (roleSelectTrigger) {
                     roleSelectTrigger.classList.add('border-red-500');
@@ -124,16 +175,23 @@ async function handleNewUserSubmit(e) {
             }
              if (!password) document.getElementById('newUserPassword')?.classList.add('border-red-500');
              
+             // Re-enable button on validation error
+             if (submitButton) {
+                 submitButton.disabled = false;
+                 submitButton.innerHTML = originalButtonText;
+             }
              return;
          }
          
          // Remove error highlighting
          document.getElementById('newUserFullName')?.classList.remove('border-red-500');
          document.getElementById('newUserEmail')?.classList.remove('border-red-500');
-         const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
-        if (roleSelectTrigger) {
-            roleSelectTrigger.classList.remove('border-red-500');
-        }
+         if (isAdminInstitution) {
+             const roleSelectTrigger = document.getElementById('newUserRoleSelect')?.querySelector('.custom-select-trigger');
+            if (roleSelectTrigger) {
+                roleSelectTrigger.classList.remove('border-red-500');
+            }
+         }
          document.getElementById('newUserPassword')?.classList.remove('border-red-500');
      }
      
@@ -183,9 +241,19 @@ async function handleNewUserSubmit(e) {
         } else {
             const errorData = await response.json();
             showErrorToast('Error al crear usuario', errorData.detail || 'Error desconocido');
+            // Re-enable button on error
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            }
         }
     } catch (error) {
         showErrorToast('Error al crear usuario', 'Inténtalo de nuevo.');
+        // Re-enable button on error
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalButtonText;
+        }
     }
 }
 

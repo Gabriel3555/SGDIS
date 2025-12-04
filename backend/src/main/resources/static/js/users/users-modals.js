@@ -7,12 +7,16 @@ async function showNewUserModal() {
      // Get current user info to check role and institution
      const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
      const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+     const isWarehouse = currentRole === 'WAREHOUSE' ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
      
-     // Hide/disable regional and institution selectors for ADMIN_INSTITUTION
+     // Hide/disable regional and institution selectors for ADMIN_INSTITUTION and WAREHOUSE
      const regionalSelect = document.getElementById('newUserRegionalSelect');
      const institutionSelect = document.getElementById('newUserInstitutionSelect');
+     const roleContainer = document.getElementById('newUserRoleContainer');
+     const roleInput = document.getElementById('newUserRole');
      
-     if (isAdminInstitution) {
+     if (isAdminInstitution || isWarehouse) {
          // Hide regional and institution selectors by finding their parent divs in the grid
          const grid = document.querySelector('#newUserModal .grid');
          if (grid) {
@@ -25,6 +29,21 @@ async function showNewUserModal() {
                      div.style.display = 'none';
                  }
              });
+         }
+         
+         // For warehouse, hide role selector and set role to USER
+         if (isWarehouse) {
+             if (roleContainer) {
+                 roleContainer.style.display = 'none';
+             }
+             if (roleInput) {
+                 roleInput.value = 'USER';
+             }
+         } else {
+             // For admin institution, show role selector
+             if (roleContainer) {
+                 roleContainer.style.display = '';
+             }
          }
          
          // Get current user's institution info
@@ -87,8 +106,8 @@ async function showNewUserModal() {
          updateRoleOptionsForCurrentUser();
      }
 
-     // Load regionals only if not ADMIN_INSTITUTION
-     if (!isAdminInstitution) {
+     // Load regionals only if not ADMIN_INSTITUTION or WAREHOUSE
+     if (!isAdminInstitution && !isWarehouse) {
          await loadRegionalsForNewUser();
      }
  }
@@ -127,6 +146,7 @@ function closeNewUserModal() {
      // Reset display of regional and institution fields
      const regionalSelect = document.getElementById('newUserRegionalSelect');
      const institutionSelect = document.getElementById('newUserInstitutionSelect');
+     const roleContainer = document.getElementById('newUserRoleContainer');
      const grid = document.querySelector('#newUserModal .grid');
      if (grid) {
          const gridDivs = grid.querySelectorAll('div');
@@ -135,6 +155,11 @@ function closeNewUserModal() {
                  div.style.display = '';
              }
          });
+     }
+     
+     // Reset role container display
+     if (roleContainer) {
+         roleContainer.style.display = '';
      }
      
      // Clear stored institution info
@@ -1838,6 +1863,8 @@ class CustomSelect {
 function updateRoleOptionsForCurrentUser() {
     const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
     const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+    const isWarehouse = currentRole === 'WAREHOUSE' ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
     
     let roleOptions = [
         { value: 'SUPERADMIN', label: 'Super Admin' },
@@ -1856,6 +1883,13 @@ function updateRoleOptionsForCurrentUser() {
         );
     }
     
+    // Filter out restricted roles for WAREHOUSE (can only create USER)
+    if (isWarehouse) {
+        roleOptions = roleOptions.filter(option => 
+            option.value === 'USER'
+        );
+    }
+    
     if (window.roleSelect) {
         window.roleSelect.setOptions(roleOptions);
     }
@@ -1866,6 +1900,8 @@ function initializeCustomSelects() {
     // Role select - will be filtered based on current user role
     const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
     const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+    const isWarehouse = currentRole === 'WAREHOUSE' ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
     
     let roleOptions = [
         { value: 'SUPERADMIN', label: 'Super Admin' },
@@ -1881,6 +1917,13 @@ function initializeCustomSelects() {
             option.value !== 'SUPERADMIN' && 
             option.value !== 'ADMIN_REGIONAL' && 
             option.value !== 'ADMIN_INSTITUTION'
+        );
+    }
+    
+    // Filter out restricted roles for WAREHOUSE (can only create USER)
+    if (isWarehouse) {
+        roleOptions = roleOptions.filter(option => 
+            option.value === 'USER'
         );
     }
     

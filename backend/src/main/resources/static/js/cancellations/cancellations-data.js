@@ -5,7 +5,7 @@ const cancellationsData = {
     filteredCancellations: [],
     isLoading: false,
     currentPage: 0,
-    pageSize: 10, // Default, will be overridden to 6 for warehouse
+    pageSize: 6, // Default to 6 for all views
     totalPages: 0,
     totalElements: 0,
     statistics: null, // Statistics from API (for warehouse)
@@ -17,11 +17,6 @@ const cancellationsData = {
     },
     userRole: null
 };
-
-// Set pageSize to 6 for warehouse
-if (window.location.pathname && window.location.pathname.includes('/warehouse/')) {
-    cancellationsData.pageSize = 6;
-}
 
 // Initialize cancellations data
 function initCancellationsData() {

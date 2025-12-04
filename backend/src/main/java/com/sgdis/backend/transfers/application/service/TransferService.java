@@ -27,6 +27,7 @@ import com.sgdis.backend.transfers.domain.TransferStatus;
 import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
 import com.sgdis.backend.transfers.infrastructure.repository.SpringDataTransferRepository;
 import com.sgdis.backend.transfers.mapper.TransferMapper;
+import com.sgdis.backend.cancellation.infrastructure.repository.SpringDataCancellationRepository;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 // Auditoría
@@ -51,6 +52,7 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
     private final SpringDataTransferRepository transferRepository;
     private final SpringDataItemRepository itemRepository;
     private final SpringDataInventoryRepository inventoryRepository;
+    private final SpringDataCancellationRepository cancellationRepository;
     private final RecordActionUseCase recordActionUseCase;
 
     @Override
@@ -62,6 +64,15 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
 
         ItemEntity item = itemRepository.findById(request.itemId())
                 .orElseThrow(() -> new ResourceNotFoundException("Item no encontrado con id: " + request.itemId()));
+
+        // Verificar que el item no esté dado de baja
+        List<com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity> approvedCancellations = 
+                cancellationRepository.findApprovedCancellationsByItemId(item.getId());
+        if (approvedCancellations != null && !approvedCancellations.isEmpty()) {
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item ID " + item.getId();
+            String plateNumber = item.getLicencePlateNumber() != null ? " (Placa: " + item.getLicencePlateNumber() + ")" : "";
+            throw new DomainValidationException("No se puede transferir el item \"" + itemName + "\"" + plateNumber + " porque está dado de baja.");
+        }
 
         InventoryEntity sourceInventory = item.getInventory();
         if (sourceInventory == null) {
@@ -222,6 +233,15 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
         ItemEntity item = transfer.getItem();
         if (item == null) {
             throw new DomainValidationException("La transferencia no tiene un ítem asociado");
+        }
+
+        // Verificar que el item no esté dado de baja
+        List<com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity> approvedCancellations = 
+                cancellationRepository.findApprovedCancellationsByItemId(item.getId());
+        if (approvedCancellations != null && !approvedCancellations.isEmpty()) {
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item ID " + item.getId();
+            String plateNumber = item.getLicencePlateNumber() != null ? " (Placa: " + item.getLicencePlateNumber() + ")" : "";
+            throw new DomainValidationException("No se puede aprobar la transferencia del item \"" + itemName + "\"" + plateNumber + " porque está dado de baja.");
         }
 
         InventoryEntity destinationInventory = transfer.getInventory();
