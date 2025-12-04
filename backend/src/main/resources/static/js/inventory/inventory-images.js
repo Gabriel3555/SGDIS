@@ -42,6 +42,15 @@ window.uploadInventoryPhotoById = async function(file, inventoryId) {
             return await response.text();
         } else {
             const errorText = await response.text();
+            
+            // Si el error es por inventario inactivo, mostrar con showErrorToast
+            if (errorText && (errorText.includes("inactivo") || errorText.includes("está inactivo"))) {
+                if (typeof showErrorToast === 'function') {
+                    showErrorToast("Inventario inactivo", errorText);
+                }
+                throw new Error(errorText);
+            }
+            
             const errorMessage = `Error al subir la imagen para el inventario ${inventoryId}: ${response.status} - ${errorText}`;
 
             if (response.status === 401 || response.status === 403) {
@@ -91,6 +100,12 @@ window.changeInventoryPhoto = function(inventoryId) {
 
                     showSuccessToast('Imagen actualizada', 'Imagen de inventario actualizada exitosamente');
                 } catch (error) {
+                    // Si el error es por inventario inactivo, ya se mostró el toast arriba
+                    if (error.message && (error.message.includes("inactivo") || error.message.includes("está inactivo"))) {
+                        // El error ya fue mostrado en uploadInventoryPhotoById
+                        return;
+                    }
+                    
                     if (error.message && !error.message.includes('Failed to fetch') &&
                         !error.message.includes('NetworkError') &&
                         !error.message.includes('401') &&

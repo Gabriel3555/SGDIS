@@ -94,22 +94,13 @@ function setupEventListeners() {
 
 // Action functions
 async function deleteInventory(inventoryId) {
-    try {
-        //showDeleteInventoryModal(inventoryId);
-        //return;
+    // Call the deleteInventory function from inventory-api.js
+    await deleteInventoryFromApi(inventoryId);
 
-        // Call the deleteInventory function from inventory-api.js
-        await deleteInventoryFromApi(inventoryId);
-
-        // Optionally, reload the inventory data to update the UI
-        await loadInventoryData();
-
-        // Show a success message
-        showInfoToast('Inventario eliminado', 'El inventario se ha eliminado correctamente.');
-    } catch (error) {
-        console.error('Error deleting inventory:', error);
-        showErrorToast('Error al eliminar', error.message || 'No se pudo eliminar el inventario.');
-    }
+    // Optionally, reload the inventory data to update the UI
+    await loadInventoryData();
+    
+    // Note: Success/error notifications are handled by the calling function (confirmDeleteInventory)
 }
 
 // Filter functions

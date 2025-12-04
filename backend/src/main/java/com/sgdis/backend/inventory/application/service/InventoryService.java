@@ -30,8 +30,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
+import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository;
+import com.sgdis.backend.transfers.infrastructure.repository.SpringDataTransferRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -64,6 +68,27 @@ public class InventoryService
         private final AuthService authService;
         private final NotificationService notificationService;
         private final RecordActionUseCase recordActionUseCase;
+        private final SpringDataItemRepository itemRepository;
+        private final SpringDataLoanRepository loanRepository;
+        private final SpringDataTransferRepository transferRepository;
+
+        /**
+         * Valida que el inventario esté activo para realizar acciones.
+         * Permite excepciones para: eliminar inventario y realizar transferencias.
+         * 
+         * @param inventory El inventario a validar
+         * @param actionName El nombre de la acción que se está intentando realizar (para el mensaje de error)
+         */
+        private void validateInventoryIsActive(InventoryEntity inventory, String actionName) {
+                if (inventory != null && !inventory.isStatus()) {
+                        String inventoryName = inventory.getName() != null ? inventory.getName() : "sin nombre";
+                        throw new DomainValidationException(
+                                String.format("No se puede %s en el inventario '%s' porque está inactivo. " +
+                                                "Solo se permiten transferencias de items y eliminar el inventario cuando está inactivo.",
+                                        actionName, inventoryName)
+                        );
+                }
+        }
 
         @Override
         @Transactional
@@ -166,7 +191,111 @@ public class InventoryService
                 String ownerName = inventory.getOwner() != null ? inventory.getOwner().getFullName() : "N/A";
                 String ownerEmail = inventory.getOwner() != null ? inventory.getOwner().getEmail() : "N/A";
                 
-                inventoryRepository.deleteById(id);
+                // Validar que el inventario no tenga items asociados
+                long itemsCount = itemRepository.findAllByInventoryId(id).size();
+                if (itemsCount > 0) {
+                    throw new DomainValidationException(
+                            String.format("No se puede eliminar el inventario '%s' porque tiene %d item(s) asociado(s). Por favor, elimina o transfiere todos los items antes de eliminar el inventario.", 
+                                    inventoryName, itemsCount)
+                    );
+                }
+                
+                // Validar que el inventario no tenga transferencias asociadas
+                long transfersCount = transferRepository.findAllByInventory(id).size();
+                if (transfersCount > 0) {
+                    throw new DomainValidationException(
+                            String.format("No se puede eliminar el inventario '%s' porque tiene %d transferencia(s) asociada(s). Por favor, elimina todas las transferencias antes de eliminar el inventario.", 
+                                    inventoryName, transfersCount)
+                    );
+                }
+                
+                // Validar que el inventario no tenga préstamos activos asociados
+                List<com.sgdis.backend.loan.infrastructure.entity.LoanEntity> loans = loanRepository.findAllByInventoryId(id);
+                long activeLoansCount = loans.stream()
+                        .filter(loan -> loan.getReturned() == null || !loan.getReturned())
+                        .count();
+                if (activeLoansCount > 0) {
+                    throw new DomainValidationException(
+                            String.format("No se puede eliminar el inventario '%s' porque tiene %d préstamo(s) activo(s) asociado(s). Por favor, finaliza todos los préstamos antes de eliminar el inventario.", 
+                                    inventoryName, activeLoansCount)
+                    );
+                }
+                
+                // Guardar información del inventario antes de eliminarlo
+                InventoryResponse response = InventoryMapper.toResponse(inventory);
+                
+                // Limpiar todas las relaciones bidireccionales antes de eliminar
+                // IMPORTANTE: Hacer esto ANTES de intentar guardar o eliminar
+                
+                // 1. Limpiar signatories PRIMERO (el lado propietario está en UserEntity con @JoinTable)
+                // Necesitamos limpiar ambas direcciones de la relación
+                if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
+                    List<UserEntity> signatories = new ArrayList<>(inventory.getSignatories());
+                    for (UserEntity signatory : signatories) {
+                        if (signatory != null && signatory.getId() != null) {
+                            // Cargar el usuario desde la base de datos para evitar problemas de proxy
+                            UserEntity loadedSignatory = userRepository.findById(signatory.getId())
+                                    .orElse(null);
+                            if (loadedSignatory != null) {
+                                List<InventoryEntity> signatoryInventories = loadedSignatory.getMySignatories();
+                                if (signatoryInventories != null) {
+                                    signatoryInventories.removeIf(inv -> inv != null && inv.getId() != null && inv.getId().equals(id));
+                                    loadedSignatory.setMySignatories(signatoryInventories);
+                                    userRepository.save(loadedSignatory);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 2. Limpiar managers (el lado propietario está en InventoryEntity con @JoinTable)
+                // Simplemente limpiar la lista - Hibernate manejará la tabla de unión
+                inventory.setManagers(new ArrayList<>());
+                
+                // 3. Limpiar owner (OneToOne - establecer a null)
+                // Si hay un owner, limpiar la referencia inversa primero
+                if (inventory.getOwner() != null && inventory.getOwner().getId() != null) {
+                    UserEntity owner = userRepository.findById(inventory.getOwner().getId()).orElse(null);
+                    if (owner != null && owner.getMyOwnedInventory() != null && 
+                        owner.getMyOwnedInventory().getId() != null && 
+                        owner.getMyOwnedInventory().getId().equals(id)) {
+                        owner.setMyOwnedInventory(null);
+                        userRepository.save(owner);
+                    }
+                }
+                inventory.setOwner(null);
+                
+                // 4. Asegurarse de que las listas no sean null
+                if (inventory.getSignatories() == null) {
+                    inventory.setSignatories(new ArrayList<>());
+                } else {
+                    inventory.setSignatories(new ArrayList<>());
+                }
+                
+                try {
+                    // NO guardar el inventario antes de eliminar - esto puede causar problemas
+                    // Simplemente eliminar directamente después de limpiar las relaciones
+                    inventoryRepository.delete(inventory);
+                } catch (org.hibernate.HibernateException e) {
+                    // Capturar errores de Hibernate (incluye TransientObjectException) y convertirlos en mensajes claros
+                    throw new DomainValidationException(
+                            String.format("No se puede eliminar el inventario '%s' porque tiene relaciones activas con otros elementos del sistema (items, transferencias, préstamos, managers o signatories). Por favor, elimina o transfiere todos los elementos asociados antes de eliminar el inventario.", 
+                                    inventoryName)
+                    );
+                } catch (Exception e) {
+                    // Si hay otro tipo de error, verificar si es relacionado con relaciones
+                    if (e.getMessage() != null && 
+                        (e.getMessage().contains("TransientObjectException") || 
+                         e.getMessage().contains("foreign key") ||
+                         e.getMessage().contains("constraint"))) {
+                        throw new DomainValidationException(
+                                String.format("No se puede eliminar el inventario '%s' porque tiene relaciones activas con otros elementos del sistema. Por favor, elimina o transfiere todos los elementos asociados antes de eliminar el inventario.", 
+                                        inventoryName)
+                        );
+                    }
+                    // Si no es un error de relaciones, relanzar el error original
+                    throw e;
+                }
                 
                 // Registrar auditoría
                 recordActionUseCase.recordAction(new RecordActionRequest(
@@ -174,7 +303,7 @@ public class InventoryService
                                 inventoryName, id, ownerName, ownerEmail)
                 ));
                 
-                return InventoryMapper.toResponse(inventory);
+                return response;
         }
 
         @Override
@@ -182,6 +311,18 @@ public class InventoryService
         public UpdateInventoryResponse updateInventory(Long id, UpdateInventoryRequest request) {
                 InventoryEntity inventory = inventoryRepository.findById(id)
                                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + id));
+                
+                // Validar que el inventario esté activo para actualizarlo
+                // Permitir actualizar solo si se está cambiando el estado a activo
+                boolean isOnlyActivating = !inventory.isStatus() 
+                        && request.status() != null 
+                        && request.status() == true
+                        && (request.name() == null || request.name().equals(inventory.getName()))
+                        && (request.location() == null || request.location().equals(inventory.getLocation()));
+                
+                if (!isOnlyActivating) {
+                        validateInventoryIsActive(inventory, "actualizar");
+                }
                 
                 String originalName = inventory.getName();
                 String originalLocation = inventory.getLocation();
@@ -225,6 +366,9 @@ public class InventoryService
 
                 InventoryEntity inventory = inventoryRepository.findById(inventoryId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + inventoryId));
+                
+                // Validar que el inventario esté activo
+                validateInventoryIsActive(inventory, "actualizar el propietario");
 
                 UserEntity newOwner = userRepository.findById(request.ownerId())
                                 .orElseThrow(() -> new UserNotFoundException(request.ownerId()));
@@ -283,6 +427,9 @@ public class InventoryService
 
                 InventoryEntity inventory = inventoryRepository.findById(inventoryId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id " + inventoryId));
+                
+                // Validar que el inventario esté activo
+                validateInventoryIsActive(inventory, "actualizar la institución");
 
                 InstitutionEntity institution = institutionRepository.findById(request.institutionId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -312,6 +459,9 @@ public class InventoryService
                 InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Inventory not found with id: " + request.inventoryId()));
+                
+                // Validar que el inventario esté activo
+                validateInventoryIsActive(inventory, "asignar un manejador");
 
                 if (inventory.getSignatories() != null && inventory.getSignatories().contains(user)) {
                     throw new DomainConflictException("Este usuario ya está asignado como firmante a este inventario");
@@ -363,6 +513,9 @@ public class InventoryService
                 InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Inventory not found with id: " + request.inventoryId()));
+                
+                // Validar que el inventario esté activo
+                validateInventoryIsActive(inventory, "eliminar un manejador");
 
                 List<UserEntity> managers = inventory.getManagers();
                 if (managers == null || !managers.contains(user)) {
@@ -452,6 +605,9 @@ public class InventoryService
 
             InventoryEntity inventory = inventoryRepository.findById(inventoryId)
                     .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + inventoryId));
+            
+            // Validar que el inventario esté activo
+            validateInventoryIsActive(inventory, "renunciar como manejador");
 
             List<UserEntity> managers = inventory.getManagers();
             if (managers == null || !managers.contains(user)) {
@@ -484,6 +640,9 @@ public class InventoryService
 
         InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventario no encontrado "));
+        
+        // Validar que el inventario esté activo
+        validateInventoryIsActive(inventory, "asignar un firmante");
 
         if (inventory.getManagers() != null && inventory.getManagers().contains(user)) {
             throw new DomainConflictException("Este usuario ya está asignado como manejador a este inventario");
@@ -544,6 +703,9 @@ public class InventoryService
 
         InventoryEntity inventory = inventoryRepository.findById(inventoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Inventario no encotrado"));
+        
+        // Validar que el inventario esté activo
+        validateInventoryIsActive(inventory, "renunciar como firmante");
 
         List<InventoryEntity> userInventories = user.getMySignatories();
 
@@ -588,6 +750,9 @@ public class InventoryService
 
         InventoryEntity inventory = inventoryRepository.findById(request.inventoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + request.inventoryId()));
+        
+        // Validar que el inventario esté activo
+        validateInventoryIsActive(inventory, "eliminar un firmante");
 
         List<InventoryEntity> userInventories = user.getMySignatories();
 
@@ -667,6 +832,9 @@ public class InventoryService
 
         InventoryEntity inventory = inventoryRepository.findById(inventoryId)
                         .orElseThrow(() -> new ResourceNotFoundException("Inventario no encontrado"));
+        
+        // Validar que el inventario esté activo
+        validateInventoryIsActive(inventory, "renunciar como manejador");
 
         List<UserEntity> managers = inventory.getManagers();
         if (managers == null || !managers.contains(user)) {

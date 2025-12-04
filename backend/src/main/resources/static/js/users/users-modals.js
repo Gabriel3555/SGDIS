@@ -18,6 +18,15 @@ async function showNewUserModal() {
      const roleContainer = document.getElementById('newUserRoleContainer');
      const roleInput = document.getElementById('newUserRole');
      
+     // Initialize custom selects FIRST before loading data
+     // This ensures window.institutionSelect exists when we try to load institutions
+     if (!window.roleSelect || !window.regionalSelect || !window.institutionSelect || !window.jobTitleSelect) {
+         initializeCustomSelects();
+     } else {
+         // Update role options based on current user role
+         updateRoleOptionsForCurrentUser();
+     }
+     
      // For Admin Regional, load institutions from their regional and hide regional selector
      if (isAdminRegional) {
          // Hide regional selector completely for Admin Regional
@@ -72,7 +81,10 @@ async function showNewUserModal() {
                              regionalHiddenInput.value = userInstitution.regionalId.toString();
                          }
                          
-                         // Load institutions for this regional
+                         // Wait a bit to ensure CustomSelect is fully initialized
+                         await new Promise(resolve => setTimeout(resolve, 100));
+                         
+                         // Load institutions for this regional (now that CustomSelect is initialized)
                          await loadInstitutionsByRegional(userInstitution.regionalId);
                      }
                  }
@@ -162,16 +174,8 @@ async function showNewUserModal() {
          }
      }
 
-     // Initialize custom selects if not already done
-     if (!window.roleSelect || !window.regionalSelect || !window.institutionSelect || !window.jobTitleSelect) {
-         initializeCustomSelects();
-     } else {
-         // Update role options based on current user role
-         updateRoleOptionsForCurrentUser();
-     }
-
      // Load regionals only if not ADMIN_INSTITUTION or WAREHOUSE
-     if (!isAdminInstitution && !isWarehouse) {
+     if (!isAdminInstitution && !isWarehouse && !isAdminRegional) {
          await loadRegionalsForNewUser();
      }
  }

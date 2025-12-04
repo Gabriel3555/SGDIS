@@ -584,3 +584,134 @@ aside.sidebar nav .sidebar-item span,
     cursor: not-allowed;
     font-style: italic;
 }
+
+/* Native Select Styles - Matching Custom Select Appearance */
+select#newInventoryInstitutionId,
+select#newInventoryOwnerId,
+select#roleUserId,
+select#deleteRoleUserId {
+    padding: 0.75rem 1rem;
+    padding-right: 2.5rem;
+    background: white;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 56px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 12px;
+    width: 100%;
+}
+
+select#newInventoryInstitutionId:hover,
+select#newInventoryOwnerId:hover,
+select#roleUserId:hover,
+select#deleteRoleUserId:hover {
+    border-color: #00AF00;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
+}
+
+select#newInventoryInstitutionId:focus,
+select#newInventoryOwnerId:focus,
+select#roleUserId:focus,
+select#deleteRoleUserId:focus {
+    outline: none;
+    border-color: #00AF00;
+    box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
+}
+
+select#newInventoryInstitutionId:disabled,
+select#newInventoryOwnerId:disabled,
+select#roleUserId:disabled,
+select#deleteRoleUserId:disabled {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    border-color: #e5e7eb;
+    opacity: 0.6;
+}
+
+select#newInventoryInstitutionId:disabled:hover,
+select#newInventoryOwnerId:disabled:hover,
+select#roleUserId:disabled:hover,
+select#deleteRoleUserId:disabled:hover {
+    border-color: #e5e7eb;
+    box-shadow: none;
+}
+
+/* Dark mode support for native selects */
+.dark select#newInventoryInstitutionId,
+.dark select#newInventoryOwnerId,
+.dark select#roleUserId,
+.dark select#deleteRoleUserId {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%009ca3af' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+.dark select#newInventoryInstitutionId:hover,
+.dark select#newInventoryOwnerId:hover,
+.dark select#roleUserId:hover,
+.dark select#deleteRoleUserId:hover {
+    border-color: #00AF00;
+}
+
+.dark select#newInventoryInstitutionId:focus,
+.dark select#newInventoryOwnerId:focus,
+.dark select#roleUserId:focus,
+.dark select#deleteRoleUserId:focus {
+    border-color: #00AF00;
+}
+
+.dark select#newInventoryInstitutionId:disabled,
+.dark select#newInventoryOwnerId:disabled,
+.dark select#roleUserId:disabled,
+.dark select#deleteRoleUserId:disabled {
+    background-color: #374151;
+    color: #6b7280;
+    border-color: #4b5563;
+}
+
+/* Style options inside native selects */
+select#newInventoryInstitutionId option,
+select#newInventoryOwnerId option,
+select#roleUserId option,
+select#deleteRoleUserId option {
+    padding: 12px 16px;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 500;
+    background: white;
+}
+
+select#newInventoryInstitutionId option:disabled,
+select#newInventoryOwnerId option:disabled,
+select#roleUserId option:disabled,
+select#deleteRoleUserId option:disabled {
+    color: #9ca3af;
+    font-style: italic;
+}
+
+.dark select#newInventoryInstitutionId option,
+.dark select#newInventoryOwnerId option,
+.dark select#roleUserId option,
+.dark select#deleteRoleUserId option {
+    background: #1f2937;
+    color: #f3f4f6;
+}
+
+.dark select#newInventoryInstitutionId option:disabled,
+.dark select#newInventoryOwnerId option:disabled,
+.dark select#roleUserId option:disabled,
+.dark select#deleteRoleUserId option:disabled {
+    color: #6b7280;
+}
