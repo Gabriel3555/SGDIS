@@ -2076,13 +2076,13 @@ async function loadUsersForNewInventory(institutionId = null) {
       users = await fetchUsers();
     }
 
-    if (allUsers.length === 0) {
+    if (users.length === 0) {
       populateNewInventoryOwnerSelect([]);
       return;
     }
 
     // Filter users by institution if institutionId is provided
-    let filteredUsers = allUsers;
+    let filteredUsers = users;
     if (institutionId && institutionId !== '') {
       const institutionIdNum = parseInt(institutionId);
       
@@ -2114,7 +2114,7 @@ async function loadUsersForNewInventory(institutionId = null) {
       }
       
       // Filter users by institution
-      filteredUsers = allUsers.filter(user => {
+      filteredUsers = users.filter(user => {
         // Check different possible structures for institutionId in user object
         const userInstitutionId = user.institutionId || 
                                  user.institution?.id || 
@@ -2144,7 +2144,7 @@ async function loadUsersForNewInventory(institutionId = null) {
         return false;
       });
       
-      console.log(`Filtered ${filteredUsers.length} users from ${allUsers.length} total users for institution ID ${institutionIdNum} (${institutionName || 'name not found'})`);
+      console.log(`Filtered ${filteredUsers.length} users from ${users.length} total users for institution ID ${institutionIdNum} (${institutionName || 'name not found'})`);
 
       if (filteredUsers.length === 0) {
         populateNewInventoryOwnerSelect([]);
@@ -3308,32 +3308,52 @@ async function fetchUsers() {
     const headers = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
-    // Request all users with a large page size for the select dropdown
-    const response = await fetch("/api/v1/users?page=0&size=1000", {
-      method: "GET",
-      headers: headers,
-    });
+    // Fetch all users with pagination
+    let allUsers = [];
+    let page = 0;
+    let hasMore = true;
+    const pageSize = 1000;
 
-    if (response.ok) {
-      const pagedResponse = await response.json();
+    while (hasMore) {
+      const response = await fetch(`/api/v1/users?page=${page}&size=${pageSize}`, {
+        method: "GET",
+        headers: headers,
+      });
 
-      // Handle both paginated response (PagedUserResponse) and direct array
-      if (pagedResponse.users && Array.isArray(pagedResponse.users)) {
-        // Paginated response structure
-        return pagedResponse.users;
-      } else if (Array.isArray(pagedResponse)) {
-        // Direct array response (fallback)
-        return pagedResponse;
+      if (response.ok) {
+        const pagedResponse = await response.json();
+
+        // Handle both paginated response (PagedUserResponse) and direct array
+        let pageUsers = [];
+        if (pagedResponse.users && Array.isArray(pagedResponse.users)) {
+          // Paginated response structure
+          pageUsers = pagedResponse.users;
+          // Check if there are more pages
+          hasMore = !pagedResponse.last && pageUsers.length === pageSize;
+        } else if (Array.isArray(pagedResponse)) {
+          // Direct array response (fallback)
+          pageUsers = pagedResponse;
+          hasMore = false; // If it's a direct array, assume it's all the data
+        } else {
+          console.warn(
+            "Unexpected response format from /api/v1/users:",
+            pagedResponse
+          );
+          hasMore = false;
+        }
+
+        if (pageUsers.length > 0) {
+          allUsers = allUsers.concat(pageUsers);
+          page++;
+        } else {
+          hasMore = false;
+        }
       } else {
-        console.warn(
-          "Unexpected response format from /api/v1/users:",
-          pagedResponse
-        );
-        return [];
+        throw new Error(`Failed to fetch users: ${response.status}`);
       }
-    } else {
-      throw new Error(`Failed to fetch users: ${response.status}`);
     }
+
+    return allUsers;
   } catch (error) {
     console.error("Error fetching users:", error);
     return [];
