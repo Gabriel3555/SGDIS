@@ -48,18 +48,62 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 closeNewVerificationModal();
                 clearNewVerificationEvidence();
-                // Reload verifications - check if we're on admin institution page
+                // Reload verifications - check if we're on admin institution or admin regional page
                 const path = window.location.pathname || '';
                 const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+                const isAdminRegionalPage = path.includes('/admin_regional/verification');
                 if (isAdminInstitutionPage && typeof loadVerificationsForAdminInstitution === 'function') {
                     await loadVerificationsForAdminInstitution();
+                } else if (isAdminRegionalPage && typeof loadVerificationsForAdminRegional === 'function') {
+                    await loadVerificationsForAdminRegional();
                 } else if (typeof loadVerificationData === 'function') {
                     await loadVerificationData();
                 }
                 
             } catch (error) {
                 console.error('Error creating verification:', error);
-                showErrorToast('Error al crear verificación', error.message || 'Inténtalo de nuevo');
+                
+                // Show appropriate error message based on error type
+                let errorTitle = 'Error al crear verificación';
+                let errorMessage = error.message || 'Inténtalo de nuevo';
+                
+                // Check for specific error messages
+                if (error.message && (error.message.includes('dado de baja') || error.message.includes('está dado de baja'))) {
+                    errorTitle = '⚠️ Item dado de baja';
+                    // Extract item name and plate from error message if available
+                    const match = error.message.match(/item "([^"]+)" \(Placa: ([^)]+)\)/);
+                    if (match) {
+                        errorMessage = `El item "${match[1]}" (Placa: ${match[2]}) está dado de baja y no puede ser verificado.`;
+                    } else {
+                        errorMessage = error.message;
+                    }
+                } else if (error.message && error.message.includes('No se encontró')) {
+                    errorTitle = 'Item no encontrado';
+                    errorMessage = error.message;
+                } else if (error.message && error.message.includes('permisos')) {
+                    errorTitle = 'Sin permisos';
+                    errorMessage = error.message;
+                } else if (error.message && error.message.includes('conexión')) {
+                    errorTitle = 'Error de conexión';
+                    errorMessage = error.message;
+                }
+                
+                // Ensure toast function is available
+                console.log('Attempting to show error toast:', { errorTitle, errorMessage });
+                console.log('showErrorToast available:', typeof showErrorToast);
+                console.log('window.showErrorToast available:', typeof window.showErrorToast);
+                
+                if (typeof showErrorToast === 'function') {
+                    console.log('Calling showErrorToast directly');
+                    showErrorToast(errorTitle, errorMessage);
+                } else if (typeof window.showErrorToast === 'function') {
+                    console.log('Calling window.showErrorToast');
+                    window.showErrorToast(errorTitle, errorMessage);
+                } else {
+                    console.warn('Toast function not available, using alert fallback');
+                    // Fallback: alert if toast not available
+                    alert(`${errorTitle}: ${errorMessage}`);
+                }
             }
         });
     }

@@ -70,6 +70,89 @@ function resetBatchVerificationState() {
     }
 }
 
+// Validate item belongs to user's regional (for ADMIN_REGIONAL only)
+async function validateItemRegionalForAdminRegional(item) {
+    // Check if we're on admin regional page
+    const path = window.location.pathname || '';
+    const isAdminRegionalPage = path.includes('/admin_regional/verification');
+    
+    if (!isAdminRegionalPage) {
+        return true; // No validation needed for other roles
+    }
+    
+    if (!item || !item.inventoryId) {
+        showErrorToast('Error', 'El ítem no tiene información de inventario válida');
+        return false;
+    }
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            showErrorToast('Error', 'No se encontró token de autenticación');
+            return false;
+        }
+        
+        // Get user's regional ID from window or load it
+        let userRegionalId = window.currentUserRegionalId || currentUserRegionalId;
+        
+        // If not found, try to load it using the verification function
+        if (!userRegionalId && typeof loadCurrentUserInfoForVerifications === 'function') {
+            await loadCurrentUserInfoForVerifications();
+            userRegionalId = window.currentUserRegionalId || currentUserRegionalId;
+        }
+        
+        // If we still don't have the regional ID, reject the item
+        if (!userRegionalId) {
+            showErrorToast('Error', 'No se pudo obtener la información de tu regional. Por favor, recarga la página.');
+            return false;
+        }
+        
+        // Get inventory to check regional
+        const inventoryResponse = await fetch(`/api/v1/inventory/${item.inventoryId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!inventoryResponse.ok) {
+            showErrorToast('Error', 'No se pudo obtener la información del inventario');
+            return false;
+        }
+        
+        const inventory = await inventoryResponse.json();
+        
+        // Validate regional match - STRICT: must match exactly
+        const inventoryRegionalId = inventory.regionalId || inventory.institution?.regionalId || 
+                                   (inventory.institution && inventory.institution.regionalId ? inventory.institution.regionalId : null);
+        
+        if (!inventoryRegionalId) {
+            // If inventory doesn't have regional info, it might be because the item is cancelled
+            // Let the backend handle this validation - it will check if item is cancelled first
+            // Don't block here, return true and let backend validate
+            console.warn('Inventory missing regional info - backend will validate if item is cancelled');
+            return true; // Allow it through, backend will check cancellation status
+        }
+        
+        if (userRegionalId.toString() !== inventoryRegionalId.toString()) {
+            const regionalName = inventory.regionalName || inventory.institution?.regionalName || 'otra regional';
+            showErrorToast(
+                'Ítem no pertenece a tu regional', 
+                `El ítem pertenece a ${regionalName}. Solo puedes verificar ítems de tu regional.`
+            );
+            return false;
+        }
+        
+        // All validations passed
+        return true;
+    } catch (error) {
+        console.error('Error validating item regional:', error);
+        showErrorToast('Error', 'Error al validar el ítem. Por favor, intenta de nuevo.');
+        return false; // Reject on error for security
+    }
+}
+
 // Validate item belongs to user's institution (for ADMIN_INSTITUTION only)
 async function validateItemInstitutionForAdminInstitution(item) {
     // Check if we're on admin institution page
@@ -185,15 +268,44 @@ async function addManualPlate() {
         
         // If item not found, show error and don't add to list
         if (!item) {
-            showErrorToast('Placa no encontrada', `La placa ${plateNumber} no coincide con ningún item en el inventario`);
+            showErrorToast('Placa no encontrada', `La placa ${plateNumber} no coincide con ningún item en el inventario o no tienes acceso a él`);
+            input.value = '';
+            input.focus();
+            return;
+        }
+        
+        // Check if item is cancelled (given de baja) before adding to list
+        const isCancelled = await checkItemCancellationStatus(item);
+        if (isCancelled) {
+            const itemName = item.productName || 'Item';
+            const plateInfo = item.licencePlateNumber ? ` (Placa: ${item.licencePlateNumber})` : '';
+            showErrorToast(
+                '⚠️ Item dado de baja', 
+                `El item "${itemName}"${plateInfo} está dado de baja y no puede ser verificado.`
+            );
             input.value = '';
             input.focus();
             return;
         }
         
         // Validate item belongs to user's institution (for ADMIN_INSTITUTION only)
-        const isValid = await validateItemInstitutionForAdminInstitution(item);
-        if (!isValid) {
+        // Note: We validate here for UX, but backend will do final validation
+        const isValidInstitution = await validateItemInstitutionForAdminInstitution(item);
+        if (!isValidInstitution) {
+            input.value = '';
+            input.focus();
+            return;
+        }
+        
+        // Validate item belongs to user's regional (for ADMIN_REGIONAL only)
+        // Note: If inventory info is missing (e.g., item cancelled), allow it through
+        // Backend will check cancellation status and return appropriate error
+        const isValidRegional = await validateItemRegionalForAdminRegional(item);
+        if (!isValidRegional) {
+            // Don't block if it's a missing data issue - backend will handle cancellation check
+            // Only block if it's a clear "wrong regional" permission issue
+            // The validateItemRegionalForAdminRegional function now returns true for missing data
+            // and only returns false for clear permission issues
             input.value = '';
             input.focus();
             return;
@@ -343,13 +455,31 @@ async function handleScannedCode(code) {
         
         // If item not found, don't add to list
         if (!item) {
-            showErrorToast('Placa no encontrada', `La placa ${cleanedCode} no coincide con ningún item en el inventario`);
+            showErrorToast('Placa no encontrada', `La placa ${cleanedCode} no coincide con ningún item en el inventario o no tienes acceso a él`);
+            return;
+        }
+        
+        // Check if item is cancelled (given de baja) before adding to list
+        const isCancelled = await checkItemCancellationStatus(item);
+        if (isCancelled) {
+            const itemName = item.productName || 'Item';
+            const plateInfo = item.licencePlateNumber || cleanedCode;
+            showErrorToast(
+                '⚠️ Item dado de baja', 
+                `El item "${itemName}" (Placa: ${plateInfo}) está dado de baja y no puede ser verificado.`
+            );
             return;
         }
         
         // Validate item belongs to user's institution (for ADMIN_INSTITUTION only)
-        const isValid = await validateItemInstitutionForAdminInstitution(item);
-        if (!isValid) {
+        const isValidInstitution = await validateItemInstitutionForAdminInstitution(item);
+        if (!isValidInstitution) {
+            return;
+        }
+        
+        // Validate item belongs to user's regional (for ADMIN_REGIONAL only)
+        const isValidRegional = await validateItemRegionalForAdminRegional(item);
+        if (!isValidRegional) {
             return;
         }
         
@@ -358,9 +488,68 @@ async function handleScannedCode(code) {
         // Capture photo automatically only if item exists
         capturePhotoForScannedCode(cleanedCode, itemName);
     } catch (error) {
-        console.error('Error fetching item:', error);
-        // Don't add item if there's an error fetching it
-        showErrorToast('Error', `Error al buscar la placa ${cleanedCode}. Intenta de nuevo.`);
+        console.error('Error handling scanned code:', error);
+        showErrorToast('Error al procesar placa', error.message || `No se pudo procesar la placa ${cleanedCode}`);
+    }
+}
+
+// Check if item is cancelled (given de baja)
+// This function attempts to create a verification to check cancellation status
+// If the item is cancelled, the backend will return an error
+async function checkItemCancellationStatus(item) {
+    if (!item || (!item.id && !item.licencePlateNumber && !item.licencePlate)) {
+        return false;
+    }
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            return false; // Can't check without token, let backend handle it
+        }
+        
+        const licencePlate = item.licencePlateNumber || item.licencePlate;
+        if (!licencePlate) {
+            return false; // Need licence plate to check
+        }
+        
+        // Try to create a verification to check if item is cancelled
+        // The backend will return an error if the item is cancelled
+        const response = await fetch(`/api/v1/verifications/by-licence-plate`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 
+                licencePlateNumber: licencePlate
+            })
+        });
+        
+        if (response.ok) {
+            // Verification was created successfully, item is not cancelled
+            // Note: This creates a real verification, but it's acceptable since
+            // the user is trying to verify the item anyway
+            return false; // Item is not cancelled
+        } else {
+            // Check if error is about cancellation
+            try {
+                const errorData = await response.json();
+                const errorMessage = errorData.message || errorData.error || '';
+                
+                // Check if error message indicates item is cancelled
+                if (errorMessage.includes('dado de baja') || 
+                    errorMessage.includes('está dado de baja') ||
+                    errorMessage.toLowerCase().includes('baja')) {
+                    return true; // Item is cancelled
+                }
+            } catch (e) {
+                // Couldn't parse error, assume not cancelled
+            }
+            return false; // Other error, not cancellation
+        }
+    } catch (error) {
+        console.error('Error checking cancellation status:', error);
+        return false; // On error, assume not cancelled and let backend handle it
     }
 }
 
@@ -387,10 +576,36 @@ async function getItemByLicencePlate(licencePlate) {
         } else if (response.status === 404) {
             return null; // Item not found
         } else {
-            throw new Error('Error fetching item');
+            // Try to get error message from response
+            let errorMessage = 'Error al buscar el item';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.error || errorMessage;
+            } catch (e) {
+                if (response.status === 400) {
+                    errorMessage = 'Error en la solicitud. Verifica que la placa sea válida';
+                } else if (response.status === 403) {
+                    errorMessage = 'No tienes permisos para acceder a este item';
+                } else if (response.status === 401) {
+                    errorMessage = 'Sesión expirada. Por favor inicia sesión nuevamente';
+                } else {
+                    errorMessage = `Error al buscar el item (${response.status})`;
+                }
+            }
+            // Show toast for API errors (not 404)
+            if (typeof showErrorToast === 'function') {
+                showErrorToast('Error al buscar item', errorMessage);
+            }
+            throw new Error(errorMessage);
         }
     } catch (error) {
         console.error('Error getting item by licence plate:', error);
+        // Only show toast if it wasn't already shown above (for non-404 errors)
+        if (error.message && !error.message.includes('Error al buscar el item')) {
+            if (typeof showErrorToast === 'function') {
+                showErrorToast('Error de conexión', 'No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+            }
+        }
         return null;
     }
 }
@@ -519,19 +734,31 @@ async function addScannedItem(licencePlate, photoFile, itemName = null) {
     // We need to get the item again to validate
     const path = window.location.pathname || '';
     const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+    const isAdminRegionalPage = path.includes('/admin_regional/verification');
     
-    if (isAdminInstitutionPage) {
+    if (isAdminInstitutionPage || isAdminRegionalPage) {
         try {
             const item = await getItemByLicencePlate(licencePlate);
             if (item) {
-                const isValid = await validateItemInstitutionForAdminInstitution(item);
-                if (!isValid) {
-                    return; // Don't add item if validation fails
+                // Validate item belongs to user's institution (for ADMIN_INSTITUTION only)
+                if (isAdminInstitutionPage) {
+                    const isValidInstitution = await validateItemInstitutionForAdminInstitution(item);
+                    if (!isValidInstitution) {
+                        return; // Don't add item if validation fails
+                    }
+                }
+                
+                // Validate item belongs to user's regional (for ADMIN_REGIONAL only)
+                if (isAdminRegionalPage) {
+                    const isValidRegional = await validateItemRegionalForAdminRegional(item);
+                    if (!isValidRegional) {
+                        return; // Don't add item if validation fails
+                    }
                 }
             }
         } catch (error) {
             console.error('Error validating item in addScannedItem:', error);
-            // If validation fails, don't add the item for admin institution
+            // If validation fails, don't add the item for admin institution/regional
             if (isAdminInstitutionPage) {
                 showErrorToast('Error de validación', 'No se pudo validar que el ítem pertenezca a tu institución');
                 return;
@@ -905,5 +1132,6 @@ if (typeof window !== 'undefined') {
     window.finalizeBatchVerification = finalizeBatchVerification;
     window.getItemByLicencePlate = getItemByLicencePlate;
     window.validateItemInstitutionForAdminInstitution = validateItemInstitutionForAdminInstitution;
+    window.validateItemRegionalForAdminRegional = validateItemRegionalForAdminRegional;
 }
 

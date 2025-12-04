@@ -62,13 +62,16 @@ async function showViewVerificationModal(verificationId) {
     `;
     
     try {
-        // Check if we're on admin institution page and use the correct data source
+        // Check if we're on admin institution or admin regional page and use the correct data source
         const path = window.location.pathname || '';
         const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+        const isAdminRegionalPage = path.includes('/admin_regional/verification');
         
         let verification;
         if (isAdminInstitutionPage && typeof verificationDataAdminInstitution !== 'undefined' && verificationDataAdminInstitution.verifications) {
             verification = verificationDataAdminInstitution.verifications.find(v => v.id === verificationId);
+        } else if (isAdminRegionalPage && typeof verificationDataAdminRegional !== 'undefined' && verificationDataAdminRegional.verifications) {
+            verification = verificationDataAdminRegional.verifications.find(v => v.id === verificationId);
         } else if (typeof verificationData !== 'undefined' && verificationData.verifications) {
             verification = verificationData.verifications.find(v => v.id === verificationId);
         } else {
@@ -281,12 +284,15 @@ function closeViewVerificationModal() {
 
 // Show Upload Evidence Modal
 function showUploadEvidenceModal(verificationId) {
-    // Check if we're on admin institution page and use the correct data source
+    // Check if we're on admin institution or admin regional page and use the correct data source
     const path = window.location.pathname || '';
     const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+    const isAdminRegionalPage = path.includes('/admin_regional/verification');
     
     if (isAdminInstitutionPage && typeof verificationDataAdminInstitution !== 'undefined') {
         verificationDataAdminInstitution.currentVerificationId = verificationId;
+    } else if (isAdminRegionalPage && typeof verificationDataAdminRegional !== 'undefined') {
+        verificationDataAdminRegional.currentVerificationId = verificationId;
     } else if (typeof verificationData !== 'undefined') {
         verificationData.currentVerificationId = verificationId;
     }
