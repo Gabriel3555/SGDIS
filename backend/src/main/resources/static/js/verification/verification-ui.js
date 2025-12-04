@@ -527,62 +527,59 @@ function populateVerificationCustomSelects() {
                     });
                 }
             }, 100);
-        } else {
-            console.error('CustomSelect instance or setOptions method not available');
-        }
-        
-        // Restore selected value - check if dropdown is open first
-        const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
-        const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
-        
-        if (selectedOption) {
-            // Check if dropdown is currently open
-            const isOpen = verificationInventoryCustomSelect.container && 
-                          (verificationInventoryCustomSelect.container.classList.contains('open') || 
-                           verificationInventoryCustomSelect.container.classList.contains('active'));
             
-            if (isOpen) {
-                // If dropdown is open, update the value without closing it
-                verificationInventoryCustomSelect.selectedValue = selectedOption.value;
-                verificationInventoryCustomSelect.selectedText = selectedOption.label;
+            // Restore selected value - check if dropdown is open first
+            const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
+            const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
+            
+            if (selectedOption) {
+                // Check if dropdown is currently open
+                const isOpen = verificationInventoryCustomSelect.container && 
+                              (verificationInventoryCustomSelect.container.classList.contains('open') || 
+                               verificationInventoryCustomSelect.container.classList.contains('active'));
                 
-                // Update the text element without closing
-                if (verificationInventoryCustomSelect.textElement) {
-                    verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
-                    verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
-                }
-                
-                // Update hidden input
-                const hiddenInput = document.getElementById('inventoryFilter');
-                if (hiddenInput) {
-                    hiddenInput.value = selectedOption.value;
-                }
-                if (verificationInventoryCustomSelect.hiddenInput) {
-                    verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
-                }
-                
-                // Mark the option as selected in the rendered options
-                const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
-                optionElements.forEach(el => {
-                    el.classList.remove('selected');
-                    if (el.dataset.value === selectedOption.value) {
-                        el.classList.add('selected');
+                if (isOpen) {
+                    // If dropdown is open, update the value without closing it
+                    verificationInventoryCustomSelect.selectedValue = selectedOption.value;
+                    verificationInventoryCustomSelect.selectedText = selectedOption.label;
+                    
+                    // Update the text element without closing
+                    if (verificationInventoryCustomSelect.textElement) {
+                        verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
+                        verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
                     }
-                });
-            } else {
-                // If dropdown is closed, use setValue normally
-                if (verificationInventoryCustomSelect.setValue) {
-                    verificationInventoryCustomSelect.setValue(selectedInventoryValue);
-                } else if (verificationInventoryCustomSelect.selectOption) {
-                    verificationInventoryCustomSelect.selectOption(selectedOption);
+                    
+                    // Update hidden input
+                    const hiddenInput = document.getElementById('inventoryFilter');
+                    if (hiddenInput) {
+                        hiddenInput.value = selectedOption.value;
+                    }
+                    if (verificationInventoryCustomSelect.hiddenInput) {
+                        verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
+                    }
+                    
+                    // Mark the option as selected in the rendered options
+                    const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
+                    optionElements.forEach(el => {
+                        el.classList.remove('selected');
+                        if (el.dataset.value === selectedOption.value) {
+                            el.classList.add('selected');
+                        }
+                    });
+                } else {
+                    // If dropdown is closed, use setValue normally
+                    if (verificationInventoryCustomSelect.setValue) {
+                        verificationInventoryCustomSelect.setValue(selectedInventoryValue);
+                    } else if (verificationInventoryCustomSelect.selectOption) {
+                        verificationInventoryCustomSelect.selectOption(selectedOption);
+                    }
                 }
             }
         } catch (error) {
-            console.warn('Error populating inventory filter:', error);
-        }
-        } catch (error) {
             console.error('Error populating inventory filter:', error);
         }
+    } else {
+        console.error('CustomSelect instance or setOptions method not available');
     }
     
     // Reset the flag after a short delay
