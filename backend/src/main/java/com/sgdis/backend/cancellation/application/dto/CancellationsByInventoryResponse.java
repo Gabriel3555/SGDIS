@@ -6,3 +6,4 @@ public record CancellationsByInventoryResponse(
         Map<String, Long> cancellationsByInventory
 ) {}
 
+
