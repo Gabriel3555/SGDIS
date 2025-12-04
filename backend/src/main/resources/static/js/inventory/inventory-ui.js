@@ -1140,6 +1140,25 @@ function updateInventoryTable() {
     window.inventoryData.filteredInventories = window.inventoryData.inventories ? [...window.inventoryData.inventories] : [];
   }
 
+  // Get current user ID for super admin and admin regional highlighting
+  const currentUserId = window.currentUserData && window.currentUserData.id ? window.currentUserData.id : null;
+  const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                      (window.location.pathname && window.location.pathname.includes('/superadmin'));
+  const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                         (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+
+  // Sort inventories: super admin's or admin regional's inventory first
+  let sortedInventories = [...window.inventoryData.filteredInventories];
+  if ((isSuperAdmin || isAdminRegional) && currentUserId) {
+    sortedInventories.sort((a, b) => {
+      const aIsOwner = (a.owner && a.owner.id === currentUserId) || (a.ownerId === currentUserId);
+      const bIsOwner = (b.owner && b.owner.id === currentUserId) || (b.ownerId === currentUserId);
+      if (aIsOwner && !bIsOwner) return -1;
+      if (!aIsOwner && bIsOwner) return 1;
+      return 0;
+    });
+  }
+
   // Check if we're using server-side pagination
   const useServerPagination = window.inventoryData.serverPagination !== null && 
                                window.inventoryData.serverPagination !== undefined;
@@ -1149,15 +1168,13 @@ function updateInventoryTable() {
   if (useServerPagination) {
     // For server-side pagination, use all inventories (they're already paginated from server)
     // But limit to 6 for admin regional and admin institution if server returned more
-    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
-                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
     const isAdminInstitution = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_INSTITUTION') || 
                               (window.location.pathname && window.location.pathname.includes('/admin_institution')) ||
                               (window.location.pathname && window.location.pathname.includes('/admininstitution'));
-    let allInventories = window.inventoryData.filteredInventories || [];
+    let allInventories = sortedInventories;
     
-    if ((isAdminRegional || isAdminInstitution) && allInventories.length > 6) {
-      // Limit to 6 for admin regional and admin institution if server returned more
+    if ((isAdminRegional || isAdminInstitution || isSuperAdmin) && allInventories.length > 6) {
+      // Limit to 6 for admin regional, admin institution, and superadmin if server returned more
       paginatedInventories = allInventories.slice(0, 6);
     } else {
       paginatedInventories = allInventories;
@@ -1167,7 +1184,7 @@ function updateInventoryTable() {
     const startIndex =
       (window.inventoryData.currentPage - 1) * window.inventoryData.itemsPerPage;
     const endIndex = startIndex + window.inventoryData.itemsPerPage;
-    paginatedInventories = window.inventoryData.filteredInventories.slice(
+    paginatedInventories = sortedInventories.slice(
       startIndex,
       endIndex
     );
@@ -1207,6 +1224,20 @@ function updateInventoryTable() {
       const fullName = inventory.name || "Inventario sin nombre";
       const location = inventory.location || "Sin ubicación";
 
+      // Check if this inventory belongs to the current super admin or admin regional
+      const isOwnerInventory = (isSuperAdmin || isAdminRegional) && currentUserId && 
+                              ((inventory.owner && inventory.owner.id === currentUserId) || 
+                               (inventory.ownerId === currentUserId));
+      
+      // Apply owner row styling for super admin's inventory
+      const rowClass = isOwnerInventory
+        ? 'border-b border-gray-100 dark:border-gray-700 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors owner-row'
+        : 'border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors';
+      
+      const rowStyle = isOwnerInventory
+        ? 'background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 50%, #ffffff 100%); border-left: 3px solid rgba(0, 175, 0, 0.3);'
+        : '';
+
       const inventoryImage = inventory.imgUrl
         ? createImageWithSpinner(
             inventory.imgUrl,
@@ -1220,7 +1251,7 @@ function updateInventoryTable() {
                 </div>`;
 
       inventoryTableHtml += `
-                <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <tr class="${rowClass}" style="${rowStyle}">
                     <td class="py-3 px-4">
                         <div class="flex items-center gap-3">
                             <button onclick="changeInventoryPhoto('${
@@ -1418,6 +1449,25 @@ function updateInventoryCards() {
     window.inventoryData.filteredInventories = window.inventoryData.inventories ? [...window.inventoryData.inventories] : [];
   }
 
+  // Get current user ID for super admin and admin regional highlighting
+  const currentUserId = window.currentUserData && window.currentUserData.id ? window.currentUserData.id : null;
+  const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                      (window.location.pathname && window.location.pathname.includes('/superadmin'));
+  const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                         (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+
+  // Sort inventories: super admin's or admin regional's inventory first
+  let sortedInventories = [...window.inventoryData.filteredInventories];
+  if ((isSuperAdmin || isAdminRegional) && currentUserId) {
+    sortedInventories.sort((a, b) => {
+      const aIsOwner = (a.owner && a.owner.id === currentUserId) || (a.ownerId === currentUserId);
+      const bIsOwner = (b.owner && b.owner.id === currentUserId) || (b.ownerId === currentUserId);
+      if (aIsOwner && !bIsOwner) return -1;
+      if (!aIsOwner && bIsOwner) return 1;
+      return 0;
+    });
+  }
+
   // Check if we're using server-side pagination
   const useServerPagination = window.inventoryData.serverPagination !== null && 
                                window.inventoryData.serverPagination !== undefined;
@@ -1427,14 +1477,10 @@ function updateInventoryCards() {
   if (useServerPagination) {
     // For server-side pagination, use all inventories (they're already paginated from server)
     // But limit to 6 for admin regional, admin institution, and superadmin if server returned more
-    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
-                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
     const isAdminInstitution = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_INSTITUTION') || 
                               (window.location.pathname && window.location.pathname.includes('/admin_institution')) ||
                               (window.location.pathname && window.location.pathname.includes('/admininstitution'));
-    const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
-                        (window.location.pathname && window.location.pathname.includes('/superadmin'));
-    let allInventories = window.inventoryData.filteredInventories || [];
+    let allInventories = sortedInventories;
     
     if ((isAdminRegional || isAdminInstitution || isSuperAdmin) && allInventories.length > 6) {
       // Limit to 6 for admin regional, admin institution, and superadmin if server returned more
@@ -1447,7 +1493,7 @@ function updateInventoryCards() {
     const startIndex =
       (window.inventoryData.currentPage - 1) * window.inventoryData.itemsPerPage;
     const endIndex = startIndex + window.inventoryData.itemsPerPage;
-    paginatedInventories = window.inventoryData.filteredInventories.slice(
+    paginatedInventories = sortedInventories.slice(
       startIndex,
       endIndex
     );
@@ -1472,6 +1518,20 @@ function updateInventoryCards() {
         ? inventory.uuid.toString().substring(0, 8) + "..."
         : "No asignado";
 
+      // Check if this inventory belongs to the current super admin or admin regional
+      const isOwnerInventory = (isSuperAdmin || isAdminRegional) && currentUserId && 
+                              ((inventory.owner && inventory.owner.id === currentUserId) || 
+                               (inventory.ownerId === currentUserId));
+      
+      // Apply owner card styling for super admin's or admin regional's inventory
+      const cardClass = isOwnerInventory 
+        ? 'stat-card owner-card' 
+        : 'stat-card';
+      
+      const cardStyle = isOwnerInventory
+        ? 'border: 1px solid rgba(0, 175, 0, 0.2); box-shadow: 0 4px 20px rgba(0, 175, 0, 0.12); background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 50%, #ffffff 100%);'
+        : '';
+
       const inventoryImage = inventory.imgUrl
         ? createImageWithSpinner(
             inventory.imgUrl,
@@ -1485,7 +1545,7 @@ function updateInventoryCards() {
                 </div>`;
 
       cardsHtml += `
-                <div class="stat-card">
+                <div class="${cardClass}" style="${cardStyle}">
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex items-center gap-3">
                             <button onclick="changeInventoryPhoto('${
