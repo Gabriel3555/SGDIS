@@ -528,7 +528,7 @@ async function generateReport() {
                 data = await fetchInventoryReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
                 break;
             case 'general':
-                data = await fetchGeneralReport(userRegionalId, userInstitutionId, startDate, endDate);
+                data = await fetchGeneralReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
                 break;
             default:
                 console.warn('Unknown report type:', reportType);
@@ -1118,17 +1118,16 @@ async function fetchTransfersReport(regionalId, institutionId, inventoryId, star
 }
 
 // Fetch general report
-async function fetchGeneralReport(regionalId, institutionId, startDate, endDate) {
+async function fetchGeneralReport(regionalId, institutionId, inventoryId, startDate, endDate) {
     // General report combines multiple data types
     const [items, loans, verifications, inventories] = await Promise.all([
-        fetchItemsReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
-        fetchLoansReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
-        fetchVerificationsReport(regionalId, institutionId, null, startDate, endDate).catch(() => []),
-        fetchInventoryReport(regionalId, institutionId, null, startDate, endDate).catch(() => [])
+        fetchItemsReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []),
+        fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []),
+        fetchVerificationsReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []),
+        fetchInventoryReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => [])
     ]);
 
     // Get transfers
-    const inventoryId = document.getElementById('inventorySelect')?.value || null;
     const transfers = await fetchTransfersReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []);
 
     return {
@@ -1181,7 +1180,25 @@ function displayReport(data) {
     
     const regionalName = userRegionalName || 'Regional';
     const institutionName = userInstitutionName || 'Institución';
-    document.getElementById('reportSubtitle').textContent = `${regionalName} - ${institutionName}`;
+    
+    // Get inventory name if specific inventory is selected
+    let inventoryName = '';
+    const inventoryId = currentReportFilters.inventoryId;
+    if (inventoryId) {
+        const inventorySelect = document.getElementById('inventorySelect');
+        if (inventorySelect) {
+            const selectedOption = inventorySelect.options[inventorySelect.selectedIndex];
+            if (selectedOption && selectedOption.value === inventoryId) {
+                inventoryName = selectedOption.textContent;
+            }
+        }
+    }
+    
+    let subtitle = `${regionalName} - ${institutionName}`;
+    if (inventoryName && inventoryName !== 'Todos los inventarios') {
+        subtitle += ` - ${inventoryName}`;
+    }
+    document.getElementById('reportSubtitle').textContent = subtitle;
 
     // Show/hide charts container based on report type
     const chartsContainer = document.getElementById('chartsContainer');
@@ -2380,14 +2397,29 @@ async function exportToPDF() {
         // Enhanced Filters section with box
         let yPos = headerHeight + 18;
         
+        // Get inventory name to determine box height
+        let inventoryName = '';
+        const inventoryId = currentReportFilters.inventoryId;
+        if (inventoryId) {
+            const inventorySelect = document.getElementById('inventorySelect');
+            if (inventorySelect) {
+                const selectedOption = inventorySelect.options[inventorySelect.selectedIndex];
+                if (selectedOption && selectedOption.value === inventoryId) {
+                    inventoryName = selectedOption.textContent;
+                }
+            }
+        }
+        const hasInventory = inventoryName && inventoryName !== 'Todos los inventarios' && inventoryName !== 'Todos los inventarios del centro';
+        const boxHeight = hasInventory ? 65 : 58; // Extra height if inventory is shown
+        
         // Background box for filters
         doc.setFillColor(248, 250, 252); // Light gray background
-        doc.roundedRect(14, yPos - 10, pageWidth - 28, 58, 4, 4, 'F');
+        doc.roundedRect(14, yPos - 10, pageWidth - 28, boxHeight, 4, 4, 'F');
         
         // Border for filters box
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.8);
-        doc.roundedRect(14, yPos - 10, pageWidth - 28, 58, 4, 4);
+        doc.roundedRect(14, yPos - 10, pageWidth - 28, boxHeight, 4, 4);
         
         doc.setFontSize(13);
         doc.setFont('helvetica', 'bold');
@@ -2426,6 +2458,17 @@ async function exportToPDF() {
         doc.text(institutionName.length > 35 ? institutionName.substring(0, 35) + '...' : institutionName, 20 + 45, yPos);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(40, 40, 40);
+        
+        // Add inventory name if specific inventory is selected
+        if (inventoryName && inventoryName !== 'Todos los inventarios' && inventoryName !== 'Todos los inventarios del centro') {
+            yPos += 7;
+            doc.text('Inventario:', 20, yPos);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(60, 60, 60);
+            doc.text(inventoryName.length > 35 ? inventoryName.substring(0, 35) + '...' : inventoryName, 20 + 45, yPos);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(40, 40, 40);
+        }
         
         yPos += 7;
         doc.text('Fecha inicio:', 20, yPos);

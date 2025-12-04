@@ -1,21 +1,37 @@
 function updateVerificationUI() {
-    updateStatsCards();
-    // Only update filters if CustomSelects are not initialized, otherwise just populate them
-    if (verificationRegionalCustomSelect || verificationInstitutionCustomSelect || verificationInventoryCustomSelect) {
-        // CustomSelects are already initialized, just populate them with current data
-        // But only if inventories are loaded (for warehouse and other roles)
-        if (typeof populateVerificationCustomSelects === 'function') {
-            // Check if inventories are loaded before populating
-            if (verificationData.inventories !== undefined) {
-                populateVerificationCustomSelects();
+    try {
+        updateStatsCards();
+        // Only update filters if CustomSelects are not initialized, otherwise just populate them
+        if (verificationRegionalCustomSelect || verificationInstitutionCustomSelect || verificationInventoryCustomSelect) {
+            // CustomSelects are already initialized, just populate them with current data
+            // But only if inventories are loaded (for warehouse and other roles)
+            if (typeof populateVerificationCustomSelects === 'function') {
+                // Check if inventories are loaded before populating
+                if (verificationData.inventories !== undefined) {
+                    console.log('updateVerificationUI: Populating CustomSelects, inventories available:', verificationData.inventories?.length || 0);
+                    populateVerificationCustomSelects();
+                } else {
+                    console.log('updateVerificationUI: Inventories not loaded yet, skipping populateVerificationCustomSelects');
+                }
             }
+        } else {
+            // CustomSelects not initialized, regenerate HTML
+            updateFilters();
         }
-    } else {
-        // CustomSelects not initialized, regenerate HTML
-        updateFilters();
+        // Always update table and pagination
+        if (typeof updateVerificationTable === 'function') {
+            updateVerificationTable();
+        } else if (typeof window.updateVerificationTable === 'function') {
+            window.updateVerificationTable();
+        }
+        if (typeof updatePagination === 'function') {
+            updatePagination();
+        } else if (typeof window.updatePagination === 'function') {
+            window.updatePagination();
+        }
+    } catch (error) {
+        console.error('Error in updateVerificationUI:', error);
     }
-    updateVerificationTable();
-    updatePagination();
 }
 
 function updateUserInfoDisplay(userData) {
@@ -506,7 +522,6 @@ function populateVerificationCustomSelects() {
             }
         } catch (error) {
             console.error('Error populating institution filter:', error);
-            console.warn('Error populating institution filter:', error);
         }
     }
     
@@ -550,59 +565,62 @@ function populateVerificationCustomSelects() {
                     });
                 }
             }, 100);
+        } else {
+            console.error('CustomSelect instance or setOptions method not available');
+        }
+        
+        // Restore selected value - check if dropdown is open first
+        const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
+        const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
+        
+        if (selectedOption) {
+            // Check if dropdown is currently open
+            const isOpen = verificationInventoryCustomSelect.container && 
+                          (verificationInventoryCustomSelect.container.classList.contains('open') || 
+                           verificationInventoryCustomSelect.container.classList.contains('active'));
             
-            // Restore selected value - check if dropdown is open first
-            const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
-            const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
-            
-            if (selectedOption) {
-                // Check if dropdown is currently open
-                const isOpen = verificationInventoryCustomSelect.container && 
-                              (verificationInventoryCustomSelect.container.classList.contains('open') || 
-                               verificationInventoryCustomSelect.container.classList.contains('active'));
+            if (isOpen) {
+                // If dropdown is open, update the value without closing it
+                verificationInventoryCustomSelect.selectedValue = selectedOption.value;
+                verificationInventoryCustomSelect.selectedText = selectedOption.label;
                 
-                if (isOpen) {
-                    // If dropdown is open, update the value without closing it
-                    verificationInventoryCustomSelect.selectedValue = selectedOption.value;
-                    verificationInventoryCustomSelect.selectedText = selectedOption.label;
-                    
-                    // Update the text element without closing
-                    if (verificationInventoryCustomSelect.textElement) {
-                        verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
-                        verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
+                // Update the text element without closing
+                if (verificationInventoryCustomSelect.textElement) {
+                    verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
+                    verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
+                }
+                
+                // Update hidden input
+                const hiddenInput = document.getElementById('inventoryFilter');
+                if (hiddenInput) {
+                    hiddenInput.value = selectedOption.value;
+                }
+                if (verificationInventoryCustomSelect.hiddenInput) {
+                    verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
+                }
+                
+                // Mark the option as selected in the rendered options
+                const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
+                optionElements.forEach(el => {
+                    el.classList.remove('selected');
+                    if (el.dataset.value === selectedOption.value) {
+                        el.classList.add('selected');
                     }
-                    
-                    // Update hidden input
-                    const hiddenInput = document.getElementById('inventoryFilter');
-                    if (hiddenInput) {
-                        hiddenInput.value = selectedOption.value;
-                    }
-                    if (verificationInventoryCustomSelect.hiddenInput) {
-                        verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
-                    }
-                    
-                    // Mark the option as selected in the rendered options
-                    const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
-                    optionElements.forEach(el => {
-                        el.classList.remove('selected');
-                        if (el.dataset.value === selectedOption.value) {
-                            el.classList.add('selected');
-                        }
-                    });
-                } else {
-                    // If dropdown is closed, use setValue normally
-                    if (verificationInventoryCustomSelect.setValue) {
-                        verificationInventoryCustomSelect.setValue(selectedInventoryValue);
-                    } else if (verificationInventoryCustomSelect.selectOption) {
-                        verificationInventoryCustomSelect.selectOption(selectedOption);
-                    }
+                });
+            } else {
+                // If dropdown is closed, use setValue normally
+                if (verificationInventoryCustomSelect.setValue) {
+                    verificationInventoryCustomSelect.setValue(selectedInventoryValue);
+                } else if (verificationInventoryCustomSelect.selectOption) {
+                    verificationInventoryCustomSelect.selectOption(selectedOption);
                 }
             }
         } catch (error) {
             console.error('Error populating inventory filter:', error);
         }
-    } else {
-        console.error('CustomSelect instance or setOptions method not available');
+        } catch (error) {
+            console.error('Error populating inventory filter:', error);
+        }
     }
     
     // Reset the flag after a short delay
@@ -613,7 +631,12 @@ function populateVerificationCustomSelects() {
 
 function updateVerificationTable() {
     const container = document.getElementById('verificationTableContainer');
-    if (!container) return;
+    if (!container) {
+        console.warn('verificationTableContainer not found in DOM');
+        return;
+    }
+    
+    console.log('updateVerificationTable called, filteredVerifications:', verificationData.filteredVerifications?.length || 0);
 
     if (verificationData.filteredVerifications.length === 0) {
         container.innerHTML = `

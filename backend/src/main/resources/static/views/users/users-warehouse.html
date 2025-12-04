@@ -347,6 +347,8 @@
             window.location.href = '/';
         }
 
+        // Note: These will be redefined after scripts load to override users-ui.js
+
         function setupMobileMenuToggle() {
             const menuToggle = document.getElementById('menuToggle');
             const sidebar = document.getElementById('sidebar');
@@ -967,7 +969,7 @@
 
             <div class="flex gap-3">
                 <button onclick="closeLogoutModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    class="flex-1 px-4 py-2 bg-gray-700 dark:bg-gray-600 hover:bg-gray-600 dark:hover:bg-gray-500 text-white rounded-xl transition-colors">
                     Cancelar
                 </button>
                 <button onclick="confirmLogout()"
@@ -979,6 +981,42 @@
     </div>
 
     <script>
+        // Override logout function from users-ui.js to show confirmation modal
+        // This must run after all scripts are loaded
+        (function() {
+            // Wait for DOM and all scripts to be ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initLogoutFunctions);
+            } else {
+                // DOM already loaded, but scripts might not be
+                setTimeout(initLogoutFunctions, 100);
+            }
+
+            function initLogoutFunctions() {
+                // Override the logout function to show modal instead of direct logout
+                window.logout = function() {
+                    const modal = document.getElementById('logoutModal');
+                    if (modal) {
+                        modal.classList.remove('hidden');
+                    }
+                };
+
+                // Close logout modal
+                window.closeLogoutModal = function() {
+                    const modal = document.getElementById('logoutModal');
+                    if (modal) {
+                        modal.classList.add('hidden');
+                    }
+                };
+
+                // Confirm logout - actually logs out
+                window.confirmLogout = function() {
+                    localStorage.removeItem('jwt');
+                    window.location.href = '/';
+                };
+            }
+        })();
+
         // Ensure modal close functions are available globally
         document.addEventListener('DOMContentLoaded', function() {
             // Close modals when clicking outside

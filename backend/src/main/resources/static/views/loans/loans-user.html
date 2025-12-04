@@ -186,11 +186,11 @@
         </div>
 
         <!-- Filters Section -->
-        <div class="stat-card mb-6">
+        <div class="stat-card mb-6" id="filtersSection">
             <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Filtros</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="filtersContainer">
                 <!-- Regional Filter -->
-                <div>
+                <div id="regionalFilterContainer">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Regional</label>
                     <div class="custom-select-container">
                         <div class="custom-select" id="regionalSelect">
@@ -210,7 +210,7 @@
                 </div>
 
                 <!-- Institution Filter -->
-                <div>
+                <div id="institutionFilterContainer">
                     <label
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Institución</label>
                     <div class="custom-select-container">
@@ -231,7 +231,7 @@
                 </div>
 
                 <!-- Inventory Filter -->
-                <div>
+                <div id="inventoryFilterContainer">
                     <label
                             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario</label>
                     <div class="custom-select-container">
