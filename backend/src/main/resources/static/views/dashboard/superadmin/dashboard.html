@@ -37,7 +37,7 @@
                     message.includes('notifications')) {
                     return; // Suppress this warning
                 }
-                originalWarn.apply(console, args);v
+                originalWarn.apply(console, args);
             };
             
             // Catch unhandled promise rejections (CORS errors often appear here)
@@ -255,7 +255,7 @@
             <a href="/superadmin/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/cancellations')">
                 <i class="fas fa-times-circle text-lg"></i>
-                <span class="font-medium">Bajas</span>
+                <span class="font-medium">Cancelaciones</span>
             </a>
             <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
@@ -347,8 +347,8 @@
                 <!-- Total Inventarios -->
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-boxes text-green-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-green-500 dark:bg-green-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-boxes text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800" id="totalInventories">-</div>
@@ -364,8 +364,8 @@
                 <!-- Total Usuarios -->
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-users text-blue-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800" id="totalUsers">-</div>
@@ -380,8 +380,8 @@
                 <!-- Total Centros -->
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-building text-purple-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-building text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800" id="totalCenters">-</div>
@@ -396,8 +396,8 @@
                 <!-- Total Transferencias -->
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-exchange-alt text-orange-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-orange-500 dark:bg-orange-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-exchange-alt text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800" id="totalTransfers">-</div>
@@ -412,8 +412,8 @@
                 <!-- Total Verificaciones -->
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-clipboard-check text-teal-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-teal-500 dark:bg-teal-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clipboard-check text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800" id="totalVerifications">-</div>
@@ -425,8 +425,8 @@
                 <!-- Total Préstamos -->
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-hand-holding text-indigo-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-indigo-500 dark:bg-indigo-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-hand-holding text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800" id="totalLoans">-</div>
@@ -438,8 +438,8 @@
                 <!-- Total Items -->
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-box text-yellow-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-yellow-500 dark:bg-yellow-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-box text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800" id="totalItems">-</div>
@@ -451,18 +451,20 @@
                     </div>
                 </div>
 
-                <!-- Notificaciones -->
-                <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
+                <!-- Total Bajas -->
+                <div class="stat-card bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border border-red-200 dark:border-red-800 rounded-xl shadow-md p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-bell text-red-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-red-500 dark:bg-red-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-times-circle text-white text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-bold text-gray-800" id="unreadNotifications">-</div>
-                            <div class="text-sm text-gray-600">No leídas</div>
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-200" id="totalCancellations">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Total Bajas</div>
                         </div>
                     </div>
-                    <a href="/superadmin/notifications" class="text-xs text-blue-600 hover:underline">Ver todas</a>
+                    <div class="text-right">
+                        <a href="/superadmin/cancellations" class="text-xs text-red-600 dark:text-red-400 hover:underline">Ver todas</a>
+                    </div>
                 </div>
             </div>
 
@@ -526,8 +528,10 @@
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-boxes text-green-600 text-xl"></i>
-                            <h2 class="text-lg font-bold text-gray-800">Inventarios Recientes</h2>
+                            <div class="w-10 h-10 bg-green-500 dark:bg-green-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-boxes text-white text-lg"></i>
+                            </div>
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200">Inventarios Recientes</h2>
                         </div>
                         <a href="/superadmin/inventory" class="text-sm text-blue-600 hover:underline">Ver todos</a>
                     </div>
@@ -544,8 +548,10 @@
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-exchange-alt text-green-600 text-xl"></i>
-                            <h2 class="text-lg font-bold text-gray-800">Transferencias Recientes</h2>
+                            <div class="w-10 h-10 bg-orange-500 dark:bg-orange-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-exchange-alt text-white text-lg"></i>
+                            </div>
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200">Transferencias Recientes</h2>
                         </div>
                         <a href="/superadmin/transfers" class="text-sm text-blue-600 hover:underline">Ver todas</a>
                     </div>
@@ -562,8 +568,10 @@
                 <div class="stat-card bg-white rounded-xl shadow-md p-6 border border-gray-200">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-clipboard-check text-green-600 text-xl"></i>
-                            <h2 class="text-lg font-bold text-gray-800">Verificaciones Recientes</h2>
+                            <div class="w-10 h-10 bg-teal-500 dark:bg-teal-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-clipboard-check text-white text-lg"></i>
+                            </div>
+                            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-200">Verificaciones Recientes</h2>
                         </div>
                         <a href="/superadmin/verification" class="text-sm text-blue-600 hover:underline">Ver todas</a>
                     </div>
@@ -588,6 +596,8 @@
     <!-- Token Auto-Refresh Script -->
     <script src="../../../js/token-refresh.js"></script>
     <!-- dashboard.js removed - superadmin has its own inline JavaScript -->
+    <!-- Custom Select Component (needed for filter dropdowns) -->
+    <script src="../../../js/inventory/inventory-modals.js"></script>
     <script src="../../../js/dark-mode.js"></script>
     <script src="../../../js/websocket-client.js"></script>
     <script src="../../../js/notification-sound.js"></script>
@@ -695,6 +705,214 @@
             50% {
                 opacity: .5;
             }
+        }
+
+        /* Custom Select Styles */
+        .custom-select-container {
+            position: relative;
+            z-index: 1;
+        }
+
+        .custom-select-container.select-open {
+            z-index: 10002;
+        }
+
+        .custom-select {
+            position: relative;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border-color: #e5e7eb;
+            cursor: not-allowed;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-trigger:hover {
+            border-color: #e5e7eb;
+        }
+
+        .custom-select.custom-select-disabled .custom-select-arrow {
+            color: #d1d5db;
+        }
+
+        .custom-select-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #d1d5db;
+            border-radius: 0.75rem;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-height: 2.5rem;
+        }
+
+        .custom-select-trigger:hover {
+            border-color: #00AF00;
+        }
+
+        .custom-select-trigger:focus-within {
+            border-color: #00AF00;
+            box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
+        }
+
+        .custom-select.open .custom-select-trigger {
+            border-color: #00AF00;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .custom-select-text {
+            color: #374151;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-placeholder {
+            color: #9ca3af;
+        }
+
+        .custom-select-arrow {
+            color: #00AF00;
+            transition: transform 0.2s ease;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: rotate(180deg);
+        }
+
+        .custom-select-dropdown {
+            position: fixed;
+            background: white;
+            border: 2px solid #00AF00;
+            border-top: none;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 10050;
+            max-height: 200px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: none;
+            min-width: 180px;
+        }
+
+        /* Dropdown opening upward */
+        .custom-select.dropdown-up .custom-select-dropdown {
+            border-top: 2px solid #00AF00;
+            border-bottom: none;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .custom-select.dropdown-up .custom-select-trigger {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border-bottom-left-radius: 0.75rem;
+            border-bottom-right-radius: 0.75rem;
+        }
+
+        .custom-select.dropdown-up .custom-select-arrow {
+            transform: rotate(0deg);
+        }
+
+        .custom-select.open .custom-select-dropdown {
+            display: block;
+        }
+
+        .custom-select.open {
+            z-index: 10002;
+        }
+
+        #dashboardFiltersContainer {
+            overflow: visible !important;
+        }
+
+        #dashboardFiltersContainer > div {
+            overflow: visible !important;
+        }
+
+        .custom-select-search {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            outline: none;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-options {
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .custom-select-option {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .custom-select-option:hover {
+            background-color: #f3f4f6;
+        }
+
+        .custom-select-option.selected {
+            background-color: #00AF00;
+            color: white;
+        }
+
+        .custom-select-option.disabled {
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .custom-select-option.disabled:hover {
+            background-color: transparent;
+        }
+
+        /* Dark mode support */
+        .dark .custom-select-trigger {
+            background: #1f2937;
+            border-color: #4b5563;
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-text {
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-placeholder {
+            color: #9ca3af;
+        }
+
+        .dark .custom-select-dropdown {
+            background: #1f2937;
+            border-color: #10b981;
+        }
+
+        .dark .custom-select-search {
+            background: #1f2937;
+            color: #f3f4f6;
+            border-bottom-color: #4b5563;
+        }
+
+        .dark .custom-select-option {
+            color: #f3f4f6;
+        }
+
+        .dark .custom-select-option:hover {
+            background-color: #374151;
+        }
+
+        .dark .custom-select.custom-select-disabled .custom-select-trigger {
+            background: #374151;
+            color: #6b7280;
+            border-color: #4b5563;
         }
     </style>
 
@@ -846,11 +1064,6 @@
             localStorage.removeItem('jwt');
             window.location.href = '/';
         }
-
-        // Make logout functions globally available
-        window.logout = logout;
-        window.closeLogoutModal = closeLogoutModal;
-        window.confirmLogout = confirmLogout;
 
         // Setup mobile menu toggle
         function setupMobileMenuToggle() {
@@ -1072,7 +1285,7 @@
                     loadRecentInventories(headers),
                     loadRecentTransfers(headers),
                     loadRecentVerifications(headers),
-                    loadUnreadNotifications(headers),
+                    loadCancellationsCount(headers),
                     loadVerificationCount(headers),
                     loadLoansCount(headers)
                 ]);
@@ -1090,125 +1303,221 @@
         // Load inventory statistics
         async function loadInventoryStatistics(headers) {
             try {
-                let url = '/api/v1/inventory/statistics';
-                
-                // Add institution filter if selected
-                if (superadminDashboardData.selectedInstitution) {
-                    url = `/api/v1/inventory/statistics/institution/${superadminDashboardData.selectedInstitution}`;
-                } else if (superadminDashboardData.selectedRegional) {
-                    // If only regional is selected, we need to filter client-side
-                    url = '/api/v1/inventory/statistics';
-                }
-
-                const response = await fetch(url, { headers });
-                if (response.ok) {
-                    let stats = await response.json();
+                // Always get all inventories and filter client-side for better reliability
+                const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                if (inventoriesResponse.ok) {
+                    const data = await inventoriesResponse.json();
+                    let inventories = data.content || data || [];
                     
-                    // If only regional is selected (no institution), filter client-side
-                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
-                        // Get all inventories and filter by regional
-                        const inventoriesResponse = await fetch('/api/v1/inventory', { headers });
-                        if (inventoriesResponse.ok) {
-                            const inventories = await inventoriesResponse.json();
-                            const filteredInventories = inventories.filter(inv => {
-                                const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
-                                return institution && institution.regionalId == superadminDashboardData.selectedRegional;
-                            });
-                            
-                            // Recalculate stats from filtered inventories
-                            stats = {
-                                totalInventories: new Set(filteredInventories.map(inv => inv.id)).size,
-                                activeInventories: filteredInventories.filter(inv => inv.status === 'ACTIVE').length,
-                                inactiveInventories: filteredInventories.filter(inv => inv.status === 'INACTIVE').length,
-                                totalItems: filteredInventories.reduce((sum, inv) => sum + (inv.totalItems || 0), 0),
-                                totalValue: filteredInventories.reduce((sum, inv) => sum + (inv.totalValue || 0), 0)
-                            };
-                        }
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        inventories = inventories.filter(inv => {
+                            return inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString();
+                        });
+                    }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
+                        inventories = inventories.filter(inv => {
+                            const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
+                            return institution && institution.regionalId == superadminDashboardData.selectedRegional;
+                        });
                     }
                     
+                    // Calculate stats from filtered inventories
+                    const stats = {
+                        totalInventories: new Set(inventories.map(inv => inv.id)).size,
+                        activeInventories: inventories.filter(inv => inv.status === 'ACTIVE').length,
+                        inactiveInventories: inventories.filter(inv => inv.status === 'INACTIVE').length,
+                        totalItems: inventories.reduce((sum, inv) => sum + (inv.totalItems || inv.quantityItems || 0), 0),
+                        totalValue: inventories.reduce((sum, inv) => sum + (inv.totalValue || inv.totalPrice || 0), 0)
+                    };
+                    
                     superadminDashboardData.inventoryStats = stats;
+                } else {
+                    // Fallback: try to get statistics from general endpoint
+                    const response = await fetch('/api/v1/inventory/statistics', { headers });
+                    if (response.ok) {
+                        superadminDashboardData.inventoryStats = await response.json();
+                    }
                 }
             } catch (error) {
                 console.error('Error loading inventory statistics:', error);
+                // Set default values on error
+                superadminDashboardData.inventoryStats = {
+                    totalInventories: 0,
+                    activeInventories: 0,
+                    inactiveInventories: 0,
+                    totalItems: 0,
+                    totalValue: 0
+                };
             }
         }
 
         // Load user statistics
         async function loadUserStatistics(headers) {
             try {
-                let url = '/api/v1/users/statistics';
-                
-                // Add institution filter if selected
-                if (superadminDashboardData.selectedInstitution) {
-                    url = `/api/v1/users/statistics/institution/${superadminDashboardData.selectedInstitution}`;
-                } else if (superadminDashboardData.selectedRegional) {
-                    // If only regional is selected, filter client-side
-                    url = '/api/v1/users/statistics';
-                }
-
-                const response = await fetch(url, { headers });
-                if (response.ok) {
-                    let stats = await response.json();
+                // Always get all users and filter client-side for better reliability
+                const usersResponse = await fetch('/api/v1/users?page=0&size=10000', { headers });
+                if (usersResponse.ok) {
+                    const usersData = await usersResponse.json();
+                    let users = usersData.users || [];
                     
-                    // If only regional is selected (no institution), filter client-side
-                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
-                        // Get all users and filter by regional
-                        const usersResponse = await fetch('/api/v1/users?page=0&size=10000', { headers });
-                        if (usersResponse.ok) {
-                            const usersData = await usersResponse.json();
-                            const users = usersData.users || [];
-                            
-                            // Filter users by regional
-                            const filteredUsers = users.filter(user => {
-                                if (!user.institution) return false;
-                                const institution = superadminDashboardData.institutions.find(inst => 
-                                    inst.name === user.institution && inst.regionalId == superadminDashboardData.selectedRegional
-                                );
-                                return !!institution;
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        const selectedInstitution = superadminDashboardData.institutions.find(
+                            inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                        );
+                        if (selectedInstitution) {
+                            users = users.filter(user => {
+                                return user.institution === selectedInstitution.name;
                             });
-                            
-                            // Recalculate stats from filtered users
-                            const roleCounts = {
-                                SUPERADMIN: 0,
-                                ADMIN_REGIONAL: 0,
-                                ADMIN_INSTITUTION: 0,
-                                WAREHOUSE: 0,
-                                USER: 0
-                            };
-                            
-                            filteredUsers.forEach(user => {
-                                if (roleCounts.hasOwnProperty(user.role)) {
-                                    roleCounts[user.role]++;
-                                }
-                            });
-                            
-                            stats = {
-                                totalUsers: filteredUsers.length,
-                                superadminCount: roleCounts.SUPERADMIN,
-                                adminRegionalCount: roleCounts.ADMIN_REGIONAL,
-                                adminInstitutionCount: roleCounts.ADMIN_INSTITUTION,
-                                warehouseCount: roleCounts.WAREHOUSE,
-                                userCount: roleCounts.USER
-                            };
                         }
                     }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
+                        users = users.filter(user => {
+                            if (!user.institution) return false;
+                            const institution = superadminDashboardData.institutions.find(inst => 
+                                inst.name === user.institution && inst.regionalId == superadminDashboardData.selectedRegional
+                            );
+                            return !!institution;
+                        });
+                    }
+                    
+                    // Calculate stats from filtered users
+                    const roleCounts = {
+                        SUPERADMIN: 0,
+                        ADMIN_REGIONAL: 0,
+                        ADMIN_INSTITUTION: 0,
+                        WAREHOUSE: 0,
+                        USER: 0
+                    };
+                    
+                    users.forEach(user => {
+                        if (roleCounts.hasOwnProperty(user.role)) {
+                            roleCounts[user.role]++;
+                        }
+                    });
+                    
+                    const stats = {
+                        totalUsers: users.length,
+                        superadminCount: roleCounts.SUPERADMIN,
+                        adminRegionalCount: roleCounts.ADMIN_REGIONAL,
+                        adminInstitutionCount: roleCounts.ADMIN_INSTITUTION,
+                        warehouseCount: roleCounts.WAREHOUSE,
+                        userCount: roleCounts.USER
+                    };
                     
                     superadminDashboardData.userStats = stats;
+                } else {
+                    // Fallback: try to get statistics from general endpoint
+                    const response = await fetch('/api/v1/users/statistics', { headers });
+                    if (response.ok) {
+                        superadminDashboardData.userStats = await response.json();
+                    }
                 }
             } catch (error) {
                 console.error('Error loading user statistics:', error);
+                // Set default values on error
+                superadminDashboardData.userStats = {
+                    totalUsers: 0,
+                    superadminCount: 0,
+                    adminRegionalCount: 0,
+                    adminInstitutionCount: 0,
+                    warehouseCount: 0,
+                    userCount: 0
+                };
             }
         }
 
         // Load transfer statistics
         async function loadTransferStatistics(headers) {
             try {
-                const response = await fetch('/api/v1/transfers/statistics', { headers });
-                if (response.ok) {
-                    superadminDashboardData.transferStats = await response.json();
+                let response;
+                let transfers = [];
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // For institution, get all inventories of the institution first
+                    const institution = superadminDashboardData.institutions.find(
+                        inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                    );
+                    if (institution) {
+                        // Get all inventories for this institution
+                        const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                        if (inventoriesResponse.ok) {
+                            const inventoriesData = await inventoriesResponse.json();
+                            const institutionInventories = (inventoriesData.content || []).filter(inv => 
+                                inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString()
+                            );
+                            const inventoryIds = institutionInventories.map(inv => inv.id);
+                            
+                            // Get transfers for each inventory and combine
+                            const transferPromises = inventoryIds.map(invId => 
+                                fetch(`/api/v1/transfers/inventory/${invId}`, { headers }).then(r => r.ok ? r.json() : [])
+                            );
+                            const transferArrays = await Promise.all(transferPromises);
+                            transfers = transferArrays.flat();
+                            
+                            // Remove duplicates by transfer id
+                            const uniqueTransfers = [];
+                            const seenIds = new Set();
+                            transfers.forEach(transfer => {
+                                if (transfer.id && !seenIds.has(transfer.id)) {
+                                    seenIds.add(transfer.id);
+                                    uniqueTransfers.push(transfer);
+                                }
+                            });
+                            transfers = uniqueTransfers;
+                        }
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get transfers by regional
+                    response = await fetch(`/api/v1/transfers/regional/${superadminDashboardData.selectedRegional}?page=0&size=10000`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        transfers = data.content || [];
+                    }
+                } else {
+                    // No filters, get all transfers
+                    response = await fetch('/api/v1/transfers?page=0&size=10000', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        transfers = data.content || [];
+                    }
+                }
+                
+                // Calculate statistics from transfers array
+                if (transfers.length > 0) {
+                    superadminDashboardData.transferStats = {
+                        total: transfers.length,
+                        pending: transfers.filter(t => t.status === 'PENDING').length,
+                        approved: transfers.filter(t => t.status === 'APPROVED').length,
+                        rejected: transfers.filter(t => t.status === 'REJECTED').length
+                    };
+                } else {
+                    // Fallback to general statistics if no transfers found or if filtered request failed
+                    response = await fetch('/api/v1/transfers/statistics', { headers });
+                    if (response.ok) {
+                        superadminDashboardData.transferStats = await response.json();
+                    } else {
+                        superadminDashboardData.transferStats = {
+                            total: 0,
+                            pending: 0,
+                            approved: 0,
+                            rejected: 0
+                        };
+                    }
                 }
             } catch (error) {
                 console.error('Error loading transfer statistics:', error);
+                // Set default values on error
+                superadminDashboardData.transferStats = {
+                    total: 0,
+                    pending: 0,
+                    approved: 0,
+                    rejected: 0
+                };
             }
         }
 
@@ -1246,14 +1555,16 @@
         async function loadInstitutionsByRegional(regionalId, headers) {
             try {
                 if (!regionalId) {
-                    superadminDashboardData.filteredInstitutions = superadminDashboardData.institutions;
+                    superadminDashboardData.filteredInstitutions = superadminDashboardData.institutions || [];
                     return;
                 }
 
                 const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, { headers });
                 if (response.ok) {
-                    superadminDashboardData.filteredInstitutions = await response.json();
+                    const data = await response.json();
+                    superadminDashboardData.filteredInstitutions = Array.isArray(data) ? data : [];
                 } else {
+                    // If 404 or empty response, set empty array
                     superadminDashboardData.filteredInstitutions = [];
                 }
             } catch (error) {
@@ -1262,89 +1573,293 @@
             }
         }
 
+        // Custom Select instances
+        let regionalCustomSelect = null;
+        let institutionCustomSelect = null;
+        
+        // Flag to prevent multiple simultaneous filter updates
+        let isUpdatingDashboardFilters = false;
+
         // Initialize filter dropdowns
         function initializeFilters() {
+            // Prevent multiple simultaneous calls
+            if (isUpdatingDashboardFilters) {
+                return;
+            }
+            
+            isUpdatingDashboardFilters = true;
+            
             const container = document.getElementById('dashboardFiltersContainer');
-            if (!container) return;
+            if (!container) {
+                isUpdatingDashboardFilters = false;
+                return;
+            }
+
+            // Destroy existing CustomSelect instances before regenerating HTML
+            if (regionalCustomSelect) {
+                try {
+                    if (typeof regionalCustomSelect.destroy === 'function') {
+                        regionalCustomSelect.destroy();
+                    }
+                } catch (e) {
+                    console.warn('Error destroying regional CustomSelect:', e);
+                }
+                regionalCustomSelect = null;
+            }
+            
+            if (institutionCustomSelect) {
+                try {
+                    if (typeof institutionCustomSelect.destroy === 'function') {
+                        institutionCustomSelect.destroy();
+                    }
+                } catch (e) {
+                    console.warn('Error destroying institution CustomSelect:', e);
+                }
+                institutionCustomSelect = null;
+            }
 
             container.innerHTML = `
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Regional</label>
-                    <select id="dashboardRegionalFilter" onchange="handleRegionalFilterChange(this.value)"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                        <option value="">Todas las regionales</option>
-                    </select>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="dashboardRegionalFilterSelect">
+                            <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                                <span class="custom-select-text custom-select-placeholder">Todas las regionales</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar regional...">
+                                <div class="custom-select-options" id="dashboardRegionalFilterOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="dashboardRegionalFilter" value="">
+                    </div>
                 </div>
                 <div class="flex-1">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Centro</label>
-                    <select id="dashboardInstitutionFilter" onchange="handleInstitutionFilterChange(this.value)"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                        ${!superadminDashboardData.selectedRegional ? 'disabled' : ''}>
-                        <option value="">Todos los centros</option>
-                    </select>
+                    <div class="custom-select-container">
+                        <div class="custom-select" id="dashboardInstitutionFilterSelect">
+                            <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                                <span class="custom-select-text custom-select-placeholder">Todos los centros</span>
+                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                            </div>
+                            <div class="custom-select-dropdown">
+                                <input type="text" class="custom-select-search" placeholder="Buscar centro...">
+                                <div class="custom-select-options" id="dashboardInstitutionFilterOptions">
+                                    <!-- Options loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="dashboardInstitutionFilter" value="">
+                    </div>
                 </div>
             `;
 
-            // Populate regionals dropdown after data is loaded
-            populateRegionalFilter();
+            // Initialize Custom Select instances
+            if (typeof CustomSelect !== 'undefined') {
+                try {
+                    regionalCustomSelect = new CustomSelect('dashboardRegionalFilterSelect', {
+                        placeholder: 'Todas las regionales',
+                        onChange: (option) => {
+                            const value = option.value || '';
+                            const hiddenInput = document.getElementById('dashboardRegionalFilter');
+                            if (hiddenInput) {
+                                hiddenInput.value = value;
+                            }
+                            // Prevent loop: only call handleRegionalFilterChange if value actually changed
+                            if (superadminDashboardData.selectedRegional !== value) {
+                                handleRegionalFilterChange(value);
+                            }
+                        }
+                    });
+
+                    institutionCustomSelect = new CustomSelect('dashboardInstitutionFilterSelect', {
+                        placeholder: 'Todos los centros',
+                        disabled: !superadminDashboardData.selectedRegional,
+                        onChange: (option) => {
+                            const value = option.value || '';
+                            const hiddenInput = document.getElementById('dashboardInstitutionFilter');
+                            if (hiddenInput) {
+                                hiddenInput.value = value;
+                            }
+                            // Prevent loop: only call handleInstitutionFilterChange if value actually changed
+                            if (superadminDashboardData.selectedInstitution !== value) {
+                                handleInstitutionFilterChange(value);
+                            }
+                        }
+                    });
+
+                    // Set initial empty options (will be populated when data loads)
+                    regionalCustomSelect.setOptions([{ value: '', label: 'Todas las regionales' }]);
+                    institutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
+                } catch (e) {
+                    console.error('Error initializing dashboard CustomSelects:', e);
+                }
+            } else {
+                console.warn('CustomSelect class not available, falling back to regular selects');
+            }
+            
+            isUpdatingDashboardFilters = false;
+
+            // Note: populateRegionalFilter() will be called after data is loaded in loadDashboardData()
         }
 
         // Populate regional filter dropdown
         function populateRegionalFilter() {
-            const select = document.getElementById('dashboardRegionalFilter');
-            if (!select) return;
-
-            // Clear existing options except the first one
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
-
-            // Add regional options
-            superadminDashboardData.regionals.forEach(regional => {
-                const option = document.createElement('option');
-                option.value = regional.id;
-                option.textContent = regional.name;
-                if (regional.id == superadminDashboardData.selectedRegional) {
-                    option.selected = true;
+            if (regionalCustomSelect) {
+                try {
+                    const regionals = superadminDashboardData.regionals || [];
+                    const options = [
+                        { value: '', label: 'Todas las regionales' },
+                        ...regionals.map(regional => ({
+                            value: regional.id.toString(),
+                            label: regional.name || `Regional ${regional.id}`
+                        }))
+                    ];
+                    
+                    // Only set options if we have data or at least the "all" option
+                    if (options.length > 0) {
+                        regionalCustomSelect.setOptions(options);
+                        
+                        // Set selected value if exists
+                        if (superadminDashboardData.selectedRegional) {
+                            const selectedOption = options.find(opt => opt.value === superadminDashboardData.selectedRegional.toString());
+                            if (selectedOption) {
+                                regionalCustomSelect.selectOption(selectedOption);
+                            } else {
+                                regionalCustomSelect.clear();
+                            }
+                        } else {
+                            regionalCustomSelect.clear();
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error populating regional filter:', e);
                 }
-                select.appendChild(option);
-            });
+            } else {
+                // Fallback to regular select
+                const select = document.getElementById('dashboardRegionalFilter');
+                if (!select) return;
+
+                // Clear existing options except the first one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+
+                // Add regional options
+                const regionals = superadminDashboardData.regionals || [];
+                regionals.forEach(regional => {
+                    const option = document.createElement('option');
+                    option.value = regional.id;
+                    option.textContent = regional.name || `Regional ${regional.id}`;
+                    if (regional.id == superadminDashboardData.selectedRegional) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
         }
 
         // Populate institution filter dropdown
         function populateInstitutionFilter() {
-            const select = document.getElementById('dashboardInstitutionFilter');
-            if (!select) return;
+            if (institutionCustomSelect) {
+                try {
+                    // Enable/disable based on regional selection
+                    if (!superadminDashboardData.selectedRegional) {
+                        institutionCustomSelect.setDisabled(true);
+                        institutionCustomSelect.setOptions([{ value: '', label: 'Todos los centros' }]);
+                        institutionCustomSelect.clear();
+                        return;
+                    }
 
-            // Clear existing options except the first one
-            while (select.options.length > 1) {
-                select.remove(1);
-            }
+                    institutionCustomSelect.setDisabled(false);
 
-            // Enable/disable based on regional selection
-            if (!superadminDashboardData.selectedRegional) {
-                select.disabled = true;
-                return;
-            }
-
-            select.disabled = false;
-
-            // Add institution options
-            superadminDashboardData.filteredInstitutions.forEach(institution => {
-                const option = document.createElement('option');
-                option.value = institution.id;
-                option.textContent = institution.name;
-                if (institution.id == superadminDashboardData.selectedInstitution) {
-                    option.selected = true;
+                    const institutions = superadminDashboardData.filteredInstitutions || [];
+                    const options = [
+                        { value: '', label: 'Todos los centros' },
+                        ...institutions.map(institution => ({
+                            value: institution.id.toString(),
+                            label: institution.name || `Centro ${institution.id}`
+                        }))
+                    ];
+                    
+                    // Only set options if we have data or at least the "all" option
+                    if (options.length > 0) {
+                        institutionCustomSelect.setOptions(options);
+                        
+                        // Set selected value if exists
+                        if (superadminDashboardData.selectedInstitution) {
+                            const selectedOption = options.find(opt => opt.value === superadminDashboardData.selectedInstitution.toString());
+                            if (selectedOption) {
+                                institutionCustomSelect.selectOption(selectedOption);
+                            } else {
+                                // Selected institution no longer exists, clear selection
+                                institutionCustomSelect.clear();
+                            }
+                        } else {
+                            institutionCustomSelect.clear();
+                        }
+                    } else {
+                        // No institutions available
+                        institutionCustomSelect.setOptions([{ value: '', label: 'No hay centros disponibles' }]);
+                        institutionCustomSelect.clear();
+                    }
+                } catch (e) {
+                    console.error('Error populating institution filter:', e);
                 }
-                select.appendChild(option);
-            });
+            } else {
+                // Fallback to regular select
+                const select = document.getElementById('dashboardInstitutionFilter');
+                if (!select) return;
+
+                // Clear existing options except the first one
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+
+                // Enable/disable based on regional selection
+                if (!superadminDashboardData.selectedRegional) {
+                    select.disabled = true;
+                    return;
+                }
+
+                select.disabled = false;
+
+                // Add institution options
+                const institutions = superadminDashboardData.filteredInstitutions || [];
+                institutions.forEach(institution => {
+                    const option = document.createElement('option');
+                    option.value = institution.id;
+                    option.textContent = institution.name || `Centro ${institution.id}`;
+                    if (institution.id == superadminDashboardData.selectedInstitution) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+            }
         }
 
         // Handle regional filter change
         async function handleRegionalFilterChange(regionalId) {
-            superadminDashboardData.selectedRegional = regionalId || '';
+            // Prevent loop: check if value actually changed
+            const newValue = regionalId || '';
+            if (superadminDashboardData.selectedRegional === newValue) {
+                return;
+            }
+            
+            superadminDashboardData.selectedRegional = newValue;
             superadminDashboardData.selectedInstitution = ''; // Reset institution when regional changes
+
+            // Clear institution selection in CustomSelect if available
+            if (institutionCustomSelect) {
+                try {
+                    institutionCustomSelect.clear();
+                } catch (e) {
+                    console.warn('Error clearing institution CustomSelect:', e);
+                }
+            }
 
             const token = localStorage.getItem('jwt');
             const headers = {
@@ -1353,19 +1868,39 @@
             };
 
             // Load institutions for selected regional
-            await loadInstitutionsByRegional(regionalId, headers);
-            populateInstitutionFilter();
+            try {
+                await loadInstitutionsByRegional(regionalId, headers);
+                populateInstitutionFilter();
+            } catch (e) {
+                console.error('Error loading institutions:', e);
+                superadminDashboardData.filteredInstitutions = [];
+                populateInstitutionFilter();
+            }
 
             // Reload dashboard data with filters
-            await loadDashboardData();
+            try {
+                await loadDashboardData();
+            } catch (e) {
+                console.error('Error reloading dashboard data:', e);
+            }
         }
 
         // Handle institution filter change
         async function handleInstitutionFilterChange(institutionId) {
-            superadminDashboardData.selectedInstitution = institutionId || '';
+            // Prevent loop: check if value actually changed
+            const newValue = institutionId || '';
+            if (superadminDashboardData.selectedInstitution === newValue) {
+                return;
+            }
+            
+            superadminDashboardData.selectedInstitution = newValue;
 
             // Reload dashboard data with filters
-            await loadDashboardData();
+            try {
+                await loadDashboardData();
+            } catch (e) {
+                console.error('Error reloading dashboard data:', e);
+            }
         }
 
         // Make functions globally available
@@ -1375,20 +1910,20 @@
         // Load all inventories for chart
         async function loadAllInventories(headers) {
             try {
-                let url = '/api/v1/inventory?page=0&size=10000';
-                
-                // Add institution filter if selected
-                if (superadminDashboardData.selectedInstitution) {
-                    url = `/api/v1/inventory/institution/${superadminDashboardData.selectedInstitution}?page=0&size=10000`;
-                }
-
-                const response = await fetch(url, { headers });
+                // Always get all inventories and filter client-side
+                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
                 if (response.ok) {
                     const data = await response.json();
                     let inventories = data.content || data || [];
                     
-                    // If only regional is selected (no institution), filter client-side
-                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        inventories = inventories.filter(inv => {
+                            return inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString();
+                        });
+                    }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
                         inventories = inventories.filter(inv => {
                             const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
                             return institution && institution.regionalId == superadminDashboardData.selectedRegional;
@@ -1446,57 +1981,150 @@
         // Load recent inventories
         async function loadRecentInventories(headers) {
             try {
-                let url = '/api/v1/inventory?page=0&size=5';
-                
-                // Add institution filter if selected
-                if (superadminDashboardData.selectedInstitution) {
-                    url = `/api/v1/inventory/institution/${superadminDashboardData.selectedInstitution}?page=0&size=5`;
-                }
-
-                const response = await fetch(url, { headers });
+                // Always get all inventories and filter client-side, then take first 5
+                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    let inventories = data.content || [];
+                    let inventories = data.content || data || [];
                     
-                    // If only regional is selected (no institution), filter client-side
-                    if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        inventories = inventories.filter(inv => {
+                            return inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString();
+                        });
+                    }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
                         inventories = inventories.filter(inv => {
                             const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
                             return institution && institution.regionalId == superadminDashboardData.selectedRegional;
                         });
                     }
                     
-                    superadminDashboardData.recentInventories = inventories;
+                    // Sort by most recent (assuming there's a createdAt or updatedAt field) and take first 5
+                    inventories.sort((a, b) => {
+                        const dateA = new Date(a.createdAt || a.updatedAt || 0);
+                        const dateB = new Date(b.createdAt || b.updatedAt || 0);
+                        return dateB - dateA;
+                    });
+                    
+                    superadminDashboardData.recentInventories = inventories.slice(0, 5);
                 }
             } catch (error) {
                 console.error('Error loading recent inventories:', error);
+                superadminDashboardData.recentInventories = [];
             }
         }
 
         // Load recent transfers
         async function loadRecentTransfers(headers) {
             try {
-                const response = await fetch('/api/v1/transfers?page=0&size=5', { headers });
-                if (response.ok) {
-                    const data = await response.json();
-                    superadminDashboardData.recentTransfers = data.content || [];
+                let response;
+                let transfers = [];
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // For institution, get all inventories of the institution first
+                    const institution = superadminDashboardData.institutions.find(
+                        inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                    );
+                    if (institution) {
+                        // Get all inventories for this institution
+                        const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                        if (inventoriesResponse.ok) {
+                            const inventoriesData = await inventoriesResponse.json();
+                            const institutionInventories = (inventoriesData.content || []).filter(inv => 
+                                inv.institutionId && inv.institutionId.toString() === superadminDashboardData.selectedInstitution.toString()
+                            );
+                            const inventoryIds = institutionInventories.map(inv => inv.id);
+                            
+                            // Get transfers for each inventory and combine (limit to first 10 per inventory for performance)
+                            const transferPromises = inventoryIds.slice(0, 20).map(invId => 
+                                fetch(`/api/v1/transfers/inventory/${invId}`, { headers }).then(r => r.ok ? r.json() : [])
+                            );
+                            const transferArrays = await Promise.all(transferPromises);
+                            transfers = transferArrays.flat();
+                            
+                            // Remove duplicates by transfer id
+                            const uniqueTransfers = [];
+                            const seenIds = new Set();
+                            transfers.forEach(transfer => {
+                                if (transfer.id && !seenIds.has(transfer.id)) {
+                                    seenIds.add(transfer.id);
+                                    uniqueTransfers.push(transfer);
+                                }
+                            });
+                            transfers = uniqueTransfers;
+                        }
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get transfers by regional
+                    response = await fetch(`/api/v1/transfers/regional/${superadminDashboardData.selectedRegional}?page=0&size=100`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        transfers = data.content || [];
+                    }
+                } else {
+                    // No filters, get all transfers
+                    response = await fetch('/api/v1/transfers?page=0&size=100', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        transfers = data.content || [];
+                    }
                 }
+                
+                // Sort by requestedAt descending and take first 5
+                transfers.sort((a, b) => {
+                    const dateA = new Date(a.requestedAt || 0);
+                    const dateB = new Date(b.requestedAt || 0);
+                    return dateB - dateA;
+                });
+                
+                superadminDashboardData.recentTransfers = transfers.slice(0, 5);
             } catch (error) {
                 console.error('Error loading recent transfers:', error);
+                superadminDashboardData.recentTransfers = [];
             }
         }
 
         // Load recent verifications
         async function loadRecentVerifications(headers) {
             try {
-                // Get recent verifications using the superadmin endpoint with pagination
-                const response = await fetch('/api/v1/verifications?page=0&size=5', { headers });
-                if (response.ok) {
-                    const data = await response.json();
-                    superadminDashboardData.recentVerifications = data.content || [];
+                let response;
+                let verifications = [];
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // Get verifications filtered by institution
+                    response = await fetch(`/api/v1/verifications?institutionId=${superadminDashboardData.selectedInstitution}&page=0&size=100`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        verifications = data.content || [];
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get verifications by regional
+                    response = await fetch(`/api/v1/verifications/regional/${superadminDashboardData.selectedRegional}?page=0&size=100`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        verifications = data.content || [];
+                    }
                 } else {
-                    superadminDashboardData.recentVerifications = [];
+                    // No filters, get all verifications
+                    response = await fetch('/api/v1/verifications?page=0&size=100', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        verifications = data.content || [];
+                    }
                 }
+                
+                // Sort by createdAt descending and take first 5
+                verifications.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || 0);
+                    const dateB = new Date(b.createdAt || 0);
+                    return dateB - dateA;
+                });
+                
+                superadminDashboardData.recentVerifications = verifications.slice(0, 5);
             } catch (error) {
                 console.error('Error loading recent verifications:', error);
                 superadminDashboardData.recentVerifications = [];
@@ -2155,42 +2783,130 @@
         // Load verification count
         async function loadVerificationCount(headers) {
             try {
-                // Get total count from the paginated endpoint (SUPERADMIN only)
-                // Using page=0 and size=1 to minimize data transfer, we only need the totalElements
-                const response = await fetch('/api/v1/verifications?page=0&size=1', { headers });
-                if (response.ok) {
-                    const data = await response.json();
-                    // Page response contains totalElements with the total count
-                    const totalCount = data.totalElements || 0;
-                    document.getElementById('totalVerifications').textContent = totalCount;
-                    superadminDashboardData.verificationCount = totalCount;
+                let response;
+                let totalCount = 0;
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // Get verifications filtered by institution
+                    response = await fetch(`/api/v1/verifications?institutionId=${superadminDashboardData.selectedInstitution}&page=0&size=1`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        totalCount = data.totalElements || 0;
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get verifications by regional
+                    response = await fetch(`/api/v1/verifications/regional/${superadminDashboardData.selectedRegional}?page=0&size=1`, { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        totalCount = data.totalElements || 0;
+                    }
                 } else {
-                    document.getElementById('totalVerifications').textContent = '0';
+                    // No filters, get all verifications
+                    response = await fetch('/api/v1/verifications?page=0&size=1', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        totalCount = data.totalElements || 0;
+                    }
                 }
+                
+                document.getElementById('totalVerifications').textContent = totalCount;
+                superadminDashboardData.verificationCount = totalCount;
             } catch (error) {
                 console.error('Error loading verification count:', error);
                 document.getElementById('totalVerifications').textContent = '0';
+                superadminDashboardData.verificationCount = 0;
             }
         }
 
         // Load loans count  
         async function loadLoansCount(headers) {
             try {
-                // Get all loans using the filter endpoint without parameters
-                // This returns all loans, then we count them
-                const response = await fetch('/api/v1/loan/filter', { headers });
-                if (response.ok) {
-                    const loans = await response.json();
-                    // Count total loans from the array
-                    const totalCount = loans ? loans.length : 0;
-                    document.getElementById('totalLoans').textContent = totalCount;
-                    superadminDashboardData.loansCount = totalCount;
+                let response;
+                let loans = [];
+                
+                // Use filtered endpoints if filters are applied
+                if (superadminDashboardData.selectedInstitution) {
+                    // Get loans filtered by institution
+                    response = await fetch(`/api/v1/loan/filter?institutionId=${superadminDashboardData.selectedInstitution}`, { headers });
+                    if (response.ok) {
+                        loans = await response.json();
+                    }
+                } else if (superadminDashboardData.selectedRegional) {
+                    // Get loans filtered by regional
+                    response = await fetch(`/api/v1/loan/filter?regionalId=${superadminDashboardData.selectedRegional}`, { headers });
+                    if (response.ok) {
+                        loans = await response.json();
+                    }
                 } else {
-                    document.getElementById('totalLoans').textContent = '0';
+                    // No filters, get all loans
+                    response = await fetch('/api/v1/loan/filter', { headers });
+                    if (response.ok) {
+                        loans = await response.json();
+                    }
                 }
+                
+                // Count total loans from the array
+                const totalCount = loans ? loans.length : 0;
+                document.getElementById('totalLoans').textContent = totalCount;
+                superadminDashboardData.loansCount = totalCount;
             } catch (error) {
                 console.error('Error loading loans count:', error);
                 document.getElementById('totalLoans').textContent = '0';
+                superadminDashboardData.loansCount = 0;
+            }
+        }
+
+        // Load cancellations count
+        async function loadCancellationsCount(headers) {
+            try {
+                let response;
+                let cancellations = [];
+                let totalCount = 0;
+                
+                // Get all cancellations (no direct filter endpoint, so we filter client-side)
+                response = await fetch('/api/v1/cancellations?page=0&size=10000', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    cancellations = data.content || [];
+                    
+                    // Filter by institution if selected
+                    if (superadminDashboardData.selectedInstitution) {
+                        const institution = superadminDashboardData.institutions.find(
+                            inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                        );
+                        if (institution) {
+                            cancellations = cancellations.filter(cancellation => {
+                                return cancellation.institutionName === institution.name;
+                            });
+                        }
+                    }
+                    // Filter by regional if selected (and no institution)
+                    else if (superadminDashboardData.selectedRegional) {
+                        const regional = superadminDashboardData.regionals.find(
+                            reg => reg.id.toString() === superadminDashboardData.selectedRegional.toString()
+                        );
+                        if (regional) {
+                            // Get institutions in this regional
+                            const regionalInstitutions = superadminDashboardData.institutions.filter(
+                                inst => inst.regionalId && inst.regionalId.toString() === superadminDashboardData.selectedRegional.toString()
+                            );
+                            const institutionNames = new Set(regionalInstitutions.map(inst => inst.name));
+                            cancellations = cancellations.filter(cancellation => {
+                                return institutionNames.has(cancellation.institutionName);
+                            });
+                        }
+                    }
+                    
+                    totalCount = cancellations.length;
+                }
+                
+                document.getElementById('totalCancellations').textContent = totalCount;
+                superadminDashboardData.cancellationsCount = totalCount;
+            } catch (error) {
+                console.error('Error loading cancellations count:', error);
+                document.getElementById('totalCancellations').textContent = '0';
+                superadminDashboardData.cancellationsCount = 0;
             }
         }
     </script>
@@ -2198,23 +2914,23 @@
     <!-- Logout Confirmation Modal -->
     <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
         style="z-index: 9999;">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
+        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Confirmar Cierre de Sesión</h2>
-                <button onclick="closeLogoutModal()" class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-400">
+                <h2 class="text-2xl font-bold text-gray-800">Confirmar Cierre de Sesión</h2>
+                <button onclick="closeLogoutModal()" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
 
             <div class="text-center mb-6">
-                <i class="fas fa-sign-out-alt text-green-600 dark:text-green-400 text-5xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">¿Está seguro que desea cerrar sesión?</h3>
-                <p class="text-gray-600 dark:text-gray-400">Será redirigido a la página de inicio de sesión.</p>
+                <i class="fas fa-sign-out-alt text-green-600 text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro que desea cerrar sesión?</h3>
+                <p class="text-gray-600">Será redirigido a la página de inicio de sesión.</p>
             </div>
 
             <div class="flex gap-3">
                 <button onclick="closeLogoutModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                     Cancelar
                 </button>
                 <button onclick="confirmLogout()"
@@ -2227,4 +2943,5 @@
 
 </body>
 
+</html>
 </html>
