@@ -1964,6 +1964,10 @@ async function showNewInventoryModal() {
 
   const tasks = [];
 
+  // Check if we're on admin regional page
+  const path = window.location.pathname || '';
+  const isAdminRegionalPage = path.includes('/admin_regional');
+  
   if (isInventoryInstitutionLocked()) {
     hideRegionalField();
     tasks.push(
@@ -1980,6 +1984,10 @@ async function showNewInventoryModal() {
         }
       })
     );
+  } else if (isAdminRegionalPage) {
+    // For Admin Regional, load institutions from their regional
+    hideRegionalField();
+    tasks.push(loadInstitutionsForAdminRegionalNewInventory());
   } else if (shouldDisplayInventoryRegionalSelect()) {
     showRegionalField();
     setInstitutionSelectAwaitingRegional();
@@ -2459,6 +2467,113 @@ async function handleRegionalSelection(option) {
   await loadInstitutionsForNewInventory({ regionalId });
 }
 
+// Load institutions for Admin Regional (from their regional)
+async function loadInstitutionsForAdminRegionalNewInventory() {
+  showNewInventoryInstitutionSelectLoading();
+  
+  try {
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    // Get current user info to find their institution
+    const userResponse = await fetch('/api/v1/users/me', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!userResponse.ok) {
+      throw new Error('Failed to get current user info');
+    }
+    
+    const currentUser = await userResponse.json();
+    
+    // Get user's institution ID
+    let institutionId = currentUser.institutionId;
+    
+    // If institutionId is not available, try to find it by name
+    if (!institutionId && currentUser.institution) {
+      const institutionsResponse = await fetch('/api/v1/institutions', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (institutionsResponse.ok) {
+        const allInstitutions = await institutionsResponse.json();
+        const userInstitution = allInstitutions.find(inst => 
+          inst.name === currentUser.institution
+        );
+        
+        if (userInstitution) {
+          institutionId = userInstitution.id;
+        }
+      }
+    }
+    
+    if (!institutionId) {
+      throw new Error('No se pudo obtener la institución del usuario');
+    }
+    
+    // Get institution details to find regional
+    const institutionResponse = await fetch(`/api/v1/institutions/${institutionId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!institutionResponse.ok) {
+      throw new Error('Failed to get institution details');
+    }
+    
+    const institution = await institutionResponse.json();
+    
+    if (!institution.regionalId) {
+      throw new Error('La institución del usuario no tiene una regional asignada');
+    }
+    
+    const regionalId = institution.regionalId;
+    
+    // Load institutions for this regional
+    const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.ok) {
+      const institutions = await response.json();
+      populateNewInventoryInstitutionSelect(institutions);
+      enableInstitutionSelect();
+    } else {
+      throw new Error('Failed to load institutions for regional');
+    }
+  } catch (error) {
+    console.error('Error loading institutions for admin regional:', error);
+    populateNewInventoryInstitutionSelect([]);
+    // Use inventory toast if available, otherwise use generic toast
+    if (typeof showInventoryErrorToast === 'function') {
+      showInventoryErrorToast('Error', 'No se pudieron cargar los centros de tu regional. Por favor, recarga la página.');
+    } else if (typeof showErrorToast === 'function') {
+      showErrorToast('Error', 'No se pudieron cargar los centros de tu regional. Por favor, recarga la página.');
+    } else {
+      console.error('No se pudieron cargar los centros de tu regional. Por favor, recarga la página.');
+    }
+  } finally {
+    hideNewInventoryInstitutionSelectLoading();
+  }
+}
+
 async function loadRegionalsForNewInventory() {
   showNewInventoryRegionalSelectLoading();
 
@@ -2834,6 +2949,7 @@ function closeNewInventoryModal() {
 // Export new inventory modal functions
 window.showNewInventoryModal = showNewInventoryModal;
 window.closeNewInventoryModal = closeNewInventoryModal;
+window.loadInstitutionsForAdminRegionalNewInventory = loadInstitutionsForAdminRegionalNewInventory;
 
 // Manager Assignment Functions
 async function showAssignManagerModal(inventoryId) {

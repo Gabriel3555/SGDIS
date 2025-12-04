@@ -16,6 +16,8 @@ function showWarningToast(title, message) {
 }
 
 function showToast(title, message, type = 'info') {
+    console.log('showToast called:', { title, message, type });
+    
     // Remove any existing toast
     const existingToast = document.querySelector('.custom-toast');
     if (existingToast) {
@@ -25,6 +27,8 @@ function showToast(title, message, type = 'info') {
     // Create toast element
     const toast = document.createElement('div');
     toast.className = `custom-toast custom-toast-${type}`;
+    
+    console.log('Toast element created:', toast);
 
     // Icon based on type
     let icon = '';
@@ -58,11 +62,18 @@ function showToast(title, message, type = 'info') {
     `;
 
     // Add to body
+    if (!document.body) {
+        console.error('document.body is not available');
+        return;
+    }
+    
     document.body.appendChild(toast);
+    console.log('Toast added to body');
 
     // Trigger animation
     setTimeout(() => {
         toast.classList.add('show');
+        console.log('Toast show class added');
     }, 10);
 
     // Auto remove after 5 seconds
