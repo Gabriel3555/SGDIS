@@ -342,21 +342,10 @@
                         <!-- Owner Selection -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Propietario del Inventario</label>
-                            <div class="custom-select-container">
-                                <div class="custom-select" id="newInventoryOwnerIdSelect">
-                                    <div class="custom-select-trigger">
-                                        <span class="custom-select-text">Seleccionar propietario...</span>
-                                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                                    </div>
-                                    <div class="custom-select-dropdown">
-                                        <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
-                                        <div class="custom-select-options" id="newInventoryOwnerIdOptions">
-                                            <!-- Options loaded dynamically -->
-                                        </div>
-                                    </div>
-                                </div>
-                                <input type="hidden" id="newInventoryOwnerId" name="ownerId">
-                            </div>
+                            <select id="newInventoryOwnerId" name="ownerId" class="w-full">
+                                <option value="">Selecciona primero una institución</option>
+                                <!-- Options loaded dynamically -->
+                            </select>
                             <p class="text-xs text-gray-500 mt-1">Usuario propietario de este inventario (opcional)</p>
                         </div>
                     </div>
@@ -372,24 +361,10 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Centro (Institución) del Inventario <span
                                     class="text-red-500">*</span></label>
-                            <div class="custom-select-container">
-                                <div class="custom-select" id="newInventoryInstitutionIdSelect">
-                                    <div class="custom-select-trigger">
-                                        <span class="custom-select-text">Seleccionar centro...</span>
-                                        <div class="custom-select-arrow">
-                                            <i class="fas fa-chevron-down"></i>
-                                        </div>
-                                    </div>
-                                    <div class="custom-select-dropdown">
-                                        <input type="text" class="custom-select-search"
-                                            placeholder="Buscar centro...">
-                                        <div class="custom-select-options" id="newInventoryInstitutionIdOptions">
-                                            <!-- Options loaded dynamically -->
-                                        </div>
-                                    </div>
-                                </div>
-                                <input type="hidden" id="newInventoryInstitutionId" name="institutionId" required>
-                            </div>
+                            <select id="newInventoryInstitutionId" name="institutionId" required class="w-full">
+                                <option value="">Seleccionar centro...</option>
+                                <!-- Options loaded dynamically -->
+                            </select>
                             <p class="text-xs text-gray-500 mt-1" id="newInventoryInstitutionHelper">
                                 Selecciona el centro (institución) de tu regional al que pertenecerá el inventario
                             </p>
@@ -468,21 +443,10 @@
                 <!-- User Selection -->
                 <div id="deleteRoleUserSection" class="hidden">
                     <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Usuario a Eliminar</label>
-                    <div class="custom-select-container">
-                        <div class="custom-select" id="deleteRoleUserIdSelect">
-                            <div class="custom-select-trigger">
-                                <span class="custom-select-text">Seleccionar usuario...</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
-                                <div class="custom-select-options" id="deleteRoleUserIdOptions">
-                                    <!-- Options loaded dynamically -->
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="deleteRoleUserId" name="userId">
-                    </div>
+                    <select id="deleteRoleUserId" name="userId" required class="w-full">
+                        <option value="">Seleccionar usuario...</option>
+                        <!-- Options loaded dynamically -->
+                    </select>
                     <p class="text-xs text-gray-500 mt-1" id="deleteRoleDescription">Selecciona el usuario al que se le
                         eliminará el rol</p>
 
@@ -880,21 +844,10 @@
                 <!-- Usuario Selector -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Usuario</label>
-                    <div class="custom-select-container">
-                        <div class="custom-select" id="roleUserIdSelect">
-                            <div class="custom-select-trigger">
-                                <span class="custom-select-text">Seleccionar usuario...</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
-                            </div>
-                            <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
-                                <div class="custom-select-options" id="roleUserIdOptions">
-                                    <!-- Options loaded dynamically -->
-                                </div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="roleUserId" name="userId">
-                    </div>
+                    <select id="roleUserId" name="userId" required class="w-full">
+                        <option value="">Seleccionar usuario...</option>
+                        <!-- Options loaded dynamically -->
+                    </select>
                     <p class="text-xs text-gray-500 mt-1">Selecciona el usuario al que se le asignará el rol</p>
                 </div>
 

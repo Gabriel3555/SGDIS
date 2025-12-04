@@ -593,14 +593,26 @@ function initializeInventoryFilterSelects() {
 async function loadRegionalInstitutionsForAdminRegional() {
   try {
     const currentUser = window.currentUserData || {};
-    const institutionName = currentUser.institution;
+    
+    // Handle both string and object types for institution
+    let institutionName = null;
+    if (typeof currentUser.institution === 'string') {
+      institutionName = currentUser.institution;
+    } else if (typeof currentUser.institution === 'object' && currentUser.institution) {
+      institutionName = currentUser.institution.name || currentUser.institution.institutionName;
+    }
     
     if (!institutionName) {
       console.error('No institution name found in user data. Waiting for user data to load...');
       // Wait a bit and try again if user data is not loaded yet
       setTimeout(() => {
         const retryUser = window.currentUserData || {};
-        const retryInstitutionName = retryUser.institution;
+        let retryInstitutionName = null;
+        if (typeof retryUser.institution === 'string') {
+          retryInstitutionName = retryUser.institution;
+        } else if (typeof retryUser.institution === 'object' && retryUser.institution) {
+          retryInstitutionName = retryUser.institution.name || retryUser.institution.institutionName;
+        }
         if (retryInstitutionName) {
           loadRegionalInstitutionsForAdminRegional();
         } else {

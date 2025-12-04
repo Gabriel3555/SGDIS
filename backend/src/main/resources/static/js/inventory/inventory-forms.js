@@ -265,7 +265,12 @@ async function handleEditInventorySubmit(e) {
         "Los datos ingresados no son válidos. Verifica el formato.";
     }
 
-    showEditErrorToast(errorMessage);
+    // Si el error es por inventario inactivo, usar showErrorToast directamente
+    if (errorMessage.includes("inactivo") || errorMessage.includes("está inactivo")) {
+      showErrorToast("Inventario inactivo", errorMessage);
+    } else {
+      showEditErrorToast(errorMessage);
+    }
   }
 }
 
@@ -654,6 +659,12 @@ async function handleAssignManagerSubmit(e) {
     console.error("Error assigning role:", error);
 
     let errorMessage = error.message || "Inténtalo de nuevo.";
+
+    // Si el error es por inventario inactivo, usar showErrorToast directamente
+    if (errorMessage.includes("inactivo") || errorMessage.includes("está inactivo")) {
+      showErrorToast("Inventario inactivo", errorMessage);
+      return;
+    }
 
     // Customize error messages based on the error
     if (errorMessage.includes("401") || errorMessage.includes("expired")) {

@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.hibernate.TransientObjectException;
+import org.hibernate.HibernateException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -185,8 +187,48 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 
+    @ExceptionHandler(TransientObjectException.class)
+    public ResponseEntity<Map<String, Object>> handleTransientObjectException(TransientObjectException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now().toString());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "No se puede eliminar el inventario");
+        errorResponse.put("message", "No se puede eliminar este inventario porque tiene relaciones activas con otros elementos del sistema (items, transferencias, préstamos, managers o signatories). Por favor, elimina o transfiere todos los elementos asociados antes de eliminar el inventario.");
+        errorResponse.put("detail", "El inventario tiene relaciones que impiden su eliminación. Verifica que no tenga items, transferencias, préstamos activos, managers o signatories asociados.");
+        
+        // Log the exception for debugging
+        System.err.println("TransientObjectException: " + ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(HibernateException.class)
+    public ResponseEntity<Map<String, Object>> handleHibernateException(HibernateException ex) {
+        // Check if it's a TransientObjectException (should be caught by the specific handler above)
+        if (ex instanceof TransientObjectException) {
+            return handleTransientObjectException((TransientObjectException) ex);
+        }
+        
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now().toString());
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.value());
+        errorResponse.put("error", "Error al procesar la operación");
+        errorResponse.put("message", "No se puede eliminar este inventario porque tiene relaciones activas con otros elementos del sistema. Por favor, elimina o transfiere todos los elementos asociados antes de eliminar el inventario.");
+        errorResponse.put("detail", ex.getMessage());
+        
+        // Log the exception for debugging
+        System.err.println("HibernateException: " + ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex, HttpServletRequest request) {
+        // Check if it's a Hibernate exception
+        if (ex instanceof HibernateException) {
+            return handleHibernateException((HibernateException) ex);
+        }
+        
         // Check if it's an Access Denied exception that wasn't caught by the specific handler
         if (ex instanceof AccessDeniedException || 
             (ex.getMessage() != null && ex.getMessage().contains("Access Denied"))) {

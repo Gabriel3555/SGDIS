@@ -43,7 +43,7 @@ public class InventoryEntity {
     private UserEntity owner;
 
     @JsonIgnore
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "managers_inventories", joinColumns = @JoinColumn(name = "inventory_id"), inverseJoinColumns = @JoinColumn(name = "manager_id"))
     private List<UserEntity> managers;
 
@@ -55,10 +55,10 @@ public class InventoryEntity {
     @OneToMany(mappedBy = "inventory", fetch = FetchType.LAZY)
     private List<ItemEntity> items;
 
-    @ManyToMany(mappedBy = "mySignatories", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "mySignatories", fetch = FetchType.LAZY)
     private List<UserEntity> signatories;
 
-    @OneToMany(mappedBy = "inventory",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "inventory", fetch = FetchType.LAZY, orphanRemoval = true)
     private List<TransferEntity> transfers;
 
 }
