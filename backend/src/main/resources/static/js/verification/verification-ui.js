@@ -382,6 +382,15 @@ function populateVerificationCustomSelects() {
         return;
     }
     
+    // Check if we're on admin_regional verification page - if so, skip this function
+    // as it has its own filter system
+    const path = window.location.pathname || '';
+    const isAdminRegionalPage = path.includes('/admin_regional/verification');
+    if (isAdminRegionalPage) {
+        // Admin Regional has its own filter system, don't interfere
+        return;
+    }
+    
     isPopulatingVerificationSelects = true;
     
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
@@ -512,6 +521,20 @@ function populateVerificationCustomSelects() {
 
             // Ensure inventories are loaded
             const inventories = verificationData.inventories || [];
+            
+            // Build options array
+            const options = [
+                { value: 'all', label: 'Todos los Inventarios' },
+                ...inventories.map(inv => ({
+                    value: (inv.id || inv.inventoryId).toString(),
+                    label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+                }))
+            ];
+            
+            // Set options in CustomSelect
+            if (verificationInventoryCustomSelect.setOptions) {
+                verificationInventoryCustomSelect.setOptions(options);
+            }
             
             // Verify options were set correctly
             setTimeout(() => {

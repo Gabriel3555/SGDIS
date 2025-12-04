@@ -39,7 +39,7 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
     @Query("SELECT i FROM InventoryEntity i WHERE i.institution.id = :institutionId ORDER BY SIZE(i.items) DESC")
     Page<InventoryEntity> findPageByInstitutionId(@Param("institutionId") Long institutionId, Pageable pageable);
     
-    @Query("SELECT i FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId")
+    @Query("SELECT i FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId ORDER BY SIZE(i.items) DESC")
     Page<InventoryEntity> findPageByRegionalId(@Param("regionalId") Long regionalId, Pageable pageable);
     
     @Query("SELECT i FROM InventoryEntity i WHERE i.institution.id = :institutionId AND i.institution.regional.id = :regionalId")

@@ -222,6 +222,13 @@ async function filterUsers() {
                 }
             }
 
+            // Sort by ID descending (highest ID first)
+            filtered.sort((a, b) => {
+                const idA = a.id || 0;
+                const idB = b.id || 0;
+                return idB - idA; // Descending order
+            });
+            
             data.filteredUsers = filtered;
             data.currentPage = 1;
             data.totalPages = Math.ceil(filtered.length / data.itemsPerPage);

@@ -14,9 +14,11 @@ async function handleNewUserSubmit(e) {
      const fullName = document.getElementById('newUserFullName')?.value?.trim();
      const email = document.getElementById('newUserEmail')?.value?.trim();
      
-     // Check if current user is ADMIN_INSTITUTION or WAREHOUSE
+     // Check if current user is ADMIN_INSTITUTION, ADMIN_REGIONAL, or WAREHOUSE
      const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
      const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+     const isAdminRegional = currentRole === 'ADMIN_REGIONAL' ||
+                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
      const isWarehouse = currentRole === 'WAREHOUSE' ||
                        (window.location.pathname && window.location.pathname.includes('/warehouse'));
      
@@ -31,6 +33,19 @@ async function handleNewUserSubmit(e) {
          }
      } else {
          role = roleInput?.value || (window.roleSelect ? window.roleSelect.getValue() : '');
+     }
+     
+     // Validate role for Admin Regional - only allow USER, WAREHOUSE, ADMIN_INSTITUTION
+     if (isAdminRegional) {
+         const allowedRoles = ['USER', 'WAREHOUSE', 'ADMIN_INSTITUTION'];
+         if (!allowedRoles.includes(role)) {
+             showErrorToast('Rol no permitido', 'Solo puede crear usuarios con los roles: Usuario, Admin Almacén o Admin Institución');
+             if (submitButton) {
+                 submitButton.disabled = false;
+                 submitButton.innerHTML = originalButtonText;
+             }
+             return;
+         }
      }
      
      const password = document.getElementById('newUserPassword')?.value?.trim();
@@ -144,6 +159,47 @@ async function handleNewUserSubmit(e) {
                 submitButton.innerHTML = originalButtonText;
             }
             return;
+        }
+        
+        // For Admin Regional, validate that the selected institution belongs to their regional
+        if (isAdminRegional) {
+            // Get current user's regional ID
+            const currentUserRegionalId = window.currentUserRegionalId;
+            if (currentUserRegionalId) {
+                // Verify that the selected institution belongs to the current user's regional
+                try {
+                    const token = localStorage.getItem('jwt');
+                    const headers = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                    
+                    // Fetch the selected institution to verify its regional
+                    const institutionResponse = await fetch(`/api/v1/institutions/${institutionId}`, {
+                        method: 'GET',
+                        headers: headers
+                    });
+                    
+                    if (institutionResponse.ok) {
+                        const selectedInstitution = await institutionResponse.json();
+                        const selectedInstitutionRegionalId = selectedInstitution.regionalId || selectedInstitution.regional?.id;
+                        
+                        if (!selectedInstitutionRegionalId || selectedInstitutionRegionalId.toString() !== currentUserRegionalId.toString()) {
+                            showErrorToast('Institución no permitida', 'Solo puede crear usuarios en instituciones de su propia regional');
+                            const institutionSelect = document.getElementById('newUserInstitutionSelect');
+                            if (institutionSelect) {
+                                institutionSelect.querySelector('.custom-select-trigger')?.classList.add('border-red-500');
+                            }
+                            if (submitButton) {
+                                submitButton.disabled = false;
+                                submitButton.innerHTML = originalButtonText;
+                            }
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error validating institution regional:', error);
+                    // Continue with submission - backend will validate
+                }
+            }
         }
      }
      

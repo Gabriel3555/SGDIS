@@ -84,12 +84,21 @@ function filterInventories() {
     }
 
     // Sort filtered inventories
+    // For admin regional, sort by quantityItems descending (most items first) globally across pages
     // For warehouse, backend already sorts by quantityItems, so maintain that order
     // For others, sort by ID descending (largest ID first)
+    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
     const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') || 
                        (window.location.pathname && window.location.pathname.includes('/warehouse'));
     
-    if (!isWarehouse) {
+    if (isAdminRegional) {
+        filtered.sort((a, b) => {
+            const itemsA = a.quantityItems || 0;
+            const itemsB = b.quantityItems || 0;
+            return itemsB - itemsA; // Descending order (most items first)
+        });
+    } else if (!isWarehouse) {
         filtered.sort((a, b) => {
             const idA = a.id || 0;
             const idB = b.id || 0;

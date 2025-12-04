@@ -49,7 +49,9 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/dark-mode.css">
+    <link rel="stylesheet" href="css/dashboard.css">
     <script>
         // Aplicar modo oscuro inmediatamente antes de renderizar para evitar flash
         (function() {
@@ -189,12 +191,99 @@
         select::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 175, 0, 0.8);
         }
+
+        /* Custom select styles for register form */
+        .custom-select-trigger {
+            min-height: 42px;
+            padding: 0.625rem 1rem;
+        }
+
+        .custom-select-trigger.entrada-focus:focus,
+        .custom-select-trigger:focus {
+            border-color: #00AF00;
+            box-shadow: 0 0 0 3px rgba(0, 175, 0, 0.1);
+        }
+
+        /* Loading overlay styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        .dark .loading-overlay {
+            background: rgba(17, 24, 39, 0.95);
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 175, 0, 0.1);
+            border-top-color: #00AF00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-message {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #00AF00;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .loading-submessage {
+            font-size: 0.875rem;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .dark .loading-submessage {
+            color: #9ca3af;
+        }
     </style>
 </head>
 
 <body class="min-h-screen" style="background-color: #fdfdfd;">
     <div class="logo-sena">
         <img src="svg/logoSena.png" alt="Logo SENA" class="h-16 w-auto">
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-message">¡Registro exitoso!</div>
+        <div class="loading-submessage">Iniciando sesión y redirigiendo al dashboard...</div>
     </div>
 
     <div class="min-h-screen flex items-center justify-center p-4 relative z-10">
@@ -252,17 +341,20 @@
                         <label for="jobTitle" class="block text-sm font-medium text-gray-700 mb-2">
                             Cargo Laboral
                         </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m8 0V8a2 2 0 01-2 2H8a2 2 0 01-2-2V6m8 0H8" />
-                                </svg>
+                        <div class="custom-select-container">
+                            <div class="custom-select" id="jobTitleSelect">
+                                <div class="custom-select-trigger entrada-focus">
+                                    <span class="custom-select-text">Seleccionar cargo</span>
+                                    <i class="fas fa-chevron-down custom-select-arrow"></i>
+                                </div>
+                                <div class="custom-select-dropdown">
+                                    <input type="text" class="custom-select-search" placeholder="Buscar cargo...">
+                                    <div class="custom-select-options" id="jobTitleOptions">
+                                        <!-- Options loaded dynamically -->
+                                    </div>
+                                </div>
                             </div>
-                            <input type="text" id="jobTitle" name="jobTitle"
-                                class="entrada-focus block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-0 transition-all duration-200 text-sm"
-                                placeholder="Instructor, Aprendiz, etc." required>
+                            <input type="hidden" id="jobTitle" name="jobTitle" required>
                         </div>
                     </div>
 
@@ -420,6 +512,257 @@
     </div>
 
     <script>
+        // CustomSelect class
+        class CustomSelect {
+            constructor(containerId, options = {}) {
+                this.container = document.getElementById(containerId);
+                if (!this.container) {
+                    console.error(`CustomSelect: Container with id "${containerId}" not found`);
+                    throw new Error(`CustomSelect: Container with id "${containerId}" not found`);
+                }
+
+                this.trigger = this.container.querySelector('.custom-select-trigger');
+                this.dropdown = this.container.querySelector('.custom-select-dropdown');
+                this.searchInput = this.container.querySelector('.custom-select-search');
+                this.optionsContainer = this.container.querySelector('.custom-select-options');
+                this.textElement = this.container.querySelector('.custom-select-text');
+                this.hiddenInput = this.container.querySelector('input[type="hidden"]') || 
+                                  this.container.parentElement?.querySelector('input[type="hidden"]');
+
+                this.options = [];
+                this.filteredOptions = [];
+                this.selectedValue = '';
+                this.selectedText = '';
+                this.placeholder = options.placeholder || 'Seleccionar...';
+                this.searchable = options.searchable !== false;
+                this.onChange = options.onChange || null;
+
+                this.init();
+            }
+
+            init() {
+                if (!this.trigger || !this.dropdown || !this.searchInput || !this.optionsContainer || !this.textElement) {
+                    console.error('CustomSelect: Required elements not found');
+                    return;
+                }
+
+                this.textElement.textContent = this.placeholder;
+                this.textElement.classList.add('custom-select-placeholder');
+
+                this._isOpening = false;
+                
+                if (this.trigger) {
+                    this.trigger.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        this._isOpening = true;
+                        setTimeout(() => {
+                            this.toggle();
+                            setTimeout(() => {
+                                this._isOpening = false;
+                            }, 100);
+                        }, 0);
+                    });
+                }
+                
+                if (this.searchInput) {
+                    this.searchInput.addEventListener('input', (e) => this.filterOptions(e.target.value));
+                    this.searchInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape') {
+                            this.close();
+                        } else if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const firstOption = this.optionsContainer.querySelector('.custom-select-option:not(.disabled)');
+                            if (firstOption) {
+                                const value = firstOption.dataset.value;
+                                const option = this.options.find(opt => opt.value === value);
+                                if (option) {
+                                    this.selectOption(option);
+                                }
+                            }
+                        }
+                    });
+                }
+
+                this._outsideClickHandler = (e) => {
+                    if (this._isOpening) return;
+                    if (this.trigger && (this.trigger === e.target || this.trigger.contains(e.target))) return;
+                    if (this.container && this.container.contains(e.target)) return;
+                    if (this.dropdown && this.dropdown.contains(e.target)) return;
+                    if (this.container && (this.container.classList.contains('open') || this.container.classList.contains('active'))) {
+                        this.close();
+                    }
+                };
+                document.addEventListener('click', this._outsideClickHandler, true);
+            }
+
+            setOptions(options) {
+                this.options = options;
+                this.filteredOptions = [...options];
+                this.renderOptions();
+            }
+
+            renderOptions() {
+                const wasOpen = this.container && (this.container.classList.contains('open') || this.container.classList.contains('active'));
+                
+                this.optionsContainer.innerHTML = '';
+
+                if (this.filteredOptions.length === 0) {
+                    const noResults = document.createElement('div');
+                    noResults.className = 'custom-select-option disabled';
+                    noResults.textContent = 'No se encontraron resultados';
+                    this.optionsContainer.appendChild(noResults);
+                    if (wasOpen && this.container) {
+                        this.container.classList.add('open');
+                        this.container.classList.add('active');
+                    }
+                    return;
+                }
+
+                this.filteredOptions.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'custom-select-option';
+                    optionElement.textContent = option.label;
+                    optionElement.dataset.value = option.value;
+
+                    if (option.value === this.selectedValue || option.value.toString() === String(this.selectedValue)) {
+                        optionElement.classList.add('selected');
+                    }
+
+                    optionElement.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.selectOption(option);
+                    });
+                    this.optionsContainer.appendChild(optionElement);
+                });
+                
+                if (wasOpen && this.container) {
+                    this.container.classList.add('open');
+                    this.container.classList.add('active');
+                }
+            }
+
+            filterOptions(searchTerm) {
+                if (!searchTerm.trim()) {
+                    this.filteredOptions = [...this.options];
+                } else {
+                    this.filteredOptions = this.options.filter(option =>
+                        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+                }
+                this.renderOptions();
+            }
+
+            selectOption(option) {
+                this.selectedValue = option.value;
+                this.selectedText = option.label;
+
+                this.textElement.textContent = option.label;
+                this.textElement.classList.remove('custom-select-placeholder');
+
+                if (this.hiddenInput) {
+                    this.hiddenInput.value = option.value;
+                } else {
+                    const container = this.container.closest('.custom-select-container');
+                    if (container) {
+                        const hiddenInput = container.querySelector('input[type="hidden"]');
+                        if (hiddenInput) {
+                            hiddenInput.value = option.value;
+                            this.hiddenInput = hiddenInput;
+                        }
+                    }
+                }
+
+                this._isOpening = false;
+                
+                setTimeout(() => {
+                    this.close();
+                }, 10);
+
+                if (this.onChange) {
+                    this.onChange(option);
+                }
+            }
+
+            toggle() {
+                if (!this.container) return;
+                
+                const isOpen = this.container.classList.contains('open') || this.container.classList.contains('active');
+
+                document.querySelectorAll('.custom-select.open, .custom-select.active').forEach(select => {
+                    if (select !== this.container) {
+                        select.classList.remove('open');
+                        select.classList.remove('active');
+                        const otherContainer = select.closest('.custom-select-container');
+                        if (otherContainer) {
+                            otherContainer.classList.remove('select-open');
+                        }
+                    }
+                });
+
+                if (isOpen) {
+                    this._isOpening = false;
+                    this.close();
+                } else {
+                    this._isOpening = true;
+                    setTimeout(() => {
+                        this.open();
+                        setTimeout(() => {
+                            this._isOpening = false;
+                        }, 300);
+                    }, 50);
+                }
+            }
+
+            open() {
+                if (!this.container) return;
+                
+                if (this.container.classList.contains('open') || this.container.classList.contains('active')) {
+                    this._isOpening = false;
+                    return;
+                }
+                
+                this._isOpening = true;
+                
+                this.container.classList.add('open');
+                this.container.classList.add('active');
+                
+                const container = this.container.closest('.custom-select-container');
+                if (container) {
+                    container.classList.add('select-open');
+                }
+                
+                if (this.searchable && this.searchInput) {
+                    setTimeout(() => {
+                        if (this.searchInput) {
+                            this.searchInput.focus();
+                        }
+                    }, 10);
+                }
+            }
+
+            close() {
+                this._isOpening = false;
+                
+                this.container.classList.remove('open');
+                this.container.classList.remove('active');
+                
+                const container = this.container.closest('.custom-select-container');
+                if (container) {
+                    container.classList.remove('select-open');
+                }
+                
+                if (this.searchInput) {
+                    this.searchInput.value = '';
+                    this.filterOptions('');
+                }
+            }
+
+            getValue() {
+                return this.selectedValue;
+            }
+        }
+
         // Agregar interacciones suaves
         document.addEventListener('DOMContentLoaded', function () {
             const entradas = document.querySelectorAll('input[type="text"], input[type="email"], input[type="password"]');
@@ -452,7 +795,7 @@
             });
 
             // --- Enter key functionality for all form fields ---
-            const formFields = ['fullName', 'email', 'jobTitle', 'laborDepartment', 'regional', 'institution', 'password', 'confirmPassword'];
+            const formFields = ['fullName', 'email', 'laborDepartment', 'regional', 'institution', 'password', 'confirmPassword'];
             formFields.forEach(fieldId => {
                 const field = document.getElementById(fieldId);
                 if (field) {
@@ -570,6 +913,25 @@
             // Load regionals when page loads
             loadRegionals();
 
+            // Initialize job title select
+            const jobTitleOptions = [
+                { value: 'directivo', label: 'Directivo' },
+                { value: 'coordinador', label: 'Coordinador' },
+                { value: 'instructor', label: 'Instructor' },
+                { value: 'profesional', label: 'Profesional / Administrativo' },
+                { value: 'asistencial', label: 'Asistencial / Apoyo' },
+                { value: 'aprendiz', label: 'Aprendiz' },
+                { value: 'externo', label: 'Externo / Empresario' }
+            ];
+            
+            const jobTitleSelect = new CustomSelect('jobTitleSelect', {
+                placeholder: 'Seleccionar cargo',
+                onChange: function(option) {
+                    // Option selected
+                }
+            });
+            jobTitleSelect.setOptions(jobTitleOptions);
+
             // Manejar el envío del formulario de registro
             const registerForm = document.getElementById('registerForm');
             registerForm.addEventListener('submit', async function (e) {
@@ -579,6 +941,11 @@
                 const email = document.getElementById('email').value;
                 const jobTitle = document.getElementById('jobTitle').value;
                 const laborDepartment = document.getElementById('laborDepartment').value;
+
+                if (!jobTitle) {
+                    alert('Por favor selecciona un cargo laboral');
+                    return;
+                }
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
                 const institutionId = document.getElementById('institution').value;
@@ -610,8 +977,72 @@
                     });
 
                     if (response.ok) {
-                        alert('Usuario registrado exitosamente. Ahora puedes iniciar sesión.');
-                        window.location.href = '/index.html';
+                        // Mostrar overlay de carga
+                        const loadingOverlay = document.getElementById('loadingOverlay');
+                        loadingOverlay.classList.add('show');
+
+                        // Hacer login automático con las credenciales del usuario
+                        try {
+                            const loginResponse = await fetch('/api/v1/auth/login', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    email: email,
+                                    password: password
+                                })
+                            });
+
+                            if (loginResponse.ok) {
+                                const loginData = await loginResponse.json();
+                                
+                                if (loginData && loginData.status) {
+                                    // Guardar JWT en localStorage
+                                    localStorage.setItem('jwt', loginData.jwt);
+                                    
+                                    // Guardar JWT también en cookie para que Spring Security lo pueda leer
+                                    document.cookie = `jwt=${loginData.jwt}; path=/; max-age=30; SameSite=Strict`;
+                                    
+                                    // Guardar refresh token en cookies
+                                    document.cookie = `refreshToken=${loginData.refreshToken}; path=/; max-age=604800; SameSite=Strict`;
+
+                                    // Determinar la ruta del dashboard según el rol
+                                    let redirectUrl = '/user/dashboard'; // Por defecto USER
+                                    if (loginData.role === "ADMIN_INSTITUTION") redirectUrl = '/dashboard/admininstitution';
+                                    else if (loginData.role === "ADMIN_REGIONAL") redirectUrl = '/dashboard/admin_regional';
+                                    else if (loginData.role === "SUPERADMIN") redirectUrl = '/dashboard/superadmin';
+                                    else if (loginData.role === "WAREHOUSE") redirectUrl = '/dashboard/warehouse';
+                                    else if (loginData.role === "USER") redirectUrl = '/user/dashboard';
+
+                                    // Actualizar mensaje de carga
+                                    const loadingMessage = loadingOverlay.querySelector('.loading-message');
+                                    const loadingSubmessage = loadingOverlay.querySelector('.loading-submessage');
+                                    loadingMessage.textContent = '¡Bienvenido a SGDIS!';
+                                    loadingSubmessage.textContent = 'Redirigiendo al dashboard...';
+
+                                    // Redirigir después de un breve delay
+                                    setTimeout(() => {
+                                        window.location.href = redirectUrl;
+                                    }, 1500);
+                                } else {
+                                    // Si el login falla, redirigir al login
+                                    loadingOverlay.classList.remove('show');
+                                    alert('Usuario registrado exitosamente. Por favor inicia sesión.');
+                                    window.location.href = '/index.html';
+                                }
+                            } else {
+                                // Si el login falla, redirigir al login
+                                loadingOverlay.classList.remove('show');
+                                alert('Usuario registrado exitosamente. Por favor inicia sesión.');
+                                window.location.href = '/index.html';
+                            }
+                        } catch (loginError) {
+                            console.error('Error en login automático:', loginError);
+                            loadingOverlay.classList.remove('show');
+                            alert('Usuario registrado exitosamente. Por favor inicia sesión.');
+                            window.location.href = '/index.html';
+                        }
                     } else {
                         try {
                             const errorData = await response.json();

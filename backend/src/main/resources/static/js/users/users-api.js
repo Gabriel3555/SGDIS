@@ -227,6 +227,13 @@ async function loadUsers(page = 0) {
                 loadedUsers = loadedUsers.filter(user => user && user.role === 'USER');
             }
             
+            // Sort by ID descending (highest ID first) - global ordering across pages
+            loadedUsers.sort((a, b) => {
+                const idA = a.id || 0;
+                const idB = b.id || 0;
+                return idB - idA; // Descending order
+            });
+            
             // Limit to itemsPerPage after filtering to ensure consistent page size
             // We requested extra users to compensate for filtering, so now limit to the expected size
             if (!hasFilters && loadedUsers.length > usersData.itemsPerPage) {
