@@ -68,6 +68,13 @@ async function filterUsers() {
                 filtered = filtered.filter(user => user && user.role !== 'SUPERADMIN');
             }
             
+            // For warehouse, only show USER role users
+            const isWarehouse = (data.currentLoggedInUserRole && data.currentLoggedInUserRole.toUpperCase() === 'WAREHOUSE') ||
+                               (window.location.pathname && window.location.pathname.includes('/warehouse'));
+            if (isWarehouse) {
+                filtered = filtered.filter(user => user && user.role === 'USER');
+            }
+            
             console.log('Starting with', filtered.length, 'users to filter');
             
             // Load institutions cache if needed for regional/institution filtering

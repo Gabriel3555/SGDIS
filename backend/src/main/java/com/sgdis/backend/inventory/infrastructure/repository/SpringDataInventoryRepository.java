@@ -36,7 +36,7 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
     List<InventoryEntity> findByRegionalId(@Param("regionalId") Long regionalId);
     
     // Métodos paginados
-    @Query("SELECT i FROM InventoryEntity i WHERE i.institution.id = :institutionId")
+    @Query("SELECT i FROM InventoryEntity i WHERE i.institution.id = :institutionId ORDER BY SIZE(i.items) DESC")
     Page<InventoryEntity> findPageByInstitutionId(@Param("institutionId") Long institutionId, Pageable pageable);
     
     @Query("SELECT i FROM InventoryEntity i WHERE i.institution.regional.id = :regionalId")

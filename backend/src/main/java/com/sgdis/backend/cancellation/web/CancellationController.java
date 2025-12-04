@@ -6,6 +6,7 @@ import com.sgdis.backend.cancellation.application.dto.AskForCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.AskForCancellationResponse;
 import com.sgdis.backend.cancellation.application.dto.CancellationResponse;
 import com.sgdis.backend.cancellation.application.dto.CancellationStatisticsResponse;
+import com.sgdis.backend.cancellation.application.dto.CancellationsByInventoryResponse;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationRequest;
 import com.sgdis.backend.cancellation.application.dto.RefuseCancellationResponse;
 import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
@@ -53,7 +54,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -285,6 +288,43 @@ public class CancellationController {
             System.err.println("Error fetching cancellation statistics by institution: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.ok(new CancellationStatisticsResponse(0L, 0L, 0L, 0L));
+        }
+    }
+
+    @Operation(
+            summary = "Get cancellations by inventory for warehouse",
+            description = "Retrieves count of approved cancellations grouped by inventory for the current warehouse user's institution"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Cancellations by inventory retrieved successfully",
+            content = @Content(schema = @Schema(implementation = CancellationsByInventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @GetMapping("/warehouse/by-inventory")
+    public ResponseEntity<CancellationsByInventoryResponse> getCancellationsByInventoryForWarehouse() {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            if (currentUser.getInstitution() == null || currentUser.getInstitution().getId() == null) {
+                return ResponseEntity.ok(new CancellationsByInventoryResponse(java.util.Map.of()));
+            }
+            
+            Long institutionId = currentUser.getInstitution().getId();
+            List<Object[]> results = cancellationRepository.countCancellationsByInventoryForInstitution(institutionId);
+            
+            Map<String, Long> cancellationsByInventory = new HashMap<>();
+            for (Object[] result : results) {
+                String inventoryName = (String) result[0];
+                Long count = ((Number) result[1]).longValue();
+                cancellationsByInventory.put(inventoryName, count);
+            }
+            
+            return ResponseEntity.ok(new CancellationsByInventoryResponse(cancellationsByInventory));
+        } catch (Exception e) {
+            System.err.println("Error fetching cancellations by inventory: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(new CancellationsByInventoryResponse(java.util.Map.of()));
         }
     }
 

@@ -140,7 +140,7 @@ function updateUserStats() {
             <p class="text-orange-600 text-sm font-medium">Administradores regionales</p>
         </div>` : ''}
 
-        <div class="stat-card">
+        ${!isWarehouse ? `<div class="stat-card">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-gray-600 text-sm font-medium mb-1">Almacén</p>
@@ -151,7 +151,7 @@ function updateUserStats() {
                 </div>
             </div>
             <p class="text-yellow-600 text-sm font-medium">Administradores de almacén</p>
-        </div>
+        </div>` : ''}
 
         <div class="stat-card">
             <div class="flex items-start justify-between mb-3">
@@ -172,12 +172,14 @@ function updateSearchAndFilters() {
   const container = document.getElementById("searchFilterContainer");
   if (!container) return;
 
-  // Check if user is super admin or admin regional
+  // Check if user is super admin, admin regional, or warehouse
   const path = window.location.pathname || '';
   const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                        path.includes('/superadmin');
   const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
                           path.includes('/admin_regional');
+  const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                     path.includes('/warehouse');
 
   const existingInput = document.getElementById("filterUserSearch");
   const currentSearchTerm = window.usersData ? window.usersData.searchTerm : "";
@@ -297,7 +299,7 @@ function updateSearchAndFilters() {
                 <i class="fas fa-search"></i>
             </button>
             ${regionalInstitutionFilters}
-            <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
+            ${!isWarehouse ? `<div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
                 <div class="custom-select" id="filterRoleSelect">
                     <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
                         <span class="custom-select-text">Todos los roles</span>
@@ -311,7 +313,7 @@ function updateSearchAndFilters() {
                     </div>
                 </div>
                 <input type="hidden" id="filterRole" name="role">
-            </div>
+            </div>` : ''}
             <div class="custom-select-container" style="min-width: 180px; flex-shrink: 0;">
                 <div class="custom-select" id="filterStatusSelect">
                     <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
@@ -624,9 +626,9 @@ function updateUsersTable() {
       usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
     }
     
-    // For warehouse, exclude all SUPERADMIN users when filtering locally
+    // For warehouse, only show USER role users when filtering locally
     if (isWarehouse) {
-      usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+      usersToDisplay = usersToDisplay.filter(user => user && user.role === 'USER');
     }
     
     // Exclude current user when filtering locally
@@ -635,6 +637,10 @@ function updateUsersTable() {
     }
   } else {
     // No filters - using backend pagination
+    // For warehouse, filter to only USER role users even without filters
+    if (isWarehouse) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.role === 'USER');
+    }
     // Only exclude current user on first page (backend handles other pages)
     // The backend already requested one extra user for first page if needed
     if (shouldExcludeCurrentUser && window.usersData.currentPage === 1) {
@@ -991,7 +997,16 @@ function initializeFilterSelects() {
 
   const CustomSelectClass = window.CustomSelect || CustomSelect;
 
-  // Role filter select
+  // Role filter select - skip for warehouse (only shows USER role)
+  const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
+  const isWarehouse = currentRole === 'WAREHOUSE' ||
+                     (window.location.pathname && window.location.pathname.includes('/warehouse'));
+  
+  if (isWarehouse) {
+    // For warehouse, don't initialize role filter (only USER role is shown)
+    return;
+  }
+  
   const roleSelectContainer = document.getElementById("filterRoleSelect");
   if (!roleSelectContainer) {
     return;
@@ -1430,9 +1445,9 @@ function updateUsersCards() {
       usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
     }
     
-    // For warehouse, exclude all SUPERADMIN users when filtering locally
+    // For warehouse, only show USER role users when filtering locally
     if (isWarehouse) {
-      usersToDisplay = usersToDisplay.filter(user => user && user.role !== 'SUPERADMIN');
+      usersToDisplay = usersToDisplay.filter(user => user && user.role === 'USER');
     }
     
     // Exclude current user when filtering locally
@@ -1441,6 +1456,10 @@ function updateUsersCards() {
     }
   } else {
     // No filters - using backend pagination
+    // For warehouse, filter to only USER role users even without filters
+    if (isWarehouse) {
+      usersToDisplay = usersToDisplay.filter(user => user && user.role === 'USER');
+    }
     // Only exclude current user on first page (backend handles other pages)
     // The backend already requested one extra user for first page if needed
     if (shouldExcludeCurrentUser && window.usersData.currentPage === 1) {

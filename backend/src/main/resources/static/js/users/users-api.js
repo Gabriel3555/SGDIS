@@ -220,11 +220,11 @@ async function loadUsers(page = 0) {
                 loadedUsers = loadedUsers.filter(user => user && user.role !== 'SUPERADMIN');
             }
             
-            // For warehouse, exclude all SUPERADMIN users (additional filter for safety)
+            // For warehouse, only show USER role users
             const isWarehouse = (usersData.currentLoggedInUserRole === 'WAREHOUSE') ||
                                (window.location.pathname && window.location.pathname.includes('/warehouse'));
             if (isWarehouse) {
-                loadedUsers = loadedUsers.filter(user => user && user.role !== 'SUPERADMIN');
+                loadedUsers = loadedUsers.filter(user => user && user.role === 'USER');
             }
             
             // Limit to itemsPerPage after filtering to ensure consistent page size

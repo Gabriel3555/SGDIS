@@ -244,23 +244,21 @@
                     </div>
                 </div>
 
-                <!-- Items por Categoría -->
+                <!-- Acciones (Auditoría) -->
                 <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
                         <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-tags text-purple-600 dark:text-purple-400 text-xl"></i>
+                            <i class="fas fa-clipboard-list text-purple-600 dark:text-purple-400 text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalCategories">-</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">Categorías</div>
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalAuditActions">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Acciones</div>
                         </div>
                     </div>
-                    <div class="text-xs text-gray-600 dark:text-gray-400">
-                        <span id="categoriesBreakdown">Cargando...</span>
-                    </div>
+                    <a href="/warehouse/auditory" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Ver todas</a>
                 </div>
 
-                <!-- Items Pendientes de Aprobación -->
+                <!-- Bajas Pendientes de Aprobación -->
                 <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
                         <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
@@ -272,22 +270,22 @@
                         </div>
                     </div>
                     <div class="text-xs text-gray-600 dark:text-gray-400">
-                        Requieren aprobación
+                        Bajas requieren aprobación
                     </div>
                 </div>
 
-                <!-- Notificaciones -->
+                <!-- Bajas -->
                 <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
                         <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-bell text-red-600 dark:text-red-400 text-xl"></i>
+                            <i class="fas fa-times-circle text-red-600 dark:text-red-400 text-xl"></i>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="unreadNotifications">-</div>
-                            <div class="text-sm text-gray-600 dark:text-gray-400">No leídas</div>
+                            <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalCancellations">-</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Bajas</div>
                         </div>
                     </div>
-                    <a href="/warehouse/notifications" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Ver todas</a>
+                    <a href="/warehouse/cancellations" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">Ver todas</a>
                 </div>
             </div>
 
@@ -309,19 +307,19 @@
                     </div>
                 </div>
 
-                <!-- Chart: Items por Categoría -->
-                <div class="chart-container bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg p-6 border border-blue-100 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
-                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-blue-200 dark:border-gray-600">
-                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                            <i class="fas fa-tags text-white text-lg"></i>
+                <!-- Chart: Bajas por Inventario -->
+                <div class="chart-container bg-gradient-to-br from-white to-red-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl shadow-lg p-6 border border-red-100 dark:border-gray-600 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-red-200 dark:border-gray-600">
+                        <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-md">
+                            <i class="fas fa-times-circle text-white text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Items por Categoría</h2>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Distribución de items por categoría</p>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Bajas por Inventario</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Cantidad de bajas por inventario</p>
                         </div>
                     </div>
                     <div class="relative h-64">
-                        <canvas id="itemsByCategoryChart"></canvas>
+                        <canvas id="cancellationsByInventoryChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -783,14 +781,19 @@
                 await Promise.all([
                     loadInventoryStatistics(headers),
                     loadTransferStatistics(headers),
-                    loadRecentInventories(headers),
-                    loadRecentTransfers(headers),
-                    loadUnreadNotifications(headers),
-                    loadLoansCount(headers)
+                    loadCancellationsCount(headers),
+                    loadLoansCount(headers),
+                    loadAuditActionsCount(headers),
+                    loadCancellationsByInventory(headers),
+                    loadInventoriesForChart(headers) // This loads allInventories
                 ]);
 
-                // Load recent items after inventories are loaded
-                await loadRecentItems(headers);
+                // Load recent items, transfers, and inventories after allInventories is loaded
+                await Promise.all([
+                    loadRecentItems(headers),
+                    loadRecentTransfers(headers),
+                    loadRecentInventories(headers) // Now uses allInventories from loadInventoriesForChart
+                ]);
 
                 // Update UI
                 updateDashboardUI();
@@ -805,172 +808,142 @@
         // Load inventory statistics for warehouse
         async function loadInventoryStatistics(headers) {
             try {
-                // Get inventories for the institution - warehouse manages inventories
-                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                // Use the warehouse statistics endpoint
+                const response = await fetch('/api/v1/inventory/warehouse/statistics', { headers });
                 if (response.ok) {
                     const data = await response.json();
                     
-                    // Handle both paginated response and direct array
-                    let inventories = [];
-                    if (Array.isArray(data)) {
-                        inventories = data;
-                    } else if (data && Array.isArray(data.content)) {
-                        inventories = data.content;
-                    }
-                    
-                    // Filter by institution ID if available
-                    const institutionId = warehouseDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        inventories = inventories.filter(inv => 
-                            inv.institutionId === institutionId || 
-                            (inv.institution && inv.institution.institutionId === institutionId) ||
-                            (inv.institution && inv.institution.id === institutionId)
-                        );
-                    }
-                    
-                    // Store all inventories for chart calculations
-                    warehouseDashboardData.allInventories = inventories;
-                    
-                    // Collect all items from all inventories
-                    let allItems = [];
-                    inventories.forEach(inv => {
-                        if (inv.items && Array.isArray(inv.items)) {
-                            allItems = allItems.concat(inv.items);
-                        }
-                    });
-                    warehouseDashboardData.allItems = allItems;
-                    
-                    // Calculate statistics
-                    const totalInventories = inventories.length;
-                    const activeInventories = inventories.filter(inv => inv.status === true || inv.status === 'ACTIVE').length;
-                    const inactiveInventories = totalInventories - activeInventories;
-                    
-                    // Calculate total items and value
-                    let totalItems = allItems.length;
-                    let totalValue = 0;
-                    allItems.forEach(item => {
-                        if (item.value) {
-                            totalValue += parseFloat(item.value) || 0;
-                        }
-                    });
-
-                    // Count categories
-                    const categories = {};
-                    allItems.forEach(item => {
-                        const category = item.category || 'Sin categoría';
-                        categories[category] = (categories[category] || 0) + 1;
-                    });
-
-                    // Count pending approvals (transfers with PENDING status)
-                    const pendingApprovals = warehouseDashboardData.transferStats?.pending || 0;
-
                     warehouseDashboardData.inventoryStats = {
-                        totalInventories,
-                        activeInventories,
-                        inactiveInventories,
-                        totalItems,
-                        totalValue,
-                        categories,
-                        totalCategories: Object.keys(categories).length
+                        totalInventories: data.totalInventories || 0,
+                        activeInventories: data.activeInventories || 0,
+                        inactiveInventories: data.inactiveInventories || 0,
+                        totalItems: data.totalItems || 0,
+                        totalValue: data.totalValue || 0
+                    };
+                } else {
+                    console.warn('Failed to load inventory statistics:', response.status);
+                    warehouseDashboardData.inventoryStats = {
+                        totalInventories: 0,
+                        activeInventories: 0,
+                        inactiveInventories: 0,
+                        totalItems: 0,
+                        totalValue: 0
                     };
                 }
             } catch (error) {
                 console.error('Error loading inventory statistics:', error);
+                warehouseDashboardData.inventoryStats = {
+                    totalInventories: 0,
+                    activeInventories: 0,
+                    inactiveInventories: 0,
+                    totalItems: 0,
+                    totalValue: 0
+                };
             }
         }
 
         // Load transfer statistics for warehouse
         async function loadTransferStatistics(headers) {
             try {
-                // Get transfers - warehouse manages transfers
-                const response = await fetch('/api/v1/transfers?page=0&size=10000', { headers });
+                // Use the warehouse transfer statistics endpoint
+                const response = await fetch('/api/v1/transfers/warehouse/statistics', { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    
-                    // Handle both paginated response and direct array
-                    let transfers = [];
-                    if (Array.isArray(data)) {
-                        transfers = data;
-                    } else if (data && Array.isArray(data.content)) {
-                        transfers = data.content;
-                    }
-                    
-                    // Filter by institution if needed
-                    const institutionId = warehouseDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        transfers = transfers.filter(t => 
-                            t.institutionId === institutionId ||
-                            (t.institution && (t.institution.institutionId === institutionId || t.institution.id === institutionId))
-                        );
-                    }
-                    
-                    // Calculate statistics
-                    const total = transfers.length;
-                    const pending = transfers.filter(t => t.status === 'PENDING').length;
-                    const approved = transfers.filter(t => t.status === 'APPROVED').length;
-                    const rejected = transfers.filter(t => t.status === 'REJECTED').length;
-
                     warehouseDashboardData.transferStats = {
-                        total,
-                        pending,
-                        approved,
-                        rejected
+                        total: data.totalTransfers || 0,
+                        pending: data.pendingTransfers || 0,
+                        approved: data.approvedTransfers || 0,
+                        rejected: data.rejectedTransfers || 0
+                    };
+                } else {
+                    console.warn('Failed to load transfer statistics:', response.status);
+                    warehouseDashboardData.transferStats = {
+                        total: 0,
+                        pending: 0,
+                        approved: 0,
+                        rejected: 0
                     };
                 }
             } catch (error) {
                 console.error('Error loading transfer statistics:', error);
+                warehouseDashboardData.transferStats = {
+                    total: 0,
+                    pending: 0,
+                    approved: 0,
+                    rejected: 0
+                };
             }
         }
 
         // Load recent inventories
         async function loadRecentInventories(headers) {
             try {
-                const response = await fetch('/api/v1/inventory?page=0&size=5', { headers });
-                if (response.ok) {
-                    const data = await response.json();
-                    let inventories = Array.isArray(data) ? data : (data.content || []);
-                    
-                    // Filter by institution
-                    const institutionId = warehouseDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        inventories = inventories.filter(inv => 
-                            inv.institutionId === institutionId ||
-                            (inv.institution && (inv.institution.institutionId === institutionId || inv.institution.id === institutionId))
-                        );
+                // Use inventories already loaded in loadInventoriesForChart
+                // If not available yet, load them
+                let inventories = warehouseDashboardData.allInventories || [];
+                
+                if (inventories.length === 0) {
+                    // Fallback: load inventories if not already loaded
+                    const response = await fetch('/api/v1/inventory?page=0&size=100', { headers });
+                    if (response.ok) {
+                        const data = await response.json();
+                        inventories = Array.isArray(data) ? data : (data.content || []);
+                        
+                        // Filter by institution
+                        const institutionId = warehouseDashboardData.currentUserInstitutionId;
+                        if (institutionId) {
+                            inventories = inventories.filter(inv => 
+                                inv.institutionId === institutionId ||
+                                (inv.institution && (inv.institution.institutionId === institutionId || inv.institution.id === institutionId))
+                            );
+                        }
                     }
-                    
-                    // Sort by creation date or update date
-                    inventories.sort((a, b) => {
-                        const dateA = new Date(a.createdAt || a.updatedAt || 0);
-                        const dateB = new Date(b.createdAt || b.updatedAt || 0);
-                        return dateB - dateA;
-                    });
-                    
-                    warehouseDashboardData.recentInventories = inventories.slice(0, 5);
                 }
+                
+                // Sort by creation date or update date (most recent first)
+                inventories.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || a.updatedAt || 0);
+                    const dateB = new Date(b.createdAt || b.updatedAt || 0);
+                    return dateB - dateA;
+                });
+                
+                warehouseDashboardData.recentInventories = inventories.slice(0, 5);
             } catch (error) {
                 console.error('Error loading recent inventories:', error);
+                warehouseDashboardData.recentInventories = [];
             }
         }
 
         // Load recent transfers
         async function loadRecentTransfers(headers) {
             try {
-                const response = await fetch('/api/v1/transfers?page=0&size=5', { headers });
+                // Get all transfers (we'll filter by institution's inventories)
+                const response = await fetch('/api/v1/transfers?page=0&size=100', { headers });
                 if (response.ok) {
                     const data = await response.json();
                     let transfers = Array.isArray(data) ? data : (data.content || []);
                     
-                    // Filter by institution
+                    // Get institution's inventory IDs for filtering
                     const institutionId = warehouseDashboardData.currentUserInstitutionId;
-                    if (institutionId) {
-                        transfers = transfers.filter(t => 
-                            t.institutionId === institutionId ||
-                            (t.institution && (t.institution.institutionId === institutionId || t.institution.id === institutionId))
-                        );
+                    let institutionInventoryIds = [];
+                    
+                    if (institutionId && warehouseDashboardData.allInventories) {
+                        institutionInventoryIds = warehouseDashboardData.allInventories
+                            .map(inv => inv.id)
+                            .filter(id => id != null);
                     }
                     
-                    // Sort by date
+                    // Filter transfers where source or destination inventory belongs to institution
+                    if (institutionInventoryIds.length > 0) {
+                        transfers = transfers.filter(t => {
+                            const sourceId = t.sourceInventoryId;
+                            const destId = t.destinationInventoryId;
+                            return (sourceId && institutionInventoryIds.includes(sourceId)) ||
+                                   (destId && institutionInventoryIds.includes(destId));
+                        });
+                    }
+                    
+                    // Sort by date (most recent first)
                     transfers.sort((a, b) => {
                         const dateA = new Date(a.requestedAt || a.createdAt || 0);
                         const dateB = new Date(b.requestedAt || b.createdAt || 0);
@@ -978,32 +951,54 @@
                     });
                     
                     warehouseDashboardData.recentTransfers = transfers.slice(0, 5);
+                } else {
+                    console.warn('Failed to load recent transfers:', response.status);
+                    warehouseDashboardData.recentTransfers = [];
                 }
             } catch (error) {
                 console.error('Error loading recent transfers:', error);
+                warehouseDashboardData.recentTransfers = [];
             }
         }
 
         // Load recent items
         async function loadRecentItems(headers) {
             try {
-                // Get recent items from inventories
+                // Get inventories from the institution
                 const inventories = warehouseDashboardData.allInventories || [];
-                let allItems = [];
                 
-                inventories.forEach(inv => {
-                    if (inv.items && Array.isArray(inv.items)) {
-                        inv.items.forEach(item => {
-                            allItems.push({
+                if (inventories.length === 0) {
+                    warehouseDashboardData.recentItems = [];
+                    return;
+                }
+                
+                // Fetch items from all inventories
+                const allItemsPromises = inventories.map(async (inv) => {
+                    try {
+                        const response = await fetch(`/api/v1/items/inventory/${inv.id}?page=0&size=100`, { headers });
+                        if (response.ok) {
+                            const data = await response.json();
+                            const items = Array.isArray(data) ? data : (data.content || []);
+                            
+                            // Add inventory info to each item
+                            return items.map(item => ({
                                 ...item,
                                 inventoryName: inv.name,
                                 inventoryId: inv.id
-                            });
-                        });
+                            }));
+                        }
+                        return [];
+                    } catch (error) {
+                        console.warn(`Error loading items for inventory ${inv.id}:`, error);
+                        return [];
                     }
                 });
                 
-                // Sort by creation date or update date
+                // Wait for all requests to complete
+                const itemsArrays = await Promise.all(allItemsPromises);
+                const allItems = itemsArrays.flat();
+                
+                // Sort by creation date or update date (most recent first)
                 allItems.sort((a, b) => {
                     const dateA = new Date(a.createdAt || a.updatedAt || 0);
                     const dateB = new Date(b.createdAt || b.updatedAt || 0);
@@ -1018,16 +1013,45 @@
         }
 
         // Load unread notifications count
-        async function loadUnreadNotifications(headers) {
+        // Load cancellations count for warehouse
+        async function loadCancellationsCount(headers) {
             try {
-                const response = await fetch('/api/v1/notifications/my-notifications/unread/count', { headers });
+                const response = await fetch('/api/v1/cancellations/my-institution/statistics', { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('unreadNotifications').textContent = data.count || 0;
+                    const totalCancellations = data.totalCancellations || 0;
+                    const pendingCancellations = data.pendingCancellations || 0;
+                    const approvedCancellations = data.approvedCancellations || 0;
+                    const rejectedCancellations = data.rejectedCancellations || 0;
+                    
+                    // Store statistics for use in dashboard
+                    warehouseDashboardData.cancellationStats = {
+                        totalCancellations,
+                        pendingCancellations,
+                        approvedCancellations,
+                        rejectedCancellations
+                    };
+                    
+                    document.getElementById('totalCancellations').textContent = totalCancellations;
+                } else {
+                    console.warn('Failed to load cancellations count:', response.status);
+                    warehouseDashboardData.cancellationStats = {
+                        totalCancellations: 0,
+                        pendingCancellations: 0,
+                        approvedCancellations: 0,
+                        rejectedCancellations: 0
+                    };
+                    document.getElementById('totalCancellations').textContent = '0';
                 }
             } catch (error) {
-                console.error('Error loading unread notifications:', error);
-                document.getElementById('unreadNotifications').textContent = '0';
+                console.error('Error loading cancellations count:', error);
+                warehouseDashboardData.cancellationStats = {
+                    totalCancellations: 0,
+                    pendingCancellations: 0,
+                    approvedCancellations: 0,
+                    rejectedCancellations: 0
+                };
+                document.getElementById('totalCancellations').textContent = '0';
             }
         }
 
@@ -1063,6 +1087,79 @@
             }
         }
 
+        // Load audit actions count for warehouse
+        async function loadAuditActionsCount(headers) {
+            try {
+                // Get first page with size 1 to get total count from pagination info
+                const response = await fetch('/api/v1/auditories/warehouse?page=0&size=1', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    const totalCount = data.totalAuditories || 0;
+                    document.getElementById('totalAuditActions').textContent = totalCount;
+                } else {
+                    console.warn('Failed to load audit actions count:', response.status);
+                    document.getElementById('totalAuditActions').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading audit actions count:', error);
+                document.getElementById('totalAuditActions').textContent = '0';
+            }
+        }
+
+        // Load cancellations by inventory for warehouse
+        async function loadCancellationsByInventory(headers) {
+            try {
+                const response = await fetch('/api/v1/cancellations/warehouse/by-inventory', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    warehouseDashboardData.cancellationsByInventory = data.cancellationsByInventory || {};
+                } else {
+                    console.warn('Failed to load cancellations by inventory:', response.status);
+                    warehouseDashboardData.cancellationsByInventory = {};
+                }
+            } catch (error) {
+                console.error('Error loading cancellations by inventory:', error);
+                warehouseDashboardData.cancellationsByInventory = {};
+            }
+        }
+
+        // Load inventories with items for chart
+        async function loadInventoriesForChart(headers) {
+            try {
+                const response = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Handle both paginated response and direct array
+                    let inventories = [];
+                    if (Array.isArray(data)) {
+                        inventories = data;
+                    } else if (data && Array.isArray(data.content)) {
+                        inventories = data.content;
+                    }
+                    
+                    // Filter by institution ID
+                    const institutionId = warehouseDashboardData.currentUserInstitutionId;
+                    if (institutionId) {
+                        inventories = inventories.filter(inv => 
+                            inv.institutionId === institutionId || 
+                            (inv.institution && inv.institution.institutionId === institutionId) ||
+                            (inv.institution && inv.institution.id === institutionId)
+                        );
+                    }
+                    
+                    // Store inventories for chart
+                    warehouseDashboardData.allInventories = inventories;
+                } else {
+                    console.warn('Failed to load inventories for chart:', response.status);
+                    warehouseDashboardData.allInventories = [];
+                }
+            } catch (error) {
+                console.error('Error loading inventories for chart:', error);
+                warehouseDashboardData.allInventories = [];
+            }
+        }
+
         // Update dashboard UI with loaded data
         function updateDashboardUI() {
             // Update inventory stats
@@ -1080,17 +1177,7 @@
                     minimumFractionDigits: 0
                 }).format(totalValue);
 
-                // Update categories
-                document.getElementById('totalCategories').textContent = warehouseDashboardData.inventoryStats.totalCategories || 0;
-                const categoriesBreakdown = [];
-                const categories = warehouseDashboardData.inventoryStats.categories || {};
-                const sortedCategories = Object.entries(categories)
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 3);
-                sortedCategories.forEach(([category, count]) => {
-                    categoriesBreakdown.push(`${count} ${category}`);
-                });
-                document.getElementById('categoriesBreakdown').textContent = categoriesBreakdown.join(', ') || 'Sin datos';
+                // Categories removed - now using audit actions count
             }
 
             // Update transfer stats
@@ -1102,8 +1189,9 @@
                 if (warehouseDashboardData.transferStats.rejected > 0) transfersBreakdown.push(`${warehouseDashboardData.transferStats.rejected} rechazadas`);
                 document.getElementById('transfersBreakdown').innerHTML = transfersBreakdown.join(', ') || 'Sin datos';
 
-                // Update pending approvals
-                document.getElementById('pendingApprovals').textContent = warehouseDashboardData.transferStats.pending || 0;
+                // Update pending approvals (cancellations pending)
+                const pendingCancellations = warehouseDashboardData.cancellationStats?.pendingCancellations || 0;
+                document.getElementById('pendingApprovals').textContent = pendingCancellations;
             }
 
             // Update recent inventories
@@ -1153,8 +1241,14 @@
                     'APPROVED': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
                     'REJECTED': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
                 };
+                const statusLabels = {
+                    'PENDING': 'Pendiente',
+                    'APPROVED': 'Aprobado',
+                    'REJECTED': 'Rechazado'
+                };
                 // Prioritize itemLicencePlate, then itemName, then itemId as fallback
                 const itemDisplay = transfer.itemLicencePlate || transfer.itemName || (transfer.itemId ? `Item #${transfer.itemId}` : 'N/A');
+                const statusText = statusLabels[transfer.status] || transfer.status || 'N/A';
                 return `
                     <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                         <div class="flex-1">
@@ -1163,7 +1257,7 @@
                         </div>
                         <div class="ml-3">
                             <span class="px-2 py-1 text-xs rounded-full ${statusColors[transfer.status] || 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300'}">
-                                ${transfer.status || 'N/A'}
+                                ${statusText}
                             </span>
                         </div>
                     </div>
@@ -1180,7 +1274,8 @@
             }
 
             container.innerHTML = warehouseDashboardData.recentItems.slice(0, 5).map(item => {
-                const itemName = item.name || item.itemName || item.licencePlate || item.serialNumber || 'Sin nombre';
+                // Use productName first, then licencePlateNumber, then fallback
+                const itemName = item.productName || item.licencePlateNumber || (item.id ? `Item #${item.id}` : 'Sin nombre');
                 const inventoryName = item.inventoryName || 'Sin inventario';
                 return `
                     <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
@@ -1283,17 +1378,17 @@
                 }
             }
 
-            // Chart: Items by Category
-            if (warehouseDashboardData.inventoryStats && warehouseDashboardData.inventoryStats.categories) {
-                const canvas = document.getElementById('itemsByCategoryChart');
+            // Chart: Cancellations by Inventory
+            if (warehouseDashboardData.cancellationsByInventory) {
+                const canvas = document.getElementById('cancellationsByInventoryChart');
                 if (canvas) {
-                    const categories = warehouseDashboardData.inventoryStats.categories;
-                    const labels = Object.keys(categories);
-                    const values = Object.values(categories);
+                    const cancellationsByInventory = warehouseDashboardData.cancellationsByInventory;
+                    const labels = Object.keys(cancellationsByInventory);
+                    const values = Object.values(cancellationsByInventory);
 
                     if (labels.length > 0) {
                         const ctx2d = canvas.getContext('2d');
-                        const colorPalette = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#6366F1'];
+                        const colorPalette = ['#EF4444', '#F59E0B', '#8B5CF6', '#3B82F6', '#10B981', '#EC4899', '#14B8A6', '#6366F1'];
                         const gradients = labels.slice(0, colorPalette.length).map((label, index) => {
                             const gradient = ctx2d.createLinearGradient(0, 0, 0, 400);
                             const color = colorPalette[index % colorPalette.length];
@@ -1306,7 +1401,12 @@
                             return gradient;
                         });
 
-                        warehouseDashboardData.charts.itemsByCategory = new Chart(canvas, {
+                        // Destroy existing chart if it exists
+                        if (warehouseDashboardData.charts.cancellationsByInventory) {
+                            warehouseDashboardData.charts.cancellationsByInventory.destroy();
+                        }
+
+                        warehouseDashboardData.charts.cancellationsByInventory = new Chart(canvas, {
                             type: 'doughnut',
                             data: {
                                 labels: labels,
@@ -1352,11 +1452,26 @@
                                         },
                                         bodyFont: {
                                             size: 13
+                                        },
+                                        callbacks: {
+                                            label: function(context) {
+                                                const label = context.label || '';
+                                                const value = context.parsed || 0;
+                                                return `${label}: ${value} ${value === 1 ? 'baja' : 'bajas'}`;
+                                            }
                                         }
                                     }
                                 }
                             }
                         });
+                    } else {
+                        // Show empty state
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.font = '14px Inter';
+                        ctx.fillStyle = colors.textColor;
+                        ctx.textAlign = 'center';
+                        ctx.fillText('No hay bajas registradas', canvas.width / 2, canvas.height / 2);
                     }
                 }
             }
@@ -1440,10 +1555,15 @@
             if (warehouseDashboardData.allInventories && warehouseDashboardData.allInventories.length > 0) {
                 const canvas = document.getElementById('itemsByInventoryChart');
                 if (canvas) {
-                    // Group items by inventory
+                    // Destroy existing chart if it exists
+                    if (warehouseDashboardData.charts.itemsByInventory) {
+                        warehouseDashboardData.charts.itemsByInventory.destroy();
+                    }
+                    
+                    // Group items by inventory using quantityItems from InventoryResponse
                     const inventoryItems = {};
                     warehouseDashboardData.allInventories.forEach(inv => {
-                        const itemCount = inv.items ? inv.items.length : 0;
+                        const itemCount = inv.quantityItems || 0;
                         if (itemCount > 0) {
                             inventoryItems[inv.name || `Inventario ${inv.id}`] = itemCount;
                         }
@@ -1452,7 +1572,7 @@
                     const labels = Object.keys(inventoryItems);
                     const values = Object.values(inventoryItems);
 
-                    if (labels.length > 0) {
+                    if (labels.length > 0 && values.some(v => v > 0)) {
                         const ctx2d = canvas.getContext('2d');
                         const colorPalette = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#6366F1'];
                         const barGradients = colorPalette.slice(0, labels.length).map((color, index) => {
@@ -1543,7 +1663,26 @@
                                 }
                             }
                         });
+                    } else {
+                        // Show empty state
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.font = '14px Inter';
+                        ctx.fillStyle = colors.textColor || '#6B7280';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('No hay items en los inventarios', canvas.width / 2, canvas.height / 2);
                     }
+                }
+            } else {
+                // If no inventories loaded, show empty state
+                const canvas = document.getElementById('itemsByInventoryChart');
+                if (canvas) {
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.font = '14px Inter';
+                    ctx.fillStyle = colors.textColor || '#6B7280';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('No hay inventarios disponibles', canvas.width / 2, canvas.height / 2);
                 }
             }
         }
