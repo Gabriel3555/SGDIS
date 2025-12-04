@@ -15,7 +15,9 @@ import java.util.Optional;
 @Repository
 public interface SpringDataItemRepository extends JpaRepository<ItemEntity, Long> {
 
-    @Query("SELECT i FROM ItemEntity i WHERE i.inventory.id = :inventoryId")
+    @Query("SELECT i FROM ItemEntity i WHERE i.inventory.id = :inventoryId " +
+           "AND NOT EXISTS (SELECT 1 FROM com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity c JOIN c.items ci " +
+           "WHERE ci.id = i.id AND c.approved = true AND c.refusedAt IS NULL)")
     Page<ItemEntity> findByInventoryId(@Param("inventoryId") Long inventoryId, Pageable pageable);
 
     @Query("SELECT i FROM ItemEntity i LEFT JOIN FETCH i.inventory inv LEFT JOIN FETCH inv.institution WHERE i.licencePlateNumber = :licencePlateNumber")
@@ -24,7 +26,9 @@ public interface SpringDataItemRepository extends JpaRepository<ItemEntity, Long
     @Query("SELECT DISTINCT i FROM ItemEntity i LEFT JOIN FETCH i.inventory inv LEFT JOIN FETCH inv.institution, IN(i.attributes) a WHERE KEY(a) = :attributeKey AND VALUE(a) = :attributeValue")
     Optional<ItemEntity> findByAttribute(@Param("attributeKey") Attribute attributeKey, @Param("attributeValue") String attributeValue);
 
-    @Query("SELECT i FROM ItemEntity i WHERE i.inventory.id = :inventoryId")
+    @Query("SELECT i FROM ItemEntity i WHERE i.inventory.id = :inventoryId " +
+           "AND NOT EXISTS (SELECT 1 FROM com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity c JOIN c.items ci " +
+           "WHERE ci.id = i.id AND c.approved = true AND c.refusedAt IS NULL)")
     List<ItemEntity> findAllByInventoryId(@Param("inventoryId") Long inventoryId);
     
     // Statistics queries
