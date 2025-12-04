@@ -6,7 +6,11 @@
 
 // Guardar la función fetch original ANTES de que sea sobrescrita por cualquier interceptor
 // Esto permite que refreshJWTToken use el fetch nativo sin pasar por interceptores
-const originalNativeFetch = window.fetch;
+// Verificar si ya existe para evitar redeclaración
+if (typeof window.originalNativeFetch === 'undefined') {
+    window.originalNativeFetch = window.fetch;
+}
+const originalNativeFetch = window.originalNativeFetch;
 
 // Variable global para controlar si hay un refresh en progreso
 let isRefreshing = false;

@@ -234,68 +234,95 @@ async function checkPendingTransfers() {
             }
         }
         
-        // Display results
+        // Display results - Show as table instead of cards
         if (inventoriesWithPending.length > 0) {
-            // Show inventories with pending transfers
+            // Collect all pending transfers from all inventories
+            const allPendingTransfers = [];
+            inventoriesWithPending.forEach(inv => {
+                inv.pendingTransfers.forEach(transfer => {
+                    allPendingTransfers.push({
+                        ...transfer,
+                        inventoryName: inv.name,
+                        inventoryLocation: inv.location
+                    });
+                });
+            });
+            
+            // Show as table
             if (container) {
                 let html = `
-                    <div class="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-200 dark:border-yellow-800 rounded-xl p-6 mb-6">
+                    <div class="mb-6">
                         <div class="flex items-center gap-3 mb-4">
                             <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-2xl"></i>
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                                Inventarios con Transferencias Pendientes
+                                Transferencias Pendientes (${allPendingTransfers.length})
                             </h3>
                         </div>
-                        <div class="space-y-3">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead>
+                                    <tr class="border-b border-gray-200 dark:border-gray-700">
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Item</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Inventario Origen</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Inventario Destino</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Solicitado por</th>
+                                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha</th>
+                                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                 `;
                 
-                inventoriesWithPending.forEach(inv => {
-                    const firstPending = inv.pendingTransfers[0];
+                allPendingTransfers.forEach(transfer => {
+                    const requestedDate = transfer.requestedAt 
+                        ? new Date(transfer.requestedAt).toLocaleDateString('es-ES')
+                        : 'N/A';
+                    const itemDisplay = transfer.itemName || transfer.itemLicencePlate || `ID: ${transfer.itemId}`;
+                    
                     html += `
-                        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800 shadow-sm">
-                            <div class="flex items-center justify-between">
-                                <div class="flex-1">
-                                    <h4 class="font-semibold text-gray-800 dark:text-gray-100 mb-1">${inv.name}</h4>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                                        <i class="fas fa-map-marker-alt mr-1"></i>
-                                        ${inv.location}
-                                    </p>
-                                    <div class="flex items-center gap-4">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
-                                            <i class="fas fa-clock mr-1"></i>
-                                            ${inv.pendingCount} ${inv.pendingCount === 1 ? 'transferencia pendiente' : 'transferencias pendientes'}
-                                        </span>
-                                        ${firstPending ? `
-                                            <span class="text-sm text-gray-600 dark:text-gray-400">
-                                                Item: ${firstPending.itemName || `ID: ${firstPending.itemId}`}
-                                            </span>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                                <div class="flex gap-2 ml-4">
-                                    <button onclick="viewInventoryTransfers(${inv.id})" 
-                                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                        <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <td class="py-3 px-4">
+                                <div class="font-medium text-gray-900 dark:text-gray-100">${itemDisplay}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="text-sm text-gray-900 dark:text-gray-100">${transfer.sourceInventoryName || transfer.inventoryName || 'N/A'}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="text-sm text-gray-900 dark:text-gray-100">${transfer.destinationInventoryName || 'N/A'}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="text-sm text-gray-900 dark:text-gray-100">${transfer.requestedByName || 'N/A'}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="text-sm text-gray-900 dark:text-gray-100">${requestedDate}</div>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="flex items-center justify-center gap-2">
+                                    <button onclick="showViewTransferModal(${transfer.id})" 
+                                        class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" 
+                                        title="Ver detalles">
                                         <i class="fas fa-eye"></i>
-                                        Ver Transferencias
                                     </button>
-                                    ${firstPending ? `
-                                        <button onclick="showApproveTransferModal(${firstPending.id})" 
-                                            class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
-                                            <i class="fas fa-check-circle"></i>
-                                            Aprobar
-                                        </button>
-                                    ` : ''}
+                                    <button onclick="showApproveTransferModal(${transfer.id})" 
+                                        class="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" 
+                                        title="Aprobar">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button onclick="showRejectTransferModal(${transfer.id})" 
+                                        class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" 
+                                        title="Rechazar">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
-                            </div>
-                        </div>
+                            </td>
+                        </tr>
                     `;
                 });
                 
                 html += `
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                    <div class="text-center py-8 border-t border-gray-200 dark:border-gray-700 mt-6">
-                        <p class="text-gray-600 dark:text-gray-400 mb-4">O selecciona un inventario del filtro para ver todas sus transferencias</p>
                     </div>
                 `;
                 
@@ -515,7 +542,11 @@ function showViewTransferModal(transferId) {
     const modal = document.getElementById('viewTransferModal');
     if (!modal) {
         console.error('viewTransferModal element not found in DOM');
-        alert('Error: El modal de detalles no está disponible. Por favor, recarga la página.');
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'El modal de detalles no está disponible. Por favor, recarga la página.');
+        } else {
+            alert('Error: El modal de detalles no está disponible. Por favor, recarga la página.');
+        }
         return;
     }
     
@@ -550,19 +581,45 @@ function showViewTransferModal(transferId) {
         transfer = window.transfersDataAdminRegional.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
     }
     
+    // If not found, check if we're on admin institution page and check transfersDataAdminInstitution
+    if (!transfer && window.transfersDataAdminInstitution && window.transfersDataAdminInstitution.transfers) {
+        transfer = window.transfersDataAdminInstitution.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+    }
+    
+    // Also check allTransfers and filteredTransfers for admin institution
+    if (!transfer && window.transfersDataAdminInstitution) {
+        if (window.transfersDataAdminInstitution.allTransfers) {
+            transfer = window.transfersDataAdminInstitution.allTransfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+        }
+        if (!transfer && window.transfersDataAdminInstitution.filteredTransfers) {
+            transfer = window.transfersDataAdminInstitution.filteredTransfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+        }
+    }
+    
     // If still not found, try to reload transfers or show error
     if (!transfer) {
         // Try to reload transfers data
-        if (window.loadTransfersData || window.loadTransfersForAdminRegional) {
-            const loadFunction = window.loadTransfersForAdminRegional || window.loadTransfersData;
+        const loadFunction = window.loadTransfersForAdminInstitution || window.loadTransfersForAdminRegional || window.loadTransfersData;
+        if (loadFunction) {
             loadFunction().then(() => {
-                // Try again after reload - check both sources
+                // Try again after reload - check all sources
                 let reloadedTransfer = null;
                 if (window.transfersData && window.transfersData.transfers) {
                     reloadedTransfer = window.transfersData.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
                 }
                 if (!reloadedTransfer && window.transfersDataAdminRegional && window.transfersDataAdminRegional.transfers) {
                     reloadedTransfer = window.transfersDataAdminRegional.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+                }
+                if (!reloadedTransfer && window.transfersDataAdminInstitution) {
+                    if (window.transfersDataAdminInstitution.transfers) {
+                        reloadedTransfer = window.transfersDataAdminInstitution.transfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+                    }
+                    if (!reloadedTransfer && window.transfersDataAdminInstitution.allTransfers) {
+                        reloadedTransfer = window.transfersDataAdminInstitution.allTransfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+                    }
+                    if (!reloadedTransfer && window.transfersDataAdminInstitution.filteredTransfers) {
+                        reloadedTransfer = window.transfersDataAdminInstitution.filteredTransfers.find(t => t.id === transferId || t.id === parseInt(transferId));
+                    }
                 }
                 
                 if (reloadedTransfer) {
@@ -734,13 +791,23 @@ function closeViewTransferModal() {
 
 function showApproveTransferModal(transferId) {
     const modal = document.getElementById('approveTransferModal');
-    if (!modal) return;
+    if (!modal) {
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'El modal de aprobación no está disponible. Por favor, recarga la página.');
+        }
+        return;
+    }
     
     if (window.transfersData) {
         window.transfersData.currentTransferId = transferId;
     }
     
     modal.classList.remove('hidden');
+    
+    // Show info notification
+    if (window.showInfoToast) {
+        window.showInfoToast('Aprobar Transferencia', 'Completa el formulario para aprobar la transferencia.', true, 3000);
+    }
     
     // Populate form
     if (window.populateApproveTransferForm) {
@@ -767,13 +834,23 @@ function closeApproveTransferModal() {
 
 function showRejectTransferModal(transferId) {
     const modal = document.getElementById('rejectTransferModal');
-    if (!modal) return;
+    if (!modal) {
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'El modal de rechazo no está disponible. Por favor, recarga la página.');
+        }
+        return;
+    }
     
     if (window.transfersData) {
         window.transfersData.currentTransferId = transferId;
     }
     
     modal.classList.remove('hidden');
+    
+    // Show warning notification
+    if (window.showWarningToast) {
+        window.showWarningToast('Rechazar Transferencia', 'Por favor, proporciona una razón para el rechazo.', true, 3000);
+    }
     
     // Populate form
     if (window.populateRejectTransferForm) {

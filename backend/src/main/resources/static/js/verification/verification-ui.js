@@ -7,10 +7,7 @@ function updateVerificationUI() {
         if (typeof populateVerificationCustomSelects === 'function') {
             // Check if inventories are loaded before populating
             if (verificationData.inventories !== undefined) {
-                console.log('updateVerificationUI: Populating CustomSelects, inventories available:', verificationData.inventories?.length || 0);
                 populateVerificationCustomSelects();
-            } else {
-                console.log('updateVerificationUI: Inventories not loaded yet, skipping populateVerificationCustomSelects');
             }
         }
     } else {
@@ -359,9 +356,8 @@ function initializeVerificationCustomSelects() {
     // Use setTimeout to ensure inventories are loaded before populating
     // For warehouse and other non-superadmin roles, ensure inventories are loaded
     setTimeout(() => {
-        // Double-check that inventories are loaded before populating
+            // Double-check that inventories are loaded before populating
         if (verificationData.inventories !== undefined) {
-            console.log('Initializing CustomSelects, inventories available:', verificationData.inventories?.length || 0);
             populateVerificationCustomSelects();
         } else {
             console.warn('Inventories not loaded yet, retrying...');
@@ -501,6 +497,7 @@ function populateVerificationCustomSelects() {
             }
         } catch (error) {
             console.error('Error populating institution filter:', error);
+            console.warn('Error populating institution filter:', error);
         }
     }
     
@@ -513,44 +510,8 @@ function populateVerificationCustomSelects() {
                 verificationInventoryCustomSelect.setDisabled(false);
             }
 
-        // Ensure inventories are loaded
-        const inventories = verificationData.inventories || [];
-        console.log('Populating inventory filter with', inventories.length, 'inventories');
-        console.log('Inventories data:', inventories);
-        console.log('verificationData:', verificationData);
-        
-        // Build options array
-        const options = [
-            { value: 'all', label: 'Todos los Inventarios' }
-        ];
-        
-        // Add inventory options
-        if (inventories && inventories.length > 0) {
-            inventories.forEach((inv, index) => {
-                console.log(`Processing inventory ${index}:`, inv);
-                const invId = inv.id || inv.inventoryId;
-                const invName = inv.name || inv.inventoryName || `Inventario ${invId}`;
-                if (invId) {
-                    options.push({
-                        value: invId.toString(),
-                        label: invName
-                    });
-                } else {
-                    console.warn(`Inventory at index ${index} has no ID:`, inv);
-                }
-            });
-        } else {
-            console.warn('No inventories found in verificationData.inventories');
-        }
-        
-        console.log('Inventory filter options:', options);
-        console.log('Options length:', options.length);
-        console.log('CustomSelect instance:', verificationInventoryCustomSelect);
-        
-        // Always set options, even if only 'all' is available
-        if (verificationInventoryCustomSelect && typeof verificationInventoryCustomSelect.setOptions === 'function') {
-            console.log('Setting', options.length, 'options to CustomSelect');
-            verificationInventoryCustomSelect.setOptions(options);
+            // Ensure inventories are loaded
+            const inventories = verificationData.inventories || [];
             
             // Verify options were set correctly
             setTimeout(() => {
@@ -616,6 +577,8 @@ function populateVerificationCustomSelects() {
                     verificationInventoryCustomSelect.selectOption(selectedOption);
                 }
             }
+        } catch (error) {
+            console.warn('Error populating inventory filter:', error);
         }
         } catch (error) {
             console.error('Error populating inventory filter:', error);
