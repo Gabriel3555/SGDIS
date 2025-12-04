@@ -1942,24 +1942,12 @@ async function showNewInventoryModal() {
 
   // Don't load users initially - wait for institution selection
   // Initialize owner select with placeholder message
-  if (window.newInventoryOwnerSelect) {
-    window.newInventoryOwnerSelect.setOptions([
+  const ownerSelect = ensureNewInventoryOwnerSelect();
+  if (ownerSelect) {
+    ownerSelect.setOptions([
       { value: "", label: "Selecciona primero una institución", disabled: true },
     ]);
-  } else {
-    // Initialize CustomSelect if not already done
-    if (!window.newInventoryOwnerSelect) {
-      window.newInventoryOwnerSelect = new CustomSelect(
-        "newInventoryOwnerIdSelect",
-        {
-          placeholder: "Selecciona primero una institución",
-          searchable: true,
-        }
-      );
-      window.newInventoryOwnerSelect.setOptions([
-        { value: "", label: "Selecciona primero una institución", disabled: true },
-      ]);
-    }
+    ownerSelect.setDisabled(true);
   }
 
   const tasks = [];
@@ -1987,6 +1975,8 @@ async function showNewInventoryModal() {
   } else if (isAdminRegionalPage) {
     // For Admin Regional, load institutions from their regional
     hideRegionalField();
+    // Ensure the institution select is initialized before loading
+    ensureNewInventoryInstitutionSelect();
     tasks.push(loadInstitutionsForAdminRegionalNewInventory());
   } else if (shouldDisplayInventoryRegionalSelect()) {
     showRegionalField();
@@ -2174,17 +2164,59 @@ async function loadUsersForNewInventory(institutionId = null) {
   }
 }
 
-function populateNewInventoryOwnerSelect(users) {
-  // Initialize CustomSelect if not already done
+function ensureNewInventoryOwnerSelect() {
   if (!window.newInventoryOwnerSelect) {
-    window.newInventoryOwnerSelect = new CustomSelect(
-      "newInventoryOwnerIdSelect",
-      {
-        placeholder: "Seleccionar propietario...",
-        searchable: true,
+    const selectElement = document.getElementById('newInventoryOwnerId');
+    if (!selectElement) {
+      console.error('Select element newInventoryOwnerId not found');
+      return null;
+    }
+    
+    // Create a wrapper object with methods compatible with CustomSelect API
+    window.newInventoryOwnerSelect = {
+      element: selectElement,
+      setOptions: function(options) {
+        // Clear existing options
+        this.element.innerHTML = '';
+        
+        if (options && Array.isArray(options)) {
+          options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value || '';
+            optionElement.textContent = option.label || option.value || '';
+            if (option.disabled) {
+              optionElement.disabled = true;
+            }
+            this.element.appendChild(optionElement);
+          });
+        }
+      },
+      setValue: function(value) {
+        if (this.element) {
+          this.element.value = value || '';
+        }
+      },
+      getValue: function() {
+        return this.element ? this.element.value : '';
+      },
+      clear: function() {
+        if (this.element) {
+          this.element.value = '';
+        }
+      },
+      setDisabled: function(disabled) {
+        if (this.element) {
+          this.element.disabled = !!disabled;
+        }
       }
-    );
+    };
   }
+  return window.newInventoryOwnerSelect;
+}
+
+function populateNewInventoryOwnerSelect(users) {
+  const selectInstance = ensureNewInventoryOwnerSelect();
+  if (!selectInstance) return;
 
   // Format users as options
   const userOptions = [];
@@ -2211,32 +2243,29 @@ function populateNewInventoryOwnerSelect(users) {
         label: displayName,
       });
     });
+    
+    // Enable the select if we have users
+    selectInstance.setDisabled(false);
   } else {
-    // Add no users option (will be shown as disabled in CustomSelect)
+    // Add no users option
     userOptions.push({
       value: "",
       label: "No hay usuarios disponibles",
       disabled: true,
     });
+    selectInstance.setDisabled(true);
   }
 
-  window.newInventoryOwnerSelect.setOptions(userOptions);
+  selectInstance.setOptions(userOptions);
 }
 
 function showNewInventoryOwnerSelectLoading() {
-  // Initialize CustomSelect if not already done
-  if (!window.newInventoryOwnerSelect) {
-    window.newInventoryOwnerSelect = new CustomSelect(
-      "newInventoryOwnerIdSelect",
-      {
-        placeholder: "Cargando usuarios...",
-        searchable: true,
-      }
-    );
-  }
-  window.newInventoryOwnerSelect.setOptions([
+  const selectInstance = ensureNewInventoryOwnerSelect();
+  if (!selectInstance) return;
+  selectInstance.setOptions([
     { value: "", label: "Cargando usuarios...", disabled: true },
   ]);
+  selectInstance.setDisabled(true);
 }
 
 function hideNewInventoryOwnerSelectLoading() {
@@ -2253,33 +2282,80 @@ const inventoryInstitutionsByRegionalCache = new Map();
 
 function ensureNewInventoryInstitutionSelect() {
   if (!window.newInventoryInstitutionSelect) {
-    window.newInventoryInstitutionSelect = new CustomSelect(
-      "newInventoryInstitutionIdSelect",
-      {
-        placeholder: "Seleccionar institución...",
-        searchable: true,
-        onChange: function(option) {
-          // When institution changes, reload users filtered by that institution
-          const institutionId = option ? option.value : null;
-          if (institutionId && institutionId !== '') {
-            // Clear current owner selection
-            if (window.newInventoryOwnerSelect) {
-              window.newInventoryOwnerSelect.clear();
+    const selectElement = document.getElementById('newInventoryInstitutionId');
+    if (!selectElement) {
+      console.error('Select element newInventoryInstitutionId not found');
+      return null;
+    }
+    
+    // Create a wrapper object with methods compatible with CustomSelect API
+    window.newInventoryInstitutionSelect = {
+      element: selectElement,
+      setOptions: function(options) {
+        // Clear existing options except the first placeholder
+        this.element.innerHTML = '<option value="">Seleccionar centro...</option>';
+        
+        if (options && Array.isArray(options)) {
+          options.forEach(option => {
+            const optionElement = document.createElement('option');
+            optionElement.value = option.value || '';
+            optionElement.textContent = option.label || option.value || '';
+            if (option.disabled) {
+              optionElement.disabled = true;
             }
-            // Reload users filtered by institution
-            loadUsersForNewInventory(institutionId);
-          } else {
-            // If no institution selected, clear owner select
-            if (window.newInventoryOwnerSelect) {
-              window.newInventoryOwnerSelect.clear();
-              window.newInventoryOwnerSelect.setOptions([
-                { value: "", label: "Selecciona primero una institución", disabled: true },
-              ]);
-            }
-          }
-        },
+            this.element.appendChild(optionElement);
+          });
+        }
+      },
+      setValue: function(value) {
+        if (this.element) {
+          this.element.value = value || '';
+          // Trigger change event
+          this.element.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      },
+      getValue: function() {
+        return this.element ? this.element.value : '';
+      },
+      clear: function() {
+        if (this.element) {
+          this.element.value = '';
+          this.element.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      },
+      setDisabled: function(disabled) {
+        if (this.element) {
+          this.element.disabled = !!disabled;
+        }
+      },
+      refresh: function() {
+        // No-op for native select
       }
-    );
+    };
+    
+    // Add change event listener
+    selectElement.addEventListener('change', function() {
+      const institutionId = selectElement.value;
+      const ownerSelect = ensureNewInventoryOwnerSelect();
+      
+      if (institutionId && institutionId !== '') {
+        // Clear current owner selection
+        if (ownerSelect) {
+          ownerSelect.clear();
+        }
+        // Reload users filtered by institution
+        loadUsersForNewInventory(institutionId);
+      } else {
+        // If no institution selected, reset owner select
+        if (ownerSelect) {
+          ownerSelect.clear();
+          ownerSelect.setOptions([
+            { value: "", label: "Selecciona primero una institución", disabled: true },
+          ]);
+          ownerSelect.setDisabled(true);
+        }
+      }
+    });
   }
   return window.newInventoryInstitutionSelect;
 }
@@ -2384,6 +2460,7 @@ function hideLockedInstitutionInfo() {
 
 function setInstitutionSelectAwaitingRegional() {
   const selectInstance = ensureNewInventoryInstitutionSelect();
+  if (!selectInstance) return;
   selectInstance.clear();
   selectInstance.setOptions([
     {
@@ -2392,9 +2469,7 @@ function setInstitutionSelectAwaitingRegional() {
       disabled: true,
     },
   ]);
-  if (selectInstance.setDisabled) {
-    selectInstance.setDisabled(true);
-  }
+  selectInstance.setDisabled(true);
   updateInstitutionHelperText(
     "Selecciona una regional para habilitar las instituciones disponibles"
   );
@@ -2403,18 +2478,16 @@ function setInstitutionSelectAwaitingRegional() {
 
 function enableInstitutionSelect() {
   const selectInstance = ensureNewInventoryInstitutionSelect();
-  if (selectInstance.setDisabled) {
-    selectInstance.setDisabled(false);
-  }
+  if (!selectInstance) return;
+  selectInstance.setDisabled(false);
   hideLockedInstitutionInfo();
   updateInstitutionHelperText();
 }
 
 function enforceInstitutionLock() {
   const selectInstance = ensureNewInventoryInstitutionSelect();
-  if (selectInstance.setDisabled) {
-    selectInstance.setDisabled(true);
-  }
+  if (!selectInstance) return;
+  selectInstance.setDisabled(true);
   const lockedName =
     (window.currentUserData && window.currentUserData.institution) ||
     "tu institución actual";
@@ -2459,8 +2532,8 @@ async function handleRegionalSelection(option) {
   );
 
   const institutionSelect = ensureNewInventoryInstitutionSelect();
-  institutionSelect.clear();
-  if (institutionSelect.setDisabled) {
+  if (institutionSelect) {
+    institutionSelect.clear();
     institutionSelect.setDisabled(true);
   }
 
@@ -2477,27 +2550,23 @@ async function loadInstitutionsForAdminRegionalNewInventory() {
       throw new Error('No authentication token found');
     }
     
-    // Get current user info to find their institution
-    const userResponse = await fetch('/api/v1/users/me', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    // Try to get regional ID from window.currentUserData first (if already loaded)
+    let regionalId = null;
+    if (window.currentUserData) {
+      // Check if we have regional ID directly
+      if (window.currentUserData.regional?.id) {
+        regionalId = window.currentUserData.regional.id;
+      } else if (window.currentUserData.institution?.regional?.id) {
+        regionalId = window.currentUserData.institution.regional.id;
+      } else if (window.inventoryData?.userRegionalId) {
+        regionalId = window.inventoryData.userRegionalId;
       }
-    });
-    
-    if (!userResponse.ok) {
-      throw new Error('Failed to get current user info');
     }
     
-    const currentUser = await userResponse.json();
-    
-    // Get user's institution ID
-    let institutionId = currentUser.institutionId;
-    
-    // If institutionId is not available, try to find it by name
-    if (!institutionId && currentUser.institution) {
-      const institutionsResponse = await fetch('/api/v1/institutions', {
+    // If we don't have regional ID, fetch user info to get it
+    if (!regionalId) {
+      // Get current user info to find their institution
+      const userResponse = await fetch('/api/v1/users/me', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -2505,58 +2574,108 @@ async function loadInstitutionsForAdminRegionalNewInventory() {
         }
       });
       
-      if (institutionsResponse.ok) {
-        const allInstitutions = await institutionsResponse.json();
-        const userInstitution = allInstitutions.find(inst => 
-          inst.name === currentUser.institution
-        );
+      if (!userResponse.ok) {
+        throw new Error('Failed to get current user info');
+      }
+      
+      const currentUser = await userResponse.json();
+      
+      // Store user data globally for consistency
+      window.currentUserData = currentUser;
+      
+      // Get user's institution ID
+      let institutionId = currentUser.institutionId;
+      
+      // If institutionId is not available, try to find it by name
+      if (!institutionId && currentUser.institution) {
+        // Handle both string and object types for institution
+        let institutionName = null;
+        if (typeof currentUser.institution === 'string') {
+          institutionName = currentUser.institution;
+        } else if (typeof currentUser.institution === 'object' && currentUser.institution) {
+          institutionName = currentUser.institution.name || currentUser.institution.institutionName;
+          // Also try to get ID directly from the object
+          institutionId = currentUser.institution.id || currentUser.institution.institutionId || institutionId;
+        }
         
-        if (userInstitution) {
-          institutionId = userInstitution.id;
+        // If we still don't have institutionId, try to find it by name
+        if (!institutionId && institutionName) {
+          const institutionsResponse = await fetch('/api/v1/institutions', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (institutionsResponse.ok) {
+            const allInstitutions = await institutionsResponse.json();
+            const userInstitution = allInstitutions.find(inst => 
+              inst.name === institutionName
+            );
+            
+            if (userInstitution) {
+              institutionId = userInstitution.id;
+              regionalId = userInstitution.regionalId;
+            }
+          }
+        }
+      }
+      
+      // If we still don't have regionalId, get it from institution details
+      if (!regionalId && institutionId) {
+        const institutionResponse = await fetch(`/api/v1/institutions/${institutionId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (institutionResponse.ok) {
+          const institution = await institutionResponse.json();
+          regionalId = institution.regionalId;
         }
       }
     }
     
-    if (!institutionId) {
-      throw new Error('No se pudo obtener la institución del usuario');
+    if (!regionalId) {
+      throw new Error('No se pudo obtener la regional del usuario');
     }
     
-    // Get institution details to find regional
-    const institutionResponse = await fetch(`/api/v1/institutions/${institutionId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    // Store regional ID in inventoryData for use in buildInventoryEndpoint
+    if (!window.inventoryData) {
+      window.inventoryData = {};
+    }
+    window.inventoryData.userRegionalId = regionalId;
+    
+    // Also store in currentUserData if not already there
+    if (window.currentUserData) {
+      if (!window.currentUserData.regional) {
+        window.currentUserData.regional = {};
       }
-    });
-    
-    if (!institutionResponse.ok) {
-      throw new Error('Failed to get institution details');
-    }
-    
-    const institution = await institutionResponse.json();
-    
-    if (!institution.regionalId) {
-      throw new Error('La institución del usuario no tiene una regional asignada');
-    }
-    
-    const regionalId = institution.regionalId;
-    
-    // Load institutions for this regional
-    const response = await fetch(`/api/v1/institutions/institutionsByRegionalId/${regionalId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+      window.currentUserData.regional.id = regionalId;
+      
+      if (window.currentUserData.institution && !window.currentUserData.institution.regional) {
+        window.currentUserData.institution.regional = {};
       }
-    });
+      if (window.currentUserData.institution?.regional) {
+        window.currentUserData.institution.regional.id = regionalId;
+      }
+    }
     
-    if (response.ok) {
-      const institutions = await response.json();
-      populateNewInventoryInstitutionSelect(institutions);
+    // Use the existing function to fetch institutions by regional ID
+    const institutionsArray = await fetchInstitutionsByRegionalId(regionalId);
+    
+    if (institutionsArray.length === 0) {
+      console.warn('No institutions found for regional:', regionalId);
+    }
+    
+    populateNewInventoryInstitutionSelect(institutionsArray);
+    
+    // Ensure the select is enabled after populating (only if we have institutions)
+    if (institutionsArray.length > 0 && !isInventoryInstitutionLocked()) {
       enableInstitutionSelect();
-    } else {
-      throw new Error('Failed to load institutions for regional');
     }
   } catch (error) {
     console.error('Error loading institutions for admin regional:', error);
@@ -2666,6 +2785,7 @@ async function loadInstitutionsForNewInventory(options = {}) {
 
 function populateNewInventoryInstitutionSelect(institutions) {
   const selectInstance = ensureNewInventoryInstitutionSelect();
+  if (!selectInstance) return;
 
   const institutionOptions = [];
 
@@ -2696,25 +2816,26 @@ function populateNewInventoryInstitutionSelect(institutions) {
     });
     selectInstance.setDisabled(true);
     updateInstitutionHelperText("No hay instituciones disponibles para la selección actual");
-  }
-
-  if (!isInventoryInstitutionLocked() && institutionOptions.length > 0) {
-    selectInstance.setDisabled(false);
-    hideLockedInstitutionInfo();
+  } else {
+    if (!isInventoryInstitutionLocked()) {
+      selectInstance.setDisabled(false);
+      hideLockedInstitutionInfo();
+    }
   }
 
   selectInstance.setOptions(institutionOptions);
+  
+  // Auto-select institution for current user
   autoSelectInstitutionForCurrentUser(institutions);
 }
 
 function showNewInventoryInstitutionSelectLoading() {
   const selectInstance = ensureNewInventoryInstitutionSelect();
+  if (!selectInstance) return;
   selectInstance.setOptions([
     { value: "", label: "Cargando instituciones...", disabled: true },
   ]);
-  if (selectInstance.setDisabled) {
-    selectInstance.setDisabled(true);
-  }
+  selectInstance.setDisabled(true);
   updateInstitutionHelperText("Cargando instituciones disponibles...");
 }
 
@@ -2755,8 +2876,12 @@ function autoSelectInstitutionForCurrentUser(institutions) {
 
   if (matchingInstitution) {
     const institutionId = getInstitutionIdFromResponse(matchingInstitution);
-    if (institutionId) {
+    if (institutionId && window.newInventoryInstitutionSelect) {
       window.newInventoryInstitutionSelect.setValue(String(institutionId));
+      // Ensure select remains enabled after auto-selection (if not locked)
+      if (!isInventoryInstitutionLocked()) {
+        window.newInventoryInstitutionSelect.setDisabled(false);
+      }
       // Load users for the auto-selected institution
       loadUsersForNewInventory(String(institutionId));
     }
