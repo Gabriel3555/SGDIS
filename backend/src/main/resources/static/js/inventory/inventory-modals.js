@@ -2618,7 +2618,20 @@ function autoSelectInstitutionForCurrentUser(institutions) {
     return;
   }
 
-  const targetInstitutionName = window.currentUserData.institution.toLowerCase();
+  // Handle both string and object types for institution
+  let institutionName = null;
+  if (typeof window.currentUserData.institution === 'string') {
+    institutionName = window.currentUserData.institution;
+  } else if (typeof window.currentUserData.institution === 'object') {
+    institutionName = window.currentUserData.institution.name || 
+                     window.currentUserData.institution.institutionName;
+  }
+
+  if (!institutionName || typeof institutionName !== 'string') {
+    return;
+  }
+
+  const targetInstitutionName = institutionName.toLowerCase();
   const matchingInstitution = institutions.find((institution) => {
     const name =
       (institution.name || institution.institutionName || "").toLowerCase();
