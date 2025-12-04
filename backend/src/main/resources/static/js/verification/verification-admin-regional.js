@@ -269,6 +269,16 @@ function filterVerificationsForAdminRegional() {
  */
 async function loadInventoriesForAdminRegional() {
     try {
+        // First, ensure we have the regional ID
+        if (!currentUserRegionalId) {
+            const regionalId = await loadCurrentUserInfoForVerifications();
+            if (!regionalId) {
+                console.warn('No regional ID available for loading inventories');
+                verificationDataAdminRegional.inventories = [];
+                return;
+            }
+        }
+
         const token = localStorage.getItem('jwt');
         if (!token) {
             console.warn('No token found for loading inventories');
@@ -276,7 +286,8 @@ async function loadInventoriesForAdminRegional() {
             return;
         }
 
-        const response = await fetch('/api/v1/inventory/regionalAdminInventories?page=0&size=1000', {
+        // Use the endpoint with explicit regionalId to ensure we get all inventories
+        const response = await fetch(`/api/v1/inventory/regionalAdminInventories/${currentUserRegionalId}?page=0&size=10000`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -299,7 +310,7 @@ async function loadInventoriesForAdminRegional() {
                 inventories = Array.isArray(data.content) ? data.content : [];
             }
             
-            console.log('Loaded inventories count:', inventories.length);
+            console.log('Loaded inventories count for regional', currentUserRegionalId, ':', inventories.length);
             verificationDataAdminRegional.inventories = inventories;
             
             // Also update window.verificationData for compatibility

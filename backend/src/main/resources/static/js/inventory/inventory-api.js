@@ -313,9 +313,16 @@ async function loadInventories(options = {}) {
             const data = window.inventoryData;
             data.inventories = Array.isArray(inventories) ? inventories : [];
             
+            // For admin regional, sort by quantityItems descending (most items first) globally across pages
             // For warehouse, backend already sorts by quantityItems, so no need to sort again
             // For others, sort by ID descending (largest ID first)
-            if (!isWarehouse) {
+            if (isAdminRegional) {
+                data.inventories.sort((a, b) => {
+                    const itemsA = a.quantityItems || 0;
+                    const itemsB = b.quantityItems || 0;
+                    return itemsB - itemsA; // Descending order (most items first)
+                });
+            } else if (!isWarehouse) {
                 data.inventories.sort((a, b) => {
                     const idA = a.id || 0;
                     const idB = b.id || 0;

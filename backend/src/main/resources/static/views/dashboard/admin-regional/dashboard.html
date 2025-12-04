@@ -328,19 +328,19 @@
                     </div>
                 </div>
 
-                <!-- Chart: Inventarios por Estado -->
-                <div class="chart-container bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg p-6 border border-green-100 hover:shadow-xl transition-all duration-300">
-                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-green-200">
+                <!-- Chart: Bajas por Centro -->
+                <div class="chart-container bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg p-6 border border-green-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-green-200 dark:border-gray-700">
                         <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-md">
-                            <i class="fas fa-boxes text-white text-lg"></i>
+                            <i class="fas fa-trash-alt text-white text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold text-gray-800">Inventarios por Estado</h2>
-                            <p class="text-xs text-gray-500">Estado de los inventarios</p>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-white">Bajas por Centro</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Cantidad de bajas por institución</p>
                         </div>
                     </div>
                     <div class="relative h-64">
-                        <canvas id="inventoriesByStatusChart"></canvas>
+                        <canvas id="cancellationsByInstitutionChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -348,14 +348,14 @@
             <!-- Charts Row 2 -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Chart: Transferencias por Estado -->
-                <div class="chart-container bg-gradient-to-br from-white to-orange-50 rounded-2xl shadow-lg p-6 border border-orange-100 hover:shadow-xl transition-all duration-300">
-                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-orange-200">
+                <div class="chart-container bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg p-6 border border-orange-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-orange-200 dark:border-gray-700">
                         <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md">
                             <i class="fas fa-exchange-alt text-white text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold text-gray-800">Transferencias por Estado</h2>
-                            <p class="text-xs text-gray-500">Estado de las transferencias</p>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-white">Transferencias por Estado</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Estado de las transferencias</p>
                         </div>
                     </div>
                     <div class="relative h-64">
@@ -734,6 +734,8 @@
             recentVerifications: [],
             verificationCount: 0,
             loansCount: 0,
+            cancellations: [],
+            cancellationsByInstitution: {},
             charts: {}
         };
 
@@ -1150,6 +1152,21 @@
                     
                     console.log('Total cancellations found:', totalElements, 'Array length:', cancellations.length);
                     
+                    // Store cancellations for chart
+                    adminRegionalDashboardData.cancellations = cancellations;
+                    
+                    // Group cancellations by institution
+                    const cancellationsByInstitution = {};
+                    cancellations.forEach(cancellation => {
+                        const institutionName = cancellation.institutionName || 'Sin institución';
+                        if (!cancellationsByInstitution[institutionName]) {
+                            cancellationsByInstitution[institutionName] = 0;
+                        }
+                        cancellationsByInstitution[institutionName]++;
+                    });
+                    
+                    adminRegionalDashboardData.cancellationsByInstitution = cancellationsByInstitution;
+                    
                     // For ADMIN_REGIONAL, the backend should already filter by regional
                     // So we can use the totalElements or count from the response
                     const count = totalElements > 0 ? totalElements : cancellations.length;
@@ -1165,6 +1182,8 @@
                     if (totalCancellationsEl) {
                         totalCancellationsEl.textContent = '0';
                     }
+                    adminRegionalDashboardData.cancellations = [];
+                    adminRegionalDashboardData.cancellationsByInstitution = {};
                 }
             } catch (error) {
                 console.error('Error loading cancellations count:', error);
@@ -1172,6 +1191,8 @@
                 if (totalCancellationsEl) {
                     totalCancellationsEl.textContent = '0';
                 }
+                adminRegionalDashboardData.cancellations = [];
+                adminRegionalDashboardData.cancellationsByInstitution = {};
             }
         }
 
@@ -1496,30 +1517,38 @@
                 console.warn('userStats no está disponible para inicializar la gráfica');
             }
 
-            // Chart: Inventories by Status
-            if (adminRegionalDashboardData.inventoryStats) {
-                const ctx = document.getElementById('inventoriesByStatusChart');
+            // Chart: Cancellations by Institution
+            if (adminRegionalDashboardData.cancellationsByInstitution && Object.keys(adminRegionalDashboardData.cancellationsByInstitution).length > 0) {
+                const ctx = document.getElementById('cancellationsByInstitutionChart');
                 if (ctx) {
-                    const gradientActive = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
-                    gradientActive.addColorStop(0, 'rgba(16, 185, 129, 0.9)');
-                    gradientActive.addColorStop(1, 'rgba(16, 185, 129, 0.5)');
+                    // Get institutions and their cancellation counts
+                    const cancellationsData = adminRegionalDashboardData.cancellationsByInstitution;
+                    const labels = Object.keys(cancellationsData);
+                    const dataValues = Object.values(cancellationsData);
+                    
+                    // Sort by count (descending) and limit to top 10
+                    const sortedData = labels.map((label, index) => ({
+                        label: label,
+                        count: dataValues[index]
+                    })).sort((a, b) => b.count - a.count).slice(0, 10);
+                    
+                    const sortedLabels = sortedData.map(item => item.label);
+                    const sortedValues = sortedData.map(item => item.count);
+                    
+                    // Create gradient for bars
+                    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(239, 68, 68, 0.9)');
+                    gradient.addColorStop(1, 'rgba(239, 68, 68, 0.5)');
 
-                    const gradientInactive = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
-                    gradientInactive.addColorStop(0, 'rgba(239, 68, 68, 0.9)');
-                    gradientInactive.addColorStop(1, 'rgba(239, 68, 68, 0.5)');
-
-                    adminRegionalDashboardData.charts.inventoriesByStatus = new Chart(ctx, {
+                    adminRegionalDashboardData.charts.cancellationsByInstitution = new Chart(ctx, {
                         type: 'bar',
                         data: {
-                            labels: ['Activos', 'Inactivos'],
+                            labels: sortedLabels,
                             datasets: [{
-                                label: 'Inventarios',
-                                data: [
-                                    adminRegionalDashboardData.inventoryStats.activeInventories || 0,
-                                    adminRegionalDashboardData.inventoryStats.inactiveInventories || 0
-                                ],
-                                backgroundColor: [gradientActive, gradientInactive],
-                                borderColor: ['rgb(16, 185, 129)', 'rgb(239, 68, 68)'],
+                                label: 'Bajas',
+                                data: sortedValues,
+                                backgroundColor: gradient,
+                                borderColor: 'rgb(239, 68, 68)',
                                 borderWidth: 2,
                                 borderRadius: 8,
                                 borderSkipped: false
@@ -1548,10 +1577,17 @@
                                         size: 13,
                                         family: "'Inter', sans-serif"
                                     },
+                                    titleColor: colors.textColor,
+                                    bodyColor: colors.textColor,
                                     borderColor: colors.tooltipBorder,
                                     borderWidth: 1,
                                     cornerRadius: 8,
-                                    displayColors: true
+                                    displayColors: true,
+                                    callbacks: {
+                                        label: function(context) {
+                                            return `${context.dataset.label}: ${context.parsed.y}`;
+                                        }
+                                    }
                                 }
                             },
                             scales: {
@@ -1567,7 +1603,8 @@
                                             family: "'Inter', sans-serif"
                                         },
                                         color: colors.textSecondary,
-                                        padding: 10
+                                        padding: 10,
+                                        stepSize: 1
                                     }
                                 },
                                 x: {
@@ -1576,17 +1613,32 @@
                                     },
                                     ticks: {
                                         font: {
-                                            size: 12,
-                                            weight: '600',
+                                            size: 11,
+                                            weight: '500',
                                             family: "'Inter', sans-serif"
                                         },
                                         color: colors.textColor,
-                                        padding: 10
+                                        padding: 10,
+                                        maxRotation: 45,
+                                        minRotation: 45
                                     }
                                 }
                             }
                         }
                     });
+                }
+            } else {
+                // Show empty state if no cancellations
+                const ctx = document.getElementById('cancellationsByInstitutionChart');
+                if (ctx) {
+                    const canvas = ctx;
+                    const context = canvas.getContext('2d');
+                    context.clearRect(0, 0, canvas.width, canvas.height);
+                    context.fillStyle = colors.textSecondary;
+                    context.font = '14px Inter';
+                    context.textAlign = 'center';
+                    context.textBaseline = 'middle';
+                    context.fillText('No hay bajas registradas', canvas.width / 2, canvas.height / 2);
                 }
             }
 
@@ -1639,11 +1691,11 @@
                                             weight: '500',
                                             family: "'Inter', sans-serif"
                                         },
-                                        color: '#374151'
+                                        color: colors.textColor
                                     }
                                 },
                                 tooltip: {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    backgroundColor: colors.tooltipBg,
                                     padding: 12,
                                     titleFont: {
                                         size: 14,
@@ -1654,7 +1706,9 @@
                                         size: 13,
                                         family: "'Inter', sans-serif"
                                     },
-                                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                                    titleColor: colors.textColor,
+                                    bodyColor: colors.textColor,
+                                    borderColor: colors.tooltipBorder,
                                     borderWidth: 1,
                                     cornerRadius: 8,
                                     displayColors: true,

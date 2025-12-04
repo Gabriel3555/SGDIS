@@ -35,7 +35,7 @@ public interface SpringDataUserRepository extends JpaRepository<UserEntity, Long
             org.springframework.data.domain.Pageable pageable
     );
     
-    @Query("SELECT u FROM UserEntity u WHERE u.institution.regional.id = :regionalId AND u.role != :excludedRole AND u.id != :currentUserId")
+    @Query("SELECT u FROM UserEntity u WHERE u.institution.regional.id = :regionalId AND u.role != :excludedRole AND u.id != :currentUserId ORDER BY u.id DESC")
     org.springframework.data.domain.Page<UserEntity> findByRegionalExcludingRoleAndCurrentUser(
             @Param("regionalId") Long regionalId,
             @Param("excludedRole") Role excludedRole,

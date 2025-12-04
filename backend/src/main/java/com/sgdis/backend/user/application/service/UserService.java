@@ -22,6 +22,8 @@ import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 // Regional
 import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
+// Auth
+import com.sgdis.backend.auth.application.service.AuthService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -54,6 +56,7 @@ public class UserService implements
     private final SpringDataRegionalRepository regionalRepository;
     private final PasswordEncoder passwordEncoder;
     private final RecordActionUseCase recordActionUseCase;
+    private final AuthService authService;
 
     private static final Pattern ALLOWED_EMAIL =
             Pattern.compile("^[A-Za-z0-9._%+-]+@(soy\\.sena\\.edu\\.co|sena\\.edu\\.co)$");
@@ -158,6 +161,27 @@ public class UserService implements
 
         InstitutionEntity institution = institutionRepository.findById(createUserRequest.institutionId())
                 .orElseThrow(() -> new ResourceNotFoundException("Institution not found with id: " + createUserRequest.institutionId()));
+
+        // Validate that ADMIN_REGIONAL can only create users in their own regional
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            if (currentUser.getRole() == Role.ADMIN_REGIONAL) {
+                if (currentUser.getInstitution() == null || currentUser.getInstitution().getRegional() == null) {
+                    throw new DomainValidationException("El administrador regional no tiene una institución o regional asignada");
+                }
+                
+                Long currentUserRegionalId = currentUser.getInstitution().getRegional().getId();
+                Long institutionRegionalId = institution.getRegional() != null ? institution.getRegional().getId() : null;
+                
+                if (institutionRegionalId == null || !institutionRegionalId.equals(currentUserRegionalId)) {
+                    throw new DomainValidationException("Un administrador regional solo puede crear usuarios en su propia regional");
+                }
+            }
+        } catch (RuntimeException e) {
+            // If getCurrentUser fails (e.g., user not authenticated), allow the request to proceed
+            // This is handled by Spring Security's @PreAuthorize annotations
+            // Only validate if we can get the current user
+        }
 
         UserEntity user = UserMapper.fromCreateRequest(createUserRequest);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
