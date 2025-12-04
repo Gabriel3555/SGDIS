@@ -13,6 +13,8 @@ async function showNewUserModal() {
      // Hide/disable regional and institution selectors for ADMIN_INSTITUTION and WAREHOUSE
      const regionalSelect = document.getElementById('newUserRegionalSelect');
      const institutionSelect = document.getElementById('newUserInstitutionSelect');
+     const roleContainer = document.getElementById('newUserRoleContainer');
+     const roleInput = document.getElementById('newUserRole');
      
      if (isAdminInstitution || isWarehouse) {
          // Hide regional and institution selectors by finding their parent divs in the grid
@@ -27,6 +29,21 @@ async function showNewUserModal() {
                      div.style.display = 'none';
                  }
              });
+         }
+         
+         // For warehouse, hide role selector and set role to USER
+         if (isWarehouse) {
+             if (roleContainer) {
+                 roleContainer.style.display = 'none';
+             }
+             if (roleInput) {
+                 roleInput.value = 'USER';
+             }
+         } else {
+             // For admin institution, show role selector
+             if (roleContainer) {
+                 roleContainer.style.display = '';
+             }
          }
          
          // Get current user's institution info
@@ -129,6 +146,7 @@ function closeNewUserModal() {
      // Reset display of regional and institution fields
      const regionalSelect = document.getElementById('newUserRegionalSelect');
      const institutionSelect = document.getElementById('newUserInstitutionSelect');
+     const roleContainer = document.getElementById('newUserRoleContainer');
      const grid = document.querySelector('#newUserModal .grid');
      if (grid) {
          const gridDivs = grid.querySelectorAll('div');
@@ -137,6 +155,11 @@ function closeNewUserModal() {
                  div.style.display = '';
              }
          });
+     }
+     
+     // Reset role container display
+     if (roleContainer) {
+         roleContainer.style.display = '';
      }
      
      // Clear stored institution info

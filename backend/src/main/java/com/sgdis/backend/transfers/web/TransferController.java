@@ -320,5 +320,35 @@ public class TransferController {
         
         return ResponseEntity.ok(response);
     }
+
+    @Operation(
+            summary = "Get warehouse transfer statistics",
+            description = "Retrieves total statistics of transfers in the current warehouse user's institution by status. " +
+                    "The institution is obtained from the current user."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = TransferStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('WAREHOUSE')")
+    @GetMapping("/warehouse/statistics")
+    public ResponseEntity<TransferStatisticsResponse> getWarehouseTransferStatistics() {
+        var currentUser = authService.getCurrentUser();
+        if (currentUser.getInstitution() == null) {
+            throw new ResourceNotFoundException("User institution not found");
+        }
+        Long institutionId = currentUser.getInstitution().getId();
+        
+        Long total = transferRepository.countByInstitutionId(institutionId);
+        Long pending = transferRepository.countByInstitutionIdAndStatus(institutionId, TransferStatus.PENDING);
+        Long approved = transferRepository.countByInstitutionIdAndStatus(institutionId, TransferStatus.APPROVED);
+        Long rejected = transferRepository.countByInstitutionIdAndStatus(institutionId, TransferStatus.REJECTED);
+        
+        TransferStatisticsResponse statistics = new TransferStatisticsResponse(total, pending, approved, rejected);
+        return ResponseEntity.ok(statistics);
+    }
 }
 
