@@ -529,6 +529,13 @@ function closeNewTransferModal() {
             window.newTransferInventorySelect.setDisabled(true);
         }
     }
+    
+    // Reset transfer submission flag if function exists
+    if (typeof window.resetTransferSubmissionFlag === 'function') {
+        window.resetTransferSubmissionFlag();
+    } else if (typeof resetTransferSubmissionFlag === 'function') {
+        resetTransferSubmissionFlag();
+    }
 }
 
 function showViewTransferModal(transferId) {

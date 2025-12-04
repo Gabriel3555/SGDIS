@@ -58,18 +58,37 @@ function updateUserStats() {
                      (window.location.pathname && window.location.pathname.includes('/warehouse'));
   const isSuperAdmin = currentRole === 'SUPERADMIN';
 
-  // Use statistics from endpoint if available (for SUPERADMIN), otherwise calculate from current page
+  // Use statistics from endpoint if available (for SUPERADMIN, ADMIN_REGIONAL, and WAREHOUSE), otherwise calculate from current page
   // Exclude SUPERADMIN users from statistics
   let totalUsers, adminInstitutionCount, adminRegionalCount, warehouseCount, userCount;
 
-  if (isSuperAdmin && window.usersData.statistics) {
-    // Use total statistics from endpoint (excluding SUPERADMIN)
+  if ((isSuperAdmin || isAdminRegional || isWarehouse) && window.usersData.statistics) {
+    // Use total statistics from endpoint
     const stats = window.usersData.statistics;
-    totalUsers = (stats.totalUsers || 0) - (stats.superadminCount || 0);
-    adminInstitutionCount = stats.adminInstitutionCount || 0;
-    adminRegionalCount = stats.adminRegionalCount || 0;
-    warehouseCount = stats.warehouseCount || 0;
-    userCount = stats.userCount || 0;
+    
+    if (isSuperAdmin) {
+      // For SUPERADMIN, exclude superadmin count from total
+      totalUsers = (stats.totalUsers || 0) - (stats.superadminCount || 0);
+      adminInstitutionCount = stats.adminInstitutionCount || 0;
+      adminRegionalCount = stats.adminRegionalCount || 0;
+      warehouseCount = stats.warehouseCount || 0;
+      userCount = stats.userCount || 0;
+    } else if (isAdminRegional) {
+      // For ADMIN_REGIONAL, use regional statistics
+      totalUsers = stats.totalUsers || 0;
+      adminInstitutionCount = stats.adminInstitutionCount || 0;
+      adminRegionalCount = stats.adminRegionalCount || 0;
+      warehouseCount = stats.warehouseCount || 0;
+      userCount = stats.userCount || 0;
+    } else if (isWarehouse) {
+      // For WAREHOUSE, use warehouse statistics
+      totalUsers = stats.totalUsers || 0;
+      warehouseCount = stats.warehouseManagersCount || 0;
+      userCount = stats.systemUsersCount || 0;
+      // These are not relevant for warehouse view
+      adminInstitutionCount = 0;
+      adminRegionalCount = 0;
+    }
   } else {
     // Fallback to local calculation from current page data (excluding SUPERADMIN)
     if (!window.usersData.users) {

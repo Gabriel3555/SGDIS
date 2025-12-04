@@ -496,6 +496,7 @@ function populateVerificationCustomSelects() {
                 }
             }
         } catch (error) {
+            console.error('Error populating institution filter:', error);
             console.warn('Error populating institution filter:', error);
         }
     }
@@ -512,92 +513,75 @@ function populateVerificationCustomSelects() {
             // Ensure inventories are loaded
             const inventories = verificationData.inventories || [];
             
-            // Build options array
-            const options = [
-                { value: 'all', label: 'Todos los Inventarios' }
-            ];
+            // Verify options were set correctly
+            setTimeout(() => {
+                if (verificationInventoryCustomSelect.options && verificationInventoryCustomSelect.options.length > 0) {
+                    console.log('Options successfully set. CustomSelect has', verificationInventoryCustomSelect.options.length, 'options');
+                    console.log('CustomSelect options:', verificationInventoryCustomSelect.options);
+                } else {
+                    console.error('Options were not set correctly. CustomSelect.options is empty or undefined');
+                    console.log('CustomSelect state:', {
+                        options: verificationInventoryCustomSelect.options,
+                        filteredOptions: verificationInventoryCustomSelect.filteredOptions,
+                        container: verificationInventoryCustomSelect.container
+                    });
+                }
+            }, 100);
+        } else {
+            console.error('CustomSelect instance or setOptions method not available');
+        }
+        
+        // Restore selected value - check if dropdown is open first
+        const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
+        const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
+        
+        if (selectedOption) {
+            // Check if dropdown is currently open
+            const isOpen = verificationInventoryCustomSelect.container && 
+                          (verificationInventoryCustomSelect.container.classList.contains('open') || 
+                           verificationInventoryCustomSelect.container.classList.contains('active'));
             
-            // Add inventory options
-            if (inventories && inventories.length > 0) {
-                inventories.forEach((inv, index) => {
-                    const invId = inv.id || inv.inventoryId;
-                    const invName = inv.name || inv.inventoryName || `Inventario ${invId}`;
-                    if (invId) {
-                        options.push({
-                            value: invId.toString(),
-                            label: invName
-                        });
-                    } else {
-                        console.warn(`Inventory at index ${index} has no ID:`, inv);
+            if (isOpen) {
+                // If dropdown is open, update the value without closing it
+                verificationInventoryCustomSelect.selectedValue = selectedOption.value;
+                verificationInventoryCustomSelect.selectedText = selectedOption.label;
+                
+                // Update the text element without closing
+                if (verificationInventoryCustomSelect.textElement) {
+                    verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
+                    verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
+                }
+                
+                // Update hidden input
+                const hiddenInput = document.getElementById('inventoryFilter');
+                if (hiddenInput) {
+                    hiddenInput.value = selectedOption.value;
+                }
+                if (verificationInventoryCustomSelect.hiddenInput) {
+                    verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
+                }
+                
+                // Mark the option as selected in the rendered options
+                const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
+                optionElements.forEach(el => {
+                    el.classList.remove('selected');
+                    if (el.dataset.value === selectedOption.value) {
+                        el.classList.add('selected');
                     }
                 });
             } else {
-                console.warn('No inventories found in verificationData.inventories');
-            }
-            
-            // Always set options, even if only 'all' is available
-            if (verificationInventoryCustomSelect && typeof verificationInventoryCustomSelect.setOptions === 'function') {
-                verificationInventoryCustomSelect.setOptions(options);
-                
-                // Verify options were set correctly
-                setTimeout(() => {
-                    if (!(verificationInventoryCustomSelect.options && verificationInventoryCustomSelect.options.length > 0)) {
-                        console.error('Options were not set correctly. CustomSelect.options is empty or undefined');
-                    }
-                }, 100);
-            } else {
-                console.error('CustomSelect instance or setOptions method not available');
-            }
-            
-            // Restore selected value - check if dropdown is open first
-            const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
-            const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
-            
-            if (selectedOption) {
-                // Check if dropdown is currently open
-                const isOpen = verificationInventoryCustomSelect.container && 
-                              (verificationInventoryCustomSelect.container.classList.contains('open') || 
-                               verificationInventoryCustomSelect.container.classList.contains('active'));
-                
-                if (isOpen) {
-                    // If dropdown is open, update the value without closing it
-                    verificationInventoryCustomSelect.selectedValue = selectedOption.value;
-                    verificationInventoryCustomSelect.selectedText = selectedOption.label;
-                    
-                    // Update the text element without closing
-                    if (verificationInventoryCustomSelect.textElement) {
-                        verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
-                        verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
-                    }
-                    
-                    // Update hidden input
-                    const hiddenInput = document.getElementById('inventoryFilter');
-                    if (hiddenInput) {
-                        hiddenInput.value = selectedOption.value;
-                    }
-                    if (verificationInventoryCustomSelect.hiddenInput) {
-                        verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
-                    }
-                    
-                    // Mark the option as selected in the rendered options
-                    const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
-                    optionElements.forEach(el => {
-                        el.classList.remove('selected');
-                        if (el.dataset.value === selectedOption.value) {
-                            el.classList.add('selected');
-                        }
-                    });
-                } else {
-                    // If dropdown is closed, use setValue normally
-                    if (verificationInventoryCustomSelect.setValue) {
-                        verificationInventoryCustomSelect.setValue(selectedInventoryValue);
-                    } else if (verificationInventoryCustomSelect.selectOption) {
-                        verificationInventoryCustomSelect.selectOption(selectedOption);
-                    }
+                // If dropdown is closed, use setValue normally
+                if (verificationInventoryCustomSelect.setValue) {
+                    verificationInventoryCustomSelect.setValue(selectedInventoryValue);
+                } else if (verificationInventoryCustomSelect.selectOption) {
+                    verificationInventoryCustomSelect.selectOption(selectedOption);
                 }
             }
         } catch (error) {
             console.warn('Error populating inventory filter:', error);
+        }
+        } catch (error) {
+            console.error('Error populating inventory filter:', error);
         }
     }
     

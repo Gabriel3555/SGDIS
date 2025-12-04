@@ -57,8 +57,9 @@ async function updateInventoryStats() {
 
   const currentRole = window.currentUserRole || '';
   const isSuperAdmin = currentRole === 'SUPERADMIN';
+  const isWarehouse = currentRole === 'WAREHOUSE';
 
-  // Use statistics from endpoint if available (for SUPERADMIN), otherwise calculate from current page
+  // Use statistics from endpoint if available (for SUPERADMIN or WAREHOUSE), otherwise calculate from current page
   let totalInventories, activeInventories, inactiveInventories, totalItems, totalValue;
 
   if (isSuperAdmin && window.inventoryData.statistics) {
@@ -69,6 +70,43 @@ async function updateInventoryStats() {
     inactiveInventories = stats.inactiveInventories || 0;
     totalItems = stats.totalItems || 0;
     totalValue = stats.totalValue || 0;
+  } else if (isWarehouse) {
+    // Use warehouse statistics endpoint
+    try {
+      const token = localStorage.getItem('jwt');
+      if (token) {
+        const response = await fetch('/api/v1/inventory/warehouse/statistics', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (response.ok) {
+          const stats = await response.json();
+          totalInventories = stats.totalInventories || 0;
+          activeInventories = stats.activeInventories || 0;
+          inactiveInventories = stats.inactiveInventories || 0;
+          totalItems = stats.totalItems || 0;
+          totalValue = stats.totalValue || 0;
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching warehouse statistics:', error);
+      // Fallback to local calculation
+      if (!window.inventoryData.inventories) {
+        return;
+      }
+      totalInventories = window.inventoryData.inventories.length;
+      activeInventories = window.inventoryData.inventories.filter(
+        (i) => i && i.status !== false
+      ).length;
+      inactiveInventories = totalInventories - activeInventories;
+      totalItems = 0;
+      totalValue = 0;
+    }
   } else {
     // Fallback to local calculation from current page data
     if (!window.inventoryData.inventories) {
