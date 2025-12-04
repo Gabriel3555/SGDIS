@@ -17,6 +17,7 @@ import com.sgdis.backend.loan.application.port.ReturnItemUseCase;
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository;
 import com.sgdis.backend.loan.mapper.LoanMapper;
+import com.sgdis.backend.cancellation.infrastructure.repository.SpringDataCancellationRepository;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
@@ -43,6 +44,7 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
     private final SpringDataLoanRepository loanRepository;
     private final SpringDataItemRepository itemRepository;
     private final SpringDataUserRepository userRepository;
+    private final SpringDataCancellationRepository cancellationRepository;
     private final RecordActionUseCase recordActionUseCase;
 
     @Override
@@ -52,6 +54,15 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
         ItemEntity item = itemRepository.findById(request.itemId())
                 .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+
+        // Verificar que el item no esté dado de baja
+        List<com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity> approvedCancellations = 
+                cancellationRepository.findApprovedCancellationsByItemId(item.getId());
+        if (approvedCancellations != null && !approvedCancellations.isEmpty()) {
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item ID " + item.getId();
+            String plateNumber = item.getLicencePlateNumber() != null ? " (Placa: " + item.getLicencePlateNumber() + ")" : "";
+            throw new IllegalStateException("No se puede prestar el item \"" + itemName + "\"" + plateNumber + " porque está dado de baja.");
+        }
 
         UserEntity responsible = userRepository.findById(request.responsibleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Responsible user not found"));
