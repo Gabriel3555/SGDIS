@@ -2234,9 +2234,18 @@
                 // Use filtered endpoints if filters are applied
                 if (superadminDashboardData.selectedInstitution) {
                     // For institution, get all inventories of the institution first
-                    const institution = superadminDashboardData.institutions.find(
-                        inst => inst.id.toString() === superadminDashboardData.selectedInstitution.toString()
+                    // Check both institutions and filteredInstitutions (in case regional is selected)
+                    const allInstitutions = superadminDashboardData.filteredInstitutions && superadminDashboardData.filteredInstitutions.length > 0
+                        ? superadminDashboardData.filteredInstitutions
+                        : superadminDashboardData.institutions;
+                    
+                    const institution = allInstitutions.find(
+                        inst => {
+                            const instId = inst.id || inst.institutionId;
+                            return instId && instId.toString() === superadminDashboardData.selectedInstitution.toString();
+                        }
                     );
+                    
                     if (institution) {
                         // Get all inventories for this institution
                         const inventoriesResponse = await fetch('/api/v1/inventory?page=0&size=10000', { headers });
@@ -2247,24 +2256,35 @@
                             );
                             const inventoryIds = institutionInventories.map(inv => inv.id);
                             
-                            // Get transfers for each inventory and combine (limit to first 10 per inventory for performance)
-                            const transferPromises = inventoryIds.slice(0, 20).map(invId => 
-                                fetch(`/api/v1/transfers/inventory/${invId}`, { headers }).then(r => r.ok ? r.json() : [])
-                            );
-                            const transferArrays = await Promise.all(transferPromises);
-                            transfers = transferArrays.flat();
-                            
-                            // Remove duplicates by transfer id
-                            const uniqueTransfers = [];
-                            const seenIds = new Set();
-                            transfers.forEach(transfer => {
-                                if (transfer.id && !seenIds.has(transfer.id)) {
-                                    seenIds.add(transfer.id);
-                                    uniqueTransfers.push(transfer);
-                                }
-                            });
-                            transfers = uniqueTransfers;
+                            if (inventoryIds.length > 0) {
+                                // Get transfers for each inventory and combine (limit to first 50 inventories for performance)
+                                const transferPromises = inventoryIds.slice(0, 50).map(invId => 
+                                    fetch(`/api/v1/transfers/inventory/${invId}`, { headers })
+                                        .then(r => r.ok ? r.json() : [])
+                                        .catch(err => {
+                                            console.warn(`Error loading transfers for inventory ${invId}:`, err);
+                                            return [];
+                                        })
+                                );
+                                const transferArrays = await Promise.all(transferPromises);
+                                transfers = transferArrays.flat();
+                                
+                                // Remove duplicates by transfer id
+                                const uniqueTransfers = [];
+                                const seenIds = new Set();
+                                transfers.forEach(transfer => {
+                                    if (transfer.id && !seenIds.has(transfer.id)) {
+                                        seenIds.add(transfer.id);
+                                        uniqueTransfers.push(transfer);
+                                    }
+                                });
+                                transfers = uniqueTransfers;
+                            }
+                        } else {
+                            console.warn('Failed to load inventories for institution filter');
                         }
+                    } else {
+                        console.warn('Institution not found in available institutions');
                     }
                 } else if (superadminDashboardData.selectedRegional) {
                     // Get transfers by regional
