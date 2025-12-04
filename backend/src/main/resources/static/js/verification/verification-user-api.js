@@ -14,7 +14,17 @@ async function loadVerificationData() {
         if (typeof updateFilters === 'function') {
             updateFilters();
         }
-        updateVerificationUI();
+        // Wait for updateVerificationUI to be available
+        let attempts = 0;
+        while (typeof window.updateVerificationUI !== 'function' && attempts < 10) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+        }
+        if (typeof window.updateVerificationUI === 'function') {
+            window.updateVerificationUI();
+        } else if (typeof updateVerificationUI === 'function') {
+            updateVerificationUI();
+        }
 
     } catch (error) {
         let errorMessage = 'Error al cargar los datos de verificaciones: ' + error.message;
@@ -33,7 +43,17 @@ async function loadVerificationData() {
 
         showInventoryErrorToast('Error al cargar datos', errorMessage);
         showErrorState(errorMessage);
-        updateVerificationUI();
+        // Wait for updateVerificationUI to be available
+        let attempts = 0;
+        while (typeof window.updateVerificationUI !== 'function' && attempts < 10) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+        }
+        if (typeof window.updateVerificationUI === 'function') {
+            window.updateVerificationUI();
+        } else if (typeof updateVerificationUI === 'function') {
+            updateVerificationUI();
+        }
     } finally {
         verificationData.isLoading = false;
         hideLoadingState();
@@ -57,17 +77,40 @@ async function loadCurrentUserInfo() {
 
         if (response.ok) {
             const userData = await response.json();
-            updateUserInfoDisplay(userData);
+            // Wait for updateUserInfoDisplay to be available
+            let attempts = 0;
+            while (typeof window.updateUserInfoDisplay !== 'function' && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 50));
+                attempts++;
+            }
+            if (typeof window.updateUserInfoDisplay === 'function') {
+                window.updateUserInfoDisplay(userData);
+            } else if (typeof updateUserInfoDisplay === 'function') {
+                updateUserInfoDisplay(userData);
+            } else {
+                console.warn('updateUserInfoDisplay function not available yet');
+            }
         } else {
             throw new Error('Failed to load user info');
         }
     } catch (error) {
         console.error('Error loading current user info:', error);
-        updateUserInfoDisplay({
+        const defaultUserData = {
             fullName: 'Usuario',
             role: 'USER',
             email: 'user@sena.edu.co'
-        });
+        };
+        // Wait for updateUserInfoDisplay to be available
+        let attempts = 0;
+        while (typeof window.updateUserInfoDisplay !== 'function' && attempts < 10) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+            attempts++;
+        }
+        if (typeof window.updateUserInfoDisplay === 'function') {
+            window.updateUserInfoDisplay(defaultUserData);
+        } else if (typeof updateUserInfoDisplay === 'function') {
+            updateUserInfoDisplay(defaultUserData);
+        }
     }
 }
 
@@ -170,7 +213,9 @@ async function loadLatestVerifications() {
         }
         
         // Ensure UI is updated after loading
-        if (typeof updateVerificationUI === 'function') {
+        if (typeof window.updateVerificationUI === 'function') {
+            window.updateVerificationUI();
+        } else if (typeof updateVerificationUI === 'function') {
             updateVerificationUI();
         }
     } catch (error) {
