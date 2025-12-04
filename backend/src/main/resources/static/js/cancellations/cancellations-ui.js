@@ -15,10 +15,10 @@ async function loadCancellationsData() {
         // Detect role from URL first (warehouse view or admin_institution view)
         if (window.location.pathname.includes('/warehouse/')) {
             cancellationsData.userRole = 'WAREHOUSE';
-            // Set pageSize to 6 for warehouse
-            cancellationsData.pageSize = 6;
         } else if (window.location.pathname.includes('/admin_institution/')) {
             cancellationsData.userRole = 'ADMIN_INSTITUTION';
+        } else if (window.location.pathname.includes('/admin_regional/')) {
+            cancellationsData.userRole = 'ADMIN_REGIONAL';
         }
         
         await loadCurrentUserInfo();
@@ -30,8 +30,8 @@ async function loadCancellationsData() {
                                         (window.location.pathname.includes('/warehouse/') ? 'WAREHOUSE' : 'SUPERADMIN');
         }
         
-        // Set pageSize to 6 for warehouse if not already set
-        if (cancellationsData.userRole === 'WAREHOUSE' && cancellationsData.pageSize !== 6) {
+        // Ensure pageSize is set to 6 for all views
+        if (cancellationsData.pageSize !== 6) {
             cancellationsData.pageSize = 6;
         }
         
@@ -101,15 +101,35 @@ async function loadCancellations() {
         const userRole = cancellationsData.userRole || 
                         (window.location.pathname.includes('/warehouse/') ? 'WAREHOUSE' : 'SUPERADMIN');
         
-        const pageData = await fetchAllCancellations(
-            cancellationsData.currentPage,
-            cancellationsData.pageSize,
-            userRole
-        );
+        // For client-side pagination, load all cancellations in batches
+        // We'll paginate on the client side after filtering
+        let allCancellations = [];
+        let currentPage = 0;
+        let hasMore = true;
         
-        cancellationsData.cancellations = pageData.content || [];
-        cancellationsData.totalPages = pageData.totalPages || 0;
-        cancellationsData.totalElements = pageData.totalElements || 0;
+        while (hasMore) {
+            const pageData = await fetchAllCancellations(
+                currentPage,
+                100, // Load 100 at a time
+                userRole
+            );
+            
+            if (pageData.content && pageData.content.length > 0) {
+                allCancellations = allCancellations.concat(pageData.content);
+                hasMore = !pageData.last && pageData.content.length === 100;
+                currentPage++;
+            } else {
+                hasMore = false;
+            }
+            
+            // Limit to prevent infinite loops
+            if (currentPage > 100) {
+                hasMore = false;
+            }
+        }
+        
+        cancellationsData.cancellations = allCancellations;
+        // Don't set totalPages/totalElements from server - we'll calculate from filtered results
 
         // Load statistics for warehouse (from API) or calculate for superadmin (from data)
         if (userRole === 'WAREHOUSE' || userRole === 'warehouse') {
@@ -127,6 +147,9 @@ async function loadCancellations() {
         
         // Apply filters after updating options
         filterCancellations();
+        
+        // Reset to first page after filtering
+        cancellationsData.currentPage = 0;
     } catch (error) {
         console.error('Error loading cancellations:', error);
         cancellationsData.cancellations = [];
@@ -343,6 +366,21 @@ function updateCancellationsTable() {
         return;
     }
 
+    // Ensure filteredCancellations is set (fallback to cancellations if not filtered yet)
+    if (!cancellationsData.filteredCancellations || cancellationsData.filteredCancellations.length === 0) {
+        cancellationsData.filteredCancellations = cancellationsData.cancellations || [];
+    }
+    
+    // Apply client-side pagination to filtered cancellations
+    const startIndex = cancellationsData.currentPage * cancellationsData.pageSize;
+    const endIndex = startIndex + cancellationsData.pageSize;
+    const paginatedCancellations = cancellationsData.filteredCancellations.slice(startIndex, endIndex);
+    
+    // Update totalPages based on filtered results
+    const filteredLength = cancellationsData.filteredCancellations.length;
+    cancellationsData.totalPages = Math.ceil(filteredLength / cancellationsData.pageSize);
+    cancellationsData.totalElements = filteredLength;
+
     let tableHtml = `
         <div class="overflow-x-auto">
             <table class="w-full">
@@ -371,7 +409,7 @@ function updateCancellationsTable() {
                 <tbody>
     `;
 
-    cancellationsData.filteredCancellations.forEach(cancellation => {
+    paginatedCancellations.forEach(cancellation => {
         const requestDate = cancellation.requestedAt ? new Date(cancellation.requestedAt).toLocaleDateString('es-ES', {
             year: 'numeric',
             month: 'short',
@@ -572,14 +610,20 @@ function updatePagination() {
     const container = document.getElementById('paginationContainer');
     if (!container) return;
 
-    const totalPages = cancellationsData.totalPages;
+    // Calculate total pages based on filtered cancellations (client-side pagination)
+    const filteredLength = cancellationsData.filteredCancellations ? cancellationsData.filteredCancellations.length : 0;
+    const totalPages = Math.ceil(filteredLength / cancellationsData.pageSize);
     const currentPage = cancellationsData.currentPage;
-    const totalElements = cancellationsData.totalElements;
+    const totalElements = filteredLength;
+
+    // Update cancellationsData for consistency
+    cancellationsData.totalPages = totalPages;
+    cancellationsData.totalElements = totalElements;
 
     if (totalPages <= 1) {
         container.innerHTML = `
             <div class="text-sm text-gray-600 dark:text-gray-400">
-                Mostrando ${cancellationsData.filteredCancellations.length} de ${totalElements} bajas
+                Mostrando ${filteredLength} de ${filteredLength} bajas
             </div>
             <div></div>
         `;
@@ -639,12 +683,22 @@ function updatePagination() {
  * Change cancellation page
  */
 async function changeCancellationPage(page) {
-    if (page < 0 || page >= cancellationsData.totalPages) {
+    if (page < 0) {
+        return;
+    }
+
+    // Calculate total pages based on filtered cancellations
+    const filteredLength = cancellationsData.filteredCancellations ? cancellationsData.filteredCancellations.length : 0;
+    const totalPages = Math.ceil(filteredLength / cancellationsData.pageSize);
+    
+    if (page >= totalPages && totalPages > 0) {
         return;
     }
 
     cancellationsData.currentPage = page;
-    await loadCancellations();
+    
+    // For client-side pagination, just update UI without reloading from server
+    // The data is already loaded and filtered, we just need to update the display
     updateCancellationsUI();
 }
 
@@ -873,6 +927,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 cancellationsData.filters.search = this.value;
+                cancellationsData.currentPage = 0; // Reset to first page when filtering
                 filterCancellations();
                 updateCancellationsUI();
             }, 300);
@@ -897,13 +952,31 @@ function syncFilterValues() {
     const dateRangeSelect = document.getElementById('dateRangeSelect');
     
     if (statusSelect) {
-        cancellationsData.filters.status = statusSelect.value || 'all';
+        // Check if it's CustomSelect or native select
+        const isStatusCustomSelect = statusSelect.classList && statusSelect.classList.contains('custom-select');
+        if (isStatusCustomSelect && window.statusSelectCustomSelect) {
+            cancellationsData.filters.status = window.statusSelectCustomSelect.getValue() || 'all';
+        } else {
+            cancellationsData.filters.status = statusSelect.value || 'all';
+        }
     }
     if (requesterSelect) {
-        cancellationsData.filters.requester = requesterSelect.value || 'all';
+        // Check if it's CustomSelect or native select
+        const isRequesterCustomSelect = requesterSelect.classList && requesterSelect.classList.contains('custom-select');
+        if (isRequesterCustomSelect && window.requesterSelectCustomSelect) {
+            cancellationsData.filters.requester = window.requesterSelectCustomSelect.getValue() || 'all';
+        } else {
+            cancellationsData.filters.requester = requesterSelect.value || 'all';
+        }
     }
     if (dateRangeSelect) {
-        cancellationsData.filters.dateRange = dateRangeSelect.value || 'all';
+        // Check if it's CustomSelect or native select
+        const isDateRangeCustomSelect = dateRangeSelect.classList && dateRangeSelect.classList.contains('custom-select');
+        if (isDateRangeCustomSelect && window.dateRangeSelectCustomSelect) {
+            cancellationsData.filters.dateRange = window.dateRangeSelectCustomSelect.getValue() || 'all';
+        } else {
+            cancellationsData.filters.dateRange = dateRangeSelect.value || 'all';
+        }
     }
 }
 
@@ -927,6 +1000,7 @@ function setupStatusFilter() {
 function handleStatusFilterChange(event) {
     const value = event.target.value || 'all';
     cancellationsData.filters.status = value;
+    cancellationsData.currentPage = 0; // Reset to first page when filtering
     filterCancellations();
     updateCancellationsUI();
 }
@@ -938,11 +1012,18 @@ function setupRequesterFilter() {
     const requesterSelect = document.getElementById('requesterSelect');
     if (!requesterSelect) return;
     
-    // Set initial value
-    requesterSelect.value = cancellationsData.filters.requester || 'all';
+    // Detect if it's a CustomSelect (div) or native select
+    const isCustomSelect = requesterSelect.classList && requesterSelect.classList.contains('custom-select');
     
-    // Sync value back to cancellationsData
-    cancellationsData.filters.requester = requesterSelect.value;
+    if (isCustomSelect) {
+        // CustomSelect will be initialized in updateRequesterFilterOptions after data loads
+        // Just ensure the filter value is set
+        cancellationsData.filters.requester = cancellationsData.filters.requester || 'all';
+    } else {
+        // Handle native select
+        requesterSelect.value = cancellationsData.filters.requester || 'all';
+        cancellationsData.filters.requester = requesterSelect.value;
+    }
     
     // Populate after data loads (will be called after loadCancellations)
 }
@@ -953,6 +1034,7 @@ function setupRequesterFilter() {
 function handleRequesterFilterChange(event) {
     const value = event.target.value || 'all';
     cancellationsData.filters.requester = value;
+    cancellationsData.currentPage = 0; // Reset to first page when filtering
     filterCancellations();
     updateCancellationsUI();
 }
@@ -975,32 +1057,94 @@ function updateRequesterFilterOptions() {
         }
     });
 
-    // Store current value
-    const currentValue = requesterSelect.value;
+    // Detect if it's a CustomSelect (div) or native select
+    const isCustomSelect = requesterSelect.classList && requesterSelect.classList.contains('custom-select');
     
-    // Clear and rebuild options
-    requesterSelect.innerHTML = '<option value="all">Todos los solicitantes</option>';
-    
-    // Sort requesters by name
-    const sortedRequesters = Array.from(requestersMap.entries()).sort((a, b) => {
-        return a[1].localeCompare(b[1]);
-    });
-    
-    // Add requester options
-    sortedRequesters.forEach(([id, name]) => {
-        const option = document.createElement('option');
-        option.value = id.toString();
-        option.textContent = name;
-        requesterSelect.appendChild(option);
-    });
-    
-    // Restore previous value if it still exists
-    if (currentValue && Array.from(requesterSelect.options).some(opt => opt.value === currentValue)) {
-        requesterSelect.value = currentValue;
-        cancellationsData.filters.requester = currentValue;
+    if (isCustomSelect) {
+        // Handle CustomSelect
+        const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+        if (!CustomSelectClass) {
+            console.warn('CustomSelect class not available');
+            return;
+        }
+
+        // Get or create CustomSelect instance
+        if (!window.requesterSelectCustomSelect) {
+            window.requesterSelectCustomSelect = new CustomSelectClass('requesterSelect', {
+                placeholder: 'Todos los solicitantes',
+                onChange: (option) => {
+                    const value = option.value || 'all';
+                    const hiddenInput = document.getElementById('selectedRequester');
+                    if (hiddenInput) hiddenInput.value = value;
+                    cancellationsData.filters.requester = value;
+                    cancellationsData.currentPage = 0; // Reset to first page when filtering
+                    filterCancellations();
+                    updateCancellationsUI();
+                }
+            });
+        }
+
+        // Store current value
+        const currentValue = window.requesterSelectCustomSelect.getValue() || cancellationsData.filters.requester || 'all';
+        
+        // Build options array
+        const options = [
+            { value: 'all', label: 'Todos los solicitantes' }
+        ];
+        
+        // Sort requesters by name
+        const sortedRequesters = Array.from(requestersMap.entries()).sort((a, b) => {
+            return a[1].localeCompare(b[1]);
+        });
+        
+        // Add requester options
+        sortedRequesters.forEach(([id, name]) => {
+            options.push({
+                value: id.toString(),
+                label: name
+            });
+        });
+        
+        // Update options
+        window.requesterSelectCustomSelect.setOptions(options);
+        
+        // Restore previous value if it still exists
+        if (currentValue && options.some(opt => opt.value === currentValue)) {
+            window.requesterSelectCustomSelect.setValue(currentValue);
+            cancellationsData.filters.requester = currentValue;
+        } else {
+            window.requesterSelectCustomSelect.setValue('all');
+            cancellationsData.filters.requester = 'all';
+        }
     } else {
-        requesterSelect.value = 'all';
-        cancellationsData.filters.requester = 'all';
+        // Handle native select
+        // Store current value
+        const currentValue = requesterSelect.value;
+        
+        // Clear and rebuild options
+        requesterSelect.innerHTML = '<option value="all">Todos los solicitantes</option>';
+        
+        // Sort requesters by name
+        const sortedRequesters = Array.from(requestersMap.entries()).sort((a, b) => {
+            return a[1].localeCompare(b[1]);
+        });
+        
+        // Add requester options
+        sortedRequesters.forEach(([id, name]) => {
+            const option = document.createElement('option');
+            option.value = id.toString();
+            option.textContent = name;
+            requesterSelect.appendChild(option);
+        });
+        
+        // Restore previous value if it still exists
+        if (currentValue && requesterSelect.options && Array.from(requesterSelect.options).some(opt => opt.value === currentValue)) {
+            requesterSelect.value = currentValue;
+            cancellationsData.filters.requester = currentValue;
+        } else {
+            requesterSelect.value = 'all';
+            cancellationsData.filters.requester = 'all';
+        }
     }
 }
 
@@ -1026,6 +1170,7 @@ function setupDateRangeFilter() {
 function handleDateRangeFilterChange(event) {
     const value = event.target.value || 'all';
     cancellationsData.filters.dateRange = value;
+    cancellationsData.currentPage = 0; // Reset to first page when filtering
     filterCancellations();
     updateCancellationsUI();
 }
