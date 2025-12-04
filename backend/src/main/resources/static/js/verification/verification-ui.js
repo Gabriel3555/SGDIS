@@ -499,6 +499,8 @@ function populateVerificationCustomSelects() {
                     }
                 }
             }
+        } catch (error) {
+            console.error('Error populating institution filter:', error);
         }
     }
     
@@ -577,62 +579,46 @@ function populateVerificationCustomSelects() {
             const isOpen = verificationInventoryCustomSelect.container && 
                           (verificationInventoryCustomSelect.container.classList.contains('open') || 
                            verificationInventoryCustomSelect.container.classList.contains('active'));
-            const options = [
-                { value: 'all', label: 'Todos los Inventarios' },
-                ...(verificationData.inventories || []).map(inv => ({
-                    value: inv.id.toString(),
-                    label: inv.name || `Inventario ${inv.id}`
-                }))
-            ];
-            verificationInventoryCustomSelect.setOptions(options);
             
-            // Restore selected value - check if dropdown is open first
-            const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
-            const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
-            
-            if (selectedOption) {
-                // Check if dropdown is currently open
-                const isOpen = verificationInventoryCustomSelect.container && 
-                              (verificationInventoryCustomSelect.container.classList.contains('open') || 
-                               verificationInventoryCustomSelect.container.classList.contains('active'));
+            if (isOpen) {
+                // If dropdown is open, update the value without closing it
+                verificationInventoryCustomSelect.selectedValue = selectedOption.value;
+                verificationInventoryCustomSelect.selectedText = selectedOption.label;
                 
-                if (isOpen) {
-                    // If dropdown is open, update the value without closing it
-                    verificationInventoryCustomSelect.selectedValue = selectedOption.value;
-                    verificationInventoryCustomSelect.selectedText = selectedOption.label;
-                    
-                    // Update the text element without closing
-                    if (verificationInventoryCustomSelect.textElement) {
-                        verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
-                        verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
+                // Update the text element without closing
+                if (verificationInventoryCustomSelect.textElement) {
+                    verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
+                    verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
+                }
+                
+                // Update hidden input
+                const hiddenInput = document.getElementById('inventoryFilter');
+                if (hiddenInput) {
+                    hiddenInput.value = selectedOption.value;
+                }
+                if (verificationInventoryCustomSelect.hiddenInput) {
+                    verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
+                }
+                
+                // Mark the option as selected in the rendered options
+                const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
+                optionElements.forEach(el => {
+                    el.classList.remove('selected');
+                    if (el.dataset.value === selectedOption.value) {
+                        el.classList.add('selected');
                     }
-                    
-                    // Update hidden input
-                    const hiddenInput = document.getElementById('inventoryFilter');
-                    if (hiddenInput) {
-                        hiddenInput.value = selectedOption.value;
-                    }
-                    if (verificationInventoryCustomSelect.hiddenInput) {
-                        verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
-                    }
-                    
-                    // Mark the option as selected in the rendered options
-                    const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
-                    optionElements.forEach(el => {
-                        el.classList.remove('selected');
-                        if (el.dataset.value === selectedOption.value) {
-                            el.classList.add('selected');
-                        }
-                    });
-                } else {
-                    // If dropdown is closed, use setValue normally
-                    if (verificationInventoryCustomSelect.setValue) {
-                        verificationInventoryCustomSelect.setValue(selectedInventoryValue);
-                    } else if (verificationInventoryCustomSelect.selectOption) {
-                        verificationInventoryCustomSelect.selectOption(selectedOption);
-                    }
+                });
+            } else {
+                // If dropdown is closed, use setValue normally
+                if (verificationInventoryCustomSelect.setValue) {
+                    verificationInventoryCustomSelect.setValue(selectedInventoryValue);
+                } else if (verificationInventoryCustomSelect.selectOption) {
+                    verificationInventoryCustomSelect.selectOption(selectedOption);
                 }
             }
+        }
+        } catch (error) {
+            console.error('Error populating inventory filter:', error);
         }
     }
     

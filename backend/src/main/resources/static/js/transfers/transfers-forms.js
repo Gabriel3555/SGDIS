@@ -489,13 +489,16 @@ function populateNewTransferForm(itemId = null) {
             // Initialize inventory select
             if (!newTransferInventorySelect) {
                 try {
+                    console.log('Initializing warehouse inventory select...');
                     const selectInstance = new CustomSelectClass('newTransferInventorySelect', {
                         placeholder: 'Seleccione un inventario',
                         onChange: (option) => {
+                            console.log('Inventory selected:', option);
                             if (option && option.value) {
                                 const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
                                 if (hiddenInput) {
                                     hiddenInput.value = option.value;
+                                    console.log('Set hidden input value to:', option.value);
                                 }
                             } else {
                                 const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
@@ -508,15 +511,23 @@ function populateNewTransferForm(itemId = null) {
                     
                     if (selectInstance && selectInstance.container) {
                         newTransferInventorySelect = selectInstance;
+                        window.newTransferInventorySelect = selectInstance; // Also assign to window
+                        console.log('Warehouse inventory select initialized successfully:', selectInstance);
+                    } else {
+                        console.error('Select instance created but container is missing');
                     }
                 } catch (error) {
                     console.error('Error initializing warehouse inventory select:', error);
+                    console.error('Error stack:', error.stack);
                     return;
                 }
+            } else {
+                console.log('Warehouse inventory select already initialized');
             }
             
             // Load inventories for warehouse's regional
             setTimeout(() => {
+                console.log('Loading inventories for warehouse transfer form...');
                 loadInventoriesForWarehouseTransferForm();
             }, 100);
         };
@@ -528,16 +539,84 @@ function populateNewTransferForm(itemId = null) {
         
         // Re-attach event listener after populating form HTML (similar to transfers-user.js)
         // This is necessary because innerHTML replaces all content including event listeners
-        setTimeout(() => {
+        const attachSubmitListener = () => {
             const formElement = document.getElementById('newTransferForm');
             if (formElement) {
-                // Remove existing listeners by cloning the form
+                // Remove any existing listeners by cloning the form
                 const newForm = formElement.cloneNode(true);
                 formElement.parentNode.replaceChild(newForm, formElement);
+                
                 // Re-attach the submit handler
-                newForm.addEventListener('submit', handleNewTransferSubmit);
+                const submitHandler = window.handleNewTransferSubmit || handleNewTransferSubmit;
+                if (typeof submitHandler === 'function') {
+                    // Remove any existing listener first
+                    newForm.removeEventListener('submit', submitHandler);
+                    // Add the listener
+                    newForm.addEventListener('submit', (e) => {
+                        console.log('Form submit event triggered');
+                        submitHandler(e);
+                    }, { once: false });
+                    console.log('Submit listener attached to form');
+                    
+                    // Also attach direct click handler to submit button as fallback
+                    const submitButton = newForm.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        console.log('Submit button found, attaching click handler');
+                        // Remove any existing click handlers first
+                        const newButton = submitButton.cloneNode(true);
+                        submitButton.parentNode.replaceChild(newButton, submitButton);
+                        
+                        newButton.addEventListener('click', async (e) => {
+                            console.log('Submit button clicked directly');
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            // Check if form submit handler will handle it
+                            if (!isSubmittingTransfer) {
+                                // Disable button immediately
+                                newButton.disabled = true;
+                                const originalText = newButton.innerHTML;
+                                newButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
+                                
+                                // Try to trigger form submit event
+                                const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
+                                const formSubmitted = newForm.dispatchEvent(submitEvent);
+                                
+                                console.log('Form submit event dispatched, result:', formSubmitted);
+                                
+                                // If form submit didn't work, call handler directly
+                                if (!formSubmitted || !isSubmittingTransfer) {
+                                    console.log('Calling submit handler directly');
+                                    const submitHandler = window.handleNewTransferSubmit || handleNewTransferSubmit;
+                                    if (typeof submitHandler === 'function') {
+                                        await submitHandler(submitEvent);
+                                    }
+                                }
+                                
+                                // Re-enable after a delay if submission fails
+                                setTimeout(() => {
+                                    if (!isSubmittingTransfer) {
+                                        newButton.disabled = false;
+                                        newButton.innerHTML = originalText;
+                                    }
+                                }, 2000);
+                            } else {
+                                console.log('Already submitting, ignoring click');
+                            }
+                        }, { once: false });
+                    } else {
+                        console.warn('Submit button not found in form');
+                    }
+                } else {
+                    console.error('handleNewTransferSubmit function not found');
+                }
+            } else {
+                console.warn('Form element not found, retrying...');
+                setTimeout(attachSubmitListener, 100);
             }
-        }, 100);
+        };
+        
+        setTimeout(attachSubmitListener, 200);
     } else if (isAdminRegional) {
         // For admin regional: use licence plate with verification, but only show inventories from admin regional's regional
         form.innerHTML = `
@@ -970,105 +1049,188 @@ async function verifyItemByLicencePlate() {
     }
 }
 
+// Flag to prevent multiple simultaneous submissions
+let isSubmittingTransfer = false;
+
 async function handleNewTransferSubmit(event) {
     event.preventDefault();
+    event.stopPropagation();
     
-    // Check if user is superadmin, warehouse, or admin regional
-    const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
-                         (window.location.pathname && window.location.pathname.includes('/superadmin'));
-    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
-                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
-    const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
-                           (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    // Prevent multiple simultaneous submissions
+    if (isSubmittingTransfer) {
+        console.log('Transfer submission already in progress, ignoring duplicate call');
+        return;
+    }
     
-    // For superadmin, warehouse, and admin regional, verify item first if not already verified
-    if (isSuperAdmin || isWarehouse || isAdminRegional) {
-        const licencePlateInput = document.getElementById('newTransferLicencePlate');
-        const itemIdInput = document.getElementById('newTransferItemId');
+    // Set flag immediately
+    isSubmittingTransfer = true;
+    console.log('handleNewTransferSubmit called');
+    
+    // Disable submit button immediately
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        const originalText = submitButton.innerHTML;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
         
-        if (licencePlateInput && licencePlateInput.value.trim() && (!itemIdInput || !itemIdInput.value.trim())) {
-            // Item not verified yet, verify it first
-            await verifyItemByLicencePlate();
+        // Store original text for restoration if needed
+        submitButton.dataset.originalText = originalText;
+    }
+    
+    try {
+        // Check if user is superadmin, warehouse, or admin regional
+        const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                             (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                           (window.location.pathname && window.location.pathname.includes('/warehouse'));
+        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        
+        console.log('User role check:', { isSuperAdmin, isWarehouse, isAdminRegional });
+        
+        // For superadmin, warehouse, and admin regional, verify item first if not already verified
+        if (isSuperAdmin || isWarehouse || isAdminRegional) {
+            const licencePlateInput = document.getElementById('newTransferLicencePlate');
+            const itemIdInput = document.getElementById('newTransferItemId');
             
-            // Wait a bit for verification to complete
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Check if verification was successful
-            if (!itemIdInput || !itemIdInput.value.trim()) {
-                if (window.showErrorToast) {
-                    window.showErrorToast('Error', 'Por favor verifica el item antes de continuar');
+            if (licencePlateInput && licencePlateInput.value.trim() && (!itemIdInput || !itemIdInput.value.trim())) {
+                // Item not verified yet, verify it first
+                await verifyItemByLicencePlate();
+                
+                // Wait a bit for verification to complete
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Check if verification was successful
+                if (!itemIdInput || !itemIdInput.value.trim()) {
+                    if (window.showErrorToast) {
+                        window.showErrorToast('Error', 'Por favor verifica el item antes de continuar');
+                    }
+                    isSubmittingTransfer = false;
+                    return;
                 }
-                return;
             }
         }
-    }
-    
-    let itemId;
-    if (isSuperAdmin || isWarehouse || isAdminRegional) {
-        // For superadmin, warehouse, and admin regional, get itemId from hidden input
-        itemId = document.getElementById('newTransferItemId')?.value?.trim();
-    } else {
-        // For other users, get from visible input
-        itemId = document.getElementById('newTransferItemId')?.value?.trim();
-    }
-    
-    const destinationInventoryId = document.getElementById('newTransferDestinationInventoryId')?.value?.trim();
-    const details = document.getElementById('newTransferDetails')?.value?.trim() || '';
-    
-    if (!itemId || !destinationInventoryId) {
-        if (window.showErrorToast) {
-            window.showErrorToast('Error', 'Por favor completa todos los campos requeridos y verifica el item');
-        }
-        return;
-    }
-    
-    // Hide any previous errors
-    const errorContainer = document.getElementById('transferFormError');
-    if (errorContainer) {
-        errorContainer.classList.add('hidden');
-        errorContainer.innerHTML = '';
-    }
-    
-    // Validate that both inventories belong to the same institution before showing summary
-    const validationError = await validateInstitutionMatch(itemId, destinationInventoryId);
-    if (validationError) {
-        // Show error in form
-        if (errorContainer) {
-            errorContainer.innerHTML = `
-                <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
-                    <div class="flex items-start gap-3">
-                        <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-lg mt-0.5"></i>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">
-                                Validación de Centro
-                            </p>
-                            <p class="text-xs text-yellow-700 dark:text-yellow-400">
-                                ${validationError}
-                            </p>
-                            <p class="text-xs text-yellow-600 dark:text-yellow-500 mt-2 opacity-90">
-                                <i class="fas fa-info-circle mr-1"></i>
-                                Los inventarios deben pertenecer al mismo centro para realizar la transferencia.
-                            </p>
-                        </div>
-                        <button onclick="document.getElementById('transferFormError').classList.add('hidden')" 
-                            class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-            errorContainer.classList.remove('hidden');
-            errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+        let itemId;
+        if (isSuperAdmin || isWarehouse || isAdminRegional) {
+            // For superadmin, warehouse, and admin regional, get itemId from hidden input
+            itemId = document.getElementById('newTransferItemId')?.value?.trim();
+        } else {
+            // For other users, get from visible input
+            itemId = document.getElementById('newTransferItemId')?.value?.trim();
         }
         
-        if (window.showErrorToast) {
-            window.showErrorToast('Validación', validationError);
+        const destinationInventoryId = document.getElementById('newTransferDestinationInventoryId')?.value?.trim();
+        const details = document.getElementById('newTransferDetails')?.value?.trim() || '';
+        
+        if (!itemId || !destinationInventoryId) {
+            if (window.showErrorToast) {
+                window.showErrorToast('Error', 'Por favor completa todos los campos requeridos y verifica el item');
+            }
+            isSubmittingTransfer = false;
+            return;
         }
-        return;
+        
+        // Hide any previous errors
+        const errorContainer = document.getElementById('transferFormError');
+        if (errorContainer) {
+            errorContainer.classList.add('hidden');
+            errorContainer.innerHTML = '';
+        }
+        
+        // Validate that both inventories belong to the same institution before showing summary
+        console.log('Validating institution match...');
+        const validationError = await validateInstitutionMatch(itemId, destinationInventoryId);
+        console.log('Validation result:', validationError);
+        if (validationError) {
+            // Show error in form
+            if (errorContainer) {
+                errorContainer.innerHTML = `
+                    <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-lg mt-0.5"></i>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-1">
+                                    Validación de Centro
+                                </p>
+                                <p class="text-xs text-yellow-700 dark:text-yellow-400">
+                                    ${validationError}
+                                </p>
+                                <p class="text-xs text-yellow-600 dark:text-yellow-500 mt-2 opacity-90">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Los inventarios deben pertenecer al mismo centro para realizar la transferencia.
+                                </p>
+                            </div>
+                            <button onclick="document.getElementById('transferFormError').classList.add('hidden')" 
+                                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                errorContainer.classList.remove('hidden');
+                errorContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            
+            if (window.showErrorToast) {
+                window.showErrorToast('Validación', validationError);
+            }
+            isSubmittingTransfer = false;
+            return;
+        }
+        
+        console.log('All validations passed, showing summary modal');
+        console.log('Calling showTransferSummaryModal with:', { itemId, destinationInventoryId, details });
+        
+        // Show summary modal for all roles (including Admin Regional)
+        try {
+            await showTransferSummaryModal(itemId, destinationInventoryId, details);
+            console.log('showTransferSummaryModal completed');
+        } catch (error) {
+            console.error('Error in showTransferSummaryModal:', error);
+            throw error; // Re-throw to be caught by outer catch
+        }
+    } catch (error) {
+        console.error('Error in handleNewTransferSubmit:', error);
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'Error al procesar la transferencia: ' + (error.message || 'Error desconocido'));
+        }
+        // Reset flag on error
+        resetTransferSubmissionFlag();
+    } finally {
+        // Don't reset flag here if modal was shown successfully
+        // The flag will be reset when the modal is closed
     }
-    
-    // Show summary modal for all roles (including Admin Regional)
-    await showTransferSummaryModal(itemId, destinationInventoryId, details);
+}
+
+// Reset submission flag when modal is closed
+function resetTransferSubmissionFlag() {
+    isSubmittingTransfer = false;
+    // Re-enable submit button if form still exists
+    const form = document.getElementById('newTransferForm');
+    if (form) {
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton && submitButton.dataset.originalText) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = submitButton.dataset.originalText;
+            delete submitButton.dataset.originalText;
+        }
+    }
+}
+
+// Reset submission flag when modal is closed
+function resetTransferSubmissionFlag() {
+    isSubmittingTransfer = false;
+    // Re-enable submit button if form still exists
+    const form = document.getElementById('newTransferForm');
+    if (form) {
+        const submitButton = form.querySelector('button[type="submit"]');
+        if (submitButton && submitButton.dataset.originalText) {
+            submitButton.disabled = false;
+            submitButton.innerHTML = submitButton.dataset.originalText;
+            delete submitButton.dataset.originalText;
+        }
+    }
 }
 
 /**
@@ -1157,10 +1319,29 @@ async function validateInstitutionMatch(itemId, destinationInventoryId) {
  * Shows transfer summary modal with transfer details
  */
 async function showTransferSummaryModal(itemId, destinationInventoryId, details) {
+    console.log('showTransferSummaryModal called with:', { itemId, destinationInventoryId, details });
     const modal = document.getElementById('transferSummaryModal');
     const content = document.getElementById('transferSummaryContent');
     
-    if (!modal || !content) return;
+    if (!modal) {
+        console.error('transferSummaryModal not found in DOM');
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se pudo mostrar el resumen. El modal no existe en la página.');
+        }
+        resetTransferSubmissionFlag();
+        return;
+    }
+    
+    if (!content) {
+        console.error('transferSummaryContent not found in DOM');
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se pudo mostrar el resumen. El contenido del modal no existe.');
+        }
+        resetTransferSubmissionFlag();
+        return;
+    }
+    
+    console.log('Modal and content found, proceeding...');
     
     // Show loading state
     content.innerHTML = `
@@ -1169,7 +1350,18 @@ async function showTransferSummaryModal(itemId, destinationInventoryId, details)
         </div>
     `;
     
+    // Remove hidden class and ensure modal is visible
     modal.classList.remove('hidden');
+    console.log('Modal hidden class removed');
+    
+    // Force modal to be visible (in case of CSS issues)
+    if (modal.style) {
+        modal.style.display = 'flex';
+        modal.style.zIndex = '9999';
+    }
+    console.log('Modal display set to flex, z-index set to 9999');
+    console.log('Modal element:', modal);
+    console.log('Modal classes:', modal.className);
     
     try {
         const token = localStorage.getItem('jwt');
@@ -1204,51 +1396,141 @@ async function showTransferSummaryModal(itemId, destinationInventoryId, details)
         let destinationInventoryInfo = null;
         
         // Get current inventory ID
+        console.log('Getting current inventory ID...');
         const inventoryInfoDiv = document.getElementById('itemInventoryInfo');
         let currentInventoryId = null;
         let currentInventoryName = 'No disponible';
         
         if (inventoryInfoDiv && !inventoryInfoDiv.classList.contains('hidden')) {
             const inventoryText = inventoryInfoDiv.textContent;
+            console.log('Inventory info div text:', inventoryText);
             const idMatch = inventoryText.match(/ID:\s*(\d+)/);
             if (idMatch) {
                 currentInventoryId = idMatch[1];
+                console.log('Current inventory ID found:', currentInventoryId);
             }
             const nameMatch = inventoryText.match(/font-semibold[^>]*>([^<]+)/);
             if (nameMatch) {
                 currentInventoryName = nameMatch[1].trim();
             }
+        } else {
+            console.log('Inventory info div not found or hidden, trying to get from item...');
+            // Try to get inventory ID from item directly
+            try {
+                const itemResponse = await fetch(`/api/v1/items/${itemId}`, {
+                    method: 'GET',
+                    headers: headers,
+                });
+                if (itemResponse.ok) {
+                    const item = await itemResponse.json();
+                    if (item.inventoryId) {
+                        currentInventoryId = item.inventoryId.toString();
+                        console.log('Current inventory ID from item:', currentInventoryId);
+                    }
+                }
+            } catch (error) {
+                console.warn('Could not get inventory from item:', error);
+            }
         }
         
         // Fetch both inventories
+        console.log('Fetching inventory details...');
         try {
             if (currentInventoryId) {
+                console.log('Fetching current inventory:', currentInventoryId);
                 const currentInventoryResponse = await fetch(`/api/v1/inventory/${currentInventoryId}`, {
                     method: 'GET',
                     headers: headers,
                 });
                 if (currentInventoryResponse.ok) {
                     currentInventoryInfo = await currentInventoryResponse.json();
+                    console.log('Current inventory info:', currentInventoryInfo);
                     if (currentInventoryInfo.name) {
                         currentInventoryName = currentInventoryInfo.name;
                     }
+                } else {
+                    console.warn('Failed to fetch current inventory:', currentInventoryResponse.status);
                 }
+            } else {
+                console.log('No current inventory ID, skipping current inventory fetch');
             }
             
+            console.log('Fetching destination inventory:', destinationInventoryId);
             const destinationInventoryResponse = await fetch(`/api/v1/inventory/${destinationInventoryId}`, {
                 method: 'GET',
                 headers: headers,
             });
             if (destinationInventoryResponse.ok) {
                 destinationInventoryInfo = await destinationInventoryResponse.json();
+                console.log('Destination inventory info:', destinationInventoryInfo);
+            } else {
+                console.error('Failed to fetch destination inventory:', destinationInventoryResponse.status);
+                const errorText = await destinationInventoryResponse.text();
+                console.error('Error response:', errorText);
+                // Don't throw, continue with available data
+                console.warn('Continuing without destination inventory details');
             }
         } catch (error) {
-            console.warn('Could not fetch inventory details:', error);
+            console.error('Error fetching inventory details:', error);
+            // Don't show error, continue with available data
+            console.warn('Continuing with partial data due to fetch error');
         }
         
-        // Validate institutions match
+        // Ensure we have at least destination inventory info (required)
+        if (!destinationInventoryInfo) {
+            console.warn('No destination inventory info, fetching again...');
+            try {
+                const destinationInventoryResponse = await fetch(`/api/v1/inventory/${destinationInventoryId}`, {
+                    method: 'GET',
+                    headers: headers,
+                });
+                if (destinationInventoryResponse.ok) {
+                    destinationInventoryInfo = await destinationInventoryResponse.json();
+                    console.log('Destination inventory info fetched on retry:', destinationInventoryInfo);
+                } else {
+                    console.error('Failed to fetch destination inventory on retry');
+                    // Show error and return
+                    content.innerHTML = `
+                        <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                            <p class="text-sm text-red-800 dark:text-red-300 font-medium mb-1">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Error al cargar información
+                            </p>
+                            <p class="text-xs text-red-700 dark:text-red-400">
+                                No se pudo cargar la información del inventario de destino. Por favor intenta nuevamente.
+                            </p>
+                        </div>
+                    `;
+                    resetTransferSubmissionFlag();
+                    return;
+                }
+            } catch (retryError) {
+                console.error('Error on retry:', retryError);
+                content.innerHTML = `
+                    <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                        <p class="text-sm text-red-800 dark:text-red-300 font-medium mb-1">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Error al cargar información
+                        </p>
+                        <p class="text-xs text-red-700 dark:text-red-400">
+                            ${retryError.message || 'No se pudieron cargar los detalles de los inventarios'}
+                        </p>
+                    </div>
+                `;
+                resetTransferSubmissionFlag();
+                return;
+            }
+        }
+        
+        // Validate institutions match (only if we have both inventory infos)
         if (currentInventoryInfo && destinationInventoryInfo) {
+            console.log('Validating institutions match...', {
+                current: currentInventoryInfo.institutionId,
+                destination: destinationInventoryInfo.institutionId
+            });
+            
             if (!currentInventoryInfo.institutionId || !destinationInventoryInfo.institutionId) {
+                console.warn('One or both inventories missing institutionId');
                 content.innerHTML = `
                     <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
                         <p class="text-sm text-red-800 dark:text-red-300 font-medium mb-1">
@@ -1260,12 +1542,14 @@ async function showTransferSummaryModal(itemId, destinationInventoryId, details)
                         </p>
                     </div>
                 `;
+                resetTransferSubmissionFlag();
                 return;
             }
             
             if (currentInventoryInfo.institutionId !== destinationInventoryInfo.institutionId) {
                 const currentInstitutionName = currentInventoryInfo.institutionName || 'Centro origen';
                 const destinationInstitutionName = destinationInventoryInfo.institutionName || 'Centro destino';
+                console.warn('Institutions do not match');
                 content.innerHTML = `
                     <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
                         <p class="text-sm text-yellow-800 dark:text-yellow-300 font-medium mb-1">
@@ -1285,18 +1569,29 @@ async function showTransferSummaryModal(itemId, destinationInventoryId, details)
                         </div>
                     </div>
                 `;
+                resetTransferSubmissionFlag();
                 return;
             }
+        } else {
+            console.log('Missing inventory info, proceeding with available data', {
+                hasCurrent: !!currentInventoryInfo,
+                hasDestination: !!destinationInventoryInfo
+            });
         }
         
-        // Check if user is admin regional for auto-approval message
+        // Check if user is admin regional or warehouse for auto-approval message
         const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
                                (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                           (window.location.pathname && window.location.pathname.includes('/warehouse'));
+        
+        console.log('Building summary content...', { isAdminRegional, isWarehouse, currentInventoryInfo, destinationInventoryInfo });
         
         // Build summary content
+        console.log('Building summary HTML...');
         content.innerHTML = `
             <div class="space-y-4">
-                ${isAdminRegional ? `
+                ${(isAdminRegional || isWarehouse) ? `
                     <div class="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
                         <h3 class="text-lg font-semibold text-green-800 dark:text-green-300 mb-3">
                             <i class="fas fa-check-circle mr-2"></i>
@@ -1401,28 +1696,45 @@ async function showTransferSummaryModal(itemId, destinationInventoryId, details)
             destinationInventoryId: parseInt(destinationInventoryId),
             details: details
         };
+        console.log('Transfer data stored:', window.pendingTransferData);
         
-        // Update button text for Admin Regional
-        if (isAdminRegional) {
+        // Update button text for Admin Regional and Warehouse (isWarehouse already declared above)
+        if (isAdminRegional || isWarehouse) {
             const confirmButton = document.querySelector('#transferSummaryModal button[onclick="confirmTransferRequest()"]');
             if (confirmButton) {
                 confirmButton.innerHTML = `
                     <i class="fas fa-check-circle mr-2"></i>
                     Crear Transferencia (Aprobación Automática)
                 `;
+                console.log('Confirm button updated for warehouse/admin regional');
+            } else {
+                console.warn('Confirm button not found in modal');
             }
         }
         
+        console.log('Modal content populated, modal should be visible');
+        console.log('Content length:', content.innerHTML.length);
+        console.log('Modal visible check:', !modal.classList.contains('hidden'), 'Display:', modal.style.display);
+        
     } catch (error) {
+        console.error('Error in showTransferSummaryModal:', error);
+        console.error('Error stack:', error.stack);
         console.error('Error loading transfer summary:', error);
         content.innerHTML = `
             <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
                 <p class="text-sm text-red-800 dark:text-red-300">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
-                    Error al cargar el resumen: ${error.message}
+                    Error al cargar el resumen: ${error.message || 'Error desconocido'}
                 </p>
             </div>
         `;
+        // Reset flag on error
+        resetTransferSubmissionFlag();
+        
+        // Show error toast
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se pudo cargar el resumen de la transferencia: ' + (error.message || 'Error desconocido'));
+        }
     }
 }
 
@@ -1435,6 +1747,8 @@ function closeTransferSummaryModal() {
         modal.classList.add('hidden');
     }
     window.pendingTransferData = null;
+    // Reset submission flag when modal is closed
+    resetTransferSubmissionFlag();
 }
 
 /**
@@ -1448,9 +1762,11 @@ async function confirmTransferRequest() {
         return;
     }
     
-    // Check if user is admin regional
+    // Check if user is admin regional or warehouse
     const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') ||
                            (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+    const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
     
     const confirmButton = document.querySelector('#transferSummaryModal button[onclick="confirmTransferRequest()"]');
     const originalButtonText = confirmButton ? confirmButton.innerHTML : '';
@@ -1461,24 +1777,72 @@ async function confirmTransferRequest() {
             confirmButton.disabled = true;
         }
         
+        console.log('Confirming transfer request...', window.pendingTransferData);
         const response = await window.requestTransfer(window.pendingTransferData);
+        console.log('Transfer request response:', response);
         
-        if (window.showSuccessToast) {
-            if (isAdminRegional) {
-                window.showSuccessToast(
-                    'Transferencia Aprobada Automáticamente',
-                    'La transferencia ha sido creada y aprobada automáticamente por el sistema.'
-                );
-            } else {
-                window.showSuccessToast('Transferencia Solicitada', response.message || 'La transferencia ha sido solicitada exitosamente');
-            }
+        // Close all transfer-related modals
+        if (typeof closeTransferSummaryModal === 'function') {
+            closeTransferSummaryModal();
+        }
+        if (typeof closeNewTransferModal === 'function') {
+            closeNewTransferModal();
+        }
+        if (typeof window.closeViewTransferModal === 'function') {
+            window.closeViewTransferModal();
+        }
+        if (typeof window.closeApproveTransferModal === 'function') {
+            window.closeApproveTransferModal();
+        }
+        if (typeof window.closeRejectTransferModal === 'function') {
+            window.closeRejectTransferModal();
         }
         
-        closeTransferSummaryModal();
-        closeNewTransferModal();
+        // Also close modals by directly hiding them (fallback)
+        const modalsToClose = [
+            'transferSummaryModal',
+            'newTransferModal',
+            'viewTransferModal',
+            'approveTransferModal',
+            'rejectTransferModal'
+        ];
+        modalsToClose.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+            }
+        });
+        
+        // Show success message after modals are closed
+        setTimeout(() => {
+            let title, message;
+            
+            if (isAdminRegional || isWarehouse) {
+                title = 'Transferencia Aprobada Automáticamente';
+                message = 'La transferencia ha sido creada y aprobada automáticamente por el sistema.';
+            } else {
+                title = 'Transferencia Solicitada';
+                message = response.message || 'La transferencia ha sido solicitada exitosamente';
+            }
+            
+            // Use showSuccessToast if available, otherwise fallback to alert
+            if (window.showSuccessToast) {
+                try {
+                    window.showSuccessToast(title, message);
+                } catch (error) {
+                    console.error('Error showing success toast:', error);
+                    alert(title + ': ' + message);
+                }
+            } else {
+                alert(title + ': ' + message);
+            }
+        }, 300);
         
         // Reload transfers data
-        if (window.loadTransfersData) {
+        if (isWarehouse && window.loadWarehouseTransfersData) {
+            await window.loadWarehouseTransfersData();
+        } else if (window.loadTransfersData) {
             await window.loadTransfersData();
         } else if (isAdminRegional && window.loadTransfersForAdminRegional) {
             await window.loadTransfersForAdminRegional();
@@ -2031,17 +2395,57 @@ async function loadInventoriesForAdminRegionalTransferForm() {
 
 async function loadInventoriesForWarehouseTransferForm() {
     try {
+        console.log('loadInventoriesForWarehouseTransferForm called');
+        const selectInstance = newTransferInventorySelect || window.newTransferInventorySelect;
+        
+        if (!selectInstance) {
+            console.error('newTransferInventorySelect is not initialized');
+            // Try to initialize it again
+            const inventoryContainer = document.getElementById('newTransferInventorySelect');
+            if (inventoryContainer) {
+                const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
+                if (CustomSelectClass) {
+                    try {
+                        const selectInstance = new CustomSelectClass('newTransferInventorySelect', {
+                            placeholder: 'Seleccione un inventario',
+                            onChange: (option) => {
+                                if (option && option.value) {
+                                    const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
+                                    if (hiddenInput) {
+                                        hiddenInput.value = option.value;
+                                    }
+                                } else {
+                                    const hiddenInput = document.getElementById('newTransferDestinationInventoryId');
+                                    if (hiddenInput) {
+                                        hiddenInput.value = '';
+                                    }
+                                }
+                            }
+                        });
+                        newTransferInventorySelect = selectInstance;
+                        window.newTransferInventorySelect = selectInstance;
+                        console.log('Re-initialized warehouse inventory select');
+                    } catch (error) {
+                        console.error('Error re-initializing select:', error);
+                    }
+                }
+            }
+        }
+        
         // Use the function from transfers-warehouse.js if available
         if (window.loadInventoriesForWarehouseTransfer) {
+            console.log('Using loadInventoriesForWarehouseTransfer from transfers-warehouse.js');
             const inventories = await window.loadInventoriesForWarehouseTransfer();
+            console.log('Inventories loaded:', inventories);
             
             if (!inventories || inventories.length === 0) {
-                if (newTransferInventorySelect) {
-                    newTransferInventorySelect.setOptions([{
+                const select = newTransferInventorySelect || window.newTransferInventorySelect;
+                if (select) {
+                    select.setOptions([{
                         value: '',
                         label: 'No hay inventarios disponibles en tu regional'
                     }]);
-                    newTransferInventorySelect.setDisabled(true);
+                    select.setDisabled(true);
                 }
                 if (window.showErrorToast) {
                     window.showErrorToast('Sin inventarios', 'No se encontraron inventarios en tu regional para realizar transferencias.');
@@ -2054,9 +2458,14 @@ async function loadInventoriesForWarehouseTransferForm() {
                 label: inventory.name || `Inventario ${inventory.inventoryId || inventory.id}`
             }));
 
-            if (newTransferInventorySelect) {
-                newTransferInventorySelect.setOptions(inventoryOptions);
-                newTransferInventorySelect.setDisabled(false);
+            const select = newTransferInventorySelect || window.newTransferInventorySelect;
+            if (select) {
+                console.log('Setting options to select:', inventoryOptions);
+                select.setOptions(inventoryOptions);
+                select.setDisabled(false);
+                console.log('Options set successfully, select enabled');
+            } else {
+                console.error('Select instance not available when trying to set options');
             }
             return;
         }
@@ -2170,6 +2579,7 @@ async function loadInventoriesForTransferForm(institutionId) {
 // Export functions globally
 window.populateNewTransferForm = populateNewTransferForm;
 window.handleNewTransferSubmit = handleNewTransferSubmit;
+window.resetTransferSubmissionFlag = resetTransferSubmissionFlag;
 window.populateApproveTransferForm = populateApproveTransferForm;
 window.handleApproveTransferSubmit = handleApproveTransferSubmit;
 window.populateRejectTransferForm = populateRejectTransferForm;
