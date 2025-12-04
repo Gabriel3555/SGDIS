@@ -429,6 +429,108 @@ function updateTransfersTable() {
     const container = document.getElementById('transferTableContainer');
     if (!container || !window.transfersData) return;
     
+    // Check if we're in admin institution mode (data already filtered and paginated)
+    const isAdminInstitution = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_INSTITUTION') ||
+                              (window.location.pathname && (window.location.pathname.includes('/admin_institution/transfers') || window.location.pathname.includes('/admininstitution/transfers')));
+    
+    // For admin institution, use the already paginated transfers
+    if (isAdminInstitution && window.transfersData.transfers) {
+        const transfersToDisplay = window.transfersData.transfers || [];
+        
+        if (transfersToDisplay.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-12">
+                    <i class="fas fa-exchange-alt text-gray-300 dark:text-gray-600 text-5xl mb-4"></i>
+                    <p class="text-gray-500 dark:text-gray-400 text-lg">No hay transferencias registradas</p>
+                    <button onclick="showNewTransferModal()" 
+                        class="mt-4 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-colors">
+                        <i class="fas fa-plus mr-2"></i>
+                        Nueva Transferencia
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        // Render table with paginated transfers
+        let tableHtml = `
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Item</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Origen</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Destino</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Estado</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Solicitado por</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Fecha</th>
+                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        transfersToDisplay.forEach(transfer => {
+            const statusBadge = getTransferStatusBadge(transfer.status || transfer.approvalStatus);
+            const requestedDate = transfer.requestedAt 
+                ? new Date(transfer.requestedAt).toLocaleDateString('es-ES')
+                : 'N/A';
+            
+            tableHtml += `
+                <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                    <td class="py-3 px-4">
+                        <div class="font-medium text-gray-900 dark:text-gray-100">${transfer.itemName || transfer.item?.productName || 'N/A'}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="text-sm text-gray-900 dark:text-gray-100">${transfer.sourceInventoryName || transfer.sourceInventory?.name || 'N/A'}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="text-sm text-gray-900 dark:text-gray-100">${transfer.destinationInventoryName || transfer.inventory?.name || 'N/A'}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        ${statusBadge}
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="text-sm text-gray-900 dark:text-gray-100">${transfer.requestedByName || 'N/A'}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="text-sm text-gray-900 dark:text-gray-100">${requestedDate}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="showViewTransferModal(${transfer.id})" 
+                                class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" 
+                                title="Ver detalles">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${(transfer.status || transfer.approvalStatus || '').toUpperCase() === 'PENDING' ? `
+                                <button onclick="showApproveTransferModal(${transfer.id})" 
+                                    class="p-2 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-colors" 
+                                    title="Aprobar">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button onclick="showRejectTransferModal(${transfer.id})" 
+                                    class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" 
+                                    title="Rechazar">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tableHtml += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        container.innerHTML = tableHtml;
+        return;
+    }
+    
     // For warehouse, use allRegionalTransfers if available (for client-side filtering)
     // Otherwise use transfers (for server-side pagination)
     const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||

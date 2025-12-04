@@ -315,7 +315,6 @@ async function loadInventoriesForAdminInstitution() {
 
         if (response.ok) {
             const data = await response.json();
-            console.log('Inventories response data:', data);
             
             // Handle paginated response (Page object) or direct array
             let inventories = [];
@@ -328,7 +327,6 @@ async function loadInventoriesForAdminInstitution() {
                 inventories = Array.isArray(data.content) ? data.content : [];
             }
             
-            console.log('Loaded inventories count:', inventories.length);
             verificationDataAdminInstitution.inventories = inventories;
             
             // Also update window.verificationData for compatibility
@@ -439,10 +437,7 @@ function updateVerificationSearchAndFiltersForAdminInstitution() {
     let inventories = verificationDataAdminInstitution.inventories || [];
     if (inventories.length === 0 && window.verificationData && window.verificationData.inventories) {
         inventories = window.verificationData.inventories;
-        console.log('Using inventories from window.verificationData');
     }
-    
-    console.log('Updating filters with inventories:', inventories.length);
     
     // Check if the container already has the filters (to avoid regenerating unnecessarily)
     const existingInventorySelect = document.getElementById('verificationInventoryFilterAdminInstitutionSelect');
@@ -577,13 +572,11 @@ function initializeInventoryCustomSelectForAdminInstitution(inventories, current
         { value: 'all', label: 'Todos los Inventarios' },
         ...inventories.map(inv => ({
             value: (inv.id || inv.inventoryId).toString(),
-            label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
-        }))
-    ];
-    
-    console.log('Setting CustomSelect options:', options.length);
-    
-    // Set flag to prevent onChange during initialization
+        label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+    }))
+];
+
+// Set flag to prevent onChange during initialization
     isInitializingInventoryFilter = true;
     
     // Set options
@@ -791,5 +784,6 @@ window.loadInventoriesForAdminInstitution = loadInventoriesForAdminInstitution;
 window.handleVerificationSearchForAdminInstitution = handleVerificationSearchForAdminInstitution;
 window.handleVerificationInventoryFilterForAdminInstitution = handleVerificationInventoryFilterForAdminInstitution;
 window.handleVerificationStatusFilterForAdminInstitution = handleVerificationStatusFilterForAdminInstitution;
+window.updateVerificationSearchAndFiltersForAdminInstitution = updateVerificationSearchAndFiltersForAdminInstitution;
 window.initializeAdminInstitutionVerifications = initializeAdminInstitutionVerifications;
 

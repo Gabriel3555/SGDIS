@@ -1526,7 +1526,12 @@ async function confirmTransferRequest() {
         
         // Also show toast notification
         if (window.showErrorToast) {
-            window.showErrorToast(isInstitutionError ? 'Validación' : 'Error', errorMessage);
+            window.showErrorToast(
+                isInstitutionError ? 'Validación de Centro' : 'Error al Solicitar Transferencia', 
+                errorMessage + (isInstitutionError ? ' Los inventarios deben pertenecer al mismo centro.' : ''),
+                true,
+                6000
+            );
         }
     } finally {
         if (confirmButton) {
@@ -1571,7 +1576,7 @@ async function handleApproveTransferSubmit(event) {
     
     if (!window.transfersData || !window.transfersData.currentTransferId) {
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'No se ha seleccionado una transferencia');
+            window.showErrorToast('Error de Validación', 'No se ha seleccionado una transferencia para aprobar.');
         }
         return;
     }
@@ -1588,6 +1593,11 @@ async function handleApproveTransferSubmit(event) {
             submitButton.disabled = true;
         }
         
+        // Show processing notification
+        if (window.showInfoToast) {
+            window.showInfoToast('Procesando', 'Aprobando la transferencia...', true, 2000);
+        }
+        
         const approvalData = {
             approvalNotes: approvalNotes
         };
@@ -1595,19 +1605,38 @@ async function handleApproveTransferSubmit(event) {
         const response = await window.approveTransfer(transferId, approvalData);
         
         if (window.showSuccessToast) {
-            window.showSuccessToast('Transferencia Aprobada', response.message || 'La transferencia ha sido aprobada exitosamente');
+            window.showSuccessToast(
+                'Transferencia Aprobada', 
+                response.message || 'La transferencia ha sido aprobada exitosamente. El inventario será actualizado.',
+                true,
+                5000
+            );
         }
         
         closeApproveTransferModal();
         
-        // Reload transfers data
-        if (window.loadTransfersData) {
+        // Reload transfers data - check which page we're on
+        const path = window.location.pathname || '';
+        if (path.includes('/admin_institution/transfers') || path.includes('/admininstitution/transfers')) {
+            if (window.loadTransfersForAdminInstitution) {
+                await window.loadTransfersForAdminInstitution();
+            }
+        } else if (path.includes('/admin_regional/transfers')) {
+            if (window.loadTransfersForAdminRegional) {
+                await window.loadTransfersForAdminRegional();
+            }
+        } else if (window.loadTransfersData) {
             await window.loadTransfersData();
         }
     } catch (error) {
         console.error('Error approving transfer:', error);
         if (window.showErrorToast) {
-            window.showErrorToast('Error', error.message || 'No se pudo aprobar la transferencia');
+            window.showErrorToast(
+                'Error al Aprobar', 
+                error.message || 'No se pudo aprobar la transferencia. Por favor, verifica los datos e intenta nuevamente.',
+                true,
+                5000
+            );
         }
     } finally {
         if (submitButton) {
@@ -1652,7 +1681,7 @@ async function handleRejectTransferSubmit(event) {
     
     if (!window.transfersData || !window.transfersData.currentTransferId) {
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'No se ha seleccionado una transferencia');
+            window.showErrorToast('Error de Validación', 'No se ha seleccionado una transferencia para rechazar.');
         }
         return;
     }
@@ -1669,6 +1698,11 @@ async function handleRejectTransferSubmit(event) {
             submitButton.disabled = true;
         }
         
+        // Show processing notification
+        if (window.showInfoToast) {
+            window.showInfoToast('Procesando', 'Rechazando la transferencia...', true, 2000);
+        }
+        
         const rejectionData = {
             rejectionNotes: rejectionNotes
         };
@@ -1676,19 +1710,38 @@ async function handleRejectTransferSubmit(event) {
         const response = await window.rejectTransfer(transferId, rejectionData);
         
         if (window.showSuccessToast) {
-            window.showSuccessToast('Transferencia Rechazada', response.message || 'La transferencia ha sido rechazada exitosamente');
+            window.showSuccessToast(
+                'Transferencia Rechazada', 
+                response.message || 'La transferencia ha sido rechazada exitosamente. El solicitante será notificado.',
+                true,
+                5000
+            );
         }
         
         closeRejectTransferModal();
         
-        // Reload transfers data
-        if (window.loadTransfersData) {
+        // Reload transfers data - check which page we're on
+        const path = window.location.pathname || '';
+        if (path.includes('/admin_institution/transfers') || path.includes('/admininstitution/transfers')) {
+            if (window.loadTransfersForAdminInstitution) {
+                await window.loadTransfersForAdminInstitution();
+            }
+        } else if (path.includes('/admin_regional/transfers')) {
+            if (window.loadTransfersForAdminRegional) {
+                await window.loadTransfersForAdminRegional();
+            }
+        } else if (window.loadTransfersData) {
             await window.loadTransfersData();
         }
     } catch (error) {
         console.error('Error rejecting transfer:', error);
         if (window.showErrorToast) {
-            window.showErrorToast('Error', error.message || 'No se pudo rechazar la transferencia');
+            window.showErrorToast(
+                'Error al Rechazar', 
+                error.message || 'No se pudo rechazar la transferencia. Por favor, verifica los datos e intenta nuevamente.',
+                true,
+                5000
+            );
         }
     } finally {
         if (submitButton) {

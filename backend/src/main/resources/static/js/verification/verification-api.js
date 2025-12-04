@@ -27,9 +27,6 @@ async function loadVerificationData() {
             verificationData.useBackendPagination = false;
             await loadInventories();
             
-            // Log inventories for debugging
-            console.log('Inventories loaded for verification:', verificationData.inventories?.length || 0, verificationData.inventories);
-            
             await loadLatestVerifications();
             
             // After loading inventories, update filters
@@ -39,7 +36,6 @@ async function loadVerificationData() {
                 // Use setTimeout to ensure CustomSelect class is available
                 setTimeout(() => {
                     if (typeof populateVerificationCustomSelects === 'function') {
-                        console.log('Populating verification CustomSelects with', verificationData.inventories?.length || 0, 'inventories');
                         populateVerificationCustomSelects();
                     } else {
                         console.warn('populateVerificationCustomSelects function not available');
@@ -47,14 +43,23 @@ async function loadVerificationData() {
                 }, 100);
             } else {
                 // CustomSelects not initialized, regenerate HTML
-                // Use setTimeout to ensure CustomSelect class is available
+                // Use setTimeout to ensure CustomSelect class and updateFilters are available
                 setTimeout(() => {
-                    if (typeof updateFilters === 'function') {
+                    if (typeof window.updateFilters === 'function') {
+                        window.updateFilters();
+                    } else if (typeof updateFilters === 'function') {
                         updateFilters();
                     } else {
-                        console.warn('updateFilters function not available');
+                        // For admin institution, use the admin institution specific update function
+                        const path = window.location.pathname || '';
+                        const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+                        if (isAdminInstitutionPage && typeof window.updateVerificationSearchAndFiltersForAdminInstitution === 'function') {
+                            window.updateVerificationSearchAndFiltersForAdminInstitution();
+                        } else {
+                            console.warn('updateFilters function not available');
+                        }
                     }
-                }, 100);
+                }, 200);
             }
         }
         
@@ -67,7 +72,6 @@ async function loadVerificationData() {
                 // Use setTimeout to ensure inventories are loaded and CustomSelect class is available
                 setTimeout(() => {
                     if (typeof populateVerificationCustomSelects === 'function') {
-                        console.log('Populating verification CustomSelects with', verificationData.inventories?.length || 0, 'inventories');
                         populateVerificationCustomSelects();
                     } else {
                         console.warn('populateVerificationCustomSelects function not available');
@@ -77,7 +81,15 @@ async function loadVerificationData() {
                 // CustomSelects not initialized, regenerate HTML
                 // Use setTimeout to ensure CustomSelect class is available
                 setTimeout(() => {
-                    if (typeof updateFilters === 'function') {
+                    // Check if we're on admin institution page
+                    const path = window.location.pathname || '';
+                    const isAdminInstitutionPage = path.includes('/admin_institution/verification') || path.includes('/admininstitution/verification');
+                    
+                    if (isAdminInstitutionPage && typeof window.updateVerificationSearchAndFiltersForAdminInstitution === 'function') {
+                        window.updateVerificationSearchAndFiltersForAdminInstitution();
+                    } else if (typeof window.updateFilters === 'function') {
+                        window.updateFilters();
+                    } else if (typeof updateFilters === 'function') {
                         updateFilters();
                     } else {
                         console.warn('updateFilters function not available');
@@ -329,12 +341,6 @@ async function loadInventories() {
             }
             
             verificationData.inventories = Array.isArray(inventories) ? inventories : [];
-            
-            // Log for debugging
-            console.log('Inventories loaded successfully:', verificationData.inventories.length, 'inventories');
-            if (verificationData.inventories.length > 0) {
-                console.log('Sample inventory:', verificationData.inventories[0]);
-            }
         } else {
             console.error('Error loading inventories:', response.status, response.statusText);
             const errorText = await response.text().catch(() => 'Unknown error');

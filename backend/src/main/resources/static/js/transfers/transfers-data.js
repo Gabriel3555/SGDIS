@@ -34,6 +34,10 @@ function changeTransfersPage(page) {
         const isWarehouse = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'WAREHOUSE') ||
                            (window.location.pathname && window.location.pathname.includes('/warehouse'));
         
+        // Check if we're in admin institution mode (client-side pagination)
+        const isAdminInstitution = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_INSTITUTION') ||
+                                  (window.location.pathname && (window.location.pathname.includes('/admin_institution/transfers') || window.location.pathname.includes('/admininstitution/transfers')));
+        
         if (isWarehouse && transfersData.allRegionalTransfers) {
             // For warehouse, just update UI without reloading data (client-side pagination)
             if (window.updateTransfersTable) {
@@ -44,6 +48,27 @@ function changeTransfersPage(page) {
             }
             if (window.updateTransfersPagination) {
                 window.updateTransfersPagination();
+            }
+        } else if (isAdminInstitution && window.transfersDataAdminInstitution) {
+            // For admin institution, update the current page and re-filter (client-side pagination)
+            window.transfersDataAdminInstitution.currentPage = page;
+            
+            // Update window.transfersData for compatibility
+            if (window.transfersData) {
+                window.transfersData.currentPage = page;
+            }
+            
+            // Re-filter to update pagination (this will slice the filtered transfers correctly)
+            if (window.filterTransfersForAdminInstitution) {
+                window.filterTransfersForAdminInstitution();
+            } else {
+                // Fallback: just update UI
+                if (window.updateTransfersTable) {
+                    window.updateTransfersTable();
+                }
+                if (window.updateTransfersPagination) {
+                    window.updateTransfersPagination();
+                }
             }
         } else {
             // For other roles, reload data from server
