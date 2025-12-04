@@ -1382,8 +1382,13 @@ async function confirmLendItem() {
     let errorMessage = error.message || "No se pudo prestar el item";
     let errorTitle = "Error al prestar item";
     
-    // Check for specific loan error
-    if (errorMessage.includes("cannot be lent") || errorMessage.includes("not been returned") || errorMessage.includes("actualmente está prestado")) {
+    // Check for specific loan error - dado de baja
+    if (errorMessage.includes("dado de baja") || errorMessage.includes("está dado de baja")) {
+      errorTitle = "Item no disponible";
+      // El mensaje ya viene formateado desde el backend, solo lo usamos
+    }
+    // Check for specific loan error - item currently lent
+    else if (errorMessage.includes("cannot be lent") || errorMessage.includes("not been returned") || errorMessage.includes("actualmente está prestado")) {
       errorTitle = "Item no disponible";
       // El mensaje ya viene formateado desde items-api.js, solo lo usamos
       if (!errorMessage.includes("actualmente está prestado")) {
@@ -1398,25 +1403,28 @@ async function confirmLendItem() {
     // Intentar mostrar toast con múltiples métodos de fallback
     let toastShown = false;
     
-    if (window.showErrorToast) {
+    // Primero intentar con showErrorToast (alias global)
+    if (typeof window.showErrorToast === 'function') {
       try {
         window.showErrorToast(errorTitle, errorMessage);
         toastShown = true;
       } catch (toastError) {
-        // Error showing toast, continue to next method
+        console.error('Error showing toast with showErrorToast:', toastError);
       }
     }
     
-    if (!toastShown && window.showInventoryErrorToast) {
+    // Segundo intento con showInventoryErrorToast
+    if (!toastShown && typeof window.showInventoryErrorToast === 'function') {
       try {
         window.showInventoryErrorToast(errorTitle, errorMessage);
         toastShown = true;
       } catch (toastError) {
-        // Error showing toast, continue to next method
+        console.error('Error showing toast with showInventoryErrorToast:', toastError);
       }
     }
     
-    if (!toastShown && window.showInventoryToast) {
+    // Tercer intento con showInventoryToast
+    if (!toastShown && typeof window.showInventoryToast === 'function') {
       try {
         window.showInventoryToast({ 
           tipo: 'error', 
@@ -1425,13 +1433,47 @@ async function confirmLendItem() {
         });
         toastShown = true;
       } catch (toastError) {
-        // Error showing toast, continue to next method
+        console.error('Error showing toast with showInventoryToast:', toastError);
       }
     }
     
-    // Fallback final: alert si no se pudo mostrar toast
+    // Si aún no se mostró el toast, intentar una vez más después de un breve delay
+    // (en caso de que los scripts aún se estén cargando)
     if (!toastShown) {
-      alert(`${errorTitle}: ${errorMessage}`);
+      setTimeout(() => {
+        if (typeof window.showErrorToast === 'function') {
+          try {
+            window.showErrorToast(errorTitle, errorMessage);
+            return;
+          } catch (e) {
+            console.error('Error in delayed toast attempt:', e);
+          }
+        }
+        if (typeof window.showInventoryErrorToast === 'function') {
+          try {
+            window.showInventoryErrorToast(errorTitle, errorMessage);
+            return;
+          } catch (e) {
+            console.error('Error in delayed toast attempt:', e);
+          }
+        }
+        if (typeof window.showInventoryToast === 'function') {
+          try {
+            window.showInventoryToast({ 
+              tipo: 'error', 
+              titulo: errorTitle, 
+              descripcion: errorMessage 
+            });
+            return;
+          } catch (e) {
+            console.error('Error in delayed toast attempt:', e);
+          }
+        }
+        // Último recurso: alert solo si realmente no hay sistema de toasts disponible
+        // Esto solo debería ocurrir si los scripts de toast no están cargados
+        console.warn('Sistema de toasts no disponible, usando alert como último recurso');
+        alert(`${errorTitle}: ${errorMessage}`);
+      }, 200);
     }
   } finally {
     // Reset processing flag and re-enable submit button
