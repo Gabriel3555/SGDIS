@@ -8,13 +8,15 @@ async function handleNewUserSubmit(e) {
     const role = roleInput?.value || (window.roleSelect ? window.roleSelect.getValue() : '');
      const password = document.getElementById('newUserPassword')?.value?.trim();
      
-     // Check if current user is ADMIN_INSTITUTION
+     // Check if current user is ADMIN_INSTITUTION or WAREHOUSE
      const currentRole = window.usersData ? window.usersData.currentLoggedInUserRole : '';
      const isAdminInstitution = currentRole === 'ADMIN_INSTITUTION';
+     const isWarehouse = currentRole === 'WAREHOUSE' ||
+                       (window.location.pathname && window.location.pathname.includes('/warehouse'));
      
      let institutionId;
      
-     if (isAdminInstitution) {
+     if (isAdminInstitution || isWarehouse) {
          // Use the stored institution ID from current user
          institutionId = window.currentUserInstitutionId;
          if (!institutionId) {
