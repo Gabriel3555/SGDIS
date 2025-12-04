@@ -514,16 +514,29 @@ async function handleLendItem() {
 }
 
 // Handle returning an item
-async function handleReturnItem(loanId) {
-    const detailsReturn = document.getElementById('returnDetails').value || '';
+async function handleReturnItem(loanId, detailsReturn = '') {
+    // If detailsReturn is not provided, get it from the form
+    if (!detailsReturn) {
+        detailsReturn = document.getElementById('returnDetails')?.value || '';
+    }
 
     try {
         const token = localStorage.getItem('jwt');
         if (!token) {
             if (window.showErrorToast) {
-                window.showErrorToast('Error', 'No hay sesión activa');
+                window.showErrorToast(
+                    'Error de Sesión', 
+                    'No hay sesión activa. Por favor, inicia sesión nuevamente.',
+                    true,
+                    4000
+                );
             }
             return;
+        }
+
+        // Show processing notification
+        if (window.showInfoToast) {
+            window.showInfoToast('Procesando', 'Devolviendo el item...', true, 2000);
         }
 
         const response = await fetch('/api/v1/loan/return', {
@@ -541,7 +554,12 @@ async function handleReturnItem(loanId) {
         if (response.ok) {
             const result = await response.json();
             if (window.showSuccessToast) {
-                window.showSuccessToast('Éxito', result.message || 'Item devuelto exitosamente');
+                window.showSuccessToast(
+                    'Item Devuelto Exitosamente', 
+                    result.message || 'El item ha sido devuelto exitosamente. El préstamo ha sido finalizado.',
+                    true,
+                    5000
+                );
             }
             
             // Close modal
@@ -550,6 +568,10 @@ async function handleReturnItem(loanId) {
             // Reload loans data
             if (typeof loadLoansData === 'function') {
                 loadLoansData();
+            } else if (typeof window.loadLoans === 'function') {
+                await window.loadLoans();
+            } else if (typeof loadLoans === 'function') {
+                await loadLoans();
             }
         } else {
             let errorMessage = 'Error al devolver el item';
@@ -561,13 +583,23 @@ async function handleReturnItem(loanId) {
                 errorMessage = errorText || errorMessage;
             }
             if (window.showErrorToast) {
-                window.showErrorToast('Error', errorMessage);
+                window.showErrorToast(
+                    'Error al Devolver Item', 
+                    errorMessage + ' Por favor, verifica los datos e intenta nuevamente.',
+                    true,
+                    5000
+                );
             }
         }
     } catch (error) {
         console.error('Error returning item:', error);
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'Error al devolver el item: ' + error.message);
+            window.showErrorToast(
+                'Error al Devolver Item', 
+                error.message || 'No se pudo devolver el item. Por favor, verifica los datos e intenta nuevamente.',
+                true,
+                5000
+            );
         }
     }
 }
@@ -655,6 +687,25 @@ function openReturnItemModal(loanId) {
         modal.classList.remove('hidden');
         document.getElementById('returnLoanId').value = loanId;
         document.getElementById('returnDetails').value = '';
+        
+        // Show info notification
+        if (window.showInfoToast) {
+            window.showInfoToast(
+                'Devolver Item', 
+                'Completa el formulario para devolver el item. Los detalles son opcionales.',
+                true,
+                3000
+            );
+        }
+    } else {
+        if (window.showErrorToast) {
+            window.showErrorToast(
+                'Error', 
+                'El modal de devolución no está disponible. Por favor, recarga la página.',
+                true,
+                4000
+            );
+        }
     }
 }
 
@@ -678,11 +729,18 @@ function submitReturnItem() {
     const loanId = document.getElementById('returnLoanId').value;
     if (!loanId) {
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'ID de préstamo no válido');
+            window.showErrorToast(
+                'Error de Validación', 
+                'ID de préstamo no válido. Por favor, selecciona un préstamo válido.',
+                true,
+                4000
+            );
         }
         return;
     }
-    handleReturnItem(loanId);
+    
+    const detailsReturn = document.getElementById('returnDetails')?.value?.trim() || '';
+    handleReturnItem(loanId, detailsReturn);
 }
 
 // Initialize custom selects for loan form

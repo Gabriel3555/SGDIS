@@ -540,7 +540,6 @@ async function loadLoans() {
             
             if (institutionId) {
                 params.append('institutionId', institutionId);
-                console.log('ADMIN_INSTITUTION: filtering loans by institution ID:', institutionId);
             } else {
                 console.warn('ADMIN_INSTITUTION: Could not determine institution ID from user info:', userInfo);
             }
