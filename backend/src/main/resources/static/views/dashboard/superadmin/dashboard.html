@@ -493,8 +493,8 @@
                             <i class="fas fa-fire text-white text-lg"></i>
                         </div>
                         <div>
-                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Mapa de Calor de Actividad por Regionales</h2>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Actividad registrada por regional</p>
+                            <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100" id="activityHeatmapTitle">Mapa de Calor de Actividad por Regionales</h2>
+                            <p class="text-xs text-gray-500 dark:text-gray-400" id="activityHeatmapSubtitle">Actividad registrada por regional</p>
                         </div>
                     </div>
                     <div class="relative h-64">
@@ -1275,19 +1275,17 @@
                 populateRegionalFilter();
                 populateInstitutionFilter();
 
-                // Load filtered data
+                // Load consolidated dashboard stats
+                await loadConsolidatedDashboardStats(headers);
+
+                // Load additional data needed for charts and recent items
                 await Promise.all([
-                    loadInventoryStatistics(headers),
-                    loadUserStatistics(headers),
-                    loadTransferStatistics(headers),
                     loadAllInventories(headers),
                     loadAllAuditories(headers),
                     loadRecentInventories(headers),
                     loadRecentTransfers(headers),
                     loadRecentVerifications(headers),
-                    loadCancellationsCount(headers),
-                    loadVerificationCount(headers),
-                    loadLoansCount(headers)
+                    loadUnreadNotifications(headers)
                 ]);
 
                 // Update UI
@@ -1297,6 +1295,114 @@
                 initializeCharts();
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load consolidated dashboard statistics
+        async function loadConsolidatedDashboardStats(headers) {
+            try {
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (superadminDashboardData.selectedRegional) {
+                    params.append('regionalId', superadminDashboardData.selectedRegional);
+                }
+                if (superadminDashboardData.selectedInstitution) {
+                    params.append('institutionId', superadminDashboardData.selectedInstitution);
+                }
+
+                const url = `/api/v1/dashboard/superadmin/stats${params.toString() ? '?' + params.toString() : ''}`;
+                const response = await fetch(url, { headers });
+
+                if (response.ok) {
+                    const stats = await response.json();
+                    
+                    // Map consolidated stats to dashboard data structure
+                    if (stats.inventoryStats) {
+                        // Convert totalValue to number (BigDecimal from backend may come as string or object)
+                        let totalValue = 0;
+                        const rawTotalValue = stats.inventoryStats.totalValue;
+                        
+                        if (rawTotalValue !== null && rawTotalValue !== undefined) {
+                            if (typeof rawTotalValue === 'number') {
+                                totalValue = rawTotalValue;
+                            } else if (typeof rawTotalValue === 'string') {
+                                totalValue = parseFloat(rawTotalValue) || 0;
+                            } else if (typeof rawTotalValue === 'object') {
+                                // Handle BigDecimal object structure if needed
+                                if (rawTotalValue.value !== undefined) {
+                                    totalValue = parseFloat(rawTotalValue.value) || 0;
+                                } else if (rawTotalValue.toString) {
+                                    // Try to parse the string representation
+                                    totalValue = parseFloat(rawTotalValue.toString()) || 0;
+                                } else {
+                                    totalValue = Number(rawTotalValue) || 0;
+                                }
+                            } else {
+                                totalValue = Number(rawTotalValue) || 0;
+                            }
+                        }
+                        
+                        superadminDashboardData.inventoryStats = {
+                            totalInventories: stats.inventoryStats.totalInventories || 0,
+                            activeInventories: stats.inventoryStats.activeInventories || 0,
+                            inactiveInventories: stats.inventoryStats.inactiveInventories || 0,
+                            totalItems: stats.inventoryStats.totalItems || 0,
+                            totalValue: totalValue
+                        };
+                    }
+
+                    if (stats.userStats) {
+                        superadminDashboardData.userStats = {
+                            totalUsers: stats.userStats.totalUsers || 0,
+                            superadminCount: stats.userStats.superadminCount || 0,
+                            adminRegionalCount: stats.userStats.adminRegionalCount || 0,
+                            adminInstitutionCount: stats.userStats.adminInstitutionCount || 0,
+                            warehouseCount: stats.userStats.warehouseCount || 0,
+                            userCount: stats.userStats.userCount || 0
+                        };
+                    }
+
+                    if (stats.centerStats) {
+                        superadminDashboardData.centerStats = {
+                            totalRegionals: stats.centerStats.totalRegionals || 0,
+                            totalInstitutions: stats.centerStats.totalInstitutions || 0
+                        };
+                    }
+
+                    if (stats.transferStats) {
+                        superadminDashboardData.transferStats = {
+                            total: stats.transferStats.total || 0,
+                            pending: stats.transferStats.pending || 0,
+                            approved: stats.transferStats.approved || 0,
+                            rejected: stats.transferStats.rejected || 0
+                        };
+                    }
+
+                    if (stats.verificationStats) {
+                        superadminDashboardData.verificationCount = stats.verificationStats.total || 0;
+                    }
+
+                    if (stats.loanStats) {
+                        superadminDashboardData.loansCount = stats.loanStats.total || 0;
+                    }
+
+                    if (stats.cancellationStats) {
+                        superadminDashboardData.cancellationsCount = stats.cancellationStats.total || 0;
+                    }
+                } else {
+                    throw new Error('Failed to load consolidated dashboard stats');
+                }
+            } catch (error) {
+                console.error('Error loading consolidated dashboard stats:', error);
+                // Fallback to individual loading if consolidated endpoint fails
+                await Promise.all([
+                    loadInventoryStatistics(headers),
+                    loadUserStatistics(headers),
+                    loadTransferStatistics(headers),
+                    loadCancellationsCount(headers),
+                    loadVerificationCount(headers),
+                    loadLoansCount(headers)
+                ]);
             }
         }
 
@@ -1879,7 +1985,29 @@
 
             // Reload dashboard data with filters
             try {
-                await loadDashboardData();
+                const token = localStorage.getItem('jwt');
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+                // Reload consolidated stats with new filter
+                await loadConsolidatedDashboardStats(headers);
+                
+                // Also reload data needed for charts and recent items with filters
+                await Promise.all([
+                    loadAllInventories(headers),
+                    loadAllAuditories(headers),
+                    loadRecentTransfers(headers),
+                    loadRecentVerifications(headers)
+                ]);
+                
+                // Load recent inventories after institutions are ready (filteredInstitutions should be loaded)
+                await loadRecentInventories(headers);
+                
+                // Update UI
+                updateDashboardUI();
+                // Reinitialize charts with filtered data
+                initializeCharts();
             } catch (e) {
                 console.error('Error reloading dashboard data:', e);
             }
@@ -1897,7 +2025,29 @@
 
             // Reload dashboard data with filters
             try {
-                await loadDashboardData();
+                const token = localStorage.getItem('jwt');
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
+                // Reload consolidated stats with new filter
+                await loadConsolidatedDashboardStats(headers);
+                
+                // Also reload data needed for charts and recent items with filters
+                await Promise.all([
+                    loadAllInventories(headers),
+                    loadAllAuditories(headers),
+                    loadRecentTransfers(headers),
+                    loadRecentVerifications(headers)
+                ]);
+                
+                // Load recent inventories after other data is ready
+                await loadRecentInventories(headers);
+                
+                // Update UI
+                updateDashboardUI();
+                // Reinitialize charts with filtered data
+                initializeCharts();
             } catch (e) {
                 console.error('Error reloading dashboard data:', e);
             }
@@ -1924,13 +2074,30 @@
                     }
                     // Filter by regional if selected (and no institution)
                     else if (superadminDashboardData.selectedRegional) {
+                        // Use filteredInstitutions if available (institutions for selected regional)
+                        const institutionsToCheck = superadminDashboardData.filteredInstitutions && superadminDashboardData.filteredInstitutions.length > 0
+                            ? superadminDashboardData.filteredInstitutions
+                            : (superadminDashboardData.institutions || []);
+                        
+                        const institutionIdsInRegional = new Set(
+                            institutionsToCheck
+                                .map(inst => {
+                                    const id = inst.id || inst.institutionId;
+                                    return id ? id.toString() : null;
+                                })
+                                .filter(id => id !== null)
+                        );
+                        
                         inventories = inventories.filter(inv => {
-                            const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
-                            return institution && institution.regionalId == superadminDashboardData.selectedRegional;
+                            if (!inv.institutionId) return false;
+                            const matches = institutionIdsInRegional.has(inv.institutionId.toString());
+                            return matches;
                         });
                     }
                     
                     superadminDashboardData.allInventories = inventories;
+                } else {
+                    superadminDashboardData.allInventories = [];
                 }
             } catch (error) {
                 console.error('Error loading all inventories:', error);
@@ -1945,23 +2112,30 @@
                 let allAuditories = [];
                 let page = 0;
                 let hasMore = true;
-                const pageSize = 100; // Use a smaller page size to avoid server errors
-                const maxPages = 100; // Limit to prevent infinite loops
+                const pageSize = 100;
+                const maxPages = 100;
                 
+                // Build query parameters for auditories
+                const params = new URLSearchParams();
+                if (superadminDashboardData.selectedInstitution) {
+                    params.append('institutionId', superadminDashboardData.selectedInstitution);
+                } else if (superadminDashboardData.selectedRegional) {
+                    params.append('regionalId', superadminDashboardData.selectedRegional);
+                }
+
                 while (hasMore && page < maxPages) {
-                    const response = await fetch(`/api/v1/auditories?page=${page}&size=${pageSize}`, { headers });
+                    const url = `/api/v1/auditories?page=${page}&size=${pageSize}${params.toString() ? '&' + params.toString() : ''}`;
+                    const response = await fetch(url, { headers });
                     if (response.ok) {
                         const data = await response.json();
                         const auditories = data.auditories || [];
                         allAuditories = allAuditories.concat(auditories);
                         
-                        // Check if there are more pages
                         hasMore = !data.last && auditories.length === pageSize;
                         page++;
                     } else {
                         const errorText = await response.text();
                         console.error('Error loading auditories page:', page, response.status, errorText);
-                        // If it's a 500 error, try with smaller page size or stop
                         if (response.status === 500 && pageSize > 50) {
                             console.warn('Server error, stopping pagination');
                             hasMore = false;
@@ -1969,6 +2143,25 @@
                             hasMore = false;
                         }
                     }
+                }
+                
+                // Filter client-side if needed (for regional filter when API doesn't support it)
+                if (superadminDashboardData.selectedRegional && !superadminDashboardData.selectedInstitution) {
+                    allAuditories = allAuditories.filter(audit => {
+                        // Check if audit has regionalId directly
+                        if (audit.regionalId && audit.regionalId.toString() === superadminDashboardData.selectedRegional.toString()) {
+                            return true;
+                        }
+                        // Otherwise, try to get it from institution
+                        if (audit.institutionId) {
+                            const institution = superadminDashboardData.institutions.find(inst => 
+                                inst.id && inst.id.toString() === audit.institutionId.toString()
+                            );
+                            return institution && institution.regionalId && 
+                                   institution.regionalId.toString() === superadminDashboardData.selectedRegional.toString();
+                        }
+                        return false;
+                    });
                 }
                 
                 superadminDashboardData.allAuditories = allAuditories;
@@ -1995,9 +2188,29 @@
                     }
                     // Filter by regional if selected (and no institution)
                     else if (superadminDashboardData.selectedRegional) {
+                        // Use filteredInstitutions if available (institutions for selected regional)
+                        // filteredInstitutions already contains only institutions from the selected regional
+                        const institutionsToCheck = superadminDashboardData.filteredInstitutions && superadminDashboardData.filteredInstitutions.length > 0
+                            ? superadminDashboardData.filteredInstitutions
+                            : (superadminDashboardData.institutions || []).filter(inst => 
+                                inst.regionalId && inst.regionalId.toString() === superadminDashboardData.selectedRegional.toString()
+                            );
+                        
+                        // Get all institution IDs from the filtered institutions
+                        const institutionIdsInRegional = new Set(
+                            institutionsToCheck
+                                .map((inst, index) => {
+                                    // Try different possible field names
+                                    const id = inst.id || inst.Id || inst.institutionId || inst.institution_id;
+                                    return id ? id.toString() : null;
+                                })
+                                .filter(id => id !== null)
+                        );
+                        
                         inventories = inventories.filter(inv => {
-                            const institution = superadminDashboardData.institutions.find(inst => inst.id === inv.institutionId);
-                            return institution && institution.regionalId == superadminDashboardData.selectedRegional;
+                            if (!inv.institutionId) return false;
+                            const invIdStr = inv.institutionId.toString();
+                            return institutionIdsInRegional.has(invIdStr);
                         });
                     }
                     
@@ -2137,11 +2350,17 @@
                 const response = await fetch('/api/v1/notifications/my-notifications/unread/count', { headers });
                 if (response.ok) {
                     const data = await response.json();
-                    document.getElementById('unreadNotifications').textContent = data.count || 0;
+                    const unreadElement = document.getElementById('unreadNotifications');
+                    if (unreadElement) {
+                        unreadElement.textContent = data.count || 0;
+                    }
                 }
             } catch (error) {
-                console.error('Error loading unread notifications:', error);
-                document.getElementById('unreadNotifications').textContent = '0';
+                // Silently fail - notifications count is not critical
+                const unreadElement = document.getElementById('unreadNotifications');
+                if (unreadElement) {
+                    unreadElement.textContent = '0';
+                }
             }
         }
 
@@ -2154,13 +2373,27 @@
                 document.getElementById('inactiveInventories').textContent = superadminDashboardData.inventoryStats.inactiveInventories || 0;
                 document.getElementById('totalItems').textContent = superadminDashboardData.inventoryStats.totalItems || 0;
                 
-                // Format total value
-                const totalValue = superadminDashboardData.inventoryStats.totalValue || 0;
-                document.getElementById('totalValue').textContent = new Intl.NumberFormat('es-CO', {
-                    style: 'currency',
-                    currency: 'COP',
-                    minimumFractionDigits: 0
-                }).format(totalValue);
+                // Format total value - handle BigDecimal conversion from backend
+                let totalValue = 0;
+                if (superadminDashboardData.inventoryStats.totalValue !== null && superadminDashboardData.inventoryStats.totalValue !== undefined) {
+                    if (typeof superadminDashboardData.inventoryStats.totalValue === 'number') {
+                        totalValue = superadminDashboardData.inventoryStats.totalValue;
+                    } else if (typeof superadminDashboardData.inventoryStats.totalValue === 'string') {
+                        totalValue = parseFloat(superadminDashboardData.inventoryStats.totalValue) || 0;
+                    } else {
+                        totalValue = Number(superadminDashboardData.inventoryStats.totalValue) || 0;
+                    }
+                }
+                
+                const totalValueElement = document.getElementById('totalValue');
+                if (totalValueElement) {
+                    const formattedValue = new Intl.NumberFormat('es-CO', {
+                        style: 'currency',
+                        currency: 'COP',
+                        minimumFractionDigits: 0
+                    }).format(totalValue);
+                    totalValueElement.textContent = formattedValue;
+                }
             }
 
             // Update user stats
@@ -2203,6 +2436,24 @@
                 document.getElementById('transfersBreakdown').innerHTML = transfersBreakdown.join(', ') || 'Sin datos';
             }
 
+            // Update verification stats
+            const totalVerificationsElement = document.getElementById('totalVerifications');
+            if (totalVerificationsElement) {
+                totalVerificationsElement.textContent = superadminDashboardData.verificationCount || 0;
+            }
+
+            // Update loan stats
+            const totalLoansElement = document.getElementById('totalLoans');
+            if (totalLoansElement) {
+                totalLoansElement.textContent = superadminDashboardData.loansCount || 0;
+            }
+
+            // Update cancellation stats
+            const totalCancellationsElement = document.getElementById('totalCancellations');
+            if (totalCancellationsElement) {
+                totalCancellationsElement.textContent = superadminDashboardData.cancellationsCount || 0;
+            }
+
             // Update recent inventories
             updateRecentInventories();
             
@@ -2221,19 +2472,26 @@
                 return;
             }
 
-            container.innerHTML = superadminDashboardData.recentInventories.slice(0, 5).map(inv => `
+            container.innerHTML = superadminDashboardData.recentInventories.slice(0, 5).map(inv => {
+                // Get institution name - can be from institutionName field or institution.name
+                const institutionName = inv.institutionName || (inv.institution && inv.institution.name) || 'Sin institución';
+                // Get status - can be boolean or string
+                const isActive = inv.status === true || inv.status === 'ACTIVE' || inv.status === 'active';
+                
+                return `
                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                     <div class="flex-1">
                         <div class="font-semibold text-gray-800 text-sm">${inv.name || 'Sin nombre'}</div>
-                        <div class="text-xs text-gray-600">${inv.institution?.name || 'Sin institución'}</div>
+                        <div class="text-xs text-gray-600">${institutionName}</div>
                     </div>
                     <div class="ml-3">
-                        <span class="px-2 py-1 text-xs rounded-full ${inv.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                            ${inv.status ? 'Activo' : 'Inactivo'}
+                        <span class="px-2 py-1 text-xs rounded-full ${isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${isActive ? 'Activo' : 'Inactivo'}
                         </span>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         // Update recent transfers display
@@ -2418,8 +2676,35 @@
 
             // Chart: Activity Heatmap by Regional
             if (superadminDashboardData.allAuditories && superadminDashboardData.regionals) {
-                const canvas = document.getElementById('activityHeatmapByRegionalChart');
-                if (canvas) {
+                // Destroy existing chart first
+                if (superadminDashboardData.charts.activityHeatmapByRegional) {
+                    superadminDashboardData.charts.activityHeatmapByRegional.destroy();
+                    superadminDashboardData.charts.activityHeatmapByRegional = null;
+                }
+                
+                // Find the chart container (the div with class "relative h-64")
+                // It's the parent of the canvas element
+                let chartContainer = null;
+                let canvas = document.getElementById('activityHeatmapByRegionalChart');
+                
+                if (!canvas) {
+                    // Canvas doesn't exist, find the container by looking for the parent of where it should be
+                    const chartSection = document.querySelector('.chart-container:has(#activityHeatmapByRegionalChart)') ||
+                        Array.from(document.querySelectorAll('.chart-container')).find(container => 
+                            container.querySelector('h2')?.textContent?.includes('Mapa de Calor')
+                        );
+                    if (chartSection) {
+                        chartContainer = chartSection.querySelector('.relative.h-64');
+                        if (chartContainer) {
+                            chartContainer.innerHTML = '<canvas id="activityHeatmapByRegionalChart"></canvas>';
+                            canvas = document.getElementById('activityHeatmapByRegionalChart');
+                        }
+                    }
+                } else {
+                    chartContainer = canvas.parentElement;
+                }
+                
+                if (canvas && chartContainer) {
                     // Create a map of institutionId -> regionalId from institutions data
                     const institutionToRegional = {};
                     superadminDashboardData.institutions.forEach(inst => {
@@ -2480,13 +2765,68 @@
                         }
                     });
 
-                    // Filter out regionals with 0 activity
-                    const regionalsWithActivity = Object.entries(regionalActivity)
+                    // Filter regionals based on selected regional filter
+                    let regionalsWithActivity = Object.entries(regionalActivity)
                         .filter(([regionalId, data]) => data.count > 0);
 
-                    // If no activity, show message
-                    if (regionalsWithActivity.length === 0) {
-                        canvas.parentElement.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">No hay actividad registrada en ninguna regional</p>';
+                    // Update chart title and subtitle based on selected regional
+                    const titleElement = document.getElementById('activityHeatmapTitle');
+                    const subtitleElement = document.getElementById('activityHeatmapSubtitle');
+                    
+                    // If a specific regional is selected, filter to show only that regional
+                    if (superadminDashboardData.selectedRegional) {
+                        const selectedRegionalId = superadminDashboardData.selectedRegional.toString();
+                        const selectedRegional = superadminDashboardData.regionals.find(
+                            r => r.id.toString() === selectedRegionalId
+                        );
+                        const regionalName = selectedRegional ? selectedRegional.name : 'la regional seleccionada';
+                        
+                        // Update title and subtitle
+                        if (titleElement) {
+                            titleElement.textContent = `Mapa de Calor de Actividad - ${regionalName}`;
+                        }
+                        if (subtitleElement) {
+                            subtitleElement.textContent = `Actividad registrada para ${regionalName}`;
+                        }
+                        
+                        regionalsWithActivity = regionalsWithActivity.filter(([regionalId, data]) => {
+                            return regionalId.toString() === selectedRegionalId;
+                        });
+                        
+                        // If no activity for selected regional, show message with regional name
+                        if (regionalsWithActivity.length === 0) {
+                            if (chartContainer) {
+                                chartContainer.innerHTML = `<p class="text-gray-600 text-sm text-center py-4">No hay actividad registrada para ${regionalName}</p>`;
+                            }
+                            return;
+                        }
+                    } else {
+                        // Reset title and subtitle to default
+                        if (titleElement) {
+                            titleElement.textContent = 'Mapa de Calor de Actividad por Regionales';
+                        }
+                        if (subtitleElement) {
+                            subtitleElement.textContent = 'Actividad registrada por regional';
+                        }
+                        
+                        // If no activity, show message
+                        if (regionalsWithActivity.length === 0) {
+                            if (chartContainer) {
+                                chartContainer.innerHTML = '<p class="text-gray-600 text-sm text-center py-4">No hay actividad registrada en ninguna regional</p>';
+                            }
+                            return;
+                        }
+                    }
+                    
+                    // Ensure canvas exists (it might have been replaced by a message)
+                    if (!canvas || !canvas.getContext) {
+                        if (chartContainer) {
+                            chartContainer.innerHTML = '<canvas id="activityHeatmapByRegionalChart"></canvas>';
+                            canvas = document.getElementById('activityHeatmapByRegionalChart');
+                        }
+                    }
+                    
+                    if (!canvas || !chartContainer) {
                         return;
                     }
 
@@ -2622,27 +2962,48 @@
             if (superadminDashboardData.allInventories && superadminDashboardData.institutions && superadminDashboardData.regionals) {
                 const canvas = document.getElementById('inventoryValueByRegionalChart');
                 if (canvas) {
+                    // Destroy existing chart if it exists
+                    if (superadminDashboardData.charts.inventoryValueByRegional) {
+                        superadminDashboardData.charts.inventoryValueByRegional.destroy();
+                    }
+                    
                     const ctx2d = canvas.getContext('2d');
                     // Create a map of institutionId -> regionalId
                     const institutionToRegional = {};
                     superadminDashboardData.institutions.forEach(inst => {
-                        if (inst.regionalId) {
-                            institutionToRegional[inst.institutionId] = inst.regionalId;
+                        const instId = inst.id || inst.institutionId;
+                        const regId = inst.regionalId || inst.regional_id;
+                        if (regId && instId) {
+                            institutionToRegional[instId] = regId;
                         }
                     });
 
                     // Create a map of regionalId -> regionalName
                     const regionalMap = {};
                     superadminDashboardData.regionals.forEach(regional => {
-                        regionalMap[regional.id] = regional.name;
+                        const regId = regional.id || regional.regionalId;
+                        const regName = regional.name || regional.regionalName;
+                        if (regId) {
+                            regionalMap[regId] = regName;
+                        }
                     });
 
                     // Group inventories by regional and sum totalPrice
+                    // If a regional is selected, only include that regional's data
                     const regionalValues = {};
-                    superadminDashboardData.allInventories.forEach(inventory => {
+                    superadminDashboardData.allInventories.forEach((inventory, index) => {
                         if (inventory.institutionId && inventory.totalPrice) {
                             const regionalId = institutionToRegional[inventory.institutionId];
                             if (regionalId) {
+                                // If a regional filter is selected, only process that regional
+                                if (superadminDashboardData.selectedRegional) {
+                                    const regionalIdStr = regionalId.toString();
+                                    const selectedRegionalStr = superadminDashboardData.selectedRegional.toString();
+                                    if (regionalIdStr !== selectedRegionalStr) {
+                                        return; // Skip this inventory if it's not from the selected regional
+                                    }
+                                }
+                                
                                 if (!regionalValues[regionalId]) {
                                     regionalValues[regionalId] = 0;
                                 }
@@ -2656,15 +3017,75 @@
                     const values = [];
                     const colors = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6', '#6366F1'];
 
-                    // Sort by value descending
-                    const sortedRegionals = Object.entries(regionalValues)
-                        .sort((a, b) => b[1] - a[1]);
+                    // If a regional is selected, only show that regional
+                    let sortedRegionals;
+                    let selectedRegionalName = null;
+                    if (superadminDashboardData.selectedRegional) {
+                        const selectedRegional = superadminDashboardData.regionals.find(r => {
+                            const regId = r.id || r.regionalId;
+                            return regId && regId.toString() === superadminDashboardData.selectedRegional.toString();
+                        });
+                        selectedRegionalName = selectedRegional ? (selectedRegional.name || selectedRegional.regionalName) : null;
+                        
+                        // Only show the selected regional
+                        sortedRegionals = Object.entries(regionalValues)
+                            .filter(([regionalId, value]) => {
+                                const matches = regionalId.toString() === superadminDashboardData.selectedRegional.toString();
+                                return matches;
+                            })
+                            .sort((a, b) => b[1] - a[1]);
+                        
+                        // If no data found for the selected regional, add it with value 0
+                        if (sortedRegionals.length === 0) {
+                            const selectedRegId = superadminDashboardData.selectedRegional.toString();
+                            sortedRegionals = [[selectedRegId, 0]];
+                        }
+                        
+                        // Update chart title if regional is selected
+                        const titleElement = document.getElementById('inventoryValueTitle');
+                        const subtitleElement = document.getElementById('inventoryValueSubtitle');
+                        if (titleElement && subtitleElement) {
+                            titleElement.textContent = selectedRegionalName
+                                ? `Valor de Inventario - ${selectedRegionalName}`
+                                : 'Valor de Inventario por Regional';
+                            subtitleElement.textContent = selectedRegionalName
+                                ? 'Valor total de inventarios de la regional seleccionada'
+                                : 'Valor total de inventarios por regional';
+                        }
+                    } else {
+                        // Show ALL regionals when no filter is selected
+                        // Initialize all regionals with 0 if they don't have inventories
+                        superadminDashboardData.regionals.forEach(regional => {
+                            const regId = regional.id || regional.regionalId;
+                            if (regId && !regionalValues[regId]) {
+                                regionalValues[regId] = 0;
+                            }
+                        });
+                        
+                        // Sort by value descending
+                        sortedRegionals = Object.entries(regionalValues)
+                            .sort((a, b) => b[1] - a[1]);
+                        
+                        // Reset chart title if no filter
+                        const titleElement = document.getElementById('inventoryValueTitle');
+                        const subtitleElement = document.getElementById('inventoryValueSubtitle');
+                        if (titleElement && subtitleElement) {
+                            titleElement.textContent = 'Valores de Inventario por Regionales';
+                            subtitleElement.textContent = 'Valor total de inventarios por regional';
+                        }
+                    }
 
                     sortedRegionals.forEach(([regionalId, value], index) => {
                         const regionalName = regionalMap[regionalId] || `Regional ${regionalId}`;
                         labels.push(regionalName);
                         values.push(value);
                     });
+
+                    // Ensure we have at least one data point
+                    if (labels.length === 0 || values.length === 0) {
+                        labels.push('Sin datos');
+                        values.push(0);
+                    }
 
                     // Create gradients for each bar
                     const barGradients = colors.slice(0, labels.length).map((color, index) => {
