@@ -80,6 +80,13 @@ async function loadCurrentUserInfo() {
                     }
                 }, 200);
             }
+            
+            // Update items UI if it exists (to show/hide delete button based on role)
+            setTimeout(() => {
+                if (typeof window.updateItemsUI === 'function') {
+                    window.updateItemsUI();
+                }
+            }, 100);
         } else {
             throw new Error('Failed to load user info');
         }

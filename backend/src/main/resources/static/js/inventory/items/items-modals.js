@@ -651,7 +651,117 @@ function closeEditItemModal() {
   }
 }
 
+function showDeactivateItemModal(itemId) {
+  const modal = document.getElementById("deactivateItemModal");
+  if (!modal) return;
+
+  // Store current item ID
+  if (window.itemsData) {
+    window.itemsData.currentItemId = itemId;
+  }
+
+  // Find item to show name
+  if (window.itemsData && window.itemsData.items) {
+    const item = window.itemsData.items.find((i) => i.id === itemId);
+    if (item) {
+      const messageElement = document.getElementById("deactivateItemMessage");
+      if (messageElement) {
+        messageElement.textContent = `¿Está seguro que desea desactivar el item "${
+          item.productName || "Sin nombre"
+        }"? El item quedará inactivo y no se mostrará en las listas activas.`;
+      }
+    }
+  }
+
+  modal.classList.remove("hidden");
+}
+
+function closeDeactivateItemModal() {
+  const modal = document.getElementById("deactivateItemModal");
+  if (modal) {
+    modal.classList.add("hidden");
+  }
+}
+
+async function confirmDeactivateItem() {
+  if (!window.itemsData || !window.itemsData.currentItemId) {
+    const showToast = window.showInventoryErrorToast || window.showErrorToast;
+    if (typeof showToast === 'function') {
+      showToast("Error", "No se ha seleccionado un item para desactivar", true, 4000);
+    }
+    return;
+  }
+
+  const itemId = window.itemsData.currentItemId;
+
+  try {
+    // Show loading state
+    const deactivateButton = document.querySelector('#deactivateItemModal button[onclick="confirmDeactivateItem()"]');
+    if (deactivateButton) {
+      deactivateButton.disabled = true;
+      deactivateButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Desactivando...';
+    }
+
+    // Call deactivate API (soft delete)
+    if (window.deactivateItem || window.deleteItem) {
+      const deactivateFn = window.deactivateItem || window.deleteItem;
+      const response = await deactivateFn(itemId);
+      
+      // Show success toast
+      const showToast = window.showInventorySuccessToast || window.showSuccessToast;
+      if (typeof showToast === 'function') {
+        showToast(
+          "Item Desactivado",
+          response.message || `El item "${response.itemName || 'desactivado'}" ha sido desactivado exitosamente`,
+          true,
+          5000
+        );
+      }
+
+      // Close modal
+      closeDeactivateItemModal();
+
+      // Reload items list
+      if (window.loadItemsData) {
+        await window.loadItemsData();
+      } else if (window.updateItemsUI) {
+        window.updateItemsUI();
+      }
+    } else {
+      throw new Error("La función de desactivar item no está disponible");
+    }
+  } catch (error) {
+    console.error("Error deactivating item:", error);
+    
+    // Restore button state
+    const deactivateButton = document.querySelector('#deactivateItemModal button[onclick="confirmDeactivateItem()"]');
+    if (deactivateButton) {
+      deactivateButton.disabled = false;
+      deactivateButton.innerHTML = 'Desactivar Item';
+    }
+
+    const showToast = window.showInventoryErrorToast || window.showErrorToast;
+    if (typeof showToast === 'function') {
+      showToast(
+        "Error",
+        error.message || "No se pudo desactivar el item",
+        true,
+        5000
+      );
+    }
+  }
+}
+
 function showDeleteItemModal(itemId) {
+  // Check if user has permission to delete items
+  if (!canUserDeleteItems()) {
+    const showToast = window.showInventoryErrorToast || window.showErrorToast;
+    if (typeof showToast === 'function') {
+      showToast("Sin permisos", "Solo los administradores (Super Admin, Admin Regional y Admin Institucional) pueden eliminar items", true, 5000);
+    }
+    return;
+  }
+
   const modal = document.getElementById("deleteItemModal");
   if (!modal) return;
 
@@ -666,9 +776,9 @@ function showDeleteItemModal(itemId) {
     if (item) {
       const messageElement = document.getElementById("deleteItemMessage");
       if (messageElement) {
-        messageElement.textContent = `¿Está seguro que desea desactivar el item "${
+        messageElement.textContent = `¿Está seguro que desea eliminar el item "${
           item.productName || "Sin nombre"
-        }"? El item quedará inactivo y no se mostrará en las listas activas.`;
+        }"? Esta acción eliminará el item y todos sus datos relacionados (préstamos, verificaciones, traslados, cancelaciones) de forma permanente. Esta acción no se puede deshacer.`;
       }
     }
   }
@@ -683,11 +793,43 @@ function closeDeleteItemModal() {
   }
 }
 
+// Helper function to check if current user can delete items
+function canUserDeleteItems() {
+    // Try multiple sources for user role
+    let userRole = '';
+    
+    if (window.currentUserRole) {
+        userRole = window.currentUserRole;
+    } else if (window.currentUserData && window.currentUserData.role) {
+        userRole = window.currentUserData.role;
+    } else if (window.usersData && window.usersData.currentLoggedInUserRole) {
+        userRole = window.usersData.currentLoggedInUserRole;
+    }
+    
+    userRole = userRole.toUpperCase();
+    const canDelete = userRole === 'SUPERADMIN' || userRole === 'ADMIN_REGIONAL' || userRole === 'ADMIN_INSTITUTION';
+    
+    // Debug log
+    console.log('canUserDeleteItems check:', { userRole, canDelete, currentUserRole: window.currentUserRole, currentUserData: window.currentUserData });
+    
+    return canDelete;
+}
+
 async function confirmDeleteItem() {
+  // Check if user has permission to delete items
+  if (!canUserDeleteItems()) {
+    const showToast = window.showInventoryErrorToast || window.showErrorToast;
+    if (typeof showToast === 'function') {
+      showToast("Sin permisos", "Solo los administradores (Super Admin, Admin Regional y Admin Institucional) pueden eliminar items", true, 5000);
+    }
+    closeDeleteItemModal();
+    return;
+  }
+
   if (!window.itemsData || !window.itemsData.currentItemId) {
     const showToast = window.showInventoryErrorToast || window.showErrorToast;
     if (typeof showToast === 'function') {
-      showToast("Error", "No se ha seleccionado un item para desactivar", true, 4000);
+      showToast("Error", "No se ha seleccionado un item para eliminar", true, 4000);
     }
     return;
   }
@@ -699,20 +841,19 @@ async function confirmDeleteItem() {
     const deleteButton = document.querySelector('#deleteItemModal button[onclick="confirmDeleteItem()"]');
     if (deleteButton) {
       deleteButton.disabled = true;
-      deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Desactivando...';
+      deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Eliminando...';
     }
 
-    // Call deactivate API (deleteItem now does soft delete)
-    if (window.deactivateItem || window.deleteItem) {
-      const deactivateFn = window.deactivateItem || window.deleteItem;
-      const response = await deactivateFn(itemId);
+    // Call delete API (hard delete with cascade) - use deleteItemPermanently
+    if (window.deleteItemPermanently) {
+      const response = await window.deleteItemPermanently(itemId);
       
       // Show success toast
       const showToast = window.showInventorySuccessToast || window.showSuccessToast;
       if (typeof showToast === 'function') {
         showToast(
-          "Item Desactivado",
-          response.message || `El item "${response.itemName || 'desactivado'}" ha sido desactivado exitosamente`,
+          "Item Eliminado",
+          response.message || `El item "${response.itemName || 'eliminado'}" ha sido eliminado exitosamente junto con todos sus datos relacionados`,
           true,
           5000
         );
@@ -737,14 +878,14 @@ async function confirmDeleteItem() {
     const deleteButton = document.querySelector('#deleteItemModal button[onclick="confirmDeleteItem()"]');
     if (deleteButton) {
       deleteButton.disabled = false;
-      deleteButton.innerHTML = 'Desactivar Item';
+      deleteButton.innerHTML = 'Eliminar Item';
     }
 
     const showToast = window.showInventoryErrorToast || window.showErrorToast;
     if (typeof showToast === 'function') {
       showToast(
         "Error",
-        error.message || "No se pudo desactivar el item",
+        error.message || "No se pudo eliminar el item",
         true,
         5000
       );
@@ -2201,10 +2342,14 @@ window.showNewItemModal = showNewItemModal;
 window.closeNewItemModal = closeNewItemModal;
 window.showEditItemModal = showEditItemModal;
 window.closeEditItemModal = closeEditItemModal;
+window.showDeactivateItemModal = showDeactivateItemModal;
+window.closeDeactivateItemModal = closeDeactivateItemModal;
+window.confirmDeactivateItem = confirmDeactivateItem;
 window.showDeleteItemModal = showDeleteItemModal;
 window.closeDeleteItemModal = closeDeleteItemModal;
 window.confirmDeleteItem = confirmDeleteItem;
 window.deleteItemImageFromModal = deleteItemImageFromModal;
+window.canUserDeleteItems = canUserDeleteItems;
 window.checkTransferPermissions = checkTransferPermissions;
 window.showTransferItemModal = showTransferItemModal;
 window.closeTransferItemModal = closeTransferItemModal;

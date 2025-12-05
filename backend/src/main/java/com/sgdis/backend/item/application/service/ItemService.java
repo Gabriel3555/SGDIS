@@ -37,6 +37,11 @@ import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import com.sgdis.backend.verification.infrastructure.repository.SpringDataVerificationRepository;
+import com.sgdis.backend.transfers.infrastructure.repository.SpringDataTransferRepository;
+import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
+import com.sgdis.backend.cancellation.infrastructure.repository.SpringDataCancellationRepository;
+import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
+import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,6 +71,8 @@ public class ItemService implements
     private final NotificationPersistenceService notificationPersistenceService;
     private final SpringDataUserRepository userRepository;
     private final SpringDataVerificationRepository verificationRepository;
+    private final SpringDataTransferRepository transferRepository;
+    private final SpringDataCancellationRepository cancellationRepository;
     
     // ThreadLocal para indicar si estamos en modo carga masiva
     private static final ThreadLocal<Boolean> BULK_UPLOAD_MODE = ThreadLocal.withInitial(() -> false);
@@ -249,29 +256,68 @@ public class ItemService implements
         ItemEntity item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new DomainNotFoundException("Item not found with id: " + itemId));
 
-        // Check if item has active loans
-        List<LoanEntity> activeLoans = loanRepository.findAllByItemId(itemId).stream()
-                .filter(loan -> !Boolean.TRUE.equals(loan.getReturned()))
-                .toList();
-
-        if (!activeLoans.isEmpty()) {
-            throw new DomainConflictException("No se puede eliminar el item: El item tiene " + activeLoans.size() + " préstamo(s) activo(s)");
-        }
-
-        // Check if item has verifications
-        long verificationCount = verificationRepository.countByItemId(itemId);
-        if (verificationCount > 0) {
-            String itemName = item.getProductName() != null ? item.getProductName() : "Item " + itemId;
-            throw new DomainConflictException(
-                String.format("No se puede eliminar el item \"%s\": El item tiene %d verificación(es) asociada(s). " +
-                             "Debe eliminar las verificaciones antes de eliminar el item.", 
-                             itemName, verificationCount)
-            );
-        }
-
         // Get inventory before deletion to update totalPrice
         InventoryEntity inventory = item.getInventory();
         Double acquisitionValue = item.getAcquisitionValue() != null ? item.getAcquisitionValue() : 0.0;
+
+        // Save item name before deletion
+        String itemName = item.getProductName() != null ? item.getProductName() : "Item " + itemId;
+        String inventoryName = inventory != null && inventory.getName() != null ? inventory.getName() : "sin nombre";
+        Long inventoryId = inventory != null ? inventory.getId() : null;
+
+        // Eliminar en cascada todos los elementos relacionados
+        
+        // 1. Eliminar todos los préstamos (loans) relacionados
+        List<LoanEntity> allLoans = loanRepository.findAllByItemId(itemId);
+        if (!allLoans.isEmpty()) {
+            loanRepository.deleteAll(allLoans);
+        }
+
+        // 2. Eliminar todas las verificaciones (verifications) relacionadas
+        List<VerificationEntity> allVerifications = verificationRepository.findAllByItemIdOrderByCreatedAtDesc(itemId);
+        if (!allVerifications.isEmpty()) {
+            verificationRepository.deleteAll(allVerifications);
+        }
+
+        // 3. Eliminar todos los traslados (transfers) relacionados
+        List<TransferEntity> allTransfers = transferRepository.findAllByItemId(itemId);
+        if (!allTransfers.isEmpty()) {
+            transferRepository.deleteAll(allTransfers);
+        }
+
+        // 4. Remover el item de todas las cancelaciones (cancellations) relacionadas
+        // Como es una relación ManyToMany, primero eliminamos las relaciones de la tabla intermedia
+        // y luego eliminamos las cancelaciones que queden sin items
+        try {
+            // Obtener todas las cancelaciones relacionadas antes de eliminar las relaciones
+            List<CancellationEntity> allCancellations = cancellationRepository.findAllCancellationsByItemId(itemId);
+            
+            // Eliminar las relaciones de la tabla intermedia usando consulta nativa
+            cancellationRepository.deleteItemFromCancellations(itemId);
+            
+            // Ahora verificar cuáles cancelaciones quedaron sin items y eliminarlas
+            if (!allCancellations.isEmpty()) {
+                for (CancellationEntity cancellation : allCancellations) {
+                    try {
+                        // Recargar la cancelación para verificar si tiene items
+                        CancellationEntity reloadedCancellation = cancellationRepository.findById(cancellation.getId()).orElse(null);
+                        if (reloadedCancellation != null && 
+                            (reloadedCancellation.getItems() == null || reloadedCancellation.getItems().isEmpty())) {
+                            // La cancelación quedó sin items, eliminarla
+                            cancellationRepository.delete(reloadedCancellation);
+                        }
+                    } catch (Exception e) {
+                        // Log error pero continuar
+                        System.err.println("Error verificando cancelación " + cancellation.getId() + ": " + e.getMessage());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero continuar con la eliminación del item
+            // No queremos que un error con las cancelaciones impida eliminar el item
+            System.err.println("Error procesando cancelaciones para item " + itemId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
 
         // Delete associated images
         if (item.getUrlsImages() != null && !item.getUrlsImages().isEmpty()) {
@@ -285,14 +331,15 @@ public class ItemService implements
             }
         }
 
-        // Save item name before deletion
-        String itemName = item.getProductName() != null ? item.getProductName() : "Item " + itemId;
-        String inventoryName = inventory != null && inventory.getName() != null ? inventory.getName() : "sin nombre";
-        Long inventoryId = inventory != null ? inventory.getId() : null;
-
-        // Enviar notificaciones antes de eliminar el item
-        if (inventory != null) {
-            sendItemDeletedNotifications(inventory, item);
+        // Enviar notificaciones antes de eliminar el item (con manejo de errores)
+        try {
+            if (inventory != null) {
+                sendItemDeletedNotifications(inventory, item);
+            }
+        } catch (Exception e) {
+            // Log error pero continuar con la eliminación
+            // No queremos que un error en las notificaciones impida eliminar el item
+            System.err.println("Error enviando notificaciones para item " + itemId + ": " + e.getMessage());
         }
 
         // Delete the item

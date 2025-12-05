@@ -299,9 +299,13 @@ async function deactivateItem(itemId) {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
+    // Use PUT to update item status to false (soft delete)
     const response = await fetch(`/api/v1/items/${itemId}`, {
-      method: "DELETE",
+      method: "PUT",
       headers: headers,
+      body: JSON.stringify({
+        status: false
+      }),
     });
 
     if (!response.ok) {
@@ -325,9 +329,59 @@ async function deactivateItem(itemId) {
       throw new Error(errorMessage);
     }
 
-    return await response.json();
+    const result = await response.json();
+    // Return a response similar to DeleteItemResponse for compatibility
+    return {
+      itemId: itemId,
+      itemName: result.productName || "Item",
+      message: "Item desactivado exitosamente"
+    };
   } catch (error) {
     console.error("Error deactivating item:", error);
+    throw error;
+  }
+}
+
+// Function to permanently delete an item (hard delete with cascade)
+async function deleteItemPermanently(itemId) {
+  try {
+    const token = localStorage.getItem("jwt");
+    const headers = {
+      "Content-Type": "application/json",
+    };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`/api/v1/items/${itemId}`, {
+      method: "DELETE",
+      headers: headers,
+    });
+
+    if (!response.ok) {
+      let errorMessage = "Error al eliminar el item";
+      try {
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          errorMessage =
+            errorData.message ||
+            errorData.detail ||
+            errorData.error ||
+            errorMessage;
+        } else {
+          const errorText = await response.text();
+          errorMessage = errorText || errorMessage;
+        }
+      } catch (parseError) {
+        // Error al parsear respuesta
+      }
+      throw new Error(errorMessage);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error deleting item permanently:", error);
     throw error;
   }
 }
@@ -503,6 +557,7 @@ window.createItem = createItem;
 window.updateItem = updateItem;
 window.getItemById = getItemById;
 window.deleteItem = deleteItem;
+window.deleteItemPermanently = deleteItemPermanently;
 window.deactivateItem = deactivateItem;
 window.uploadItemImage = uploadItemImage;
 window.getItemImages = getItemImages;

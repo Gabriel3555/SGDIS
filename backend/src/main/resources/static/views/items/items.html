@@ -284,31 +284,70 @@
     </div>
 
     <!-- Deactivate Item Modal -->
-    <div id="deleteItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+    <!-- Deactivate Item Modal -->
+    <div id="deactivateItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
         style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-orange-600">Desactivar Item</h2>
-                <button onclick="closeDeleteItemModal()" class="text-gray-400 hover:text-gray-600">
+                <h2 class="text-2xl font-bold text-orange-600 dark:text-orange-400">Desactivar Item</h2>
+                <button onclick="closeDeactivateItemModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <i class="fas fa-times text-2xl"></i>
                 </button>
             </div>
 
             <div class="text-center mb-6">
                 <i class="fas fa-toggle-off text-orange-500 text-5xl mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">¿Está seguro?</h3>
-                <p class="text-gray-600" id="deleteItemMessage">El item quedará inactivo y no se mostrará en las listas activas.</p>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">¿Está seguro?</h3>
+                <p class="text-gray-600 dark:text-gray-400" id="deactivateItemMessage">El item quedará inactivo y no se mostrará en las listas activas.</p>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeDeactivateItemModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cancelar
+                </button>
+                <button onclick="confirmDeactivateItem()"
+                    class="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors">
+                    <i class="fas fa-toggle-off mr-2"></i>
+                    Desactivar Item
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Item Modal (Only for Admins) -->
+    <div id="deleteItemModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-red-600 dark:text-red-400">Eliminar Item</h2>
+                <button onclick="closeDeleteItemModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="text-center mb-6">
+                <i class="fas fa-exclamation-triangle text-red-500 text-5xl mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">¿Está seguro?</h3>
+                <p class="text-gray-600 dark:text-gray-400" id="deleteItemMessage">Esta acción eliminará el item y todos sus datos relacionados de forma permanente.</p>
+            </div>
+
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6">
+                <p class="text-sm text-red-800 dark:text-red-300">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Advertencia:</strong> Esta acción no se puede deshacer. Se eliminarán todos los préstamos, verificaciones, traslados y cancelaciones relacionados con este item.
+                </p>
             </div>
 
             <div class="flex gap-3">
                 <button onclick="closeDeleteItemModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cancelar
                 </button>
                 <button onclick="confirmDeleteItem()"
-                    class="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors">
-                    <i class="fas fa-toggle-off mr-2"></i>
-                    Desactivar Item
+                    class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors">
+                    <i class="fas fa-trash mr-2"></i>
+                    Eliminar Item
                 </button>
             </div>
         </div>
@@ -907,6 +946,13 @@
                     window.itemsData.currentInventoryId = parseInt(inventoryId, 10);
                 }
 
+                // Load user info FIRST, before loading items (so delete button shows correctly)
+                if (window.loadCurrentUserInfo) {
+                    await window.loadCurrentUserInfo();
+                } else if (window.updateUserInfoDisplay) {
+                    window.updateUserInfoDisplay();
+                }
+
                 // Load inventory name
                 try {
                     if (window.getInventoryById) {
@@ -920,17 +966,17 @@
                     console.error('Error loading inventory name:', error);
                 }
 
-                // Load items
+                // Load items AFTER user info is loaded
                 if (window.loadItemsData) {
                     await window.loadItemsData();
                 }
-            }
-
-            // Load user info in header
-            if (window.loadCurrentUserInfo) {
-                await window.loadCurrentUserInfo();
-            } else if (window.updateUserInfoDisplay) {
-                window.updateUserInfoDisplay();
+            } else {
+                // Load user info even if no inventory ID
+                if (window.loadCurrentUserInfo) {
+                    await window.loadCurrentUserInfo();
+                } else if (window.updateUserInfoDisplay) {
+                    window.updateUserInfoDisplay();
+                }
             }
         });
     </script>
