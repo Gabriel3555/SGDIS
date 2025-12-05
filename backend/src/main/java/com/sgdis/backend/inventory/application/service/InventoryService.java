@@ -906,8 +906,8 @@ public class InventoryService
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
             
             // Usar un Set para evitar duplicados
@@ -940,23 +940,21 @@ public class InventoryService
                 userIdsToNotify.add(fullInventory.getOwner().getId());
             }
             
-            // 5. Firmadores del inventario
-            if (fullInventory.getSignatories() != null && !fullInventory.getSignatories().isEmpty()) {
-                fullInventory.getSignatories().forEach(signatory -> {
-                    if (signatory != null && signatory.isStatus()) {
-                        userIdsToNotify.add(signatory.getId());
-                    }
-                });
-            }
+            // 5. Firmadores del inventario - cargar usando consulta separada
+            List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventory.getId());
+            signatories.forEach(signatory -> {
+                if (signatory != null && signatory.isStatus()) {
+                    userIdsToNotify.add(signatory.getId());
+                }
+            });
             
-            // 6. Manejadores del inventario
-            if (fullInventory.getManagers() != null && !fullInventory.getManagers().isEmpty()) {
-                fullInventory.getManagers().forEach(manager -> {
-                    if (manager != null && manager.isStatus()) {
-                        userIdsToNotify.add(manager.getId());
-                    }
-                });
-            }
+            // 6. Manejadores del inventario - cargar usando consulta separada
+            List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventory.getId());
+            managers.forEach(manager -> {
+                if (manager != null && manager.isStatus()) {
+                    userIdsToNotify.add(manager.getId());
+                }
+            });
             
             // Remover al usuario actual de la lista de notificaciones
             userIdsToNotify.remove(currentUserId);
@@ -1014,8 +1012,8 @@ public class InventoryService
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
             
             // Usar un Set para evitar duplicados
@@ -1115,8 +1113,8 @@ public class InventoryService
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
             
             // Notificación personalizada para el nuevo manejador
@@ -1160,8 +1158,8 @@ public class InventoryService
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
             
             // Notificar a los usuarios relacionados
@@ -1180,8 +1178,8 @@ public class InventoryService
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
             
             // Notificación personalizada para el nuevo firmante
@@ -1225,8 +1223,8 @@ public class InventoryService
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
             
             // Notificar a los usuarios relacionados
@@ -1257,23 +1255,21 @@ public class InventoryService
                 userIdsToNotify.add(inventory.getOwner().getId());
             }
             
-            // 2. Firmantes del inventario
-            if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
-                inventory.getSignatories().forEach(signatory -> {
-                    if (signatory != null && signatory.isStatus()) {
-                        userIdsToNotify.add(signatory.getId());
-                    }
-                });
-            }
+            // 2. Firmantes del inventario - cargar usando consulta separada
+            List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventory.getId());
+            signatories.forEach(signatory -> {
+                if (signatory != null && signatory.isStatus()) {
+                    userIdsToNotify.add(signatory.getId());
+                }
+            });
             
-            // 3. Manejadores del inventario
-            if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
-                inventory.getManagers().forEach(manager -> {
-                    if (manager != null && manager.isStatus()) {
-                        userIdsToNotify.add(manager.getId());
-                    }
-                });
-            }
+            // 3. Manejadores del inventario - cargar usando consulta separada
+            List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventory.getId());
+            managers.forEach(manager -> {
+                if (manager != null && manager.isStatus()) {
+                    userIdsToNotify.add(manager.getId());
+                }
+            });
             
             // 4. Warehouse del centro al cual pertenece el inventario
             if (inventory.getInstitution() != null) {

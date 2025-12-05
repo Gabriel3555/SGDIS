@@ -102,6 +102,8 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
     Double sumTotalPriceByInstitutionId(@Param("institutionId") Long institutionId);
     
     // Query para cargar inventario con todas sus relaciones
+    // NOTA: Este método tiene un problema conocido de Hibernate (MultipleBagFetchException)
+    // cuando se intenta hacer JOIN FETCH de múltiples colecciones. Usar con precaución.
     @Query("SELECT DISTINCT i FROM InventoryEntity i " +
            "LEFT JOIN FETCH i.owner " +
            "LEFT JOIN FETCH i.managers " +
@@ -110,4 +112,21 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
            "LEFT JOIN FETCH inst.regional " +
            "WHERE i.id = :inventoryId")
     Optional<InventoryEntity> findByIdWithAllRelations(@Param("inventoryId") Long inventoryId);
+    
+    // Métodos para cargar managers y signatories por separado (evita MultipleBagFetchException)
+    // Managers: InventoryEntity es el dueño de la relación, UserEntity tiene mappedBy
+    @Query("SELECT u FROM UserEntity u JOIN u.myManagers i WHERE i.id = :inventoryId AND u.status = true")
+    List<UserEntity> findManagersByInventoryId(@Param("inventoryId") Long inventoryId);
+    
+    // Signatories: UserEntity es el dueño de la relación con @JoinTable
+    @Query("SELECT u FROM UserEntity u JOIN u.mySignatories i WHERE i.id = :inventoryId AND u.status = true")
+    List<UserEntity> findSignatoriesByInventoryId(@Param("inventoryId") Long inventoryId);
+    
+    // Query para cargar inventario con relaciones básicas (sin colecciones problemáticas)
+    @Query("SELECT DISTINCT i FROM InventoryEntity i " +
+           "LEFT JOIN FETCH i.owner " +
+           "LEFT JOIN FETCH i.institution inst " +
+           "LEFT JOIN FETCH inst.regional " +
+           "WHERE i.id = :inventoryId")
+    Optional<InventoryEntity> findByIdWithBasicRelations(@Param("inventoryId") Long inventoryId);
 }
