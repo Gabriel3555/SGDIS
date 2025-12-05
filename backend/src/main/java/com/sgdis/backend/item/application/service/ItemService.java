@@ -28,11 +28,21 @@ import com.sgdis.backend.item.mapper.ItemMapper;
 // Auditoría
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
 import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
+// Notificaciones
+import com.sgdis.backend.auth.application.service.AuthService;
+import com.sgdis.backend.notification.service.NotificationService;
+import com.sgdis.backend.notification.service.NotificationPersistenceService;
+import com.sgdis.backend.notification.dto.NotificationMessage;
+import com.sgdis.backend.user.domain.Role;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +60,34 @@ public class ItemService implements
     private final SpringDataLoanRepository loanRepository;
     private final FileUploadService fileUploadService;
     private final RecordActionUseCase recordActionUseCase;
+    private final AuthService authService;
+    private final NotificationService notificationService;
+    private final NotificationPersistenceService notificationPersistenceService;
+    private final SpringDataUserRepository userRepository;
+    
+    // ThreadLocal para indicar si estamos en modo carga masiva
+    private static final ThreadLocal<Boolean> BULK_UPLOAD_MODE = ThreadLocal.withInitial(() -> false);
+    
+    /**
+     * Activa el modo de carga masiva para evitar notificaciones individuales
+     */
+    public static void setBulkUploadMode(boolean enabled) {
+        BULK_UPLOAD_MODE.set(enabled);
+    }
+    
+    /**
+     * Verifica si estamos en modo de carga masiva
+     */
+    public static boolean isBulkUploadMode() {
+        return BULK_UPLOAD_MODE.get();
+    }
+    
+    /**
+     * Limpia el modo de carga masiva
+     */
+    public static void clearBulkUploadMode() {
+        BULK_UPLOAD_MODE.remove();
+    }
 
     @Override
     @Transactional
@@ -105,6 +143,11 @@ public class ItemService implements
                         inventoryName,
                         inventoryEntity.getId())
         ));
+
+        // Enviar notificaciones a los usuarios relacionados solo si NO estamos en modo carga masiva
+        if (!isBulkUploadMode()) {
+            sendItemCreatedNotifications(inventoryEntity, itemEntity);
+        }
 
         return new CreateItemResponse(itemEntity.getProductName(), "Successfully created item");
     }
@@ -234,6 +277,11 @@ public class ItemService implements
         String inventoryName = inventory != null && inventory.getName() != null ? inventory.getName() : "sin nombre";
         Long inventoryId = inventory != null ? inventory.getId() : null;
 
+        // Enviar notificaciones antes de eliminar el item
+        if (inventory != null) {
+            sendItemDeletedNotifications(inventory, item);
+        }
+
         // Delete the item
         itemRepository.deleteById(itemId);
 
@@ -305,4 +353,226 @@ public class ItemService implements
             });
         }
     }
+
+    /**
+     * Envía notificaciones a todos los usuarios relacionados cuando se crea un item.
+     * Se notifica a:
+     * - Todos los superadmin
+     * - Todos los admin regional de la misma regional del inventario
+     * - Todos los admin institution de la misma institution del inventario
+     * - Todos los warehouse de la misma institution del inventario
+     * - El dueño del inventario
+     * - Los firmadores del inventario
+     * - Los manejadores del inventario
+     * 
+     * No se envía notificación al usuario que realiza la acción.
+     */
+    private void sendItemCreatedNotifications(InventoryEntity inventory, ItemEntity item) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            // Cargar el inventario completo con todas sus relaciones
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+                    .orElse(inventory);
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // 2. Admin regional de la misma regional del inventario
+            if (fullInventory.getInstitution() != null && 
+                fullInventory.getInstitution().getRegional() != null) {
+                Long regionalId = fullInventory.getInstitution().getRegional().getId();
+                
+                List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+                adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            }
+            
+            // 3. Admin institution y warehouse de la misma institution del inventario
+            if (fullInventory.getInstitution() != null) {
+                Long institutionId = fullInventory.getInstitution().getId();
+                
+                List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
+                        institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
+                institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+            }
+            
+            // 4. Dueño del inventario
+            if (fullInventory.getOwner() != null) {
+                userIdsToNotify.add(fullInventory.getOwner().getId());
+            }
+            
+            // 5. Firmadores del inventario
+            if (fullInventory.getSignatories() != null && !fullInventory.getSignatories().isEmpty()) {
+                fullInventory.getSignatories().forEach(signatory -> {
+                    if (signatory != null && signatory.isStatus()) {
+                        userIdsToNotify.add(signatory.getId());
+                    }
+                });
+            }
+            
+            // 6. Manejadores del inventario
+            if (fullInventory.getManagers() != null && !fullInventory.getManagers().isEmpty()) {
+                fullInventory.getManagers().forEach(manager -> {
+                    if (manager != null && manager.isStatus()) {
+                        userIdsToNotify.add(manager.getId());
+                    }
+                });
+            }
+            
+            // Remover al usuario actual de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            
+            // Preparar datos de la notificación
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item sin nombre";
+            String inventoryName = fullInventory.getName() != null ? fullInventory.getName() : "Inventario sin nombre";
+            String message = String.format("Se ha creado el item '%s' en el inventario '%s'", itemName, inventoryName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "ITEM_CREATED",
+                    "Nuevo Item Creado",
+                    message,
+                    new ItemNotificationData(item.getId(), itemName, fullInventory.getId(), inventoryName)
+            );
+            
+            // Enviar notificaciones a todos los usuarios
+            for (Long userId : userIdsToNotify) {
+                try {
+                    // Guardar en base de datos
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            "ITEM_CREATED",
+                            "Nuevo Item Creado",
+                            message,
+                            new ItemNotificationData(item.getId(), itemName, fullInventory.getId(), inventoryName)
+                    );
+                    
+                    // Enviar por WebSocket
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                    // El log se maneja en NotificationService
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la creación del item
+            // El sistema de notificaciones no debe bloquear la creación
+        }
+    }
+    
+    /**
+     * Envía notificaciones a todos los usuarios relacionados cuando se elimina un item.
+     * Se notifica a los mismos usuarios que cuando se crea un item.
+     * No se envía notificación al usuario que realiza la acción.
+     */
+    private void sendItemDeletedNotifications(InventoryEntity inventory, ItemEntity item) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            // Cargar el inventario completo con todas sus relaciones
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+                    .orElse(inventory);
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // 2. Admin regional de la misma regional del inventario
+            if (fullInventory.getInstitution() != null && 
+                fullInventory.getInstitution().getRegional() != null) {
+                Long regionalId = fullInventory.getInstitution().getRegional().getId();
+                
+                List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+                adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            }
+            
+            // 3. Admin institution y warehouse de la misma institution del inventario
+            if (fullInventory.getInstitution() != null) {
+                Long institutionId = fullInventory.getInstitution().getId();
+                
+                List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
+                        institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
+                institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+            }
+            
+            // 4. Dueño del inventario
+            if (fullInventory.getOwner() != null) {
+                userIdsToNotify.add(fullInventory.getOwner().getId());
+            }
+            
+            // 5. Firmadores del inventario
+            if (fullInventory.getSignatories() != null && !fullInventory.getSignatories().isEmpty()) {
+                fullInventory.getSignatories().forEach(signatory -> {
+                    if (signatory != null && signatory.isStatus()) {
+                        userIdsToNotify.add(signatory.getId());
+                    }
+                });
+            }
+            
+            // 6. Manejadores del inventario
+            if (fullInventory.getManagers() != null && !fullInventory.getManagers().isEmpty()) {
+                fullInventory.getManagers().forEach(manager -> {
+                    if (manager != null && manager.isStatus()) {
+                        userIdsToNotify.add(manager.getId());
+                    }
+                });
+            }
+            
+            // Remover al usuario actual de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            
+            // Preparar datos de la notificación
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item sin nombre";
+            String inventoryName = fullInventory.getName() != null ? fullInventory.getName() : "Inventario sin nombre";
+            String message = String.format("Se ha eliminado el item '%s' del inventario '%s'", itemName, inventoryName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "ITEM_DELETED",
+                    "Item Eliminado",
+                    message,
+                    new ItemNotificationData(item.getId(), itemName, fullInventory.getId(), inventoryName)
+            );
+            
+            // Enviar notificaciones a todos los usuarios
+            for (Long userId : userIdsToNotify) {
+                try {
+                    // Guardar en base de datos
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            "ITEM_DELETED",
+                            "Item Eliminado",
+                            message,
+                            new ItemNotificationData(item.getId(), itemName, fullInventory.getId(), inventoryName)
+                    );
+                    
+                    // Enviar por WebSocket
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                    // El log se maneja en NotificationService
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la eliminación del item
+            // El sistema de notificaciones no debe bloquear la eliminación
+        }
+    }
+    
+    /**
+     * DTO interno para datos del item en la notificación
+     */
+    private record ItemNotificationData(
+            Long itemId,
+            String itemName,
+            Long inventoryId,
+            String inventoryName
+    ) {}
 }

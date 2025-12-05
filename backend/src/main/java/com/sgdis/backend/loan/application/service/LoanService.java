@@ -21,6 +21,12 @@ import com.sgdis.backend.cancellation.infrastructure.repository.SpringDataCancel
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
+// Notificaciones
+import com.sgdis.backend.notification.service.NotificationService;
+import com.sgdis.backend.notification.service.NotificationPersistenceService;
+import com.sgdis.backend.notification.dto.NotificationMessage;
 // Auditoría
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
 import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
@@ -34,6 +40,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,7 +53,10 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
     private final SpringDataItemRepository itemRepository;
     private final SpringDataUserRepository userRepository;
     private final SpringDataCancellationRepository cancellationRepository;
+    private final SpringDataInventoryRepository inventoryRepository;
     private final RecordActionUseCase recordActionUseCase;
+    private final NotificationService notificationService;
+    private final NotificationPersistenceService notificationPersistenceService;
 
     @Override
     @Transactional
@@ -163,6 +174,9 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
                         inventoryName)
         ));
 
+        // Enviar notificaciones
+        sendItemLentNotifications(item, responsible, loanEntity);
+
         return new LendItemResponse(user.getFullName(), "Item prestado exitosamente a " + responsible.getFullName());
     }
 
@@ -210,6 +224,9 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
                         responsibleName,
                         inventoryName)
         ));
+
+        // Enviar notificaciones
+        sendItemReturnedNotifications(itemEntity, loanEntity.getResponsible(), loanEntity);
 
         return new ReturnItemResponse(user.getFullName(), "Item devuelto exitosamente");
     }
@@ -298,4 +315,236 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
                 .map(LoanMapper::toDto)
                 .collect(Collectors.toList());
     }
+
+    /**
+     * Envía notificaciones cuando se presta un item.
+     * Notifica al responsable de manera personalizada y a los usuarios relacionados con el inventario.
+     */
+    private void sendItemLentNotifications(ItemEntity item, UserEntity responsible, LoanEntity loan) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            InventoryEntity inventory = item.getInventory();
+            if (inventory == null) {
+                return;
+            }
+            
+            // Cargar el inventario completo con todas sus relaciones
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+                    .orElse(inventory);
+            
+            // Notificación personalizada para el responsable
+            if (responsible != null && !responsible.getId().equals(currentUserId)) {
+                String itemName = item.getProductName() != null ? item.getProductName() : "Item sin nombre";
+                String inventoryName = fullInventory.getName() != null ? fullInventory.getName() : "Inventario sin nombre";
+                String lenderName = currentUser.getFullName() != null ? currentUser.getFullName() : "Usuario";
+                String personalMessage = String.format("Se te ha prestado el item '%s' del inventario '%s' por %s", 
+                        itemName, inventoryName, lenderName);
+                
+                NotificationMessage personalNotification = new NotificationMessage(
+                        "ITEM_LENT_PERSONAL",
+                        "Item Prestado",
+                        personalMessage,
+                        new LoanNotificationData(loan.getId(), item.getId(), itemName, 
+                                fullInventory.getId(), inventoryName, responsible.getId(), "LENT")
+                );
+                
+                try {
+                    notificationPersistenceService.saveNotification(
+                            responsible.getId(),
+                            "ITEM_LENT_PERSONAL",
+                            "Item Prestado",
+                            personalMessage,
+                            new LoanNotificationData(loan.getId(), item.getId(), itemName, 
+                                    fullInventory.getId(), inventoryName, responsible.getId(), "LENT")
+                    );
+                    notificationService.sendNotificationToUser(responsible.getId(), personalNotification);
+                } catch (Exception e) {
+                    // Log error pero continuar
+                }
+            }
+            
+            // Notificar a los usuarios relacionados con el inventario
+            sendInventoryLoanNotifications(fullInventory, currentUserId, responsible != null ? responsible.getId() : null, 
+                    item, loan, "LENT");
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+
+    /**
+     * Envía notificaciones cuando se devuelve un item.
+     * Notifica al responsable de manera personalizada y a los usuarios relacionados con el inventario.
+     */
+    private void sendItemReturnedNotifications(ItemEntity item, UserEntity responsible, LoanEntity loan) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            InventoryEntity inventory = item.getInventory();
+            if (inventory == null) {
+                return;
+            }
+            
+            // Cargar el inventario completo con todas sus relaciones
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+                    .orElse(inventory);
+            
+            // Notificación personalizada para el responsable
+            if (responsible != null && !responsible.getId().equals(currentUserId)) {
+                String itemName = item.getProductName() != null ? item.getProductName() : "Item sin nombre";
+                String inventoryName = fullInventory.getName() != null ? fullInventory.getName() : "Inventario sin nombre";
+                String returnerName = currentUser.getFullName() != null ? currentUser.getFullName() : "Usuario";
+                String personalMessage = String.format("Has devuelto el item '%s' del inventario '%s' a %s", 
+                        itemName, inventoryName, returnerName);
+                
+                NotificationMessage personalNotification = new NotificationMessage(
+                        "ITEM_RETURNED_PERSONAL",
+                        "Item Devuelto",
+                        personalMessage,
+                        new LoanNotificationData(loan.getId(), item.getId(), itemName, 
+                                fullInventory.getId(), inventoryName, responsible.getId(), "RETURNED")
+                );
+                
+                try {
+                    notificationPersistenceService.saveNotification(
+                            responsible.getId(),
+                            "ITEM_RETURNED_PERSONAL",
+                            "Item Devuelto",
+                            personalMessage,
+                            new LoanNotificationData(loan.getId(), item.getId(), itemName, 
+                                    fullInventory.getId(), inventoryName, responsible.getId(), "RETURNED")
+                    );
+                    notificationService.sendNotificationToUser(responsible.getId(), personalNotification);
+                } catch (Exception e) {
+                    // Log error pero continuar
+                }
+            }
+            
+            // Notificar a los usuarios relacionados con el inventario
+            sendInventoryLoanNotifications(fullInventory, currentUserId, responsible != null ? responsible.getId() : null, 
+                    item, loan, "RETURNED");
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+
+    /**
+     * Envía notificaciones informativas a los usuarios relacionados con el inventario cuando se presta o devuelve un item.
+     * Se notifica a:
+     * - El dueño del inventario
+     * - Los firmantes del inventario
+     * - Los manejadores del inventario
+     * - Los warehouse del centro al cual pertenece el inventario
+     * 
+     * No se envía notificación al usuario que realiza la acción ni al responsable.
+     */
+    private void sendInventoryLoanNotifications(InventoryEntity inventory, Long currentUserId, Long responsibleId, 
+                                                ItemEntity item, LoanEntity loan, String action) {
+        try {
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Dueño del inventario
+            if (inventory.getOwner() != null) {
+                userIdsToNotify.add(inventory.getOwner().getId());
+            }
+            
+            // 2. Firmantes del inventario
+            if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
+                inventory.getSignatories().forEach(signatory -> {
+                    if (signatory != null && signatory.isStatus()) {
+                        userIdsToNotify.add(signatory.getId());
+                    }
+                });
+            }
+            
+            // 3. Manejadores del inventario
+            if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
+                inventory.getManagers().forEach(manager -> {
+                    if (manager != null && manager.isStatus()) {
+                        userIdsToNotify.add(manager.getId());
+                    }
+                });
+            }
+            
+            // 4. Warehouse del centro al cual pertenece el inventario
+            if (inventory.getInstitution() != null) {
+                Long institutionId = inventory.getInstitution().getId();
+                
+                List<UserEntity> warehouses = userRepository.findByInstitutionIdAndRole(institutionId, Role.WAREHOUSE);
+                warehouses.forEach(warehouse -> userIdsToNotify.add(warehouse.getId()));
+            }
+            
+            // Remover al usuario actual y al responsable de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            if (responsibleId != null) {
+                userIdsToNotify.remove(responsibleId);
+            }
+            
+            // Preparar datos de la notificación
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item sin nombre";
+            String inventoryName = inventory.getName() != null ? inventory.getName() : "Inventario sin nombre";
+            String responsibleName = loan.getResponsible() != null && loan.getResponsible().getFullName() != null
+                    ? loan.getResponsible().getFullName()
+                    : "Usuario";
+            
+            String message;
+            String notificationType;
+            String notificationTitle;
+            
+            if (action.equals("LENT")) {
+                message = String.format("Se ha prestado el item '%s' del inventario '%s' a %s", 
+                        itemName, inventoryName, responsibleName);
+                notificationType = "ITEM_LENT";
+                notificationTitle = "Item Prestado";
+            } else {
+                message = String.format("Se ha devuelto el item '%s' del inventario '%s' por %s", 
+                        itemName, inventoryName, responsibleName);
+                notificationType = "ITEM_RETURNED";
+                notificationTitle = "Item Devuelto";
+            }
+            
+            NotificationMessage notification = new NotificationMessage(
+                    notificationType,
+                    notificationTitle,
+                    message,
+                    new LoanNotificationData(loan.getId(), item.getId(), itemName, 
+                            inventory.getId(), inventoryName, responsibleId, action)
+            );
+            
+            // Enviar notificaciones a todos los usuarios
+            for (Long userId : userIdsToNotify) {
+                try {
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            notificationType,
+                            notificationTitle,
+                            message,
+                            new LoanNotificationData(loan.getId(), item.getId(), itemName, 
+                                    inventory.getId(), inventoryName, responsibleId, action)
+                    );
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+    
+    /**
+     * DTO interno para datos de préstamo en la notificación
+     */
+    private record LoanNotificationData(
+            Long loanId,
+            Long itemId,
+            String itemName,
+            Long inventoryId,
+            String inventoryName,
+            Long responsibleId,
+            String action
+    ) {}
 }

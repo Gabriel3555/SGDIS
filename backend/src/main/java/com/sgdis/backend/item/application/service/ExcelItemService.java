@@ -2,10 +2,19 @@ package com.sgdis.backend.item.application.service;
 
 import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.exception.DomainValidationException;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.item.application.dto.BulkUploadResponse;
 import com.sgdis.backend.item.application.dto.CreateItemRequest;
 import com.sgdis.backend.item.application.port.CreateItemUseCase;
+import com.sgdis.backend.item.application.service.ItemService;
+// Notificaciones
+import com.sgdis.backend.notification.service.NotificationService;
+import com.sgdis.backend.notification.service.NotificationPersistenceService;
+import com.sgdis.backend.notification.dto.NotificationMessage;
+import com.sgdis.backend.user.domain.Role;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
 // Auditoría
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
 import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
@@ -22,6 +31,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +44,9 @@ public class ExcelItemService {
     private final AuthService authService;
     private final SpringDataInventoryRepository inventoryRepository;
     private final RecordActionUseCase recordActionUseCase;
+    private final NotificationService notificationService;
+    private final NotificationPersistenceService notificationPersistenceService;
+    private final SpringDataUserRepository userRepository;
     private static final Pattern ATTRIBUTE_PATTERN = Pattern.compile("(MARCA|SERIAL|MODELO|OBSERVACIONES):([^;]+)");
     private static final int MAX_STRING_LENGTH = 255;
 
@@ -67,21 +81,25 @@ public class ExcelItemService {
         int successfulItems = 0;
         int totalRows = 0;
 
-        // Comenzar desde la segunda fila (índice 1, ya que 0 es el encabezado)
-        for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
-            Row row = sheet.getRow(rowIndex);
-            if (row == null) {
-                continue;
-            }
+        // Activar modo carga masiva para evitar notificaciones individuales
+        ItemService.setBulkUploadMode(true);
+        
+        try {
+            // Comenzar desde la segunda fila (índice 1, ya que 0 es el encabezado)
+            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (row == null) {
+                    continue;
+                }
 
-            // Verificar si la fila está vacía
-            if (isRowEmpty(row)) {
-                continue;
-            }
+                // Verificar si la fila está vacía
+                if (isRowEmpty(row)) {
+                    continue;
+                }
 
-            totalRows++;
-            
-            try {
+                totalRows++;
+                
+                try {
                 // Leer columnas según especificación
                 String irId = getCellValueAsString(row, 0); // Columna A
                 String wareHouseDescription = getCellValueAsString(row, 3); // Columna D
@@ -170,12 +188,16 @@ public class ExcelItemService {
                     true // status por defecto
                 );
 
-                createItemUseCase.createItem(createRequest);
-                successfulItems++;
+                    createItemUseCase.createItem(createRequest);
+                    successfulItems++;
 
-            } catch (Exception e) {
-                errors.add("Fila " + (rowIndex + 1) + ": " + e.getMessage());
+                } catch (Exception e) {
+                    errors.add("Fila " + (rowIndex + 1) + ": " + e.getMessage());
+                }
             }
+        } finally {
+            // Desactivar modo carga masiva
+            ItemService.clearBulkUploadMode();
         }
 
         workbook.close();
@@ -215,8 +237,130 @@ public class ExcelItemService {
             ));
         }
         
+        // Enviar notificación única de carga masiva
+        if (successfulItems > 0) {
+            sendBulkUploadNotification(inventoryId, successfulItems, totalRows, filename);
+        }
+        
         return new BulkUploadResponse(totalRows, successfulItems, failedItems, errors);
     }
+    
+    /**
+     * Envía una notificación única de carga masiva a los usuarios relacionados.
+     * Se notifica a los mismos usuarios que cuando se crea un item individual.
+     */
+    private void sendBulkUploadNotification(Long inventoryId, int successfulItems, int totalRows, String filename) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            // Cargar el inventario completo con todas sus relaciones
+            InventoryEntity inventory = inventoryRepository.findByIdWithAllRelations(inventoryId)
+                    .orElse(null);
+            
+            if (inventory == null) {
+                return;
+            }
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // 2. Admin regional de la misma regional del inventario
+            if (inventory.getInstitution() != null && 
+                inventory.getInstitution().getRegional() != null) {
+                Long regionalId = inventory.getInstitution().getRegional().getId();
+                
+                List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+                adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            }
+            
+            // 3. Admin institution y warehouse de la misma institution del inventario
+            if (inventory.getInstitution() != null) {
+                Long institutionId = inventory.getInstitution().getId();
+                
+                List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
+                        institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
+                institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+            }
+            
+            // 4. Dueño del inventario
+            if (inventory.getOwner() != null) {
+                userIdsToNotify.add(inventory.getOwner().getId());
+            }
+            
+            // 5. Firmadores del inventario
+            if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
+                inventory.getSignatories().forEach(signatory -> {
+                    if (signatory != null && signatory.isStatus()) {
+                        userIdsToNotify.add(signatory.getId());
+                    }
+                });
+            }
+            
+            // 6. Manejadores del inventario
+            if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
+                inventory.getManagers().forEach(manager -> {
+                    if (manager != null && manager.isStatus()) {
+                        userIdsToNotify.add(manager.getId());
+                    }
+                });
+            }
+            
+            // Remover al usuario actual de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            
+            // Preparar datos de la notificación
+            String inventoryName = inventory.getName() != null ? inventory.getName() : "Inventario sin nombre";
+            String fileNameDisplay = filename != null ? filename : "archivo Excel";
+            String message = String.format("Se ha realizado una carga masiva en el inventario '%s': %d item(s) creado(s) de %d total(es) desde el archivo %s", 
+                    inventoryName, successfulItems, totalRows, fileNameDisplay);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "BULK_UPLOAD_COMPLETED",
+                    "Carga Masiva Completada",
+                    message,
+                    new BulkUploadNotificationData(inventoryId, inventoryName, successfulItems, totalRows, fileNameDisplay)
+            );
+            
+            // Enviar notificaciones a todos los usuarios
+            for (Long userId : userIdsToNotify) {
+                try {
+                    // Guardar en base de datos
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            "BULK_UPLOAD_COMPLETED",
+                            "Carga Masiva Completada",
+                            message,
+                            new BulkUploadNotificationData(inventoryId, inventoryName, successfulItems, totalRows, fileNameDisplay)
+                    );
+                    
+                    // Enviar por WebSocket
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                    // El log se maneja en NotificationService
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la carga masiva
+            // El sistema de notificaciones no debe bloquear la carga
+        }
+    }
+    
+    /**
+     * DTO interno para datos de carga masiva en la notificación
+     */
+    private record BulkUploadNotificationData(
+            Long inventoryId,
+            String inventoryName,
+            int successfulItems,
+            int totalRows,
+            String fileName
+    ) {}
 
     private String getCellValueAsString(Row row, int columnIndex) {
         Cell cell = row.getCell(columnIndex);
