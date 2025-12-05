@@ -140,11 +140,11 @@ public class ItemController {
             content = @Content(schema = @Schema(implementation = DeleteItemResponse.class))
     )
     @ApiResponse(responseCode = "404", description = "Item not found")
-    @ApiResponse(responseCode = "400", description = "Item cannot be deleted (has active loans)")
+    @ApiResponse(responseCode = "400", description = "Item cannot be deactivated (has active loans or already inactive)")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @DeleteMapping("/{id}")
     public ResponseEntity<DeleteItemResponse> deleteItem(
-            @Parameter(description = "ID of the item to delete", required = true)
+            @Parameter(description = "ID of the item to deactivate (soft delete)", required = true)
             @PathVariable Long id
     ) {
         DeleteItemResponse response = deleteItemUseCase.deleteItem(id);
