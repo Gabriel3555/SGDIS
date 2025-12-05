@@ -75,8 +75,7 @@ public interface SpringDataCancellationRepository extends JpaRepository<Cancella
            "LEFT JOIN FETCH c.items i " +
            "LEFT JOIN FETCH i.inventory inv " +
            "LEFT JOIN FETCH inv.institution inst " +
-           "LEFT JOIN FETCH inst.regional reg " +
-           "WHERE reg.id = :regionalId " +
+           "WHERE inst.regional.id = :regionalId " +
            "ORDER BY c.id DESC")
     List<CancellationEntity> findAllByRegionalIdWithJoins(@Param("regionalId") Long regionalId);
 }
