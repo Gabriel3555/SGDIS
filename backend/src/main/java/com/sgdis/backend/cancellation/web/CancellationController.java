@@ -22,6 +22,11 @@ import com.sgdis.backend.cancellation.application.port.UploadFormatExampleCancel
 import com.sgdis.backend.auth.application.service.AuthService;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -325,6 +330,112 @@ public class CancellationController {
             System.err.println("Error fetching cancellations by inventory: " + e.getMessage());
             e.printStackTrace();
             return ResponseEntity.ok(new CancellationsByInventoryResponse(java.util.Map.of()));
+        }
+    }
+
+    @Operation(
+            summary = "Get all cancellations from user's inventories",
+            description = "Retrieves all cancellations from inventories where the current user is owner, manager, or signatory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Cancellations retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/my-inventories")
+    @Transactional(readOnly = true)
+    public ResponseEntity<Page<CancellationResponse>> getCancellationsFromMyInventories(
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        try {
+            var currentUser = authService.getCurrentUser();
+            Long userId = currentUser.getId();
+            
+            // Get all inventories where user is owner, manager, or signatory
+            List<InventoryEntity> ownedInventories = userRepository.findInventoriesByOwnerId(userId);
+            List<InventoryEntity> managedInventories = userRepository.findManagedInventoriesByUserId(userId);
+            
+            // Get signatory inventories
+            UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            List<InventoryEntity> signatoryInventories = user.getMySignatories();
+            if (signatoryInventories == null) {
+                signatoryInventories = List.of();
+            } else {
+                // Initialize the collection to avoid LazyInitializationException
+                signatoryInventories.size();
+            }
+            
+            // Combine all inventories and get unique IDs
+            Set<Long> inventoryIds = new HashSet<>();
+            ownedInventories.forEach(inv -> {
+                if (inv != null && inv.getId() != null) {
+                    inventoryIds.add(inv.getId());
+                }
+            });
+            managedInventories.forEach(inv -> {
+                if (inv != null && inv.getId() != null) {
+                    inventoryIds.add(inv.getId());
+                }
+            });
+            signatoryInventories.forEach(inv -> {
+                if (inv != null && inv.getId() != null) {
+                    inventoryIds.add(inv.getId());
+                }
+            });
+            
+            // If no inventories, return empty page
+            if (inventoryIds.isEmpty()) {
+                Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+                return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+            }
+            
+            // Get all cancellations from user's inventories
+            List<CancellationEntity> allCancellations = cancellationRepository.findAllByInventoryIdsWithJoins(new ArrayList<>(inventoryIds));
+            
+            // Handle empty list
+            if (allCancellations == null || allCancellations.isEmpty()) {
+                Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+                return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+            }
+            
+            // Sort by ID descending (already sorted in query, but ensure it)
+            allCancellations.sort((a, b) -> {
+                if (a.getId() == null || b.getId() == null) {
+                    return 0;
+                }
+                return Long.compare(b.getId(), a.getId());
+            });
+            
+            // Apply pagination manually
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), allCancellations.size());
+            
+            List<CancellationEntity> paginatedCancellations;
+            if (start >= allCancellations.size()) {
+                paginatedCancellations = List.of();
+            } else {
+                paginatedCancellations = allCancellations.subList(start, end);
+            }
+            
+            // Create Page manually
+            Page<CancellationEntity> cancellationPage = new PageImpl<>(paginatedCancellations, pageable, allCancellations.size());
+            
+            Page<CancellationResponse> responsePage = cancellationPage.map(CancellationMapper::toDto);
+            
+            return ResponseEntity.ok(responsePage);
+        } catch (Exception e) {
+            System.err.println("Error fetching cancellations from user inventories: " + e.getMessage());
+            e.printStackTrace();
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
         }
     }
 

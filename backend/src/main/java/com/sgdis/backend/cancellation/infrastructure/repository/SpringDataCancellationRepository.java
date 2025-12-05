@@ -58,4 +58,14 @@ public interface SpringDataCancellationRepository extends JpaRepository<Cancella
            "AND c.approved = true " +
            "GROUP BY inv.id, inv.name")
     List<Object[]> countCancellationsByInventoryForInstitution(@Param("institutionId") Long institutionId);
+    
+    @Query("SELECT DISTINCT c FROM CancellationEntity c " +
+           "LEFT JOIN FETCH c.requester " +
+           "LEFT JOIN FETCH c.checker " +
+           "LEFT JOIN FETCH c.items i " +
+           "LEFT JOIN FETCH i.inventory inv " +
+           "LEFT JOIN FETCH inv.institution inst " +
+           "WHERE inv.id IN :inventoryIds " +
+           "ORDER BY c.id DESC")
+    List<CancellationEntity> findAllByInventoryIdsWithJoins(@Param("inventoryIds") List<Long> inventoryIds);
 }

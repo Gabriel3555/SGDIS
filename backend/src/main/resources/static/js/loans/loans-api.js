@@ -449,49 +449,30 @@ async function loadLoans() {
         const isAdminInstitution = (userInfo && userInfo.role === 'ADMIN_INSTITUTION') || 
                                    (loansData.userRole === 'ADMIN_INSTITUTION');
 
-        // For USER role, load only their loans (both received and made)
+        // For USER role, load all loans from inventories where user is owner, manager, or signatory
         if (isUserRole) {
-            console.log('Loading user loans from /api/v1/users/me/loans');
+            console.log('Loading loans from user inventories from /api/v1/loan/my-inventories');
             
-            // Load loans where user is responsible (received loans)
-            const receivedResponse = await fetch('/api/v1/users/me/loans', {
+            const response = await fetch('/api/v1/loan/my-inventories', {
                 method: 'GET',
                 headers: headers
             });
 
-            // Load loans where user is lender (loans made)
-            const madeResponse = await fetch('/api/v1/users/me/loans-made', {
-                method: 'GET',
-                headers: headers
-            });
-
-            if (receivedResponse.ok) {
-                let loans = await receivedResponse.json();
+            if (response.ok) {
+                let loans = await response.json();
                 loans = Array.isArray(loans) ? loans : [];
                 
+                // Store all loans in loansData.loans
                 loansData.loans = loans;
-                console.log('Loaded user loans (received):', loansData.loans.length, loans);
+                console.log('Loaded loans from user inventories:', loansData.loans.length, loans);
                 
                 // Always initialize filteredLoans with all loans first
                 loansData.filteredLoans = [...loansData.loans];
                 console.log('Initialized filteredLoans:', loansData.filteredLoans.length);
             } else {
-                console.error('Failed to load user loans:', receivedResponse.status);
+                console.error('Failed to load loans from user inventories:', response.status);
                 loansData.loans = [];
                 loansData.filteredLoans = [];
-            }
-
-            if (madeResponse.ok) {
-                let loansMade = await madeResponse.json();
-                loansMade = Array.isArray(loansMade) ? loansMade : [];
-                
-                loansData.loansMade = loansMade;
-                loansData.filteredLoansMade = [...loansData.loansMade];
-                console.log('Loaded user loans (made):', loansData.loansMade.length, loansMade);
-            } else {
-                console.error('Failed to load loans made:', madeResponse.status);
-                loansData.loansMade = [];
-                loansData.filteredLoansMade = [];
             }
             
             // Apply filters immediately - filterLoans should be available by now
