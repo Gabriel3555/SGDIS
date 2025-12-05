@@ -146,6 +146,7 @@ public class CancellationService implements
                 } else {
                     itemsInfo = "N/A";
                 }
+
                 
                 boolean isAutoApproved = requester.getRole() == Role.SUPERADMIN || 
                                         requester.getRole() == Role.ADMIN_REGIONAL || 
