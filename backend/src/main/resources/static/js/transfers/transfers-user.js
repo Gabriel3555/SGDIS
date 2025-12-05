@@ -152,20 +152,32 @@ async function loadUserTransfersData() {
             return;
         }
 
-        // Load transfers for all inventories
-        const allTransfers = [];
-        const inventoryIds = inventories.map(inv => inv.id);
+        // Load transfers for all inventories using the new endpoint
+        const token = localStorage.getItem('jwt');
+        const headers = { 
+            'Content-Type': 'application/json'
+        };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
         
-        for (const inventoryId of inventoryIds) {
-            try {
-                const transfers = await window.fetchTransfersByInventory(inventoryId);
-                if (Array.isArray(transfers)) {
-                // Note: Transfer data already includes inventory names from API
-                    allTransfers.push(...transfers);
+        let allTransfers = [];
+        try {
+            const response = await fetch('/api/v1/transfers/my-inventories', {
+                method: 'GET',
+                headers: headers
+            });
+            
+            if (response.ok) {
+                allTransfers = await response.json();
+                if (!Array.isArray(allTransfers)) {
+                    allTransfers = [];
                 }
-            } catch (error) {
-                console.error(`Error loading transfers for inventory ${inventoryId}:`, error);
+            } else {
+                console.error('Error loading transfers from user inventories:', response.status);
             }
+        } catch (error) {
+            console.error('Error loading transfers from user inventories:', error);
         }
 
         // Apply filters

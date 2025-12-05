@@ -22,6 +22,13 @@ import com.sgdis.backend.transfers.domain.TransferStatus;
 import com.sgdis.backend.transfers.infrastructure.repository.SpringDataTransferRepository;
 import com.sgdis.backend.transfers.infrastructure.entity.TransferEntity;
 import com.sgdis.backend.transfers.mapper.TransferMapper;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -58,6 +65,7 @@ public class TransferController {
     private final GetTransferStatisticsUseCase getTransferStatisticsUseCase;
     private final AuthService authService;
     private final SpringDataTransferRepository transferRepository;
+    private final SpringDataUserRepository userRepository;
 
     @Operation(
             summary = "Get all transfers",
@@ -349,6 +357,79 @@ public class TransferController {
         
         TransferStatisticsResponse statistics = new TransferStatisticsResponse(total, pending, approved, rejected);
         return ResponseEntity.ok(statistics);
+    }
+
+    @Operation(
+            summary = "Get all transfers from user's inventories",
+            description = "Retrieves all transfers from inventories where the current user is owner, manager, or signatory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Transfers retrieved successfully",
+            content = @Content(schema = @Schema(implementation = List.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/my-inventories")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<TransferSummaryResponse>> getTransfersFromMyInventories() {
+        try {
+            var currentUser = authService.getCurrentUser();
+            Long userId = currentUser.getId();
+            
+            // Get all inventories where user is owner, manager, or signatory
+            List<InventoryEntity> ownedInventories = userRepository.findInventoriesByOwnerId(userId);
+            List<InventoryEntity> managedInventories = userRepository.findManagedInventoriesByUserId(userId);
+            
+            // Get signatory inventories
+            UserEntity user = userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            List<InventoryEntity> signatoryInventories = user.getMySignatories();
+            if (signatoryInventories == null) {
+                signatoryInventories = List.of();
+            } else {
+                // Initialize the collection to avoid LazyInitializationException
+                signatoryInventories.size();
+            }
+            
+            // Combine all inventories and get unique IDs
+            Set<Long> inventoryIds = new HashSet<>();
+            ownedInventories.forEach(inv -> {
+                if (inv != null && inv.getId() != null) {
+                    inventoryIds.add(inv.getId());
+                }
+            });
+            managedInventories.forEach(inv -> {
+                if (inv != null && inv.getId() != null) {
+                    inventoryIds.add(inv.getId());
+                }
+            });
+            signatoryInventories.forEach(inv -> {
+                if (inv != null && inv.getId() != null) {
+                    inventoryIds.add(inv.getId());
+                }
+            });
+            
+            // If no inventories, return empty list
+            if (inventoryIds.isEmpty()) {
+                return ResponseEntity.ok(List.of());
+            }
+            
+            // Get all transfers from user's inventories
+            List<TransferEntity> allTransfers = transferRepository.findAllByInventoryIds(new ArrayList<>(inventoryIds));
+            
+            // Convert to DTOs
+            List<TransferSummaryResponse> transferResponses = allTransfers.stream()
+                    .map(TransferMapper::toSummaryResponse)
+                    .collect(java.util.stream.Collectors.toList());
+            
+            return ResponseEntity.ok(transferResponses);
+        } catch (Exception e) {
+            System.err.println("Error fetching transfers from user inventories: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(List.of());
+        }
     }
 }
 
