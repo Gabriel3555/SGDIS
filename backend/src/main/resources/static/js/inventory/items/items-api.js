@@ -452,8 +452,13 @@ async function lendItem(itemId, responsibleId, details) {
           errorMessage = errorText || errorMessage;
         }
         
-        // Check for specific loan error
-        if (errorMessage.includes("cannot be lent") || errorMessage.includes("not been returned") || errorMessage.includes("currently lent")) {
+        // Check for specific loan error - dado de baja
+        if (errorMessage.includes("dado de baja") || errorMessage.includes("está dado de baja")) {
+          // El mensaje ya viene formateado desde el backend, solo lo mantenemos
+          // No necesita traducción adicional
+        }
+        // Check for specific loan error - item currently lent
+        else if (errorMessage.includes("cannot be lent") || errorMessage.includes("not been returned") || errorMessage.includes("currently lent")) {
           if (errorMessage.includes("currently lent to:")) {
             // Extract the responsible person's name from the error message
             const match = errorMessage.match(/currently lent to: (.+?)(?:\.|$)/);

@@ -103,7 +103,7 @@
             <a href="/superadmin/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/cancellations')">
                 <i class="fas fa-times-circle text-lg"></i>
-                <span class="font-medium">Cancelaciones</span>
+                <span class="font-medium">Bajas</span>
             </a>
             <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
@@ -1273,6 +1273,40 @@
             localStorage.removeItem('jwt');
             window.location.href = '/';
         }
+
+        // Remove search input from header if it exists
+        function removeSearchInputFromHeader() {
+            const header = document.querySelector('header');
+            if (header) {
+                const searchInput = header.querySelector('input.search-input[placeholder="Buscar en el sistema..."]');
+                if (searchInput) {
+                    const searchContainer = searchInput.closest('.relative');
+                    if (searchContainer) {
+                        searchContainer.remove();
+                    } else {
+                        searchInput.remove();
+                    }
+                }
+            }
+        }
+
+        // Remove search input on page load and after DOM changes
+        document.addEventListener('DOMContentLoaded', function() {
+            removeSearchInputFromHeader();
+            
+            // Use MutationObserver to catch dynamically added inputs
+            const observer = new MutationObserver(function(mutations) {
+                removeSearchInputFromHeader();
+            });
+            
+            const header = document.querySelector('header');
+            if (header) {
+                observer.observe(header, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+        });
     </script>
 </body>
 
