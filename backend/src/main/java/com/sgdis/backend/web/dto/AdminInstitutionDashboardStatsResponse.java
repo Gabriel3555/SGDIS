@@ -1,0 +1,94 @@
+package com.sgdis.backend.web.dto;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class AdminInstitutionDashboardStatsResponse {
+    
+    // Estadísticas de Inventarios
+    private InventoryStats inventoryStats;
+    
+    // Estadísticas de Usuarios
+    private UserStats userStats;
+    
+    // Estadísticas de Transferencias
+    private TransferStats transferStats;
+    
+    // Estadísticas de Verificaciones
+    private VerificationStats verificationStats;
+    
+    // Estadísticas de Préstamos
+    private LoanStats loanStats;
+    
+    // Estadísticas de Cancelaciones
+    private CancellationStats cancellationStats;
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class InventoryStats {
+        private Long totalInventories;
+        private Long activeInventories;
+        private Long inactiveInventories;
+        private Long totalItems;
+        @JsonFormat(shape = JsonFormat.Shape.NUMBER_FLOAT)
+        private BigDecimal totalValue;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserStats {
+        private Long totalUsers;
+        private Long adminInstitutionCount;
+        private Long warehouseCount;
+        private Long userCount;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TransferStats {
+        private Long total;
+        private Long pending;
+        private Long approved;
+        private Long rejected;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class VerificationStats {
+        private Long total;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class LoanStats {
+        private Long total;
+    }
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CancellationStats {
+        private Long total;
+    }
+}
+

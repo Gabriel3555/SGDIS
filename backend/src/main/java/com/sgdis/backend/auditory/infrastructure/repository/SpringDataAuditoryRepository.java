@@ -28,4 +28,7 @@ public interface SpringDataAuditoryRepository extends JpaRepository<AuditoryEnti
             @Param("institutionId") Long institutionId,
             @Param("performerId") Long performerId,
             Pageable pageable);
+    
+    @Query("SELECT COUNT(a) FROM AuditoryEntity a WHERE a.institution.id = :institutionId")
+    long countByInstitutionId(@Param("institutionId") Long institutionId);
 }
