@@ -131,7 +131,8 @@ public class ItemController {
 
     @Operation(
             summary = "Delete item",
-            description = "Deletes an item by its ID. The item cannot be deleted if it has active loans. " +
+            description = "Deletes an item by its ID. Only SUPERADMIN, ADMIN_REGIONAL, and ADMIN_INSTITUTION can delete items. " +
+                    "The item and all related data (loans, verifications, transfers, cancellations) will be deleted in cascade. " +
                     "Associated images will also be deleted. The inventory's total price will be updated."
     )
     @ApiResponse(
@@ -140,11 +141,12 @@ public class ItemController {
             content = @Content(schema = @Schema(implementation = DeleteItemResponse.class))
     )
     @ApiResponse(responseCode = "404", description = "Item not found")
-    @ApiResponse(responseCode = "400", description = "Item cannot be deactivated (has active loans or already inactive)")
+    @ApiResponse(responseCode = "403", description = "Forbidden - Only administrators can delete items")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @PreAuthorize("hasAnyRole('SUPERADMIN', 'ADMIN_REGIONAL', 'ADMIN_INSTITUTION')")
     @DeleteMapping("/{id}")
     public ResponseEntity<DeleteItemResponse> deleteItem(
-            @Parameter(description = "ID of the item to deactivate (soft delete)", required = true)
+            @Parameter(description = "ID of the item to delete", required = true)
             @PathVariable Long id
     ) {
         DeleteItemResponse response = deleteItemUseCase.deleteItem(id);

@@ -229,11 +229,52 @@ function updateItemsViewModeButtons() {
     `;
 }
 
+// Helper function to check if current user can delete items
+function canUserDeleteItems() {
+    // Try multiple sources for user role
+    let userRole = '';
+    
+    if (window.currentUserRole) {
+        userRole = window.currentUserRole;
+    } else if (window.currentUserData && window.currentUserData.role) {
+        userRole = window.currentUserData.role;
+    } else if (window.usersData && window.usersData.currentLoggedInUserRole) {
+        userRole = window.usersData.currentLoggedInUserRole;
+    }
+    
+    // Also check URL path as fallback
+    if (!userRole) {
+        const path = window.location.pathname || '';
+        if (path.includes('/superadmin')) {
+            userRole = 'SUPERADMIN';
+        } else if (path.includes('/admin_regional')) {
+            userRole = 'ADMIN_REGIONAL';
+        } else if (path.includes('/admin_institution')) {
+            userRole = 'ADMIN_INSTITUTION';
+        }
+    }
+    
+    userRole = (userRole || '').toUpperCase();
+    const canDelete = userRole === 'SUPERADMIN' || userRole === 'ADMIN_REGIONAL' || userRole === 'ADMIN_INSTITUTION';
+    
+    // Debug log (remove in production)
+    console.log('canUserDeleteItems check:', { 
+        userRole, 
+        canDelete, 
+        currentUserRole: window.currentUserRole, 
+        currentUserData: window.currentUserData,
+        path: window.location.pathname
+    });
+    
+    return canDelete;
+}
+
 function updateItemsCards() {
     const container = document.getElementById('itemsContainer');
     if (!container || !window.itemsData) return;
     
     const items = window.itemsData.items || [];
+    const canDelete = canUserDeleteItems();
     
     if (items.length === 0) {
         container.innerHTML = `
@@ -300,9 +341,14 @@ function updateItemsCards() {
                     <button onclick="event.stopPropagation(); showCancelItemModal(${item.id})" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs transition-colors" title="Solicitar Cancelación">
                         <i class="fas fa-ban"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); showDeleteItemModal(${item.id})" class="px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition-colors" title="Desactivar Item">
+                    <button onclick="event.stopPropagation(); showDeactivateItemModal(${item.id})" class="px-2.5 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs transition-colors" title="Desactivar Item">
                         <i class="fas fa-toggle-off"></i>
                     </button>
+                    ${canDelete ? `
+                    <button onclick="event.stopPropagation(); showDeleteItemModal(${item.id})" class="px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition-colors" title="Eliminar Item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -317,6 +363,7 @@ function updateItemsList() {
     if (!container || !window.itemsData) return;
     
     const items = window.itemsData.items || [];
+    const canDelete = canUserDeleteItems();
     
     if (items.length === 0) {
         container.innerHTML = `
@@ -393,9 +440,14 @@ function updateItemsList() {
                         <button onclick="showCancelItemModal(${item.id})" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors" title="Solicitar Cancelación">
                             <i class="fas fa-ban"></i>
                         </button>
-                        <button onclick="showDeleteItemModal(${item.id})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors" title="Desactivar Item">
+                        <button onclick="showDeactivateItemModal(${item.id})" class="px-3 py-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm transition-colors" title="Desactivar Item">
                             <i class="fas fa-toggle-off"></i>
                         </button>
+                        ${canDelete ? `
+                        <button onclick="showDeleteItemModal(${item.id})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors" title="Eliminar Item">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        ` : ''}
                     </div>
                 </td>
             </tr>
@@ -632,4 +684,5 @@ window.filterItems = filterItems;
 window.handleItemImageError = handleItemImageError;
 window.handleItemImageUploadClick = handleItemImageUploadClick;
 window.handleItemImageFileSelect = handleItemImageFileSelect;
+window.canUserDeleteItems = canUserDeleteItems;
 
