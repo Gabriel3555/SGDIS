@@ -146,5 +146,5 @@ if (document.readyState === "loading") {
   darkModeManager = new DarkModeManager();
 }
 
-// Exportar para uso global
+// Uso global
 window.darkModeManager = darkModeManager;
