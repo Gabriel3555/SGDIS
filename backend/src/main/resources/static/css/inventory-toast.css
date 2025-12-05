@@ -31,7 +31,7 @@
     display: flex;
     flex-direction: column-reverse;
     gap: 12px;
-    z-index: 9999;
+    z-index: 99999 !important; /* Ensure toasts appear above modals (modals are usually 9999) */
     pointer-events: none;
 }
 
@@ -42,6 +42,8 @@
     justify-content: space-between;
     border-radius: 12px;
     overflow: hidden;
+    z-index: 99999 !important; /* Ensure toasts appear above modals */
+    pointer-events: auto; /* Allow interaction with toast buttons */
     animation-name: inventory-toast-apertura;
     animation-duration: 300ms;
     animation-timing-function: ease-out;

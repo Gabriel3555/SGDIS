@@ -15,19 +15,41 @@
         })();
     </script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        'sena-verde': '#00AF00',
-                        'sena-verde-oscuro': '#008800'
-                    }
+        // Suppress Tailwind CDN production warning BEFORE loading Tailwind
+        (function() {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('cdn.tailwindcss.com should not be used in production') ||
+                    message.includes('should not be used in production')) {
+                    return; // Suppress this warning
                 }
-            }
-        }
+                originalWarn.apply(console, args);
+            };
+        })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind after it's loaded
+        (function configureTailwind() {
+            if (typeof tailwind !== 'undefined' && tailwind.config) {
+                tailwind.config = {
+                    darkMode: 'class',
+                    theme: {
+                        extend: {
+                            colors: {
+                                'sena-verde': '#00AF00',
+                                'sena-verde-oscuro': '#008800'
+                            }
+                        }
+                    }
+                };
+            } else {
+                // Retry after a short delay if Tailwind isn't ready yet
+                setTimeout(configureTailwind, 50);
+            }
+        })();
+    </script>
     <link rel="icon" type="image/jpeg" href="../../svg/box.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -35,6 +57,7 @@
     <link rel="stylesheet" href="../../css/dashboard.css">
     <link rel="stylesheet" href="../../css/dark-mode.css">
     <link rel="stylesheet" href="../../css/notifications-bell.css">
+    <link rel="stylesheet" href="../../css/inventory-toast.css">
 </head>
 
 <body>
@@ -239,6 +262,8 @@
     <script src="../../js/user-sidebar.js"></script>
     <script src="../../js/token-refresh.js"></script>
     <script src="../../js/dashboard.js"></script>
+    <!-- Toast notification system -->
+    <script src="../../js/inventory/inventory-toast.js"></script>
     <!-- Transfers Module Scripts -->
     <script src="../../js/transfers/transfers-data.js"></script>
     <script src="../../js/transfers/transfers-api.js"></script>

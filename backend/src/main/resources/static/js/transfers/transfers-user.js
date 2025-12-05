@@ -769,8 +769,9 @@ async function populateUserNewTransferForm(itemId = null) {
                     class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cancelar
                 </button>
-                <button type="submit" 
-                    class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                <button type="submit" id="userTransferSubmitBtn"
+                    class="flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors cursor-not-allowed" 
+                    disabled>
                     Solicitar Transferencia
                 </button>
             </div>
@@ -786,14 +787,78 @@ async function populateUserNewTransferForm(itemId = null) {
             newForm.addEventListener('submit', handleUserNewTransferSubmit);
         }
         
-        // Add Enter key handler for search
+        // Add automatic search with debounce and Enter key handler
         const plateInput = document.getElementById('newTransferItemPlateOrSerial');
         if (plateInput) {
+            let debounceTimer;
+            
+            // Auto-search on input with debounce (500ms delay)
+            plateInput.addEventListener('input', function(e) {
+                const value = e.target.value.trim();
+                
+                // Clear previous timer
+                clearTimeout(debounceTimer);
+                
+                // Clear item info if input is empty
+                if (!value) {
+                    const itemInfoDiv = document.getElementById('newTransferItemInfo');
+                    const itemIdHidden = document.getElementById('newTransferItemIdHidden');
+                    const submitButton = document.getElementById('userTransferSubmitBtn');
+                    if (itemInfoDiv) {
+                        itemInfoDiv.classList.add('hidden');
+                        const itemInfoText = document.getElementById('newTransferItemInfoText');
+                        if (itemInfoText) itemInfoText.textContent = '';
+                    }
+                    if (itemIdHidden) itemIdHidden.value = '';
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.className = 'flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors cursor-not-allowed';
+                    }
+                    return;
+                }
+                
+                // Only search if value has at least 3 characters (to avoid searching short numbers)
+                // Also check if it's not just a number (numbers are usually IDs, not plates)
+                const isOnlyNumbers = /^\d+$/.test(value);
+                // For numbers, require at least 6 characters (to avoid searching IDs)
+                // For text (plates with letters), require 3 characters
+                const minLength = isOnlyNumbers ? 6 : 3;
+                
+                // Don't search if it's a very long number (likely an ID, not a plate)
+                const maxLength = isOnlyNumbers ? 20 : 50;
+                
+                if (value.length >= minLength && value.length <= maxLength) {
+                    // Show loading state
+                    const itemInfoDiv = document.getElementById('newTransferItemInfo');
+                    const itemInfoText = document.getElementById('newTransferItemInfoText');
+                    if (itemInfoDiv && itemInfoText) {
+                        itemInfoDiv.classList.remove('hidden');
+                        itemInfoText.textContent = 'Buscando...';
+                        itemInfoDiv.className = 'mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl';
+                    }
+                    
+                    // Debounce: wait 500ms after user stops typing
+                    debounceTimer = setTimeout(() => {
+                        handleUserTransferItemSearch();
+                    }, 500);
+                } else if (value.length > 0) {
+                    // Clear previous results if input is too short
+                    const itemInfoDiv = document.getElementById('newTransferItemInfo');
+                    if (itemInfoDiv) {
+                        itemInfoDiv.classList.add('hidden');
+                        const itemInfoText = document.getElementById('newTransferItemInfoText');
+                        if (itemInfoText) itemInfoText.textContent = '';
+                    }
+                }
+            });
+            
+            // Also allow Enter key to search immediately
             plateInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
+                    clearTimeout(debounceTimer);
                     handleUserTransferItemSearch();
-            }
+                }
             });
         }
     } catch (error) {
@@ -873,8 +938,9 @@ async function handleUserTransferItemSearch() {
     
     const plateOrSerial = plateOrSerialInput.value.trim();
     if (!plateOrSerial) {
-        if (typeof showErrorToast === 'function') {
-            showErrorToast('Error', 'Por favor ingresa una placa o serial');
+        const showToast = window.showInventoryErrorToast || window.showErrorToast;
+        if (typeof showToast === 'function') {
+            showToast('Error', 'Por favor ingresa una placa o serial', true, 4000);
         }
         return;
     }
@@ -905,8 +971,8 @@ async function handleUserTransferItemSearch() {
         
         if (response.ok) {
             item = await response.json();
-        } else if (response.status === 404) {
-            // Try by serial
+        } else if (response.status === 404 || response.status === 400) {
+            // Try by serial if not found by plate
             response = await fetch(`/api/v1/items/serial/${encodeURIComponent(plateOrSerial)}`, {
                 method: 'GET',
                 headers: {
@@ -917,19 +983,55 @@ async function handleUserTransferItemSearch() {
             
             if (response.ok) {
                 item = await response.json();
-            } else if (response.status === 404) {
-                throw new Error('No se encontró un item con esa placa o serial');
+            } else if (response.status === 404 || response.status === 400) {
+                // Item not found - show toast instead of error
+                const errorMessage = 'No se encontró un item con esa placa o serial';
+                if (itemInfoDiv && itemInfoText) {
+                    itemInfoText.innerHTML = `
+                        <i class="fas fa-exclamation-circle text-yellow-600 dark:text-yellow-400 mr-2"></i>
+                        ${errorMessage}
+                    `;
+                    itemInfoDiv.className = 'mt-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl';
+                }
+                // Show toast notification
+                // Use available toast functions (check multiple sources)
+                const showToast = window.showInventoryWarningToast || 
+                                 window.showWarningToast || 
+                                 (typeof showInventoryWarningToast !== 'undefined' ? showInventoryWarningToast : null) ||
+                                 (typeof showWarningToast !== 'undefined' ? showWarningToast : null);
+                if (typeof showToast === 'function') {
+                    showToast('Item no encontrado', errorMessage, true, 4000);
+                } else {
+                    // Fallback: show in info div only
+                    console.log('Toast functions not available, showing in info div only');
+                }
+                throw new Error(errorMessage);
             } else {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Error al buscar el item por serial');
+                const errorMessage = errorData.message || 'Error al buscar el item por serial';
+                const showToast = window.showInventoryErrorToast || window.showErrorToast;
+                if (typeof showToast === 'function') {
+                    showToast('Error de búsqueda', errorMessage, true, 5000);
+                }
+                throw new Error(errorMessage);
             }
         } else {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Error al buscar el item por placa');
+            const errorMessage = errorData.message || 'Error al buscar el item por placa';
+            const showToast = window.showInventoryErrorToast || window.showErrorToast;
+            if (typeof showToast === 'function') {
+                showToast('Error de búsqueda', errorMessage, true, 5000);
+            }
+            throw new Error(errorMessage);
         }
         
         if (!item || !item.id) {
-            throw new Error('No se pudo obtener la información del item');
+            const errorMessage = 'No se pudo obtener la información del item';
+            const showToast = window.showInventoryErrorToast || window.showErrorToast;
+            if (typeof showToast === 'function') {
+                showToast('Error', errorMessage, true, 5000);
+            }
+            throw new Error(errorMessage);
         }
         
         // Verify that user is owner or signatory of the item's inventory
@@ -937,7 +1039,11 @@ async function handleUserTransferItemSearch() {
         const itemInventoryId = item.inventoryId || item.inventory?.id;
         
         if (!itemInventoryId) {
-            throw new Error('El item no tiene un inventario asignado');
+            const errorMessage = 'El item no tiene un inventario asignado';
+            if (typeof showErrorToast === 'function') {
+                showErrorToast('Error de validación', errorMessage, true, 5000);
+            }
+            throw new Error(errorMessage);
         }
         
         // Check if user is owner or signatory of this inventory
@@ -959,7 +1065,18 @@ async function handleUserTransferItemSearch() {
         const isSignatory = userSignatoryInventories.some(inv => inv.id === itemInventoryId);
         
         if (!isOwner && !isSignatory) {
-            throw new Error('No tienes permisos para transferir items de este inventario. Debes ser propietario o firmante del inventario.');
+            const errorMessage = 'No tienes permisos para transferir items de este inventario. Debes ser propietario o firmante del inventario.';
+            if (itemInfoDiv && itemInfoText) {
+                itemInfoText.innerHTML = `
+                    <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 mr-2"></i>
+                    ${errorMessage}
+                `;
+                itemInfoDiv.className = 'mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl';
+            }
+            if (typeof showErrorToast === 'function') {
+                showErrorToast('Sin permisos', errorMessage, true, 6000);
+            }
+            throw new Error(errorMessage);
         }
         
         // Store item ID in a hidden field for later use
@@ -989,27 +1106,88 @@ async function handleUserTransferItemSearch() {
             itemInfoDiv.className = 'mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl';
         }
         
-        if (typeof showSuccessToast === 'function') {
-            showSuccessToast('Item encontrado', 'El item ha sido encontrado y verificado');
-        }
-    } catch (error) {
-        console.error('Error searching item:', error);
-        if (itemInfoDiv && itemInfoText) {
-            itemInfoText.innerHTML = `
-                <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400 mr-2"></i>
-                ${error.message || 'Error al buscar el item'}
-            `;
-            itemInfoDiv.className = 'mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl';
+        // Enable submit button
+        const submitButton = document.getElementById('userTransferSubmitBtn');
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.className = 'flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors';
         }
         
-        if (typeof showErrorToast === 'function') {
-            showErrorToast('Error', error.message || 'No se pudo buscar el item');
+        const showToast = window.showInventorySuccessToast || window.showSuccessToast;
+        if (typeof showToast === 'function') {
+            showToast('Item encontrado', 'El item ha sido encontrado y verificado', true, 4000);
+        }
+    } catch (error) {
+        // Only log unexpected errors, not expected ones (404, 400, permission errors)
+        const isExpectedError = error.message && (
+            error.message.includes('No se encontró') ||
+            error.message.includes('not found') ||
+            error.message.includes('permisos') ||
+            error.message.includes('permission') ||
+            error.message.includes('Bad Request')
+        );
+        
+        if (!isExpectedError) {
+            console.error('Error searching item:', error);
+        }
+        
+        // Show user-friendly message in the info div
+        if (itemInfoDiv && itemInfoText) {
+            let errorMessage = error.message || 'Error al buscar el item';
+            
+            // Translate common error messages
+            if (errorMessage.includes('No se encontró') || errorMessage.includes('not found')) {
+                errorMessage = 'Item no encontrado con esa placa o serial';
+            } else if (errorMessage.includes('permisos') || errorMessage.includes('permission')) {
+                errorMessage = 'No tienes permisos para transferir items de este inventario';
+            } else if (errorMessage.includes('Bad Request') || errorMessage.includes('inválido')) {
+                errorMessage = 'Placa o serial inválido. Verifica el formato e intenta nuevamente';
+            } else if (errorMessage.includes('No authentication token')) {
+                errorMessage = 'Error de autenticación. Por favor, recarga la página';
+            }
+            
+            // Determine toast type based on error
+            const isWarning = errorMessage.includes('no encontrado') || errorMessage.includes('inválido');
+            const toastType = isWarning ? 'warning' : 'error';
+            
+            itemInfoText.innerHTML = `
+                <i class="fas fa-exclamation-circle ${isWarning ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'} mr-2"></i>
+                ${errorMessage}
+            `;
+            itemInfoDiv.className = `mt-2 p-3 ${isWarning ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'} rounded-xl`;
+            
+            // Show toast notification (only if not already shown above)
+            if (!errorMessage.includes('No se encontró un item con esa placa o serial')) {
+                const showToast = toastType === 'warning' 
+                    ? (window.showInventoryWarningToast || window.showWarningToast || (typeof showInventoryWarningToast !== 'undefined' ? showInventoryWarningToast : null))
+                    : (window.showInventoryErrorToast || window.showErrorToast || (typeof showInventoryErrorToast !== 'undefined' ? showInventoryErrorToast : null));
+                if (typeof showToast === 'function') {
+                    const toastTitle = isWarning ? 'Item no encontrado' : 'Error de búsqueda';
+                    showToast(toastTitle, errorMessage, true, isWarning ? 4000 : 5000);
+                }
+            }
+        } else {
+            // If info div doesn't exist, show toast anyway
+            const showToast = isExpectedError 
+                ? (window.showInventoryWarningToast || window.showWarningToast || (typeof showInventoryWarningToast !== 'undefined' ? showInventoryWarningToast : null))
+                : (window.showInventoryErrorToast || window.showErrorToast || (typeof showInventoryErrorToast !== 'undefined' ? showInventoryErrorToast : null));
+            if (typeof showToast === 'function') {
+                const toastTitle = isExpectedError ? 'Item no encontrado' : 'Error de búsqueda';
+                showToast(toastTitle, error.message || 'No se pudo buscar el item', true, isExpectedError ? 4000 : 5000);
+            }
         }
         
         // Clear hidden item ID
         const hiddenItemId = document.getElementById('newTransferItemIdHidden');
         if (hiddenItemId) {
             hiddenItemId.value = '';
+        }
+        
+        // Disable submit button
+        const submitButton = document.getElementById('userTransferSubmitBtn');
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.className = 'flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors cursor-not-allowed';
         }
     }
 }
@@ -1230,9 +1408,34 @@ async function handleUserNewTransferSubmit(event) {
             await window.loadUserTransfersData();
         }
     } catch (error) {
-        console.error('Error requesting transfer:', error);
-        if (window.showErrorToast) {
-            window.showErrorToast('Error', error.message || 'No se pudo solicitar la transferencia');
+        // Only log unexpected errors
+        const isExpectedError = error.message && (
+            error.message.includes('Ya existe una transferencia pendiente') ||
+            error.message.includes('transferencia pendiente') ||
+            error.message.includes('already exists')
+        );
+        
+        if (!isExpectedError) {
+            console.error('Error requesting transfer:', error);
+        }
+        
+        // Show toast notification
+        const showToast = window.showInventoryErrorToast || window.showErrorToast || 
+                         (typeof showInventoryErrorToast !== 'undefined' ? showInventoryErrorToast : null);
+        if (typeof showToast === 'function') {
+            let errorMessage = error.message || 'No se pudo solicitar la transferencia';
+            let errorTitle = 'Error';
+            
+            // Customize message for common errors
+            if (errorMessage.includes('Ya existe una transferencia pendiente')) {
+                errorTitle = 'Transferencia Pendiente';
+                errorMessage = 'Ya existe una transferencia pendiente para este ítem. Espera a que se procese la transferencia actual.';
+            }
+            
+            showToast(errorTitle, errorMessage, true, 6000);
+        } else {
+            // Fallback: show alert if toast is not available
+            alert(error.message || 'No se pudo solicitar la transferencia');
         }
     } finally {
         if (submitButton) {
