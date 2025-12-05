@@ -36,6 +36,7 @@ import com.sgdis.backend.notification.dto.NotificationMessage;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
 import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.verification.infrastructure.repository.SpringDataVerificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,6 +65,7 @@ public class ItemService implements
     private final NotificationService notificationService;
     private final NotificationPersistenceService notificationPersistenceService;
     private final SpringDataUserRepository userRepository;
+    private final SpringDataVerificationRepository verificationRepository;
     
     // ThreadLocal para indicar si estamos en modo carga masiva
     private static final ThreadLocal<Boolean> BULK_UPLOAD_MODE = ThreadLocal.withInitial(() -> false);
@@ -253,7 +255,18 @@ public class ItemService implements
                 .toList();
 
         if (!activeLoans.isEmpty()) {
-            throw new IllegalStateException("Cannot delete item: Item has " + activeLoans.size() + " active loan(s)");
+            throw new DomainConflictException("No se puede eliminar el item: El item tiene " + activeLoans.size() + " préstamo(s) activo(s)");
+        }
+
+        // Check if item has verifications
+        long verificationCount = verificationRepository.countByItemId(itemId);
+        if (verificationCount > 0) {
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item " + itemId;
+            throw new DomainConflictException(
+                String.format("No se puede eliminar el item \"%s\": El item tiene %d verificación(es) asociada(s). " +
+                             "Debe eliminar las verificaciones antes de eliminar el item.", 
+                             itemName, verificationCount)
+            );
         }
 
         // Get inventory before deletion to update totalPrice
@@ -376,6 +389,21 @@ public class ItemService implements
             InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
                     .orElse(inventory);
             
+            // Asegurar que el owner esté cargado (forzar inicialización si es necesario)
+            if (fullInventory.getOwner() == null) {
+                // Intentar cargar desde el inventario original si está disponible
+                if (inventory.getOwner() != null) {
+                    fullInventory.setOwner(inventory.getOwner());
+                } else {
+                    // Si no está en el inventario original, cargar explícitamente desde la BD
+                    inventoryRepository.findById(inventory.getId()).ifPresent(loadedInventory -> {
+                        if (loadedInventory.getOwner() != null) {
+                            fullInventory.setOwner(loadedInventory.getOwner());
+                        }
+                    });
+                }
+            }
+            
             // Usar un Set para evitar duplicados
             Set<Long> userIdsToNotify = new HashSet<>();
             
@@ -402,7 +430,7 @@ public class ItemService implements
             }
             
             // 4. Dueño del inventario
-            if (fullInventory.getOwner() != null) {
+            if (fullInventory.getOwner() != null && fullInventory.getOwner().isStatus()) {
                 userIdsToNotify.add(fullInventory.getOwner().getId());
             }
             
@@ -478,6 +506,21 @@ public class ItemService implements
             InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
                     .orElse(inventory);
             
+            // Asegurar que el owner esté cargado (forzar inicialización si es necesario)
+            if (fullInventory.getOwner() == null) {
+                // Intentar cargar desde el inventario original si está disponible
+                if (inventory.getOwner() != null) {
+                    fullInventory.setOwner(inventory.getOwner());
+                } else {
+                    // Si no está en el inventario original, cargar explícitamente desde la BD
+                    inventoryRepository.findById(inventory.getId()).ifPresent(loadedInventory -> {
+                        if (loadedInventory.getOwner() != null) {
+                            fullInventory.setOwner(loadedInventory.getOwner());
+                        }
+                    });
+                }
+            }
+            
             // Usar un Set para evitar duplicados
             Set<Long> userIdsToNotify = new HashSet<>();
             
@@ -504,7 +547,7 @@ public class ItemService implements
             }
             
             // 4. Dueño del inventario
-            if (fullInventory.getOwner() != null) {
+            if (fullInventory.getOwner() != null && fullInventory.getOwner().isStatus()) {
                 userIdsToNotify.add(fullInventory.getOwner().getId());
             }
             

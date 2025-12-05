@@ -69,5 +69,9 @@ public interface SpringDataVerificationRepository extends JpaRepository<Verifica
     // Query to get verifications by item IDs
     @Query("SELECT DISTINCT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory WHERE i.id IN :itemIds ORDER BY v.id DESC")
     Page<VerificationEntity> findAllByItemIds(@Param("itemIds") List<Long> itemIds, Pageable pageable);
+    
+    // Query to count verifications by item ID
+    @Query("SELECT COUNT(v) FROM VerificationEntity v WHERE v.item.id = :itemId")
+    long countByItemId(@Param("itemId") Long itemId);
 }
 
