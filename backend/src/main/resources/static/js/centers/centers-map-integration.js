@@ -220,6 +220,41 @@ function getCentersByStateCode(stateCode) {
     const stateName = simplemaps_countrymap_mapdata.state_specific[stateCode].name;
     
     return centersData.filter(center => {
+        // Caso especial para Distrito Capital de Bogotá (CODC)
+        if (stateCode === 'CODC') {
+            // Buscar por nombre de regional si está disponible
+            if (center.regionalName) {
+                const normalizedRegional = normalizeString(center.regionalName);
+                if (normalizedRegional.includes('distritocapital') || 
+                    normalizedRegional.includes('bogota') ||
+                    normalizedRegional === 'distritocapital' ||
+                    normalizedRegional === 'bogota') {
+                    return true;
+                }
+            }
+            // También buscar por departamento si es Distrito Capital
+            if (center.departamentName) {
+                const centerDept = normalizeString(center.departamentName);
+                if (centerDept.includes('distritocapital') || 
+                    centerDept.includes('bogota') ||
+                    departmentCodeMap[center.departamentName] === stateCode) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Para otros departamentos, excluir centros de Distrito Capital
+        if (center.regionalName) {
+            const normalizedRegional = normalizeString(center.regionalName);
+            if (normalizedRegional.includes('distritocapital') || 
+                normalizedRegional.includes('bogota') ||
+                normalizedRegional === 'distritocapital' ||
+                normalizedRegional === 'bogota') {
+                return false; // Excluir centros de Distrito Capital de otros departamentos
+            }
+        }
+        
         if (!center.departamentName) return false;
         
         // Normalizar y comparar
@@ -440,9 +475,12 @@ function updateStats() {
 
 // Utilidades
 function normalizeString(str) {
+    if (!str) return '';
     return str.toLowerCase()
         .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i')
         .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ñ/g, 'n')
+        .replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '')
+        .replace('d.c.', '').replace('dc', '')
         .trim();
 }
 

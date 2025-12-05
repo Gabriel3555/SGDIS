@@ -28,6 +28,8 @@ const colombiaRegionsPath = {
     'nortesantander': 'M 610,210 L 670,205 L 685,240 L 670,270 L 620,265 Z',
     'boyaca': 'M 540,300 L 610,290 L 630,330 L 610,370 L 560,365 L 540,335 Z',
     'cundinamarca': 'M 470,340 L 540,330 L 560,370 L 540,410 L 480,405 L 470,375 Z',
+    'bogota': 'M 490,345 L 520,342 L 530,360 L 520,375 L 495,372 L 490,360 Z', // Distrito Capital de Bogotá
+    'distritocapital': 'M 490,345 L 520,342 L 530,360 L 520,375 L 495,372 L 490,360 Z', // Mismo que Bogotá
     'caldas': 'M 380,330 L 430,325 L 445,355 L 430,380 L 390,375 Z',
     'risaralda': 'M 345,350 L 385,345 L 395,375 L 380,395 L 350,390 Z',
     'quindio': 'M 360,385 L 395,380 L 405,405 L 390,425 L 365,420 Z',
@@ -69,7 +71,8 @@ const regionalPositions = {
     'nortesantander': { x: 645, y: 235 },
     'boyaca': { x: 575, y: 330 },
     'cundinamarca': { x: 505, y: 370 },
-    'bogota': { x: 505, y: 370 }, // Mismo que Cundinamarca
+    'bogota': { x: 505, y: 355 }, // Posición de Bogotá (Distrito Capital) - ligeramente más al norte
+    'distritocapital': { x: 505, y: 355 }, // Mismo que Bogotá
     'caldas': { x: 410, y: 350 },
     'risaralda': { x: 368, y: 370 },
     'quindio': { x: 378, y: 405 },
@@ -388,11 +391,20 @@ function toggleView() {
 
 // Normalizar nombre de regional
 function normalizeRegionalName(name) {
-    return name.toLowerCase()
+    let normalized = name.toLowerCase()
         .replace(/á/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i')
         .replace(/ó/g, 'o').replace(/ú/g, 'u').replace(/ñ/g, 'n')
         .replace(/\s+/g, '').replace(/-/g, '').replace(/\./g, '')
         .replace('d.c.', '').replace('dc', '');
+    
+    // Mapear variaciones de Distrito Capital a 'distritocapital'
+    if (normalized.includes('distritocapital') || normalized.includes('bogota') || 
+        normalized === 'distritocapital' || normalized === 'bogota' ||
+        normalized.includes('distrito') && normalized.includes('capital')) {
+        return 'distritocapital';
+    }
+    
+    return normalized;
 }
 
 // Tooltips
