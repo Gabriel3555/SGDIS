@@ -30,6 +30,11 @@ import com.sgdis.backend.transfers.mapper.TransferMapper;
 import com.sgdis.backend.cancellation.infrastructure.repository.SpringDataCancellationRepository;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+// Notificaciones
+import com.sgdis.backend.notification.service.NotificationService;
+import com.sgdis.backend.notification.service.NotificationPersistenceService;
+import com.sgdis.backend.notification.dto.NotificationMessage;
 // Auditoría
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
 import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
@@ -41,6 +46,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Service
@@ -54,6 +61,9 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
     private final SpringDataInventoryRepository inventoryRepository;
     private final SpringDataCancellationRepository cancellationRepository;
     private final RecordActionUseCase recordActionUseCase;
+    private final NotificationService notificationService;
+    private final NotificationPersistenceService notificationPersistenceService;
+    private final SpringDataUserRepository userRepository;
 
     @Override
     @Transactional
@@ -204,6 +214,15 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
                         requester.getEmail())
         ));
         
+        // Enviar notificaciones
+        if (isDirectTransfer) {
+            // Si es transferencia directa, notificar como aprobada
+            sendTransferApprovedNotifications(saved);
+        } else {
+            // Si es solicitud, notificar como solicitada
+            sendTransferRequestedNotifications(saved);
+        }
+        
         return TransferMapper.toRequestResponse(saved);
     }
 
@@ -312,6 +331,9 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
                         requesterName)
         ));
 
+        // Enviar notificaciones
+        sendTransferApprovedNotifications(transfer);
+
         return TransferMapper.toApproveResponse(transfer);
     }
 
@@ -381,6 +403,9 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
                         rejecter.getEmail(),
                         requesterName)
         ));
+
+        // Enviar notificaciones
+        sendTransferRejectedNotifications(transfer);
 
         return TransferMapper.toRejectResponse(transfer);
     }
@@ -534,4 +559,356 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
             inventoryRepository.addToTotalPrice(destinationInventoryId, itemValue);
         }
     }
+
+    /**
+     * Envía notificaciones cuando se solicita una transferencia.
+     * Se notifica a los usuarios relacionados con ambos inventarios (origen y destino).
+     */
+    private void sendTransferRequestedNotifications(TransferEntity transfer) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            InventoryEntity sourceInventory = transfer.getSourceInventory();
+            InventoryEntity destinationInventory = transfer.getInventory();
+            ItemEntity item = transfer.getItem();
+            
+            if (sourceInventory == null || destinationInventory == null || item == null) {
+                return;
+            }
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin (solo una vez)
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // Obtener usuarios relacionados con el inventario origen
+            addInventoryRelatedUsers(userIdsToNotify, sourceInventory);
+            
+            // Obtener usuarios relacionados con el inventario destino
+            addInventoryRelatedUsers(userIdsToNotify, destinationInventory);
+            
+            // Remover al usuario actual y al solicitante de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            if (transfer.getRequestedBy() != null) {
+                userIdsToNotify.remove(transfer.getRequestedBy().getId());
+            }
+            
+            // Preparar datos de la notificación
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item sin nombre";
+            String sourceInventoryName = sourceInventory.getName() != null ? sourceInventory.getName() : "Inventario origen";
+            String destinationInventoryName = destinationInventory.getName() != null ? destinationInventory.getName() : "Inventario destino";
+            String requesterName = transfer.getRequestedBy() != null && transfer.getRequestedBy().getFullName() != null
+                    ? transfer.getRequestedBy().getFullName()
+                    : "Usuario";
+            String message = String.format("Se ha solicitado una transferencia del item '%s' de '%s' a '%s' por %s", 
+                    itemName, sourceInventoryName, destinationInventoryName, requesterName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "TRANSFER_REQUESTED",
+                    "Transferencia Solicitada",
+                    message,
+                    new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                            sourceInventory.getId(), sourceInventoryName,
+                            destinationInventory.getId(), destinationInventoryName, "REQUESTED")
+            );
+            
+            // Enviar notificaciones a todos los usuarios
+            sendNotificationsToUsers(userIdsToNotify, notification, "TRANSFER_REQUESTED", "Transferencia Solicitada", message,
+                    new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                            sourceInventory.getId(), sourceInventoryName,
+                            destinationInventory.getId(), destinationInventoryName, "REQUESTED"));
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+
+    /**
+     * Envía notificaciones cuando se aprueba una transferencia.
+     */
+    private void sendTransferApprovedNotifications(TransferEntity transfer) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            InventoryEntity sourceInventory = transfer.getSourceInventory();
+            InventoryEntity destinationInventory = transfer.getInventory();
+            ItemEntity item = transfer.getItem();
+            
+            if (sourceInventory == null || destinationInventory == null || item == null) {
+                return;
+            }
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin (solo una vez)
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // Obtener usuarios relacionados con el inventario origen
+            addInventoryRelatedUsers(userIdsToNotify, sourceInventory);
+            
+            // Obtener usuarios relacionados con el inventario destino
+            addInventoryRelatedUsers(userIdsToNotify, destinationInventory);
+            
+            // Remover al usuario actual de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            
+            // Preparar datos de la notificación
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item sin nombre";
+            String sourceInventoryName = sourceInventory.getName() != null ? sourceInventory.getName() : "Inventario origen";
+            String destinationInventoryName = destinationInventory.getName() != null ? destinationInventory.getName() : "Inventario destino";
+            String approverName = transfer.getApprovedBy() != null && transfer.getApprovedBy().getFullName() != null
+                    ? transfer.getApprovedBy().getFullName()
+                    : "Usuario";
+            String requesterName = transfer.getRequestedBy() != null && transfer.getRequestedBy().getFullName() != null
+                    ? transfer.getRequestedBy().getFullName()
+                    : "Usuario";
+            
+            // Notificación personalizada para el solicitante
+            if (transfer.getRequestedBy() != null && !transfer.getRequestedBy().getId().equals(currentUserId)) {
+                String personalMessage = String.format("Tu solicitud de transferencia del item '%s' de '%s' a '%s' ha sido aprobada por %s", 
+                        itemName, sourceInventoryName, destinationInventoryName, approverName);
+                
+                NotificationMessage personalNotification = new NotificationMessage(
+                        "TRANSFER_APPROVED_PERSONAL",
+                        "Tu Transferencia fue Aprobada",
+                        personalMessage,
+                        new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                                sourceInventory.getId(), sourceInventoryName,
+                                destinationInventory.getId(), destinationInventoryName, "APPROVED")
+                );
+                
+                try {
+                    notificationPersistenceService.saveNotification(
+                            transfer.getRequestedBy().getId(),
+                            "TRANSFER_APPROVED_PERSONAL",
+                            "Tu Transferencia fue Aprobada",
+                            personalMessage,
+                            new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                                    sourceInventory.getId(), sourceInventoryName,
+                                    destinationInventory.getId(), destinationInventoryName, "APPROVED")
+                    );
+                    notificationService.sendNotificationToUser(transfer.getRequestedBy().getId(), personalNotification);
+                } catch (Exception e) {
+                    // Log error pero continuar
+                }
+            }
+            
+            // Notificación informativa para los demás usuarios
+            String message = String.format("Se ha aprobado una transferencia del item '%s' de '%s' a '%s' por %s (Solicitado por: %s)", 
+                    itemName, sourceInventoryName, destinationInventoryName, approverName, requesterName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "TRANSFER_APPROVED",
+                    "Transferencia Aprobada",
+                    message,
+                    new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                            sourceInventory.getId(), sourceInventoryName,
+                            destinationInventory.getId(), destinationInventoryName, "APPROVED")
+            );
+            
+            // Enviar notificaciones a todos los usuarios (excluyendo al solicitante que ya recibió su notificación personalizada)
+            if (transfer.getRequestedBy() != null) {
+                userIdsToNotify.remove(transfer.getRequestedBy().getId());
+            }
+            sendNotificationsToUsers(userIdsToNotify, notification, "TRANSFER_APPROVED", "Transferencia Aprobada", message,
+                    new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                            sourceInventory.getId(), sourceInventoryName,
+                            destinationInventory.getId(), destinationInventoryName, "APPROVED"));
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+
+    /**
+     * Envía notificaciones cuando se rechaza una transferencia.
+     */
+    private void sendTransferRejectedNotifications(TransferEntity transfer) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            InventoryEntity sourceInventory = transfer.getSourceInventory();
+            InventoryEntity destinationInventory = transfer.getInventory();
+            ItemEntity item = transfer.getItem();
+            
+            if (sourceInventory == null || destinationInventory == null || item == null) {
+                return;
+            }
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin (solo una vez)
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // Obtener usuarios relacionados con el inventario origen
+            addInventoryRelatedUsers(userIdsToNotify, sourceInventory);
+            
+            // Obtener usuarios relacionados con el inventario destino
+            addInventoryRelatedUsers(userIdsToNotify, destinationInventory);
+            
+            // Remover al usuario actual de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            
+            // Preparar datos de la notificación
+            String itemName = item.getProductName() != null ? item.getProductName() : "Item sin nombre";
+            String sourceInventoryName = sourceInventory.getName() != null ? sourceInventory.getName() : "Inventario origen";
+            String destinationInventoryName = destinationInventory.getName() != null ? destinationInventory.getName() : "Inventario destino";
+            String rejecterName = transfer.getRejectedBy() != null && transfer.getRejectedBy().getFullName() != null
+                    ? transfer.getRejectedBy().getFullName()
+                    : "Usuario";
+            String requesterName = transfer.getRequestedBy() != null && transfer.getRequestedBy().getFullName() != null
+                    ? transfer.getRequestedBy().getFullName()
+                    : "Usuario";
+            
+            // Notificación personalizada para el solicitante
+            if (transfer.getRequestedBy() != null && !transfer.getRequestedBy().getId().equals(currentUserId)) {
+                String rejectionNotes = transfer.getRejectionNotes() != null && !transfer.getRejectionNotes().trim().isEmpty()
+                        ? transfer.getRejectionNotes()
+                        : null;
+                
+                String personalMessage = rejectionNotes != null
+                        ? String.format("Tu solicitud de transferencia del item '%s' de '%s' a '%s' ha sido rechazada por %s. Motivo: %s", 
+                                itemName, sourceInventoryName, destinationInventoryName, rejecterName, rejectionNotes)
+                        : String.format("Tu solicitud de transferencia del item '%s' de '%s' a '%s' ha sido rechazada por %s", 
+                                itemName, sourceInventoryName, destinationInventoryName, rejecterName);
+                
+                NotificationMessage personalNotification = new NotificationMessage(
+                        "TRANSFER_REJECTED_PERSONAL",
+                        "Tu Transferencia fue Rechazada",
+                        personalMessage,
+                        new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                                sourceInventory.getId(), sourceInventoryName,
+                                destinationInventory.getId(), destinationInventoryName, "REJECTED")
+                );
+                
+                try {
+                    notificationPersistenceService.saveNotification(
+                            transfer.getRequestedBy().getId(),
+                            "TRANSFER_REJECTED_PERSONAL",
+                            "Tu Transferencia fue Rechazada",
+                            personalMessage,
+                            new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                                    sourceInventory.getId(), sourceInventoryName,
+                                    destinationInventory.getId(), destinationInventoryName, "REJECTED")
+                    );
+                    notificationService.sendNotificationToUser(transfer.getRequestedBy().getId(), personalNotification);
+                } catch (Exception e) {
+                    // Log error pero continuar
+                }
+            }
+            
+            // Notificación informativa para los demás usuarios
+            String message = String.format("Se ha rechazado una transferencia del item '%s' de '%s' a '%s' por %s (Solicitado por: %s)", 
+                    itemName, sourceInventoryName, destinationInventoryName, rejecterName, requesterName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "TRANSFER_REJECTED",
+                    "Transferencia Rechazada",
+                    message,
+                    new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                            sourceInventory.getId(), sourceInventoryName,
+                            destinationInventory.getId(), destinationInventoryName, "REJECTED")
+            );
+            
+            // Enviar notificaciones a todos los usuarios (excluyendo al solicitante que ya recibió su notificación personalizada)
+            if (transfer.getRequestedBy() != null) {
+                userIdsToNotify.remove(transfer.getRequestedBy().getId());
+            }
+            sendNotificationsToUsers(userIdsToNotify, notification, "TRANSFER_REJECTED", "Transferencia Rechazada", message,
+                    new TransferNotificationData(transfer.getId(), item.getId(), itemName, 
+                            sourceInventory.getId(), sourceInventoryName,
+                            destinationInventory.getId(), destinationInventoryName, "REJECTED"));
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+
+    /**
+     * Agrega los usuarios relacionados con un inventario al conjunto de usuarios a notificar.
+     */
+    private void addInventoryRelatedUsers(Set<Long> userIdsToNotify, InventoryEntity inventory) {
+        // Cargar el inventario completo con todas sus relaciones
+        InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+                .orElse(inventory);
+        
+        // 2. Admin regional de la misma regional del inventario
+        if (fullInventory.getInstitution() != null && 
+            fullInventory.getInstitution().getRegional() != null) {
+            Long regionalId = fullInventory.getInstitution().getRegional().getId();
+            
+            List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+            adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+        }
+        
+        // 3. Admin institution y warehouse de la misma institution del inventario
+        if (fullInventory.getInstitution() != null) {
+            Long institutionId = fullInventory.getInstitution().getId();
+            
+            List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
+                    institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
+            institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+        }
+        
+        // 4. Dueño del inventario
+        if (fullInventory.getOwner() != null) {
+            userIdsToNotify.add(fullInventory.getOwner().getId());
+        }
+        
+        // 5. Firmadores del inventario
+        if (fullInventory.getSignatories() != null && !fullInventory.getSignatories().isEmpty()) {
+            fullInventory.getSignatories().forEach(signatory -> {
+                if (signatory != null && signatory.isStatus()) {
+                    userIdsToNotify.add(signatory.getId());
+                }
+            });
+        }
+        
+        // 6. Manejadores del inventario
+        if (fullInventory.getManagers() != null && !fullInventory.getManagers().isEmpty()) {
+            fullInventory.getManagers().forEach(manager -> {
+                if (manager != null && manager.isStatus()) {
+                    userIdsToNotify.add(manager.getId());
+                }
+            });
+        }
+    }
+
+    /**
+     * Envía notificaciones a una lista de usuarios.
+     */
+    private void sendNotificationsToUsers(Set<Long> userIdsToNotify, NotificationMessage notification, 
+                                         String type, String title, String message, Object data) {
+        for (Long userId : userIdsToNotify) {
+            try {
+                // Guardar en base de datos
+                notificationPersistenceService.saveNotification(userId, type, title, message, data);
+                
+                // Enviar por WebSocket
+                notificationService.sendNotificationToUser(userId, notification);
+            } catch (Exception e) {
+                // Log error pero continuar con otros usuarios
+            }
+        }
+    }
+    
+    /**
+     * DTO interno para datos de transferencia en la notificación
+     */
+    private record TransferNotificationData(
+            Long transferId,
+            Long itemId,
+            String itemName,
+            Long sourceInventoryId,
+            String sourceInventoryName,
+            Long destinationInventoryId,
+            String destinationInventoryName,
+            String status
+    ) {}
 }

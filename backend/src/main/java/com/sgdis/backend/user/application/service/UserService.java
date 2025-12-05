@@ -24,6 +24,10 @@ import com.sgdis.backend.data.regional.entity.RegionalEntity;
 import com.sgdis.backend.data.regional.repositories.SpringDataRegionalRepository;
 // Auth
 import com.sgdis.backend.auth.application.service.AuthService;
+// Notificaciones
+import com.sgdis.backend.notification.service.NotificationService;
+import com.sgdis.backend.notification.service.NotificationPersistenceService;
+import com.sgdis.backend.notification.dto.NotificationMessage;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,6 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -57,6 +63,8 @@ public class UserService implements
     private final PasswordEncoder passwordEncoder;
     private final RecordActionUseCase recordActionUseCase;
     private final AuthService authService;
+    private final NotificationService notificationService;
+    private final NotificationPersistenceService notificationPersistenceService;
 
     private static final Pattern ALLOWED_EMAIL =
             Pattern.compile("^[A-Za-z0-9._%+-]+@(soy\\.sena\\.edu\\.co|sena\\.edu\\.co)$");
@@ -196,6 +204,9 @@ public class UserService implements
         }
         institutionRepository.save(institution);
         UserEntity saved = userRepository.save(user);
+        
+        // Enviar notificaciones a usuarios relacionados
+        sendUserCreatedNotifications(saved);
         
         // Registrar auditoría
         recordActionUseCase.recordAction(new RecordActionRequest(
@@ -371,6 +382,10 @@ public class UserService implements
         try {
             String userEmail = user.getEmail();
             String userName = user.getFullName();
+            
+            // Enviar notificaciones antes de eliminar el usuario
+            sendUserDeletedNotifications(user);
+            
             userRepository.deleteById(id);
             
             // Registrar auditoría
@@ -418,4 +433,182 @@ public class UserService implements
         
         return new ChangePasswordResponse("Password changed successfully",userEntity.getFullName());
     }
+
+    /**
+     * Envía notificaciones a todos los usuarios relacionados cuando se crea un usuario.
+     * Se notifica a:
+     * - Todos los superadmin
+     * - Todos los admin regional de la misma regional del usuario
+     * - Todos los admin institution de la misma institution del usuario
+     * 
+     * No se envía notificación al usuario que realiza la acción ni al usuario creado.
+     */
+    private void sendUserCreatedNotifications(UserEntity user) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // 2. Admin regional de la misma regional del usuario
+            if (user.getInstitution() != null && 
+                user.getInstitution().getRegional() != null) {
+                Long regionalId = user.getInstitution().getRegional().getId();
+                
+                List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+                adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            }
+            
+            // 3. Admin institution de la misma institution del usuario
+            if (user.getInstitution() != null) {
+                Long institutionId = user.getInstitution().getId();
+                
+                List<UserEntity> adminInstitutions = userRepository.findByInstitutionIdAndRole(institutionId, Role.ADMIN_INSTITUTION);
+                adminInstitutions.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            }
+            
+            // Remover al usuario actual y al usuario creado de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            userIdsToNotify.remove(user.getId());
+            
+            // Preparar datos de la notificación
+            String userName = user.getFullName() != null ? user.getFullName() : "Usuario sin nombre";
+            String userEmail = user.getEmail() != null ? user.getEmail() : "Sin email";
+            String userRole = user.getRole() != null ? user.getRole().name() : "Sin rol";
+            String institutionName = user.getInstitution() != null && user.getInstitution().getName() != null
+                    ? user.getInstitution().getName()
+                    : "Sin institución";
+            String message = String.format("Se ha creado un nuevo usuario: %s (%s) - Rol: %s - Institución: %s", 
+                    userName, userEmail, userRole, institutionName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "USER_CREATED",
+                    "Nuevo Usuario Creado",
+                    message,
+                    new UserNotificationData(user.getId(), userName, userEmail, userRole, institutionName)
+            );
+            
+            // Enviar notificaciones a todos los usuarios
+            for (Long userId : userIdsToNotify) {
+                try {
+                    // Guardar en base de datos
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            "USER_CREATED",
+                            "Nuevo Usuario Creado",
+                            message,
+                            new UserNotificationData(user.getId(), userName, userEmail, userRole, institutionName)
+                    );
+                    
+                    // Enviar por WebSocket
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                    // El log se maneja en NotificationService
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la creación del usuario
+            // El sistema de notificaciones no debe bloquear la creación
+        }
+    }
+
+    /**
+     * Envía notificaciones a todos los usuarios relacionados cuando se elimina un usuario.
+     * Se notifica a:
+     * - Todos los superadmin
+     * - Todos los admin regional de la misma regional del usuario
+     * - Todos los admin institution de la misma institution del usuario
+     * 
+     * No se envía notificación al usuario que realiza la acción.
+     */
+    private void sendUserDeletedNotifications(UserEntity user) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // 2. Admin regional de la misma regional del usuario
+            if (user.getInstitution() != null && 
+                user.getInstitution().getRegional() != null) {
+                Long regionalId = user.getInstitution().getRegional().getId();
+                
+                List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+                adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            }
+            
+            // 3. Admin institution de la misma institution del usuario
+            if (user.getInstitution() != null) {
+                Long institutionId = user.getInstitution().getId();
+                
+                List<UserEntity> adminInstitutions = userRepository.findByInstitutionIdAndRole(institutionId, Role.ADMIN_INSTITUTION);
+                adminInstitutions.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            }
+            
+            // Remover al usuario actual de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            
+            // Preparar datos de la notificación
+            String userName = user.getFullName() != null ? user.getFullName() : "Usuario sin nombre";
+            String userEmail = user.getEmail() != null ? user.getEmail() : "Sin email";
+            String userRole = user.getRole() != null ? user.getRole().name() : "Sin rol";
+            String institutionName = user.getInstitution() != null && user.getInstitution().getName() != null
+                    ? user.getInstitution().getName()
+                    : "Sin institución";
+            String message = String.format("Se ha eliminado el usuario: %s (%s) - Rol: %s - Institución: %s", 
+                    userName, userEmail, userRole, institutionName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "USER_DELETED",
+                    "Usuario Eliminado",
+                    message,
+                    new UserNotificationData(user.getId(), userName, userEmail, userRole, institutionName)
+            );
+            
+            // Enviar notificaciones a todos los usuarios
+            for (Long userId : userIdsToNotify) {
+                try {
+                    // Guardar en base de datos
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            "USER_DELETED",
+                            "Usuario Eliminado",
+                            message,
+                            new UserNotificationData(user.getId(), userName, userEmail, userRole, institutionName)
+                    );
+                    
+                    // Enviar por WebSocket
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                    // El log se maneja en NotificationService
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la eliminación del usuario
+            // El sistema de notificaciones no debe bloquear la eliminación
+        }
+    }
+    
+    /**
+     * DTO interno para datos del usuario en la notificación
+     */
+    private record UserNotificationData(
+            Long userId,
+            String userName,
+            String userEmail,
+            String userRole,
+            String institutionName
+    ) {}
 }

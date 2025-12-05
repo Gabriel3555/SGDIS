@@ -13,6 +13,11 @@ import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
 import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
 import com.sgdis.backend.user.domain.Role;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+// Notificaciones
+import com.sgdis.backend.notification.service.NotificationService;
+import com.sgdis.backend.notification.service.NotificationPersistenceService;
+import com.sgdis.backend.notification.dto.NotificationMessage;
 // Auditoría
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
 import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
@@ -32,6 +37,9 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
@@ -50,6 +58,9 @@ public class CancellationService implements
     private final FileUploadService fileUploadService;
     private final AuthService authService;
     private final RecordActionUseCase recordActionUseCase;
+    private final NotificationService notificationService;
+    private final NotificationPersistenceService notificationPersistenceService;
+    private final SpringDataUserRepository userRepository;
 
     @Override
     @Transactional
@@ -111,7 +122,6 @@ public class CancellationService implements
 
             CancellationEntity savedEntity = cancellationRepository.save(entity);
 
-            // Registrar auditoría (no crítico si falla, pero intentamos registrarlo)
             try {
                 int itemsCount = items != null ? items.size() : 0;
                 String itemsInfo;
@@ -160,7 +170,6 @@ public class CancellationService implements
                                 requesterName,
                                 requesterEmail);
                 
-                // Truncar a 250 caracteres para evitar errores de base de datos (campo es VARCHAR(255))
                 if (auditMessage.length() > 250) {
                     auditMessage = auditMessage.substring(0, 247) + "...";
                 }
@@ -170,6 +179,15 @@ public class CancellationService implements
                 // Log audit error but don't fail the operation
                 System.err.println("Error al registrar auditoría: " + auditException.getMessage());
                 auditException.printStackTrace();
+            }
+
+            // Enviar notificaciones
+            if (savedEntity.getApproved() != null && savedEntity.getApproved()) {
+                // Si fue aprobada automáticamente, notificar como aprobada
+                sendCancellationApprovedNotifications(savedEntity);
+            } else {
+                // Si está pendiente, notificar como solicitada
+                sendCancellationRequestedNotifications(savedEntity);
             }
 
             return CancellationMapper.toResponse(savedEntity);
@@ -212,6 +230,9 @@ public class CancellationService implements
         }
         
         recordActionUseCase.recordAction(new RecordActionRequest(auditMessage));
+
+        // Enviar notificaciones
+        sendCancellationRefusedNotifications(cancellation);
 
         return new RefuseCancellationResponse("Baja rechazada exitosamente");
     }
@@ -257,6 +278,9 @@ public class CancellationService implements
         }
         
         recordActionUseCase.recordAction(new RecordActionRequest(auditMessage));
+
+        // Enviar notificaciones
+        sendCancellationApprovedNotifications(cancellation);
 
         return new AcceptCancellationResponse("Baja aceptada exitosamente");
     }
@@ -632,4 +656,443 @@ public class CancellationService implements
             }
         }
     }
+
+    /**
+     * Envía notificaciones cuando se solicita una baja.
+     * Se notifica a los mismos usuarios que cuando se crea un item.
+     */
+    private void sendCancellationRequestedNotifications(CancellationEntity cancellation) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            List<ItemEntity> items = cancellation.getItems();
+            if (items == null || items.isEmpty()) {
+                return;
+            }
+            
+            // Obtener todos los inventarios únicos de los items
+            Set<Long> inventoryIds = items.stream()
+                    .filter(item -> item.getInventory() != null)
+                    .map(item -> item.getInventory().getId())
+                    .collect(Collectors.toSet());
+            
+            if (inventoryIds.isEmpty()) {
+                return;
+            }
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin (solo una vez, independiente del inventario)
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // Para cada inventario, obtener los usuarios relacionados
+            for (Long inventoryId : inventoryIds) {
+                InventoryEntity inventory = inventoryRepository.findByIdWithAllRelations(inventoryId).orElse(null);
+                if (inventory == null) {
+                    continue;
+                }
+                
+                // 2. Admin regional de la misma regional del inventario
+                if (inventory.getInstitution() != null && 
+                    inventory.getInstitution().getRegional() != null) {
+                    Long regionalId = inventory.getInstitution().getRegional().getId();
+                    
+                    List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+                    adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+                }
+                
+                // 3. Admin institution y warehouse de la misma institution del inventario
+                if (inventory.getInstitution() != null) {
+                    Long institutionId = inventory.getInstitution().getId();
+                    
+                    List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
+                            institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
+                    institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+                }
+                
+                // 4. Dueño del inventario
+                if (inventory.getOwner() != null) {
+                    userIdsToNotify.add(inventory.getOwner().getId());
+                }
+                
+                // 5. Firmadores del inventario
+                if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
+                    inventory.getSignatories().forEach(signatory -> {
+                        if (signatory != null && signatory.isStatus()) {
+                            userIdsToNotify.add(signatory.getId());
+                        }
+                    });
+                }
+                
+                // 6. Manejadores del inventario
+                if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
+                    inventory.getManagers().forEach(manager -> {
+                        if (manager != null && manager.isStatus()) {
+                            userIdsToNotify.add(manager.getId());
+                        }
+                    });
+                }
+            }
+            
+            // Remover al usuario actual y al solicitante de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            if (cancellation.getRequester() != null) {
+                userIdsToNotify.remove(cancellation.getRequester().getId());
+            }
+            
+            // Preparar datos de la notificación
+            int itemsCount = items.size();
+            String requesterName = cancellation.getRequester() != null && cancellation.getRequester().getFullName() != null
+                    ? cancellation.getRequester().getFullName()
+                    : "Usuario";
+            String message = String.format("Se ha solicitado una baja de %d item(s) por %s", itemsCount, requesterName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "CANCELLATION_REQUESTED",
+                    "Baja Solicitada",
+                    message,
+                    new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "REQUESTED")
+            );
+            
+            // Enviar notificaciones a todos los usuarios
+            for (Long userId : userIdsToNotify) {
+                try {
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            "CANCELLATION_REQUESTED",
+                            "Baja Solicitada",
+                            message,
+                            new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "REQUESTED")
+                    );
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+
+    /**
+     * Envía notificaciones cuando se aprueba una baja.
+     */
+    private void sendCancellationApprovedNotifications(CancellationEntity cancellation) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            List<ItemEntity> items = cancellation.getItems();
+            if (items == null || items.isEmpty()) {
+                return;
+            }
+            
+            // Obtener todos los inventarios únicos de los items
+            Set<Long> inventoryIds = items.stream()
+                    .filter(item -> item.getInventory() != null)
+                    .map(item -> item.getInventory().getId())
+                    .collect(Collectors.toSet());
+            
+            if (inventoryIds.isEmpty()) {
+                return;
+            }
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin (solo una vez, independiente del inventario)
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // Para cada inventario, obtener los usuarios relacionados
+            for (Long inventoryId : inventoryIds) {
+                InventoryEntity inventory = inventoryRepository.findByIdWithAllRelations(inventoryId).orElse(null);
+                if (inventory == null) {
+                    continue;
+                }
+                
+                // 2. Admin regional de la misma regional del inventario
+                if (inventory.getInstitution() != null && 
+                    inventory.getInstitution().getRegional() != null) {
+                    Long regionalId = inventory.getInstitution().getRegional().getId();
+                    
+                    List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+                    adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+                }
+                
+                // 3. Admin institution y warehouse de la misma institution del inventario
+                if (inventory.getInstitution() != null) {
+                    Long institutionId = inventory.getInstitution().getId();
+                    
+                    List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
+                            institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
+                    institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+                }
+                
+                // 4. Dueño del inventario
+                if (inventory.getOwner() != null) {
+                    userIdsToNotify.add(inventory.getOwner().getId());
+                }
+                
+                // 5. Firmadores del inventario
+                if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
+                    inventory.getSignatories().forEach(signatory -> {
+                        if (signatory != null && signatory.isStatus()) {
+                            userIdsToNotify.add(signatory.getId());
+                        }
+                    });
+                }
+                
+                // 6. Manejadores del inventario
+                if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
+                    inventory.getManagers().forEach(manager -> {
+                        if (manager != null && manager.isStatus()) {
+                            userIdsToNotify.add(manager.getId());
+                        }
+                    });
+                }
+            }
+            
+            // Remover al usuario actual de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            
+            // Preparar datos de la notificación
+            int itemsCount = items.size();
+            String checkerName = cancellation.getChecker() != null && cancellation.getChecker().getFullName() != null
+                    ? cancellation.getChecker().getFullName()
+                    : "Usuario";
+            String requesterName = cancellation.getRequester() != null && cancellation.getRequester().getFullName() != null
+                    ? cancellation.getRequester().getFullName()
+                    : "Usuario";
+            
+            // Notificación personalizada para el solicitante
+            if (cancellation.getRequester() != null && !cancellation.getRequester().getId().equals(currentUserId)) {
+                String personalMessage = String.format("Tu solicitud de baja de %d item(s) ha sido aprobada por %s", 
+                        itemsCount, checkerName);
+                
+                NotificationMessage personalNotification = new NotificationMessage(
+                        "CANCELLATION_APPROVED_PERSONAL",
+                        "Tu Baja fue Aprobada",
+                        personalMessage,
+                        new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "APPROVED")
+                );
+                
+                try {
+                    notificationPersistenceService.saveNotification(
+                            cancellation.getRequester().getId(),
+                            "CANCELLATION_APPROVED_PERSONAL",
+                            "Tu Baja fue Aprobada",
+                            personalMessage,
+                            new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "APPROVED")
+                    );
+                    notificationService.sendNotificationToUser(cancellation.getRequester().getId(), personalNotification);
+                } catch (Exception e) {
+                    // Log error pero continuar
+                }
+            }
+            
+            // Notificación informativa para los demás usuarios
+            String message = String.format("Se ha aprobado una baja de %d item(s) por %s (Solicitado por: %s)", 
+                    itemsCount, checkerName, requesterName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "CANCELLATION_APPROVED",
+                    "Baja Aprobada",
+                    message,
+                    new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "APPROVED")
+            );
+            
+            // Enviar notificaciones a todos los usuarios (excluyendo al solicitante que ya recibió su notificación personalizada)
+            if (cancellation.getRequester() != null) {
+                userIdsToNotify.remove(cancellation.getRequester().getId());
+            }
+            for (Long userId : userIdsToNotify) {
+                try {
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            "CANCELLATION_APPROVED",
+                            "Baja Aprobada",
+                            message,
+                            new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "APPROVED")
+                    );
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+
+    /**
+     * Envía notificaciones cuando se rechaza una baja.
+     */
+    private void sendCancellationRefusedNotifications(CancellationEntity cancellation) {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            Long currentUserId = currentUser.getId();
+            
+            List<ItemEntity> items = cancellation.getItems();
+            if (items == null || items.isEmpty()) {
+                return;
+            }
+            
+            // Obtener todos los inventarios únicos de los items
+            Set<Long> inventoryIds = items.stream()
+                    .filter(item -> item.getInventory() != null)
+                    .map(item -> item.getInventory().getId())
+                    .collect(Collectors.toSet());
+            
+            if (inventoryIds.isEmpty()) {
+                return;
+            }
+            
+            // Usar un Set para evitar duplicados
+            Set<Long> userIdsToNotify = new HashSet<>();
+            
+            // 1. Todos los superadmin (solo una vez, independiente del inventario)
+            List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
+            superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            
+            // Para cada inventario, obtener los usuarios relacionados
+            for (Long inventoryId : inventoryIds) {
+                InventoryEntity inventory = inventoryRepository.findByIdWithAllRelations(inventoryId).orElse(null);
+                if (inventory == null) {
+                    continue;
+                }
+                
+                // 2. Admin regional de la misma regional del inventario
+                if (inventory.getInstitution() != null && 
+                    inventory.getInstitution().getRegional() != null) {
+                    Long regionalId = inventory.getInstitution().getRegional().getId();
+                    
+                    List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
+                    adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+                }
+                
+                // 3. Admin institution y warehouse de la misma institution del inventario
+                if (inventory.getInstitution() != null) {
+                    Long institutionId = inventory.getInstitution().getId();
+                    
+                    List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
+                            institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
+                    institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+                }
+                
+                // 4. Dueño del inventario
+                if (inventory.getOwner() != null) {
+                    userIdsToNotify.add(inventory.getOwner().getId());
+                }
+                
+                // 5. Firmadores del inventario
+                if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
+                    inventory.getSignatories().forEach(signatory -> {
+                        if (signatory != null && signatory.isStatus()) {
+                            userIdsToNotify.add(signatory.getId());
+                        }
+                    });
+                }
+                
+                // 6. Manejadores del inventario
+                if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
+                    inventory.getManagers().forEach(manager -> {
+                        if (manager != null && manager.isStatus()) {
+                            userIdsToNotify.add(manager.getId());
+                        }
+                    });
+                }
+            }
+            
+            // Remover al usuario actual de la lista de notificaciones
+            userIdsToNotify.remove(currentUserId);
+            
+            // Preparar datos de la notificación
+            int itemsCount = items.size();
+            String checkerName = cancellation.getChecker() != null && cancellation.getChecker().getFullName() != null
+                    ? cancellation.getChecker().getFullName()
+                    : "Usuario";
+            String requesterName = cancellation.getRequester() != null && cancellation.getRequester().getFullName() != null
+                    ? cancellation.getRequester().getFullName()
+                    : "Usuario";
+            
+            // Notificación personalizada para el solicitante
+            if (cancellation.getRequester() != null && !cancellation.getRequester().getId().equals(currentUserId)) {
+                String comment = cancellation.getComment() != null && !cancellation.getComment().trim().isEmpty()
+                        ? cancellation.getComment()
+                        : null;
+                
+                String personalMessage = comment != null
+                        ? String.format("Tu solicitud de baja de %d item(s) ha sido rechazada por %s. Motivo: %s", 
+                                itemsCount, checkerName, comment)
+                        : String.format("Tu solicitud de baja de %d item(s) ha sido rechazada por %s", 
+                                itemsCount, checkerName);
+                
+                NotificationMessage personalNotification = new NotificationMessage(
+                        "CANCELLATION_REFUSED_PERSONAL",
+                        "Tu Baja fue Rechazada",
+                        personalMessage,
+                        new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "REFUSED")
+                );
+                
+                try {
+                    notificationPersistenceService.saveNotification(
+                            cancellation.getRequester().getId(),
+                            "CANCELLATION_REFUSED_PERSONAL",
+                            "Tu Baja fue Rechazada",
+                            personalMessage,
+                            new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "REFUSED")
+                    );
+                    notificationService.sendNotificationToUser(cancellation.getRequester().getId(), personalNotification);
+                } catch (Exception e) {
+                    // Log error pero continuar
+                }
+            }
+            
+            // Notificación informativa para los demás usuarios
+            String message = String.format("Se ha rechazado una baja de %d item(s) por %s (Solicitado por: %s)", 
+                    itemsCount, checkerName, requesterName);
+            
+            NotificationMessage notification = new NotificationMessage(
+                    "CANCELLATION_REFUSED",
+                    "Baja Rechazada",
+                    message,
+                    new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "REFUSED")
+            );
+            
+            // Enviar notificaciones a todos los usuarios (excluyendo al solicitante que ya recibió su notificación personalizada)
+            if (cancellation.getRequester() != null) {
+                userIdsToNotify.remove(cancellation.getRequester().getId());
+            }
+            for (Long userId : userIdsToNotify) {
+                try {
+                    notificationPersistenceService.saveNotification(
+                            userId,
+                            "CANCELLATION_REFUSED",
+                            "Baja Rechazada",
+                            message,
+                            new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "REFUSED")
+                    );
+                    notificationService.sendNotificationToUser(userId, notification);
+                } catch (Exception e) {
+                    // Log error pero continuar con otros usuarios
+                }
+            }
+        } catch (Exception e) {
+            // Log error pero no fallar la operación
+        }
+    }
+    
+    /**
+     * DTO interno para datos de baja en la notificación
+     */
+    private record CancellationNotificationData(
+            Long cancellationId,
+            int itemsCount,
+            String requesterName,
+            String status
+    ) {}
 }

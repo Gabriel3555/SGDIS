@@ -63,4 +63,24 @@ public interface SpringDataUserRepository extends JpaRepository<UserEntity, Long
     
     @Query("SELECT COUNT(u) FROM UserEntity u WHERE u.institution.id = :institutionId AND u.role = :role")
     long countByInstitutionIdAndRole(@Param("institutionId") Long institutionId, @Param("role") Role role);
+    
+    // Queries para notificaciones de items
+    @Query("SELECT u FROM UserEntity u WHERE u.role = :role AND u.status = true")
+    List<UserEntity> findByRoleAndStatus(@Param("role") Role role);
+    
+    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.institution inst LEFT JOIN FETCH inst.regional " +
+           "WHERE u.role = :role AND u.status = true AND inst.regional.id = :regionalId")
+    List<UserEntity> findByRoleAndRegionalId(@Param("role") Role role, @Param("regionalId") Long regionalId);
+    
+    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.institution " +
+           "WHERE u.status = true AND u.institution.id = :institutionId " +
+           "AND (u.role = :role1 OR u.role = :role2)")
+    List<UserEntity> findByInstitutionIdAndRoles(@Param("institutionId") Long institutionId, 
+                                                 @Param("role1") Role role1, 
+                                                 @Param("role2") Role role2);
+    
+    @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.institution " +
+           "WHERE u.status = true AND u.institution.id = :institutionId AND u.role = :role")
+    List<UserEntity> findByInstitutionIdAndRole(@Param("institutionId") Long institutionId, 
+                                                 @Param("role") Role role);
 }

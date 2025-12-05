@@ -100,4 +100,14 @@ public interface SpringDataInventoryRepository extends JpaRepository<InventoryEn
     
     @Query("SELECT COALESCE(SUM(i.totalPrice), 0) FROM InventoryEntity i WHERE i.institution.id = :institutionId")
     Double sumTotalPriceByInstitutionId(@Param("institutionId") Long institutionId);
+    
+    // Query para cargar inventario con todas sus relaciones
+    @Query("SELECT DISTINCT i FROM InventoryEntity i " +
+           "LEFT JOIN FETCH i.owner " +
+           "LEFT JOIN FETCH i.managers " +
+           "LEFT JOIN FETCH i.signatories " +
+           "LEFT JOIN FETCH i.institution inst " +
+           "LEFT JOIN FETCH inst.regional " +
+           "WHERE i.id = :inventoryId")
+    Optional<InventoryEntity> findByIdWithAllRelations(@Param("inventoryId") Long inventoryId);
 }
