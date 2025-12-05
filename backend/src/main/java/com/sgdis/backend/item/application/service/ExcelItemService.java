@@ -19,6 +19,7 @@ import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
 import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -38,6 +39,7 @@ import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExcelItemService {
 
     private final CreateItemUseCase createItemUseCase;
@@ -85,21 +87,21 @@ public class ExcelItemService {
         ItemService.setBulkUploadMode(true);
         
         try {
-            // Comenzar desde la segunda fila (índice 1, ya que 0 es el encabezado)
-            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
-                Row row = sheet.getRow(rowIndex);
-                if (row == null) {
-                    continue;
-                }
+        // Comenzar desde la segunda fila (índice 1, ya que 0 es el encabezado)
+        for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null) {
+                continue;
+            }
 
-                // Verificar si la fila está vacía
-                if (isRowEmpty(row)) {
-                    continue;
-                }
+            // Verificar si la fila está vacía
+            if (isRowEmpty(row)) {
+                continue;
+            }
 
-                totalRows++;
-                
-                try {
+            totalRows++;
+            
+            try {
                 // Leer columnas según especificación
                 String irId = getCellValueAsString(row, 0); // Columna A
                 String wareHouseDescription = getCellValueAsString(row, 3); // Columna D
@@ -188,12 +190,12 @@ public class ExcelItemService {
                     true // status por defecto
                 );
 
-                    createItemUseCase.createItem(createRequest);
-                    successfulItems++;
+                createItemUseCase.createItem(createRequest);
+                successfulItems++;
 
-                } catch (Exception e) {
-                    errors.add("Fila " + (rowIndex + 1) + ": " + e.getMessage());
-                }
+            } catch (Exception e) {
+                errors.add("Fila " + (rowIndex + 1) + ": " + e.getMessage());
+            }
             }
         } finally {
             // Desactivar modo carga masiva
@@ -251,16 +253,24 @@ public class ExcelItemService {
      */
     private void sendBulkUploadNotification(Long inventoryId, int successfulItems, int totalRows, String filename) {
         try {
+            log.info("Iniciando envío de notificación de carga masiva - Inventario ID: {}, Items exitosos: {}, Total: {}", 
+                    inventoryId, successfulItems, totalRows);
+            
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
+            log.debug("Usuario actual: {} (ID: {})", currentUser.getEmail(), currentUserId);
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity inventory = inventoryRepository.findByIdWithAllRelations(inventoryId)
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            // Esto evita el MultipleBagFetchException de Hibernate
+            InventoryEntity inventory = inventoryRepository.findByIdWithBasicRelations(inventoryId)
                     .orElse(null);
             
             if (inventory == null) {
+                log.warn("No se encontró el inventario con ID: {}. No se enviará notificación de carga masiva.", inventoryId);
                 return;
             }
+            
+            log.debug("Inventario cargado: {} (ID: {})", inventory.getName(), inventoryId);
             
             // Usar un Set para evitar duplicados
             Set<Long> userIdsToNotify = new HashSet<>();
@@ -268,6 +278,7 @@ public class ExcelItemService {
             // 1. Todos los superadmin
             List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
             superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            log.debug("Superadmins encontrados: {}", superadmins.size());
             
             // 2. Admin regional de la misma regional del inventario
             if (inventory.getInstitution() != null && 
@@ -276,6 +287,7 @@ public class ExcelItemService {
                 
                 List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
                 adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+                log.debug("Admin regionales encontrados: {} para regional ID: {}", adminRegionals.size(), regionalId);
             }
             
             // 3. Admin institution y warehouse de la misma institution del inventario
@@ -285,33 +297,41 @@ public class ExcelItemService {
                 List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
                         institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
                 institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+                log.debug("Usuarios de institución encontrados: {} para institución ID: {}", institutionUsers.size(), institutionId);
             }
             
             // 4. Dueño del inventario
             if (inventory.getOwner() != null) {
                 userIdsToNotify.add(inventory.getOwner().getId());
+                log.debug("Dueño del inventario: {} (ID: {})", inventory.getOwner().getEmail(), inventory.getOwner().getId());
             }
             
-            // 5. Firmadores del inventario
-            if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
-                inventory.getSignatories().forEach(signatory -> {
-                    if (signatory != null && signatory.isStatus()) {
-                        userIdsToNotify.add(signatory.getId());
-                    }
-                });
-            }
+            // 5. Firmadores del inventario - cargar usando consulta separada
+            List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventoryId);
+            signatories.forEach(signatory -> {
+                if (signatory != null && signatory.isStatus()) {
+                    userIdsToNotify.add(signatory.getId());
+                }
+            });
+            log.debug("Firmadores encontrados: {}", signatories.size());
             
-            // 6. Manejadores del inventario
-            if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
-                inventory.getManagers().forEach(manager -> {
-                    if (manager != null && manager.isStatus()) {
-                        userIdsToNotify.add(manager.getId());
-                    }
-                });
-            }
+            // 6. Manejadores del inventario - cargar usando consulta separada
+            List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventoryId);
+            managers.forEach(manager -> {
+                if (manager != null && manager.isStatus()) {
+                    userIdsToNotify.add(manager.getId());
+                }
+            });
+            log.debug("Manejadores encontrados: {}", managers.size());
             
             // Remover al usuario actual de la lista de notificaciones
             userIdsToNotify.remove(currentUserId);
+            log.info("Total de usuarios a notificar: {} (excluyendo usuario actual)", userIdsToNotify.size());
+            
+            if (userIdsToNotify.isEmpty()) {
+                log.warn("No hay usuarios para notificar sobre la carga masiva del inventario ID: {}", inventoryId);
+                return;
+            }
             
             // Preparar datos de la notificación
             String inventoryName = inventory.getName() != null ? inventory.getName() : "Inventario sin nombre";
@@ -326,7 +346,11 @@ public class ExcelItemService {
                     new BulkUploadNotificationData(inventoryId, inventoryName, successfulItems, totalRows, fileNameDisplay)
             );
             
+            log.debug("Mensaje de notificación preparado: {}", message);
+            
             // Enviar notificaciones a todos los usuarios
+            int notificationsSent = 0;
+            int notificationsFailed = 0;
             for (Long userId : userIdsToNotify) {
                 try {
                     // Guardar en base de datos
@@ -340,13 +364,17 @@ public class ExcelItemService {
                     
                     // Enviar por WebSocket
                     notificationService.sendNotificationToUser(userId, notification);
+                    notificationsSent++;
                 } catch (Exception e) {
-                    // Log error pero continuar con otros usuarios
-                    // El log se maneja en NotificationService
+                    notificationsFailed++;
+                    log.error("Error al enviar notificación de carga masiva al usuario {}: {}", userId, e.getMessage(), e);
                 }
             }
+            
+            log.info("Notificación de carga masiva completada - Enviadas: {}, Fallidas: {}, Total usuarios: {}", 
+                    notificationsSent, notificationsFailed, userIdsToNotify.size());
         } catch (Exception e) {
-            // Log error pero no fallar la carga masiva
+            log.error("Error al enviar notificación de carga masiva para inventario ID {}: {}", inventoryId, e.getMessage(), e);
             // El sistema de notificaciones no debe bloquear la carga
         }
     }

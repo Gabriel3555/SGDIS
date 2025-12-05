@@ -43,6 +43,7 @@ import com.sgdis.backend.cancellation.infrastructure.repository.SpringDataCancel
 import com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity;
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -52,6 +53,7 @@ import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ItemService implements
         CreateItemUseCase,
         UpdateItemUseCase,
@@ -432,24 +434,9 @@ public class ItemService implements
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
-            
-            // Asegurar que el owner esté cargado (forzar inicialización si es necesario)
-            if (fullInventory.getOwner() == null) {
-                // Intentar cargar desde el inventario original si está disponible
-                if (inventory.getOwner() != null) {
-                    fullInventory.setOwner(inventory.getOwner());
-                } else {
-                    // Si no está en el inventario original, cargar explícitamente desde la BD
-                    inventoryRepository.findById(inventory.getId()).ifPresent(loadedInventory -> {
-                        if (loadedInventory.getOwner() != null) {
-                            fullInventory.setOwner(loadedInventory.getOwner());
-                        }
-                    });
-                }
-            }
             
             // Usar un Set para evitar duplicados
             Set<Long> userIdsToNotify = new HashSet<>();
@@ -481,23 +468,21 @@ public class ItemService implements
                 userIdsToNotify.add(fullInventory.getOwner().getId());
             }
             
-            // 5. Firmadores del inventario
-            if (fullInventory.getSignatories() != null && !fullInventory.getSignatories().isEmpty()) {
-                fullInventory.getSignatories().forEach(signatory -> {
-                    if (signatory != null && signatory.isStatus()) {
-                        userIdsToNotify.add(signatory.getId());
-                    }
-                });
-            }
+            // 5. Firmadores del inventario - cargar usando consulta separada
+            List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventory.getId());
+            signatories.forEach(signatory -> {
+                if (signatory != null && signatory.isStatus()) {
+                    userIdsToNotify.add(signatory.getId());
+                }
+            });
             
-            // 6. Manejadores del inventario
-            if (fullInventory.getManagers() != null && !fullInventory.getManagers().isEmpty()) {
-                fullInventory.getManagers().forEach(manager -> {
-                    if (manager != null && manager.isStatus()) {
-                        userIdsToNotify.add(manager.getId());
-                    }
-                });
-            }
+            // 6. Manejadores del inventario - cargar usando consulta separada
+            List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventory.getId());
+            managers.forEach(manager -> {
+                if (manager != null && manager.isStatus()) {
+                    userIdsToNotify.add(manager.getId());
+                }
+            });
             
             // Remover al usuario actual de la lista de notificaciones
             userIdsToNotify.remove(currentUserId);
@@ -549,24 +534,9 @@ public class ItemService implements
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
-            
-            // Asegurar que el owner esté cargado (forzar inicialización si es necesario)
-            if (fullInventory.getOwner() == null) {
-                // Intentar cargar desde el inventario original si está disponible
-                if (inventory.getOwner() != null) {
-                    fullInventory.setOwner(inventory.getOwner());
-                } else {
-                    // Si no está en el inventario original, cargar explícitamente desde la BD
-                    inventoryRepository.findById(inventory.getId()).ifPresent(loadedInventory -> {
-                        if (loadedInventory.getOwner() != null) {
-                            fullInventory.setOwner(loadedInventory.getOwner());
-                        }
-                    });
-                }
-            }
             
             // Usar un Set para evitar duplicados
             Set<Long> userIdsToNotify = new HashSet<>();
@@ -598,23 +568,21 @@ public class ItemService implements
                 userIdsToNotify.add(fullInventory.getOwner().getId());
             }
             
-            // 5. Firmadores del inventario
-            if (fullInventory.getSignatories() != null && !fullInventory.getSignatories().isEmpty()) {
-                fullInventory.getSignatories().forEach(signatory -> {
-                    if (signatory != null && signatory.isStatus()) {
-                        userIdsToNotify.add(signatory.getId());
-                    }
-                });
-            }
+            // 5. Firmadores del inventario - cargar usando consulta separada
+            List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventory.getId());
+            signatories.forEach(signatory -> {
+                if (signatory != null && signatory.isStatus()) {
+                    userIdsToNotify.add(signatory.getId());
+                }
+            });
             
-            // 6. Manejadores del inventario
-            if (fullInventory.getManagers() != null && !fullInventory.getManagers().isEmpty()) {
-                fullInventory.getManagers().forEach(manager -> {
-                    if (manager != null && manager.isStatus()) {
-                        userIdsToNotify.add(manager.getId());
-                    }
-                });
-            }
+            // 6. Manejadores del inventario - cargar usando consulta separada
+            List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventory.getId());
+            managers.forEach(manager -> {
+                if (manager != null && manager.isStatus()) {
+                    userIdsToNotify.add(manager.getId());
+                }
+            });
             
             // Remover al usuario actual de la lista de notificaciones
             userIdsToNotify.remove(currentUserId);

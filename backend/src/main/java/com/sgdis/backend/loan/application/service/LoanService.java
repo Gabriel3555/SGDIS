@@ -330,8 +330,8 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
                 return;
             }
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
             
             // Notificación personalizada para el responsable
@@ -387,8 +387,8 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
                 return;
             }
             
-            // Cargar el inventario completo con todas sus relaciones
-            InventoryEntity fullInventory = inventoryRepository.findByIdWithAllRelations(inventory.getId())
+            // Cargar el inventario con relaciones básicas (sin las colecciones problemáticas)
+            InventoryEntity fullInventory = inventoryRepository.findByIdWithBasicRelations(inventory.getId())
                     .orElse(inventory);
             
             // Notificación personalizada para el responsable
@@ -451,23 +451,21 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
                 userIdsToNotify.add(inventory.getOwner().getId());
             }
             
-            // 2. Firmantes del inventario
-            if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
-                inventory.getSignatories().forEach(signatory -> {
-                    if (signatory != null && signatory.isStatus()) {
-                        userIdsToNotify.add(signatory.getId());
-                    }
-                });
-            }
+            // 2. Firmantes del inventario - cargar usando consulta separada
+            List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventory.getId());
+            signatories.forEach(signatory -> {
+                if (signatory != null && signatory.isStatus()) {
+                    userIdsToNotify.add(signatory.getId());
+                }
+            });
             
-            // 3. Manejadores del inventario
-            if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
-                inventory.getManagers().forEach(manager -> {
-                    if (manager != null && manager.isStatus()) {
-                        userIdsToNotify.add(manager.getId());
-                    }
-                });
-            }
+            // 3. Manejadores del inventario - cargar usando consulta separada
+            List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventory.getId());
+            managers.forEach(manager -> {
+                if (manager != null && manager.isStatus()) {
+                    userIdsToNotify.add(manager.getId());
+                }
+            });
             
             // 4. Warehouse del centro al cual pertenece el inventario
             if (inventory.getInstitution() != null) {

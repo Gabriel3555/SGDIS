@@ -22,6 +22,7 @@ import com.sgdis.backend.notification.dto.NotificationMessage;
 import com.sgdis.backend.auditory.application.port.in.RecordActionUseCase;
 import com.sgdis.backend.auditory.application.dto.RecordActionRequest;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class CancellationService implements
         AskForCancellationUseCase,
         RefuseCancellationUseCase,
@@ -663,11 +665,15 @@ public class CancellationService implements
      */
     private void sendCancellationRequestedNotifications(CancellationEntity cancellation) {
         try {
+            log.info("Iniciando envío de notificación de solicitud de baja - Cancellation ID: {}", cancellation.getId());
+            
             UserEntity currentUser = authService.getCurrentUser();
             Long currentUserId = currentUser.getId();
+            log.debug("Usuario actual: {} (ID: {})", currentUser.getEmail(), currentUserId);
             
             List<ItemEntity> items = cancellation.getItems();
             if (items == null || items.isEmpty()) {
+                log.warn("No hay items en la cancelación ID: {}. No se enviará notificación.", cancellation.getId());
                 return;
             }
             
@@ -678,8 +684,11 @@ public class CancellationService implements
                     .collect(Collectors.toSet());
             
             if (inventoryIds.isEmpty()) {
+                log.warn("No se encontraron inventarios para los items de la cancelación ID: {}. No se enviará notificación.", cancellation.getId());
                 return;
             }
+            
+            log.debug("Inventarios encontrados: {}", inventoryIds.size());
             
             // Usar un Set para evitar duplicados
             Set<Long> userIdsToNotify = new HashSet<>();
@@ -687,11 +696,14 @@ public class CancellationService implements
             // 1. Todos los superadmin (solo una vez, independiente del inventario)
             List<UserEntity> superadmins = userRepository.findByRoleAndStatus(Role.SUPERADMIN);
             superadmins.forEach(admin -> userIdsToNotify.add(admin.getId()));
+            log.debug("Superadmins encontrados: {}", superadmins.size());
             
             // Para cada inventario, obtener los usuarios relacionados
             for (Long inventoryId : inventoryIds) {
-                InventoryEntity inventory = inventoryRepository.findByIdWithAllRelations(inventoryId).orElse(null);
+                // Usar findByIdWithBasicRelations para evitar MultipleBagFetchException
+                InventoryEntity inventory = inventoryRepository.findByIdWithBasicRelations(inventoryId).orElse(null);
                 if (inventory == null) {
+                    log.warn("No se encontró el inventario con ID: {}", inventoryId);
                     continue;
                 }
                 
@@ -702,6 +714,7 @@ public class CancellationService implements
                     
                     List<UserEntity> adminRegionals = userRepository.findByRoleAndRegionalId(Role.ADMIN_REGIONAL, regionalId);
                     adminRegionals.forEach(admin -> userIdsToNotify.add(admin.getId()));
+                    log.debug("Admin regionales encontrados: {} para regional ID: {}", adminRegionals.size(), regionalId);
                 }
                 
                 // 3. Admin institution y warehouse de la misma institution del inventario
@@ -711,36 +724,45 @@ public class CancellationService implements
                     List<UserEntity> institutionUsers = userRepository.findByInstitutionIdAndRoles(
                             institutionId, Role.ADMIN_INSTITUTION, Role.WAREHOUSE);
                     institutionUsers.forEach(user -> userIdsToNotify.add(user.getId()));
+                    log.debug("Usuarios de institución encontrados: {} para institución ID: {}", institutionUsers.size(), institutionId);
                 }
                 
                 // 4. Dueño del inventario
                 if (inventory.getOwner() != null) {
                     userIdsToNotify.add(inventory.getOwner().getId());
+                    log.debug("Dueño del inventario: {} (ID: {})", inventory.getOwner().getEmail(), inventory.getOwner().getId());
                 }
                 
-                // 5. Firmadores del inventario
-                if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
-                    inventory.getSignatories().forEach(signatory -> {
-                        if (signatory != null && signatory.isStatus()) {
-                            userIdsToNotify.add(signatory.getId());
-                        }
-                    });
-                }
+                // 5. Firmadores del inventario - cargar usando consulta separada
+                List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventoryId);
+                signatories.forEach(signatory -> {
+                    if (signatory != null && signatory.isStatus()) {
+                        userIdsToNotify.add(signatory.getId());
+                    }
+                });
+                log.debug("Firmadores encontrados: {} para inventario ID: {}", signatories.size(), inventoryId);
                 
-                // 6. Manejadores del inventario
-                if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
-                    inventory.getManagers().forEach(manager -> {
-                        if (manager != null && manager.isStatus()) {
-                            userIdsToNotify.add(manager.getId());
-                        }
-                    });
-                }
+                // 6. Manejadores del inventario - cargar usando consulta separada
+                List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventoryId);
+                managers.forEach(manager -> {
+                    if (manager != null && manager.isStatus()) {
+                        userIdsToNotify.add(manager.getId());
+                    }
+                });
+                log.debug("Manejadores encontrados: {} para inventario ID: {}", managers.size(), inventoryId);
             }
             
             // Remover al usuario actual y al solicitante de la lista de notificaciones
             userIdsToNotify.remove(currentUserId);
             if (cancellation.getRequester() != null) {
                 userIdsToNotify.remove(cancellation.getRequester().getId());
+            }
+            
+            log.info("Total de usuarios a notificar: {} (excluyendo usuario actual y solicitante)", userIdsToNotify.size());
+            
+            if (userIdsToNotify.isEmpty()) {
+                log.warn("No hay usuarios para notificar sobre la solicitud de baja ID: {}", cancellation.getId());
+                return;
             }
             
             // Preparar datos de la notificación
@@ -757,7 +779,11 @@ public class CancellationService implements
                     new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "REQUESTED")
             );
             
+            log.debug("Mensaje de notificación preparado: {}", message);
+            
             // Enviar notificaciones a todos los usuarios
+            int notificationsSent = 0;
+            int notificationsFailed = 0;
             for (Long userId : userIdsToNotify) {
                 try {
                     notificationPersistenceService.saveNotification(
@@ -768,12 +794,19 @@ public class CancellationService implements
                             new CancellationNotificationData(cancellation.getId(), itemsCount, requesterName, "REQUESTED")
                     );
                     notificationService.sendNotificationToUser(userId, notification);
+                    notificationsSent++;
                 } catch (Exception e) {
-                    // Log error pero continuar con otros usuarios
+                    notificationsFailed++;
+                    log.error("Error al enviar notificación de solicitud de baja al usuario {}: {}", userId, e.getMessage(), e);
                 }
             }
+            
+            log.info("Notificación de solicitud de baja completada - Enviadas: {}, Fallidas: {}, Total usuarios: {}", 
+                    notificationsSent, notificationsFailed, userIdsToNotify.size());
         } catch (Exception e) {
-            // Log error pero no fallar la operación
+            log.error("Error al enviar notificación de solicitud de baja para cancelación ID {}: {}", 
+                    cancellation.getId(), e.getMessage(), e);
+            // El sistema de notificaciones no debe bloquear la operación
         }
     }
 
@@ -809,8 +842,10 @@ public class CancellationService implements
             
             // Para cada inventario, obtener los usuarios relacionados
             for (Long inventoryId : inventoryIds) {
-                InventoryEntity inventory = inventoryRepository.findByIdWithAllRelations(inventoryId).orElse(null);
+                // Usar findByIdWithBasicRelations para evitar MultipleBagFetchException
+                InventoryEntity inventory = inventoryRepository.findByIdWithBasicRelations(inventoryId).orElse(null);
                 if (inventory == null) {
+                    log.warn("No se encontró el inventario con ID: {}", inventoryId);
                     continue;
                 }
                 
@@ -837,23 +872,21 @@ public class CancellationService implements
                     userIdsToNotify.add(inventory.getOwner().getId());
                 }
                 
-                // 5. Firmadores del inventario
-                if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
-                    inventory.getSignatories().forEach(signatory -> {
-                        if (signatory != null && signatory.isStatus()) {
-                            userIdsToNotify.add(signatory.getId());
-                        }
-                    });
-                }
+                // 5. Firmadores del inventario - cargar usando consulta separada
+                List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventoryId);
+                signatories.forEach(signatory -> {
+                    if (signatory != null && signatory.isStatus()) {
+                        userIdsToNotify.add(signatory.getId());
+                    }
+                });
                 
-                // 6. Manejadores del inventario
-                if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
-                    inventory.getManagers().forEach(manager -> {
-                        if (manager != null && manager.isStatus()) {
-                            userIdsToNotify.add(manager.getId());
-                        }
-                    });
-                }
+                // 6. Manejadores del inventario - cargar usando consulta separada
+                List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventoryId);
+                managers.forEach(manager -> {
+                    if (manager != null && manager.isStatus()) {
+                        userIdsToNotify.add(manager.getId());
+                    }
+                });
             }
             
             // Remover al usuario actual de la lista de notificaciones
@@ -960,8 +993,10 @@ public class CancellationService implements
             
             // Para cada inventario, obtener los usuarios relacionados
             for (Long inventoryId : inventoryIds) {
-                InventoryEntity inventory = inventoryRepository.findByIdWithAllRelations(inventoryId).orElse(null);
+                // Usar findByIdWithBasicRelations para evitar MultipleBagFetchException
+                InventoryEntity inventory = inventoryRepository.findByIdWithBasicRelations(inventoryId).orElse(null);
                 if (inventory == null) {
+                    log.warn("No se encontró el inventario con ID: {}", inventoryId);
                     continue;
                 }
                 
@@ -988,23 +1023,21 @@ public class CancellationService implements
                     userIdsToNotify.add(inventory.getOwner().getId());
                 }
                 
-                // 5. Firmadores del inventario
-                if (inventory.getSignatories() != null && !inventory.getSignatories().isEmpty()) {
-                    inventory.getSignatories().forEach(signatory -> {
-                        if (signatory != null && signatory.isStatus()) {
-                            userIdsToNotify.add(signatory.getId());
-                        }
-                    });
-                }
+                // 5. Firmadores del inventario - cargar usando consulta separada
+                List<UserEntity> signatories = inventoryRepository.findSignatoriesByInventoryId(inventoryId);
+                signatories.forEach(signatory -> {
+                    if (signatory != null && signatory.isStatus()) {
+                        userIdsToNotify.add(signatory.getId());
+                    }
+                });
                 
-                // 6. Manejadores del inventario
-                if (inventory.getManagers() != null && !inventory.getManagers().isEmpty()) {
-                    inventory.getManagers().forEach(manager -> {
-                        if (manager != null && manager.isStatus()) {
-                            userIdsToNotify.add(manager.getId());
-                        }
-                    });
-                }
+                // 6. Manejadores del inventario - cargar usando consulta separada
+                List<UserEntity> managers = inventoryRepository.findManagersByInventoryId(inventoryId);
+                managers.forEach(manager -> {
+                    if (manager != null && manager.isStatus()) {
+                        userIdsToNotify.add(manager.getId());
+                    }
+                });
             }
             
             // Remover al usuario actual de la lista de notificaciones
