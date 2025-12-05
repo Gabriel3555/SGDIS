@@ -3532,21 +3532,32 @@ async function loadUsersForRoleAssignment(inventoryId) {
   }
 }
 
-function populateRoleUserSelect(users) {
-  const select = document.getElementById("roleUserId");
-  if (!select) {
-    console.error("roleUserId select element not found");
-    return;
+// Function to ensure role user select is initialized
+function ensureRoleUserSelect() {
+  // Initialize CustomSelect if not already done
+  if (!window.roleUserSelect) {
+    const container = document.getElementById("roleUserIdSelect");
+    if (!container) {
+      console.error("roleUserIdSelect container not found");
+      return null;
+    }
+    window.roleUserSelect = new CustomSelect("roleUserIdSelect", {
+      placeholder: "Seleccionar usuario...",
+      searchable: true,
+    });
   }
   return window.roleUserSelect;
 }
 
 function populateRoleUserSelect(users) {
   const selectInstance = ensureRoleUserSelect();
-  if (!selectInstance) return;
+  if (!selectInstance) {
+    console.error("Failed to initialize role user select");
+    return;
+  }
 
-  // Clear existing options except the first one
-  select.innerHTML = '<option value="">Seleccionar usuario...</option>';
+  // Format users as options
+  const userOptions = [];
 
   if (users && users.length > 0) {
     users.forEach((user) => {
@@ -3565,36 +3576,47 @@ function populateRoleUserSelect(users) {
         displayName += ` (${user.jobTitle})`;
       }
 
-      const option = document.createElement("option");
-      option.value = String(user.id);
-      option.textContent = displayName;
-      select.appendChild(option);
+      userOptions.push({
+        value: String(user.id),
+        label: displayName,
+      });
     });
-    
-    // Enable the select if we have users
+  } else {
+    // Add no users option (will be shown as disabled in CustomSelect)
+    userOptions.push({
+      value: "",
+      label: "No hay usuarios disponibles",
+      disabled: true,
+    });
+  }
+
+  // Update the CustomSelect with new options
+  selectInstance.setOptions(userOptions);
+  
+  // Enable the select if we have users
+  if (users && users.length > 0) {
     selectInstance.setDisabled(false);
   } else {
-    // Add no users option
-    const option = document.createElement("option");
-    option.value = "";
-    option.textContent = "No hay usuarios disponibles";
-    option.disabled = true;
-    select.appendChild(option);
+    selectInstance.setDisabled(true);
   }
 }
 
 function showRoleUserSelectLoading() {
-  const select = document.getElementById("roleUserId");
-  if (select) {
-    select.innerHTML = '<option value="">Cargando usuarios...</option>';
-    select.disabled = true;
+  const selectInstance = ensureRoleUserSelect();
+  if (selectInstance) {
+    selectInstance.setOptions([{
+      value: "",
+      label: "Cargando usuarios...",
+      disabled: true,
+    }]);
+    selectInstance.setDisabled(true);
   }
 }
 
 function hideRoleUserSelectLoading() {
-  const select = document.getElementById("roleUserId");
-  if (select) {
-    select.disabled = false;
+  const selectInstance = ensureRoleUserSelect();
+  if (selectInstance) {
+    selectInstance.setDisabled(false);
   }
 }
 
