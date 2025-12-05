@@ -5,7 +5,7 @@ let transfersUserData = {
     transfers: [],
     userInventories: [],
     currentPage: 0,
-    pageSize: 10,
+    pageSize: 6,
     totalPages: 0,
     totalElements: 0,
     viewMode: 'table', // 'table' or 'cards'
@@ -74,6 +74,37 @@ async function loadUserInventoriesForTransfers() {
         return window.transfersUserData.userInventories;
     } catch (error) {
         console.error('Error loading user inventories:', error);
+        return [];
+    }
+}
+
+/**
+ * Loads all inventories from the user's institution
+ */
+async function loadAllInventoriesFromUserInstitution() {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        // Use endpoint that automatically gets inventories from current user's institution
+        const inventoriesResponse = await fetch('/api/v1/inventory/institutionAdminInventories?page=0&size=1000', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (inventoriesResponse.ok) {
+            const data = await inventoriesResponse.json();
+            return Array.isArray(data.content) ? data.content : (Array.isArray(data) ? data : []);
+        } else {
+            throw new Error('Error al cargar los inventarios de la institución');
+        }
+    } catch (error) {
+        console.error('Error loading inventories from user institution:', error);
         return [];
     }
 }
@@ -166,11 +197,11 @@ async function loadUserTransfersData() {
             );
         }
 
-        // Sort by requested date (newest first)
+        // Sort by ID descending (highest ID first, lowest ID last)
         filteredTransfers.sort((a, b) => {
-            const dateA = new Date(a.requestedAt || 0);
-            const dateB = new Date(b.requestedAt || 0);
-            return dateB - dateA;
+            const idA = a.id || 0;
+            const idB = b.id || 0;
+            return idB - idA; // Descending order (highest first)
         });
 
         // Update transfers data
@@ -297,21 +328,46 @@ function updateUserTransfersFilters() {
     }
 
     const inventories = window.transfersUserData.userInventories || [];
+    const currentSearchTerm = window.transfersUserData.filters.searchTerm || '';
     
     container.innerHTML = `
-        <div class="flex flex-col sm:flex-row gap-4 flex-1">
+        <div class="flex flex-col sm:flex-row gap-4 flex-1 items-end">
+            <!-- Search Bar -->
+            <div class="relative flex-1" style="min-width: 250px;">
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Buscar</label>
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
+                    <input type="text" 
+                           id="transferSearchUser"
+                           placeholder="Buscar por origen, destino, estado..." 
+                           value="${currentSearchTerm}"
+                           class="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                           style="height: 56px;"
+                           onkeyup="if(event.key === 'Enter') handleUserTransferSearch()">
+                </div>
+            </div>
+            
+            <!-- Status Filter -->
+            <div class="relative" style="min-width: 180px; flex-shrink: 0;">
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Estado</label>
             <select id="transferStatusFilter" 
                 onchange="handleUserTransferStatusFilterChange(this.value)"
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                    style="height: 56px;">
                 <option value="all">Todos los estados</option>
                 <option value="PENDING" ${window.transfersUserData.filters.status === 'PENDING' ? 'selected' : ''}>Pendientes</option>
                 <option value="APPROVED" ${window.transfersUserData.filters.status === 'APPROVED' ? 'selected' : ''}>Aprobadas</option>
                 <option value="REJECTED" ${window.transfersUserData.filters.status === 'REJECTED' ? 'selected' : ''}>Rechazadas</option>
             </select>
+            </div>
             
+            <!-- Inventory Filter -->
+            <div class="relative" style="min-width: 180px; flex-shrink: 0;">
+                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">Inventario</label>
             <select id="transferInventoryFilter" 
                 onchange="handleUserTransferInventoryFilterChange(this.value)"
-                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00AF00]">
+                    class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                    style="height: 56px;">
                 <option value="">Todos los inventarios</option>
                 ${inventories.map(inv => `
                     <option value="${inv.id}" ${window.transfersUserData.filters.inventoryId === inv.id.toString() ? 'selected' : ''}>
@@ -319,6 +375,7 @@ function updateUserTransfersFilters() {
                     </option>
                 `).join('')}
             </select>
+            </div>
         </div>
     `;
 }
@@ -531,6 +588,19 @@ function updateUserTransfersPagination() {
 }
 
 /**
+ * Handles search input
+ */
+function handleUserTransferSearch() {
+    if (!window.transfersUserData) return;
+    const searchInput = document.getElementById('transferSearchUser');
+    if (searchInput) {
+        window.transfersUserData.filters.searchTerm = searchInput.value;
+        window.transfersUserData.currentPage = 0;
+        loadUserTransfersData();
+    }
+}
+
+/**
  * Handles status filter change
  */
 function handleUserTransferStatusFilterChange(status) {
@@ -628,36 +698,43 @@ async function populateUserNewTransferForm(itemId = null) {
     `;
     
     try {
-        // Load user inventories and items
-        const inventories = await loadUserInventoriesForTransfers();
-        const allItems = await loadAllUserItems(inventories);
+        // Load all inventories from user's institution for destination dropdown
+        const inventories = await loadAllInventoriesFromUserInstitution();
         
-        // Build form with selects
+        // Build form with plate/serial input
         form.innerHTML = `
             <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item a Transferir *</label>
-                    <select id="newTransferItemId" 
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
-                        required
-                        onchange="handleUserTransferItemChange(this.value)">
-                        <option value="">Seleccionar item...</option>
-                        ${allItems.map(item => `
-                            <option value="${item.id}" data-inventory-id="${item.inventoryId}" ${itemId && item.id === parseInt(itemId) ? 'selected' : ''}>
-                                ${item.productName || `Item ${item.id}`} ${item.inventoryName ? `(Inventario: ${item.inventoryName})` : ''}
-                            </option>
-                        `).join('')}
-                    </select>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecciona el item que deseas transferir</p>
+                    <div class="flex gap-2">
+                        <input type="text" 
+                            id="newTransferItemPlateOrSerial" 
+                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Placa o Serial del item"
+                            required>
+                        <button type="button" 
+                            onclick="handleUserTransferItemSearch()"
+                            class="px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ingresa la placa o serial del item que deseas transferir</p>
+                    <div id="newTransferItemInfo" class="hidden mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                        <p class="text-sm text-blue-800 dark:text-blue-300" id="newTransferItemInfoText"></p>
+                    </div>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Inventario de Destino *</label>
                     <select id="newTransferDestinationInventoryId" 
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
-                        required
-                        disabled>
-                        <option value="">Primero selecciona un item</option>
+                        required>
+                        <option value="">Seleccionar inventario...</option>
+                        ${inventories.map(inv => `
+                            <option value="${inv.id}">
+                                ${inv.name || `Inventario ${inv.id}`}
+                            </option>
+                        `).join('')}
                     </select>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecciona el inventario de destino</p>
                 </div>
@@ -671,6 +748,8 @@ async function populateUserNewTransferForm(itemId = null) {
                         maxlength="500"></textarea>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Información adicional sobre la transferencia</p>
                 </div>
+                
+                <input type="hidden" id="newTransferItemIdHidden" value="">
             </div>
 
             <div class="flex gap-3 pt-4">
@@ -695,12 +774,15 @@ async function populateUserNewTransferForm(itemId = null) {
             newForm.addEventListener('submit', handleUserNewTransferSubmit);
         }
         
-        // If itemId is provided, trigger the change handler
-        if (itemId) {
-            const itemSelect = document.getElementById('newTransferItemId');
-            if (itemSelect) {
-                handleUserTransferItemChange(itemId);
+        // Add Enter key handler for search
+        const plateInput = document.getElementById('newTransferItemPlateOrSerial');
+        if (plateInput) {
+            plateInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleUserTransferItemSearch();
             }
+            });
         }
     } catch (error) {
         console.error('Error populating user transfer form:', error);
@@ -765,6 +847,159 @@ async function loadAllUserItems(inventories) {
     });
     
     return allItems;
+}
+
+/**
+ * Searches for item by plate or serial and validates ownership
+ */
+async function handleUserTransferItemSearch() {
+    const plateOrSerialInput = document.getElementById('newTransferItemPlateOrSerial');
+    const itemInfoDiv = document.getElementById('newTransferItemInfo');
+    const itemInfoText = document.getElementById('newTransferItemInfoText');
+    
+    if (!plateOrSerialInput) return;
+    
+    const plateOrSerial = plateOrSerialInput.value.trim();
+    if (!plateOrSerial) {
+        if (typeof showErrorToast === 'function') {
+            showErrorToast('Error', 'Por favor ingresa una placa o serial');
+        }
+        return;
+    }
+    
+    // Show loading state
+    if (itemInfoDiv && itemInfoText) {
+        itemInfoDiv.classList.remove('hidden');
+        itemInfoText.textContent = 'Buscando item...';
+        itemInfoDiv.className = 'mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl';
+    }
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+        
+        let item = null;
+        
+        // Try to get item by licence plate first
+        let response = await fetch(`/api/v1/items/licence-plate/${encodeURIComponent(plateOrSerial)}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            item = await response.json();
+        } else if (response.status === 404) {
+            // Try by serial
+            response = await fetch(`/api/v1/items/serial/${encodeURIComponent(plateOrSerial)}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                item = await response.json();
+            } else if (response.status === 404) {
+                throw new Error('No se encontró un item con esa placa o serial');
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Error al buscar el item por serial');
+            }
+        } else {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Error al buscar el item por placa');
+        }
+        
+        if (!item || !item.id) {
+            throw new Error('No se pudo obtener la información del item');
+        }
+        
+        // Verify that user is owner or signatory of the item's inventory
+        const userInventories = await loadUserInventoriesForTransfers();
+        const itemInventoryId = item.inventoryId || item.inventory?.id;
+        
+        if (!itemInventoryId) {
+            throw new Error('El item no tiene un inventario asignado');
+        }
+        
+        // Check if user is owner or signatory of this inventory
+        const userOwnedInventories = await fetch('/api/v1/users/me/inventories/owner', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        }).then(r => r.ok ? r.json() : []);
+        
+        const userSignatoryInventories = await fetch('/api/v1/users/me/inventories/signatory', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        }).then(r => r.ok ? r.json() : []);
+        
+        const isOwner = userOwnedInventories.some(inv => inv.id === itemInventoryId);
+        const isSignatory = userSignatoryInventories.some(inv => inv.id === itemInventoryId);
+        
+        if (!isOwner && !isSignatory) {
+            throw new Error('No tienes permisos para transferir items de este inventario. Debes ser propietario o firmante del inventario.');
+        }
+        
+        // Store item ID in a hidden field for later use
+        const hiddenItemId = document.getElementById('newTransferItemIdHidden');
+        if (hiddenItemId) {
+            hiddenItemId.value = item.id;
+        } else {
+            // Create hidden input if it doesn't exist
+            const form = document.getElementById('newTransferForm');
+            if (form) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'newTransferItemIdHidden';
+                hiddenInput.value = item.id;
+                form.appendChild(hiddenInput);
+            }
+        }
+        
+        // Show item info
+        if (itemInfoDiv && itemInfoText) {
+            const itemName = item.productName || `Item ${item.id}`;
+            const inventoryName = item.inventoryName || item.inventory?.name || 'Inventario desconocido';
+            itemInfoText.innerHTML = `
+                <i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-2"></i>
+                <strong>${itemName}</strong> - Inventario: ${inventoryName}
+            `;
+            itemInfoDiv.className = 'mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl';
+        }
+        
+        if (typeof showSuccessToast === 'function') {
+            showSuccessToast('Item encontrado', 'El item ha sido encontrado y verificado');
+        }
+    } catch (error) {
+        console.error('Error searching item:', error);
+        if (itemInfoDiv && itemInfoText) {
+            itemInfoText.innerHTML = `
+                <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400 mr-2"></i>
+                ${error.message || 'Error al buscar el item'}
+            `;
+            itemInfoDiv.className = 'mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl';
+        }
+        
+        if (typeof showErrorToast === 'function') {
+            showErrorToast('Error', error.message || 'No se pudo buscar el item');
+        }
+        
+        // Clear hidden item ID
+        const hiddenItemId = document.getElementById('newTransferItemIdHidden');
+        if (hiddenItemId) {
+            hiddenItemId.value = '';
+        }
+    }
 }
 
 /**
@@ -894,13 +1129,15 @@ async function handleUserTransferItemChange(itemId) {
 async function handleUserNewTransferSubmit(event) {
     event.preventDefault();
     
-    const itemId = document.getElementById('newTransferItemId')?.value?.trim();
+    // Get item ID from hidden input (set by search function)
+    const hiddenItemId = document.getElementById('newTransferItemIdHidden');
+    const itemId = hiddenItemId?.value?.trim();
     const destinationInventoryId = document.getElementById('newTransferDestinationInventoryId')?.value?.trim();
     const details = document.getElementById('newTransferDetails')?.value?.trim() || '';
     
     if (!itemId || !destinationInventoryId) {
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'Por favor completa todos los campos requeridos');
+            window.showErrorToast('Error', 'Por favor busca un item y completa todos los campos requeridos');
         }
         return;
     }
@@ -912,6 +1149,54 @@ async function handleUserNewTransferSubmit(event) {
         if (submitButton) {
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Procesando...';
             submitButton.disabled = true;
+        }
+        
+        // Verify again that user is owner or signatory of the item's inventory
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+        
+        // Get item to verify inventory ownership
+        const itemResponse = await fetch(`/api/v1/items/${itemId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (itemResponse.ok) {
+            const item = await itemResponse.json();
+            const itemInventoryId = item.inventoryId || item.inventory?.id;
+            
+            if (itemInventoryId) {
+                // Check if user is owner or signatory
+                const [ownedResponse, signatoryResponse] = await Promise.all([
+                    fetch('/api/v1/users/me/inventories/owner', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }),
+                    fetch('/api/v1/users/me/inventories/signatory', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                ]);
+                
+                const ownedInventories = ownedResponse.ok ? await ownedResponse.json() : [];
+                const signatoryInventories = signatoryResponse.ok ? await signatoryResponse.json() : [];
+                
+                const isOwner = ownedInventories.some(inv => inv.id === itemInventoryId);
+                const isSignatory = signatoryInventories.some(inv => inv.id === itemInventoryId);
+                
+                if (!isOwner && !isSignatory) {
+                    throw new Error('No tienes permisos para transferir items de este inventario. Debes ser propietario o firmante del inventario.');
+                }
+            }
         }
         
         const transferData = {
@@ -998,6 +1283,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Export functions globally
 window.loadUserTransfersData = loadUserTransfersData;
 window.updateUserTransfersUI = updateUserTransfersUI;
+window.handleUserTransferSearch = handleUserTransferSearch;
+window.handleUserTransferSearch = handleUserTransferSearch;
 window.handleUserTransferStatusFilterChange = handleUserTransferStatusFilterChange;
 window.handleUserTransferInventoryFilterChange = handleUserTransferInventoryFilterChange;
 window.setUserTransfersViewMode = setUserTransfersViewMode;
@@ -1005,6 +1292,7 @@ window.changeUserTransfersPage = changeUserTransfersPage;
 window.viewUserTransfer = viewUserTransfer;
 window.showNewTransferModalUser = showNewTransferModalUser;
 window.populateUserNewTransferForm = populateUserNewTransferForm;
+window.handleUserTransferItemSearch = handleUserTransferItemSearch;
 window.handleUserTransferItemChange = handleUserTransferItemChange;
 window.handleUserNewTransferSubmit = handleUserNewTransferSubmit;
 window.closeNewTransferModal = closeNewTransferModal;

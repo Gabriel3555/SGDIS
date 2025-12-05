@@ -547,8 +547,46 @@ public class CancellationService implements
             return;
         }
 
-        // USER: No tiene restricciones de validación, pero no se aprueba automáticamente
-        // (ya está manejado en el código principal)
+        // USER: Solo puede cancelar items de inventarios donde es owner o signatory (NO manager)
+        if (userRole == Role.USER) {
+            for (ItemEntity item : items) {
+                if (item.getInventory() == null) {
+                    throw new RuntimeException("El item con ID " + item.getId() + " no pertenece a ningún inventario");
+                }
+                
+                InventoryEntity inventory = item.getInventory();
+                
+                // Verificar si el usuario es manager del inventario (NO permitido)
+                if (inventory.getManagers() != null && inventory.getManagers().contains(requester)) {
+                    String inventoryName = inventory.getName() != null ? inventory.getName() : "Inventario ID " + inventory.getId();
+                    throw new RuntimeException(
+                            String.format("Los manejadores no pueden solicitar bajas de items. Solo los propietarios y firmantes pueden solicitar bajas. Inventario: %s",
+                                    inventoryName)
+                    );
+                }
+                
+                boolean isAuthorized = false;
+                
+                // Verificar si el usuario es owner del inventario
+                if (inventory.getOwner() != null && inventory.getOwner().getId().equals(requester.getId())) {
+                    isAuthorized = true;
+                }
+                
+                // Verificar si el usuario es signatory del inventario
+                if (!isAuthorized && inventory.getSignatories() != null && inventory.getSignatories().contains(requester)) {
+                    isAuthorized = true;
+                }
+                
+                if (!isAuthorized) {
+                    String inventoryName = inventory.getName() != null ? inventory.getName() : "Inventario ID " + inventory.getId();
+                    throw new RuntimeException(
+                            String.format("No tienes permisos para solicitar bajas de items de este inventario. Solo puedes solicitar bajas de inventarios donde eres propietario o firmante. Inventario: %s",
+                                    inventoryName)
+                    );
+                }
+            }
+            return;
+        }
     }
 
     /**

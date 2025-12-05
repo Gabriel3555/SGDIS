@@ -6,6 +6,7 @@ import com.sgdis.backend.item.application.dto.CreateItemRequest;
 import com.sgdis.backend.item.application.dto.CreateItemResponse;
 import com.sgdis.backend.item.application.dto.DeleteItemResponse;
 import com.sgdis.backend.item.application.dto.ItemDTO;
+import com.sgdis.backend.item.application.dto.ItemStatisticsResponse;
 import com.sgdis.backend.item.application.dto.UpdateItemRequest;
 import com.sgdis.backend.item.application.dto.UpdateItemResponse;
 import com.sgdis.backend.item.application.service.ExcelItemService;
@@ -21,6 +22,17 @@ import com.sgdis.backend.verification.application.dto.VerificationResponse;
 import com.sgdis.backend.verification.application.port.in.GetItemVerificationsUseCase;
 import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
 import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
+import com.sgdis.backend.inventory.infrastructure.repository.SpringDataInventoryRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.auth.application.service.AuthService;
+import com.sgdis.backend.item.mapper.ItemMapper;
+import com.sgdis.backend.exception.ResourceNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import com.sgdis.backend.item.application.dto.ItemDTO;
 import com.sgdis.backend.file.service.FileUploadService;
 import org.springframework.data.domain.Page;
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,6 +70,9 @@ public class ItemController {
     private final GetItemBySerialUseCase getItemBySerialUseCase;
     private final GetItemVerificationsUseCase getItemVerificationsUseCase;
     private final SpringDataItemRepository itemRepository;
+    private final SpringDataInventoryRepository inventoryRepository;
+    private final SpringDataUserRepository userRepository;
+    private final AuthService authService;
     private final FileUploadService fileUploadService;
     private final ExcelItemService excelItemService;
     private final ExcelExportService excelExportService;
@@ -398,6 +413,122 @@ public class ItemController {
     ) {
         ItemDTO item = getItemByIdUseCase.getItemById(id);
         return ResponseEntity.ok(item);
+    }
+
+    @Operation(
+            summary = "Get item statistics for an inventory",
+            description = "Retrieves statistics for items in a specific inventory including total, active, and inactive items",
+            parameters = {
+                    @io.swagger.v3.oas.annotations.Parameter(
+                            name = "inventoryId",
+                            description = "ID of the inventory",
+                            required = true,
+                            in = io.swagger.v3.oas.annotations.enums.ParameterIn.PATH
+                    )
+            }
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Statistics retrieved successfully",
+            content = @Content(schema = @Schema(implementation = ItemStatisticsResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "Inventory not found")
+    @GetMapping("/inventory/{inventoryId}/statistics")
+    public ResponseEntity<ItemStatisticsResponse> getItemStatisticsByInventory(
+            @Parameter(description = "ID of the inventory", required = true)
+            @PathVariable Long inventoryId
+    ) {
+        // Verify inventory exists
+        if (!inventoryRepository.existsById(inventoryId)) {
+            throw new ResourceNotFoundException("Inventory not found with id: " + inventoryId);
+        }
+
+        long totalItems = itemRepository.countByInventoryId(inventoryId);
+        long activeItems = itemRepository.countActiveByInventoryId(inventoryId);
+        long inactiveItems = itemRepository.countInactiveByInventoryId(inventoryId);
+
+        ItemStatisticsResponse statistics = new ItemStatisticsResponse(
+                totalItems,
+                activeItems,
+                inactiveItems
+        );
+
+        return ResponseEntity.ok(statistics);
+    }
+
+    @Operation(
+            summary = "Get all items from user's inventories",
+            description = "Retrieves all items from inventories where the current user is owner, manager, or signatory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Items retrieved successfully",
+            content = @Content(schema = @Schema(implementation = List.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/user-items")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<ItemDTO>> getUserItems() {
+        var currentUser = authService.getCurrentUser();
+        Long userId = currentUser.getId();
+        
+        // Get all inventories where user is owner, manager, or signatory
+        List<InventoryEntity> ownedInventories = userRepository.findInventoriesByOwnerId(userId);
+        List<InventoryEntity> managedInventories = userRepository.findManagedInventoriesByUserId(userId);
+        
+        // Get signatory inventories
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        List<InventoryEntity> signatoryInventories = user.getMySignatories();
+        if (signatoryInventories == null) {
+            signatoryInventories = List.of();
+        } else {
+            // Initialize the collection to avoid LazyInitializationException
+            signatoryInventories.size();
+        }
+        
+        // Combine all inventories and get unique IDs
+        List<Long> inventoryIds = new ArrayList<>();
+        ownedInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        managedInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null && !inventoryIds.contains(inv.getId())) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        signatoryInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null && !inventoryIds.contains(inv.getId())) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        
+        // If no inventories, return empty list
+        if (inventoryIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        
+        // Get all items from user's inventories
+        List<ItemEntity> allItems = new ArrayList<>();
+        for (Long inventoryId : inventoryIds) {
+            try {
+                List<ItemEntity> items = itemRepository.findAllByInventoryId(inventoryId);
+                if (items != null) {
+                    allItems.addAll(items);
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching items for inventory " + inventoryId + ": " + e.getMessage());
+            }
+        }
+        
+        // Convert to DTOs
+        List<ItemDTO> itemDTOs = ItemMapper.toDTOList(allItems);
+        
+        return ResponseEntity.ok(itemDTOs);
     }
 
     @Operation(

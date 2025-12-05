@@ -8,6 +8,13 @@ async function loadCancellationsData() {
         return;
     }
 
+    // If user page, use user-specific function
+    if (window.location.pathname.includes('/user/cancellations')) {
+        if (typeof window.loadCancellationsData === 'function' && window.loadCancellationsData !== loadCancellationsData) {
+            return window.loadCancellationsData();
+        }
+    }
+
     cancellationsData.isLoading = true;
     showLoadingState();
 
@@ -19,6 +26,8 @@ async function loadCancellationsData() {
             cancellationsData.userRole = 'ADMIN_INSTITUTION';
         } else if (window.location.pathname.includes('/admin_regional/')) {
             cancellationsData.userRole = 'ADMIN_REGIONAL';
+        } else if (window.location.pathname.includes('/user/')) {
+            cancellationsData.userRole = 'USER';
         }
         
         await loadCurrentUserInfo();

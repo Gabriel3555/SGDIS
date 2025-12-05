@@ -419,16 +419,170 @@ function populateResponsibleSelectForLoan() {
     });
 }
 
+// Search item by plate or serial for loan
+async function handleLoanItemSearch() {
+    const plateOrSerialInput = document.getElementById('loanItemPlateOrSerial');
+    const itemInfoDiv = document.getElementById('loanItemInfo');
+    const itemInfoText = document.getElementById('loanItemInfoText');
+    
+    if (!plateOrSerialInput) return;
+    
+    const plateOrSerial = plateOrSerialInput.value.trim();
+    if (!plateOrSerial) {
+        if (typeof showErrorToast === 'function') {
+            showErrorToast('Error', 'Por favor ingresa una placa o serial');
+        }
+        return;
+    }
+    
+    // Show loading state
+    if (itemInfoDiv && itemInfoText) {
+        itemInfoDiv.classList.remove('hidden');
+        itemInfoText.textContent = 'Buscando item...';
+        itemInfoDiv.className = 'mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl';
+    }
+    
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+        
+        let item = null;
+        
+        // Try to get item by licence plate first
+        let response = await fetch(`/api/v1/items/licence-plate/${encodeURIComponent(plateOrSerial)}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            item = await response.json();
+        } else if (response.status === 404) {
+            // Try by serial
+            response = await fetch(`/api/v1/items/serial/${encodeURIComponent(plateOrSerial)}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                item = await response.json();
+            } else if (response.status === 404) {
+                throw new Error('No se encontró un item con esa placa o serial');
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Error al buscar el item por serial');
+            }
+        } else {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Error al buscar el item por placa');
+        }
+        
+        if (!item || !item.id) {
+            throw new Error('No se pudo obtener la información del item');
+        }
+        
+        // Verify that user is owner, signatory, or manager of the item's inventory
+        const itemInventoryId = item.inventoryId || item.inventory?.id;
+        
+        if (!itemInventoryId) {
+            throw new Error('El item no tiene un inventario asignado');
+        }
+        
+        // Check if user is owner, signatory, or manager of this inventory
+        const [ownedResponse, signatoryResponse, managedResponse] = await Promise.all([
+            fetch('/api/v1/users/me/inventories/owner', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }),
+            fetch('/api/v1/users/me/inventories/signatory', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }),
+            fetch('/api/v1/users/me/inventories', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+        ]);
+        
+        const ownedInventories = ownedResponse.ok ? await ownedResponse.json() : [];
+        const signatoryInventories = signatoryResponse.ok ? await signatoryResponse.json() : [];
+        const managedInventories = managedResponse.ok ? await managedResponse.json() : [];
+        
+        const isOwner = ownedInventories.some(inv => inv.id === itemInventoryId);
+        const isSignatory = signatoryInventories.some(inv => inv.id === itemInventoryId);
+        const isManager = managedInventories.some(inv => inv.id === itemInventoryId);
+        
+        if (!isOwner && !isSignatory && !isManager) {
+            throw new Error('No tienes permisos para prestar items de este inventario. Debes ser propietario, firmante o manejador del inventario.');
+        }
+        
+        // Store item ID in hidden field
+        const hiddenItemId = document.getElementById('loanSelectedItemId');
+        if (hiddenItemId) {
+            hiddenItemId.value = item.id;
+        }
+        
+        // Show item info
+        if (itemInfoDiv && itemInfoText) {
+            const itemName = item.productName || `Item ${item.id}`;
+            const inventoryName = item.inventoryName || item.inventory?.name || 'Inventario desconocido';
+            itemInfoText.innerHTML = `
+                <i class="fas fa-check-circle text-green-600 dark:text-green-400 mr-2"></i>
+                <strong>${itemName}</strong> - Inventario: ${inventoryName}
+            `;
+            itemInfoDiv.className = 'mt-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl';
+        }
+        
+        if (typeof showSuccessToast === 'function') {
+            showSuccessToast('Item encontrado', 'El item ha sido encontrado y verificado');
+        }
+    } catch (error) {
+        console.error('Error searching item:', error);
+        if (itemInfoDiv && itemInfoText) {
+            itemInfoText.innerHTML = `
+                <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400 mr-2"></i>
+                ${error.message || 'Error al buscar el item'}
+            `;
+            itemInfoDiv.className = 'mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl';
+        }
+        
+        if (typeof showErrorToast === 'function') {
+            showErrorToast('Error', error.message || 'No se pudo buscar el item');
+        }
+        
+        // Clear hidden item ID
+        const hiddenItemId = document.getElementById('loanSelectedItemId');
+        if (hiddenItemId) {
+            hiddenItemId.value = '';
+        }
+    }
+}
+
 // Handle lending an item
 async function handleLendItem() {
-    const itemId = document.getElementById('loanSelectedItemId').value;
+    // Get item ID from hidden input (set by search function)
+    const hiddenItemId = document.getElementById('loanSelectedItemId');
+    const itemId = hiddenItemId?.value?.trim();
     const responsibleId = document.getElementById('loanSelectedResponsibleId').value;
     const details = document.getElementById('loanDetails').value || '';
 
     // Validation
     if (!itemId) {
         if (window.showErrorToast) {
-            window.showErrorToast('Error', 'Por favor seleccione un item');
+            window.showErrorToast('Error', 'Por favor busca un item primero');
         }
         return;
     }
@@ -447,6 +601,56 @@ async function handleLendItem() {
                 window.showErrorToast('Error', 'No hay sesión activa');
             }
             return;
+        }
+
+        // Verify again that user is owner, signatory, or manager of the item's inventory
+        const itemResponse = await fetch(`/api/v1/items/${itemId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (itemResponse.ok) {
+            const item = await itemResponse.json();
+            const itemInventoryId = item.inventoryId || item.inventory?.id;
+            
+            if (itemInventoryId) {
+                // Check if user is owner, signatory, or manager
+                const [ownedResponse, signatoryResponse, managedResponse] = await Promise.all([
+                    fetch('/api/v1/users/me/inventories/owner', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }),
+                    fetch('/api/v1/users/me/inventories/signatory', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }),
+                    fetch('/api/v1/users/me/inventories', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                ]);
+                
+                const ownedInventories = ownedResponse.ok ? await ownedResponse.json() : [];
+                const signatoryInventories = signatoryResponse.ok ? await signatoryResponse.json() : [];
+                const managedInventories = managedResponse.ok ? await managedResponse.json() : [];
+                
+                const isOwner = ownedInventories.some(inv => inv.id === itemInventoryId);
+                const isSignatory = signatoryInventories.some(inv => inv.id === itemInventoryId);
+                const isManager = managedInventories.some(inv => inv.id === itemInventoryId);
+                
+                if (!isOwner && !isSignatory && !isManager) {
+                    throw new Error('No tienes permisos para prestar items de este inventario. Debes ser propietario, firmante o manejador del inventario.');
+                }
+            }
         }
 
         const response = await fetch('/api/v1/loan/lend', {
@@ -619,7 +823,28 @@ function resetLoanForm() {
     document.getElementById('loanSelectedInventoryId').value = '';
     document.querySelector('#loanInventorySelect .custom-select-text').textContent = 'Seleccione un inventario';
     document.getElementById('loanSelectedItemId').value = '';
-    document.querySelector('#loanItemSelect .custom-select-text').textContent = 'Seleccione un item';
+    
+    // Reset item search field (for USER role)
+    const itemPlateInput = document.getElementById('loanItemPlateOrSerial');
+    if (itemPlateInput) {
+        itemPlateInput.value = '';
+    }
+    
+    // Hide item info div (for USER role)
+    const itemInfoDiv = document.getElementById('loanItemInfo');
+    if (itemInfoDiv) {
+        itemInfoDiv.classList.add('hidden');
+    }
+    
+    // Only update item select text if it exists (for other roles)
+    const itemSelect = document.getElementById('loanItemSelect');
+    if (itemSelect) {
+        const itemSelectText = itemSelect.querySelector('.custom-select-text');
+        if (itemSelectText) {
+            itemSelectText.textContent = 'Seleccione un item';
+        }
+    }
+    
     document.getElementById('loanSelectedResponsibleId').value = '';
     document.querySelector('#loanResponsibleSelect .custom-select-text').textContent = 'Seleccione un responsable';
     document.getElementById('loanDetails').value = '';
@@ -946,6 +1171,7 @@ async function checkAndRemoveDuplicateLoansForUser(itemId) {
 // Export functions
 window.initializeLoanForm = initializeLoanForm;
 window.handleLendItem = handleLendItem;
+window.handleLoanItemSearch = handleLoanItemSearch;
 window.handleReturnItem = handleReturnItem;
 window.openLendItemModal = openLendItemModal;
 window.closeLendItemModal = closeLendItemModal;

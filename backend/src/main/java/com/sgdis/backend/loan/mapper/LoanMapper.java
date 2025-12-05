@@ -31,6 +31,7 @@ public final class LoanMapper {
                 entity.getLender() != null ? entity.getLender().getId() : null,
                 entity.getLender() != null ? entity.getLender().getFullName() : null,
                 entity.getItem() != null ? entity.getItem().getId() : null,
+                entity.getItem() != null ? entity.getItem().getProductName() : null,
                 entity.getItem() != null ? entity.getItem().getLicencePlateNumber() : null,
                 entity.getResponsible() != null ? entity.getResponsible().getId() : null,
                 entity.getResponsible() != null ? entity.getResponsible().getFullName() : null,

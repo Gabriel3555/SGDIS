@@ -110,6 +110,18 @@ public class TransferService implements ApproveTransferUseCase, RejectTransferUs
         }
 
         UserEntity requester = authService.getCurrentUser();
+        
+        // Para usuarios USER, verificar que NO sea manager del inventario origen
+        if (requester.getRole() == Role.USER) {
+            if (sourceInventory.getManagers() != null && sourceInventory.getManagers().contains(requester)) {
+                String inventoryName = sourceInventory.getName() != null ? sourceInventory.getName() : "Inventario ID " + sourceInventory.getId();
+                throw new DomainValidationException(
+                        String.format("Los manejadores no pueden solicitar transferencias de items. Solo los propietarios y firmantes pueden solicitar transferencias. Inventario: %s",
+                                inventoryName)
+                );
+            }
+        }
+        
         if (!belongsToInventory(requester, sourceInventory) && !hasTransferPrivilegedRole(requester)) {
             throw new DomainValidationException("No cuentas con permisos para solicitar la transferencia de este ítem");
         }

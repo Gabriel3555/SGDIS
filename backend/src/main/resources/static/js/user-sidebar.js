@@ -46,7 +46,7 @@ window.isUserRole = isUserRole;
                        path.includes('/dashboard/user') || 
                        (path === '/info-me' && !isAdminRoute)
                        );
-    const skipSidebarHide = path.includes('/user/my-inventories') || path.includes('/user/notifications') || path.includes('/user/verification') || path.includes('/user/transfers');
+    const skipSidebarHide = path.includes('/user/my-inventories') || path.includes('/user/notifications') || path.includes('/user/verification') || path.includes('/user/transfers') || path.includes('/user/cancellations');
     
     // Don't process if it's an admin route
     if (isAdminRoute) {
@@ -349,7 +349,7 @@ async function updateSidebarForUser(userData) {
 
     // Get current page path to set active item
     const currentPath = window.location.pathname;
-    const shouldForceUserNav = currentPath.startsWith('/user/my-inventories') || currentPath.startsWith('/user/notifications') || currentPath.startsWith('/user/verification') || currentPath.startsWith('/user/transfers');
+    const shouldForceUserNav = currentPath.startsWith('/user/my-inventories') || currentPath.startsWith('/user/notifications') || currentPath.startsWith('/user/verification') || currentPath.startsWith('/user/transfers') || currentPath.startsWith('/user/cancellations');
     
     // Check if user is owner or signatory
     let isOwner = false;
@@ -423,6 +423,14 @@ async function updateSidebarForUser(userData) {
             onclick="handleSidebarClick(event, '/user/verification')">
             <i class="fas fa-clipboard-check text-lg"></i>
             <span class="font-medium">Verificación</span>
+        </a>`;
+
+    // Add cancellations link
+    sidebarHTML += `
+        <a href="/user/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 ${currentPath === '/user/cancellations' ? 'active' : ''}"
+            onclick="handleSidebarClick(event, '/user/cancellations')">
+            <i class="fas fa-times-circle text-lg"></i>
+            <span class="font-medium">Bajas</span>
         </a>`;
 
     // Show transfers if user is owner or forced on specific pages

@@ -853,8 +853,14 @@
                 { href: `${baseRoute}/loans`, icon: 'fa-hand-holding', text: 'Préstamos' }
             );
 
-            // Add cancellations for admin_regional and admin_institution
-            if (baseRoute === '/admin_regional' || baseRoute === '/admin_institution') {
+            // Add cancellations for all roles
+            if (baseRoute === '/user') {
+                navItems.push({ href: `${baseRoute}/cancellations`, icon: 'fa-times-circle', text: 'Bajas' });
+            } else if (baseRoute === '/admin_regional' || baseRoute === '/admin_institution') {
+                navItems.push({ href: `${baseRoute}/cancellations`, icon: 'fa-times-circle', text: 'Bajas' });
+            } else if (baseRoute === '/warehouse') {
+                navItems.push({ href: `${baseRoute}/cancellations`, icon: 'fa-times-circle', text: 'Bajas' });
+            } else if (baseRoute === '/superadmin') {
                 navItems.push({ href: `${baseRoute}/cancellations`, icon: 'fa-times-circle', text: 'Bajas' });
             }
 

@@ -648,7 +648,7 @@ async function updateVerificationUIForAdminRegional() {
     // Re-update filters after table update to ensure they persist
     // Use a small delay to avoid race conditions
     setTimeout(() => {
-        updateVerificationSearchAndFiltersForAdminRegional();
+    updateVerificationSearchAndFiltersForAdminRegional();
     }, 100);
 }
 
@@ -736,16 +736,16 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
         
         if (hasSelectedCenter && inventories.length > 0) {
             const inventoryOptions = [
-                { value: 'all', label: 'Todos los Inventarios' },
-                ...inventories.map(inv => ({
-                    value: (inv.id || inv.inventoryId).toString(),
-                    label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
-                }))
-            ];
+            { value: 'all', label: 'Todos los Inventarios' },
+            ...inventories.map(inv => ({
+                value: (inv.id || inv.inventoryId).toString(),
+                label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+            }))
+        ];
             
             console.log('Updating existing CustomSelect with', inventoryOptions.length, 'options');
-            
-            isInitializingInventoryFilter = true;
+        
+        isInitializingInventoryFilter = true;
             
             try {
                 verificationInventoryCustomSelectAdminRegional.setOptions(inventoryOptions);
@@ -754,12 +754,12 @@ function updateVerificationSearchAndFiltersForAdminRegional() {
             } catch (error) {
                 console.error('Error updating options:', error);
             }
-            
-            // Update selected value if needed
-            if (currentInventoryFilter && currentInventoryFilter !== 'all') {
-                verificationInventoryCustomSelectAdminRegional.setValue(currentInventoryFilter.toString());
-            } else {
-                verificationInventoryCustomSelectAdminRegional.setValue('all');
+        
+        // Update selected value if needed
+        if (currentInventoryFilter && currentInventoryFilter !== 'all') {
+            verificationInventoryCustomSelectAdminRegional.setValue(currentInventoryFilter.toString());
+        } else {
+            verificationInventoryCustomSelectAdminRegional.setValue('all');
             }
         } else {
             // No center selected or no inventories, disable and show placeholder
@@ -1039,35 +1039,35 @@ function initializeInventoryCustomSelectForAdminRegional(inventories, currentInv
     
     if (hasSelectedCenter && inventories.length > 0) {
         // Build options array - always include "all" option
-        const options = [
-            { value: 'all', label: 'Todos los Inventarios' },
-            ...inventories.map(inv => ({
-                value: (inv.id || inv.inventoryId).toString(),
-                label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
-            }))
-        ];
-        
+    const options = [
+        { value: 'all', label: 'Todos los Inventarios' },
+        ...inventories.map(inv => ({
+            value: (inv.id || inv.inventoryId).toString(),
+            label: inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`
+        }))
+    ];
+    
         console.log('Setting CustomSelect options. Total options:', options.length);
-        
+    
         // Set options and enable
         try {
-            verificationInventoryCustomSelectAdminRegional.setOptions(options);
+    verificationInventoryCustomSelectAdminRegional.setOptions(options);
             verificationInventoryCustomSelectAdminRegional.setDisabled(false);
             console.log('Options set successfully. CustomSelect options count:', verificationInventoryCustomSelectAdminRegional.options?.length || 0);
         } catch (error) {
             console.error('Error setting options:', error);
         }
-        
-        // Set selected value without triggering onChange
-        if (currentInventoryFilter && currentInventoryFilter !== 'all') {
-            const selectedOption = options.find(opt => opt.value === currentInventoryFilter.toString());
-            if (selectedOption) {
-                verificationInventoryCustomSelectAdminRegional.setValue(selectedOption.value);
-            }
-        } else {
-            const allOption = options.find(opt => opt.value === 'all');
-            if (allOption) {
-                verificationInventoryCustomSelectAdminRegional.setValue('all');
+    
+    // Set selected value without triggering onChange
+    if (currentInventoryFilter && currentInventoryFilter !== 'all') {
+        const selectedOption = options.find(opt => opt.value === currentInventoryFilter.toString());
+        if (selectedOption) {
+            verificationInventoryCustomSelectAdminRegional.setValue(selectedOption.value);
+        }
+    } else {
+        const allOption = options.find(opt => opt.value === 'all');
+        if (allOption) {
+            verificationInventoryCustomSelectAdminRegional.setValue('all');
             }
         }
     } else {

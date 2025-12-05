@@ -20,6 +20,12 @@ import com.sgdis.backend.verification.application.port.in.GetVerificationsByItem
 import com.sgdis.backend.verification.infrastructure.entity.VerificationEntity;
 import com.sgdis.backend.verification.infrastructure.repository.SpringDataVerificationRepository;
 import com.sgdis.backend.verification.mapper.VerificationMapper;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.item.infrastructure.repository.SpringDataItemRepository;
+import com.sgdis.backend.item.infrastructure.entity.ItemEntity;
+import org.springframework.transaction.annotation.Transactional;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -68,6 +74,8 @@ public class VerificationController {
     private final SpringDataVerificationRepository verificationRepository;
     private final FileUploadService fileUploadService;
     private final AuthService authService;
+    private final SpringDataUserRepository userRepository;
+    private final SpringDataItemRepository itemRepository;
 
     @Operation(
             summary = "Create verification by serial number",
@@ -574,6 +582,108 @@ public class VerificationController {
         
         Pageable pageable = PageRequest.of(page, size);
         Page<VerificationEntity> verificationPage = verificationRepository.findAllByInstitutionId(institutionId, pageable);
+        Page<VerificationResponse> responsePage = verificationPage.map(VerificationMapper::toDto);
+        return ResponseEntity.ok(responsePage);
+    }
+
+    @Operation(
+            summary = "Get verifications for current user's inventories",
+            description = "Retrieves all verifications from inventories where the current user is owner, manager, or signatory with pagination"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Verifications retrieved successfully",
+            content = @Content(schema = @Schema(implementation = Page.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('USER')")
+    @Transactional(readOnly = true)
+    @GetMapping("/my-inventories")
+    public ResponseEntity<Page<VerificationResponse>> getVerificationsForMyInventories(
+            @Parameter(description = "Page number (0-indexed)", required = false)
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size", required = false)
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        var currentUser = authService.getCurrentUser();
+        Long userId = currentUser.getId();
+        
+        // Get all inventories where user is owner, manager, or signatory
+        List<InventoryEntity> ownedInventories = userRepository.findInventoriesByOwnerId(userId);
+        List<InventoryEntity> managedInventories = userRepository.findManagedInventoriesByUserId(userId);
+        
+        // Get signatory inventories
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        List<InventoryEntity> signatoryInventories = user.getMySignatories();
+        if (signatoryInventories == null) {
+            signatoryInventories = List.of();
+        } else {
+            // Initialize the collection to avoid LazyInitializationException
+            signatoryInventories.size();
+        }
+        
+        // Combine all inventories and get unique IDs
+        List<Long> inventoryIds = new ArrayList<>();
+        ownedInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        managedInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null && !inventoryIds.contains(inv.getId())) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        signatoryInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null && !inventoryIds.contains(inv.getId())) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        
+        // If no inventories, return empty page
+        if (inventoryIds.isEmpty()) {
+            Pageable pageable = PageRequest.of(page, size);
+            return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+        }
+        
+        // Step 1: Get all items from user's inventories
+        List<Long> itemIds = new ArrayList<>();
+        for (Long inventoryId : inventoryIds) {
+            try {
+                List<ItemEntity> items = itemRepository.findAllByInventoryId(inventoryId);
+                if (items != null) {
+                    System.out.println("Found " + items.size() + " items in inventory " + inventoryId);
+                    items.forEach(item -> {
+                        if (item != null && item.getId() != null) {
+                            itemIds.add(item.getId());
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                // Log error but continue with other inventories
+                System.err.println("Error fetching items for inventory " + inventoryId + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+        
+        System.out.println("Total item IDs found: " + itemIds.size());
+        
+        // If no items, return empty page
+        if (itemIds.isEmpty()) {
+            System.out.println("No items found in user's inventories, returning empty page");
+            Pageable pageable = PageRequest.of(page, size);
+            return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+        }
+        
+        // Step 2: Get all verifications for these items
+        // Use a larger page size to get all verifications (since frontend requests size=1000)
+        int actualSize = size > 1000 ? size : 1000;
+        Pageable pageable = PageRequest.of(page, actualSize, Sort.by(Sort.Direction.DESC, "id"));
+        System.out.println("Searching for verifications with " + itemIds.size() + " item IDs");
+        Page<VerificationEntity> verificationPage = verificationRepository.findAllByItemIds(itemIds, pageable);
+        System.out.println("Found " + verificationPage.getTotalElements() + " verifications");
         Page<VerificationResponse> responsePage = verificationPage.map(VerificationMapper::toDto);
         return ResponseEntity.ok(responsePage);
     }

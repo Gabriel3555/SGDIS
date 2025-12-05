@@ -86,6 +86,11 @@
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
+            <a href="/user/cancellations" id="navCancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/cancellations')">
+                <i class="fas fa-times-circle text-lg"></i>
+                <span class="font-medium">Bajas</span>
+            </a>
             <a href="/user/transfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2 active"
                 onclick="handleSidebarClick(event, '/user/transfers')">
                 <i class="fas fa-exchange-alt text-lg"></i>
@@ -117,13 +122,6 @@
                     <button class="sidebar-toggle text-gray-600 dark:text-gray-300 hover:text-[#00AF00] transition-colors" id="menuToggle">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
-                    <div class="relative flex-1 max-w-xl">
-                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"></i>
-                        <input type="text" id="transferSearch"
-                            placeholder="Buscar transferencias por origen, destino, estado..." 
-                            class="search-input dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600"
-                            onkeyup="if(event.key === 'Enter') handleTransferSearchButton()">
-                    </div>
                 </div>
 
                 <div class="flex items-center gap-4">
@@ -352,9 +350,108 @@
             }
         }
 
+        // Load current user information for header
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                updateHeaderUserInfo({
+                    fullName: 'Usuario',
+                    role: 'USER',
+                    email: 'usuario@sena.edu.co'
+                });
+            }
+        }
+
+        // Update user info display in header
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Usuario';
+            if (headerUserRole) {
+                const roleText = {
+                    'SUPERADMIN': 'Super Administrador',
+                    'ADMIN_INSTITUTIONAL': 'Administrador Institucional',
+                    'ADMIN_INSTITUTION': 'Administrador Institucional',
+                    'ADMIN_REGIONAL': 'Administrador Regional',
+                    'WAREHOUSE': 'Encargado de Almacén',
+                    'USER': 'Usuario'
+                }[userData.role] || 'Usuario';
+                headerUserRole.textContent = roleText;
+            }
+
+            if (headerUserAvatar) {
+                // Ensure the container has the correct class
+                headerUserAvatar.className = 'user-avatar';
+                
+                // Try multiple image URL fields
+                const imgUrl = userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl;
+                
+                if (imgUrl) {
+                    // Try to use createImageWithSpinner from dashboard.js if available
+                    if (typeof createImageWithSpinner === 'function') {
+                        const spinnerHtml = createImageWithSpinner(
+                            imgUrl,
+                            userData.fullName || 'Usuario',
+                            'w-full h-full object-cover',
+                            'w-full h-full',
+                            'rounded-full'
+                        );
+                        if (spinnerHtml) {
+                            // Clear any existing styles that might interfere
+                            headerUserAvatar.style.backgroundImage = '';
+                            headerUserAvatar.style.backgroundSize = '';
+                            headerUserAvatar.style.backgroundPosition = '';
+                            headerUserAvatar.style.backgroundRepeat = '';
+                            headerUserAvatar.innerHTML = spinnerHtml;
+                        } else {
+                            // Fallback to initials if createImageWithSpinner returns null
+                            const initials = (userData.fullName || 'Usuario').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            headerUserAvatar.textContent = initials;
+                            headerUserAvatar.style.backgroundImage = '';
+                        }
+                    } else {
+                        // Fallback: use background image approach
+                        headerUserAvatar.style.backgroundImage = `url(${imgUrl})`;
+                        headerUserAvatar.style.backgroundSize = 'cover';
+                        headerUserAvatar.style.backgroundPosition = 'center';
+                        headerUserAvatar.style.backgroundRepeat = 'no-repeat';
+                        headerUserAvatar.textContent = '';
+                    }
+                } else {
+                    // No image URL - show initials
+                    const initials = (userData.fullName || 'Usuario').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    headerUserAvatar.textContent = initials;
+                    headerUserAvatar.style.backgroundImage = '';
+                }
+            }
+        }
+
         // Initialize mobile menu toggle when DOM is ready
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
+            loadCurrentUserInfo();
             scrollToActiveSidebarItem();
         });
 
@@ -380,16 +477,6 @@
             window.location.href = '/';
         }
 
-        // Handle transfer search
-        function handleTransferSearchButton() {
-            const searchInput = document.getElementById('transferSearch');
-            if (searchInput && window.transfersUserData) {
-                window.transfersUserData.filters.searchTerm = searchInput.value;
-                if (window.loadUserTransfersData) {
-                    window.loadUserTransfersData();
-                }
-            }
-        }
     </script>
 
     <!-- Logout Confirmation Modal -->

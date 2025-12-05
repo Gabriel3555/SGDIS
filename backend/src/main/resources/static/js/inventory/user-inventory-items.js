@@ -1,7 +1,7 @@
 // User Inventory Items - Load and display items from an inventory
 let currentInventoryId = null;
 let currentPage = 0;
-let pageSize = 12;
+let pageSize = 6;
 let totalPages = 0;
 let inventoryInfo = null;
 let userInventoryRole = null; // 'owner', 'manager', 'signatory', or null
@@ -174,8 +174,8 @@ async function loadItems(page = 0) {
         window.itemsData.items = items;
         window.itemsData.currentInventoryId = currentInventoryId;
 
-        // Update stats
-        updateStats(items);
+        // Update stats (async, but we don't need to wait)
+        updateStats(items).catch(err => console.error('Error updating stats:', err));
 
         // Display items
         if (items.length === 0) {
@@ -214,16 +214,48 @@ async function loadItems(page = 0) {
 }
 
 // Update statistics
-function updateStats(items) {
+async function updateStats(items) {
+    try {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            return;
+        }
+
+        // Fetch statistics from API
+        const response = await fetch(
+            `/api/v1/items/inventory/${currentInventoryId}/statistics`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        if (response.ok) {
+            const stats = await response.json();
+            document.getElementById('totalItems').textContent = stats.totalItems || 0;
+            document.getElementById('activeItems').textContent = stats.activeItems || 0;
+            document.getElementById('inactiveItems').textContent = stats.inactiveItems || 0;
+        } else {
+            // Fallback to page stats if API fails
+            const total = items.length;
+            const active = items.filter(item => item.status).length;
+            const inactive = items.filter(item => !item.status).length;
+            document.getElementById('totalItems').textContent = total;
+            document.getElementById('activeItems').textContent = active;
+            document.getElementById('inactiveItems').textContent = inactive;
+        }
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+        // Fallback to page stats
     const total = items.length;
     const active = items.filter(item => item.status).length;
     const inactive = items.filter(item => !item.status).length;
-
-    // Note: These are stats for current page only
-    // For total stats, we'd need a separate endpoint
     document.getElementById('totalItems').textContent = total;
     document.getElementById('activeItems').textContent = active;
     document.getElementById('inactiveItems').textContent = inactive;
+    }
 }
 
 // Helper function to create image with loading spinner (similar to items-ui.js)

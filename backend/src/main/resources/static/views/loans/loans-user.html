@@ -92,6 +92,12 @@
             <i class="fas fa-clipboard-check text-lg"></i>
             <span class="font-medium">Verificación</span>
         </a>
+        <a href="/user/cancellations" id="navCancellations"
+           class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+           onclick="handleSidebarClick(event, '/user/cancellations')">
+            <i class="fas fa-times-circle text-lg"></i>
+            <span class="font-medium">Bajas</span>
+        </a>
         <a href="/user/transfers" id="navTransfers"
            class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" style="display: none;"
            onclick="handleSidebarClick(event, '/user/transfers')">
@@ -279,15 +285,15 @@
 
 <!-- Lend Item Modal -->
 <div id="lendItemModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white dark:bg-gray-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Prestar Item</h2>
             <button onclick="closeLendItemModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
         <div class="p-6">
-            <form onsubmit="event.preventDefault(); handleLendItem();" class="space-y-6">
+            <form onsubmit="event.preventDefault(); handleLendItem();" class="space-y-6" onkeypress="if(event.key === 'Enter' && event.target.id === 'loanItemPlateOrSerial') { event.preventDefault(); handleLoanItemSearch(); }">
                 <!-- Regional -->
                 <div id="loanRegionalContainer">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -353,19 +359,23 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Item <span class="text-red-500">*</span>
                     </label>
-                    <div class="custom-select-container">
-                        <div class="custom-select" id="loanItemSelect">
-                            <div class="custom-select-trigger">
-                                <span class="custom-select-text">Seleccione un item</span>
-                                <i class="fas fa-chevron-down custom-select-arrow"></i>
+                    <div class="flex gap-2">
+                        <input type="text" 
+                            id="loanItemPlateOrSerial" 
+                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]"
+                            placeholder="Placa o Serial del item"
+                            required>
+                        <button type="button" 
+                            onclick="handleLoanItemSearch()"
+                            class="px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                            <i class="fas fa-search"></i>
+                        </button>
                             </div>
-                            <div class="custom-select-dropdown">
-                                <input type="text" class="custom-select-search" placeholder="Buscar item...">
-                                <div class="custom-select-options"></div>
-                            </div>
-                        </div>
-                        <input type="hidden" id="loanSelectedItemId" value="">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ingresa la placa o serial del item que deseas prestar</p>
+                    <div id="loanItemInfo" class="hidden mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                        <p class="text-sm text-blue-800 dark:text-blue-300" id="loanItemInfoText"></p>
                     </div>
+                    <input type="hidden" id="loanSelectedItemId" value="">
                 </div>
 
                 <!-- Responsible -->
@@ -415,6 +425,21 @@
 </div>
 
 <!-- Return Item Modal -->
+<!-- Loan Details Modal -->
+<div id="loanDetailsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
+        <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Detalles del Préstamo</h2>
+            <button onclick="closeLoanDetailsModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="p-6" id="loanDetailsContent">
+            <!-- Content will be populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
 <div id="returnItemModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full">
         <div class="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">

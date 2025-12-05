@@ -199,9 +199,11 @@ function updateFilters() {
     const container = document.getElementById('searchFilterContainer');
     if (!container) return;
 
-    // Check if user is superadmin
+    // Check if user is superadmin or regular user
     const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+    const isUser = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'USER') ||
+                   (window.location.pathname && window.location.pathname.includes('/user/verification'));
 
     const inventoryOptions = verificationData.inventories && verificationData.inventories.length > 0
         ? verificationData.inventories.map(inv => 
@@ -284,26 +286,44 @@ function updateFilters() {
         `;
     }
 
-    filtersHTML += `
-        <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Inventario</label>
-            <div class="custom-select-container">
-                <div class="custom-select" id="verificationInventoryFilterSelect">
-                    <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
-                        <span class="custom-select-text custom-select-placeholder">Todos los Inventarios</span>
-                        <i class="fas fa-chevron-down custom-select-arrow"></i>
-                    </div>
-                    <div class="custom-select-dropdown">
-                        <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
-                        <div class="custom-select-options" id="verificationInventoryFilterOptions">
-                            <!-- Options loaded dynamically -->
-                        </div>
-                    </div>
-                </div>
+    // Use native select for USER role, CustomSelect for other roles
+    if (isUser) {
+        filtersHTML += `
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Inventario</label>
+                <select 
+                    id="verificationInventoryFilterSelect"
+                    onchange="setInventoryFilter(this.value)"
+                    class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-sena-verde focus:border-sena-verde sm:text-sm rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                    <option value="all">Todos los Inventarios</option>
+                    ${inventoryOptions}
+                </select>
                 <input type="hidden" id="inventoryFilter" value="${currentInventoryValue}">
             </div>
-        </div>
-    `;
+        `;
+    } else {
+        filtersHTML += `
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filtrar por Inventario</label>
+                <div class="custom-select-container">
+                    <div class="custom-select" id="verificationInventoryFilterSelect">
+                        <div class="custom-select-trigger" style="padding: 0.75rem 1rem; height: 56px; display: flex; align-items: center;">
+                            <span class="custom-select-text custom-select-placeholder">Todos los Inventarios</span>
+                            <i class="fas fa-chevron-down custom-select-arrow"></i>
+                        </div>
+                        <div class="custom-select-dropdown">
+                            <input type="text" class="custom-select-search" placeholder="Buscar inventario...">
+                            <div class="custom-select-options" id="verificationInventoryFilterOptions">
+                                <!-- Options loaded dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="inventoryFilter" value="${currentInventoryValue}">
+                </div>
+            </div>
+        `;
+    }
 
     container.innerHTML = filtersHTML;
 
@@ -312,23 +332,31 @@ function updateFilters() {
     verificationInstitutionCustomSelect = null;
     verificationInventoryCustomSelect = null;
 
-    // Initialize Custom Selects after HTML is inserted
-    // Use setTimeout to ensure CustomSelect class is available
-    setTimeout(() => {
-        if (typeof CustomSelect !== 'undefined') {
-            initializeVerificationCustomSelects();
-        } else {
-            console.warn('CustomSelect class not available, retrying...');
-            // Retry after a longer delay
-            setTimeout(() => {
-                if (typeof CustomSelect !== 'undefined') {
-                    initializeVerificationCustomSelects();
-                } else {
-                    console.error('CustomSelect class still not available after retry');
-                }
-            }, 500);
+    // For USER role, populate native select immediately
+    if (isUser) {
+        const nativeSelect = document.getElementById('verificationInventoryFilterSelect');
+        if (nativeSelect) {
+            nativeSelect.value = currentInventoryValue;
         }
-    }, 100);
+    } else {
+        // Initialize Custom Selects after HTML is inserted (for non-user roles)
+        // Use setTimeout to ensure CustomSelect class is available
+        setTimeout(() => {
+            if (typeof CustomSelect !== 'undefined') {
+                initializeVerificationCustomSelects();
+            } else {
+                console.warn('CustomSelect class not available, retrying...');
+                // Retry after a longer delay
+                setTimeout(() => {
+                    if (typeof CustomSelect !== 'undefined') {
+                        initializeVerificationCustomSelects();
+                    } else {
+                        console.error('CustomSelect class still not available after retry');
+                    }
+                }, 500);
+            }
+        }, 100);
+    }
 }
 
 // Custom Select instances for verification filters
@@ -388,18 +416,23 @@ function initializeVerificationCustomSelects() {
         }
     }
 
-    // Initialize Inventory Filter Custom Select
-    const inventorySelect = document.getElementById('verificationInventoryFilterSelect');
-    if (inventorySelect && !verificationInventoryCustomSelect) {
-        verificationInventoryCustomSelect = new CustomSelect('verificationInventoryFilterSelect', {
-            placeholder: 'Todos los Inventarios',
-            disabled: isSuperAdmin && !verificationData.selectedInstitution,
-            onChange: (option) => {
-                const value = option.value || '';
-                document.getElementById('inventoryFilter').value = value;
-                setInventoryFilter(value);
-            }
-        });
+    // Initialize Inventory Filter Custom Select (only for non-user roles)
+    const isUser = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'USER') ||
+                   (window.location.pathname && window.location.pathname.includes('/user/verification'));
+    
+    if (!isUser) {
+        const inventorySelect = document.getElementById('verificationInventoryFilterSelect');
+        if (inventorySelect && !verificationInventoryCustomSelect) {
+            verificationInventoryCustomSelect = new CustomSelect('verificationInventoryFilterSelect', {
+                placeholder: 'Todos los Inventarios',
+                disabled: isSuperAdmin && !verificationData.selectedInstitution,
+                onChange: (option) => {
+                    const value = option.value || '';
+                    document.getElementById('inventoryFilter').value = value;
+                    setInventoryFilter(value);
+                }
+            });
+        }
     }
 
     // Populate custom selects with options
@@ -560,7 +593,28 @@ function populateVerificationCustomSelects() {
     }
     
     // Populate Inventory Filter
-    if (verificationInventoryCustomSelect) {
+    const isUser = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'USER') ||
+                   (window.location.pathname && window.location.pathname.includes('/user/verification'));
+    
+    if (isUser) {
+        // For USER role, populate native select
+        const nativeSelect = document.getElementById('verificationInventoryFilterSelect');
+        if (nativeSelect) {
+            const inventories = verificationData.inventories || [];
+            // Clear existing options except "all"
+            nativeSelect.innerHTML = '<option value="all">Todos los Inventarios</option>';
+            // Add inventory options
+            inventories.forEach(inv => {
+                const option = document.createElement('option');
+                option.value = (inv.id || inv.inventoryId).toString();
+                option.textContent = inv.name || inv.inventoryName || `Inventario ${inv.id || inv.inventoryId}`;
+                nativeSelect.appendChild(option);
+            });
+            // Set current value
+            const currentValue = verificationData.selectedInventory || 'all';
+            nativeSelect.value = currentValue;
+        }
+    } else if (verificationInventoryCustomSelect) {
         try {
             if (isSuperAdmin && !verificationData.selectedInstitution) {
                 verificationInventoryCustomSelect.setDisabled(true);
@@ -601,54 +655,54 @@ function populateVerificationCustomSelects() {
                     });
                 }
             }, 100);
+        
+        // Restore selected value - check if dropdown is open first
+        const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
+        const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
+        
+        if (selectedOption) {
+            // Check if dropdown is currently open
+            const isOpen = verificationInventoryCustomSelect.container && 
+                          (verificationInventoryCustomSelect.container.classList.contains('open') || 
+                           verificationInventoryCustomSelect.container.classList.contains('active'));
             
-            // Restore selected value - check if dropdown is open first
-            const selectedInventoryValue = verificationData.selectedInventory ? verificationData.selectedInventory.toString() : 'all';
-            const selectedOption = options.find(opt => opt.value === selectedInventoryValue);
-            
-            if (selectedOption) {
-                // Check if dropdown is currently open
-                const isOpen = verificationInventoryCustomSelect.container && 
-                              (verificationInventoryCustomSelect.container.classList.contains('open') || 
-                               verificationInventoryCustomSelect.container.classList.contains('active'));
+            if (isOpen) {
+                // If dropdown is open, update the value without closing it
+                verificationInventoryCustomSelect.selectedValue = selectedOption.value;
+                verificationInventoryCustomSelect.selectedText = selectedOption.label;
                 
-                if (isOpen) {
-                    // If dropdown is open, update the value without closing it
-                    verificationInventoryCustomSelect.selectedValue = selectedOption.value;
-                    verificationInventoryCustomSelect.selectedText = selectedOption.label;
-                    
-                    // Update the text element without closing
-                    if (verificationInventoryCustomSelect.textElement) {
-                        verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
-                        verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
+                // Update the text element without closing
+                if (verificationInventoryCustomSelect.textElement) {
+                    verificationInventoryCustomSelect.textElement.textContent = selectedOption.label;
+                    verificationInventoryCustomSelect.textElement.classList.remove('custom-select-placeholder');
+                }
+                
+                // Update hidden input
+                const hiddenInput = document.getElementById('inventoryFilter');
+                if (hiddenInput) {
+                    hiddenInput.value = selectedOption.value;
+                }
+                if (verificationInventoryCustomSelect.hiddenInput) {
+                    verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
+                }
+                
+                // Mark the option as selected in the rendered options
+                const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
+                optionElements.forEach(el => {
+                    el.classList.remove('selected');
+                    if (el.dataset.value === selectedOption.value) {
+                        el.classList.add('selected');
                     }
-                    
-                    // Update hidden input
-                    const hiddenInput = document.getElementById('inventoryFilter');
-                    if (hiddenInput) {
-                        hiddenInput.value = selectedOption.value;
-                    }
-                    if (verificationInventoryCustomSelect.hiddenInput) {
-                        verificationInventoryCustomSelect.hiddenInput.value = selectedOption.value;
-                    }
-                    
-                    // Mark the option as selected in the rendered options
-                    const optionElements = verificationInventoryCustomSelect.optionsContainer.querySelectorAll('.custom-select-option');
-                    optionElements.forEach(el => {
-                        el.classList.remove('selected');
-                        if (el.dataset.value === selectedOption.value) {
-                            el.classList.add('selected');
-                        }
-                    });
-                } else {
-                    // If dropdown is closed, use setValue normally
-                    if (verificationInventoryCustomSelect.setValue) {
-                        verificationInventoryCustomSelect.setValue(selectedInventoryValue);
-                    } else if (verificationInventoryCustomSelect.selectOption) {
-                        verificationInventoryCustomSelect.selectOption(selectedOption);
-                    }
+                });
+            } else {
+                // If dropdown is closed, use setValue normally
+                if (verificationInventoryCustomSelect.setValue) {
+                    verificationInventoryCustomSelect.setValue(selectedInventoryValue);
+                } else if (verificationInventoryCustomSelect.selectOption) {
+                    verificationInventoryCustomSelect.selectOption(selectedOption);
                 }
             }
+        }
         } catch (error) {
             console.error('Error populating inventory filter:', error);
         }

@@ -91,6 +91,11 @@
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
+            <a href="/user/cancellations" id="navCancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+                onclick="handleSidebarClick(event, '/user/cancellations')">
+                <i class="fas fa-times-circle text-lg"></i>
+                <span class="font-medium">Bajas</span>
+            </a>
             <a href="/user/transfers" id="navTransfers" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 style="display: none;"
                 onclick="handleSidebarClick(event, '/user/transfers')">
@@ -119,14 +124,10 @@
         <!-- Header -->
         <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
             <div class="flex items-center justify-between px-6 py-4">
-                <div class="flex items-center gap-4 flex-1">
+                <div class="flex items-center gap-4">
                     <button class="sidebar-toggle text-gray-600 dark:text-gray-300 hover:text-[#00AF00] transition-colors" id="menuToggle">
                         <i class="fas fa-bars text-xl"></i>
                     </button>
-                    <div class="relative flex-1 max-w-xl">
-                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" placeholder="Buscar inventarios, items..." class="search-input">
-                    </div>
                 </div>
 
                 <div class="flex items-center gap-4">
@@ -252,44 +253,6 @@
                 </div>
             </div>
 
-            <!-- Recent Activity Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- Recent Items -->
-                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-box text-green-600 dark:text-green-400 text-xl"></i>
-                            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Items Recientes</h2>
-                        </div>
-                        <a href="/user/my-inventories" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">Ver todos</a>
-                    </div>
-                    <div id="recentItems" class="space-y-3">
-                        <div class="animate-pulse space-y-3">
-                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Inventories -->
-                <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-boxes text-green-600 dark:text-green-400 text-xl"></i>
-                            <h2 class="text-lg font-bold text-gray-800 dark:text-gray-100">Inventarios Asignados</h2>
-                        </div>
-                        <a href="/user/my-inventories" class="text-sm text-blue-600 dark:text-blue-400 hover:underline">Ver todos</a>
-                    </div>
-                    <div id="recentInventories" class="space-y-3">
-                        <div class="animate-pulse space-y-3">
-                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                            <div class="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </main>
     </div>
 
@@ -539,21 +502,48 @@
             }
             
             if (headerUserAvatar) {
-                if (userData.imgUrl) {
-                    const uniqueId = 'img-' + Math.random().toString(36).substr(2, 9);
-                    headerUserAvatar.innerHTML = `
-                        <div class="relative w-full h-full rounded-full overflow-hidden" id="img-container-${uniqueId}">
-                            <div class="absolute inset-0 flex items-center justify-center bg-gray-100" id="spinner-${uniqueId}">
-                                <div class="image-loading-spinner"></div>
-                            </div>
-                            <img src="${userData.imgUrl}" alt="${userData.fullName || 'Usuario'}" class="w-full h-full object-cover opacity-0 transition-opacity duration-300" 
-                                 id="img-${uniqueId}"
-                                 onload="(function() { const img = document.getElementById('img-${uniqueId}'); const spinner = document.getElementById('spinner-${uniqueId}'); if (img) img.classList.remove('opacity-0'); if (spinner) spinner.style.display='none'; })();"
-                                 onerror="(function() { const spinner = document.getElementById('spinner-${uniqueId}'); const container = document.getElementById('img-container-${uniqueId}'); if (spinner) spinner.style.display='none'; if (container) container.innerHTML='<div class=\\'w-full h-full bg-gray-200 flex items-center justify-center text-gray-400\\'><i class=\\'fas fa-user\\'></i></div>'; })();">
-                        </div>
-                    `;
+                // Ensure the container has the correct class
+                headerUserAvatar.className = 'user-avatar';
+                
+                // Try multiple image URL fields
+                const imgUrl = userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl;
+                
+                if (imgUrl) {
+                    // Try to use createImageWithSpinner from dashboard.js if available
+                    if (typeof createImageWithSpinner === 'function') {
+                        const spinnerHtml = createImageWithSpinner(
+                            imgUrl,
+                            userData.fullName || 'Usuario',
+                            'w-full h-full object-cover',
+                            'w-full h-full',
+                            'rounded-full'
+                        );
+                        if (spinnerHtml) {
+                            // Clear any existing styles that might interfere
+                            headerUserAvatar.style.backgroundImage = '';
+                            headerUserAvatar.style.backgroundSize = '';
+                            headerUserAvatar.style.backgroundPosition = '';
+                            headerUserAvatar.style.backgroundRepeat = '';
+                            headerUserAvatar.innerHTML = spinnerHtml;
                 } else {
-                    headerUserAvatar.textContent = (userData.fullName || 'Usuario').charAt(0).toUpperCase();
+                            // Fallback to initials if createImageWithSpinner returns null
+                            const initials = (userData.fullName || 'Usuario').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            headerUserAvatar.textContent = initials;
+                            headerUserAvatar.style.backgroundImage = '';
+                        }
+                    } else {
+                        // Fallback: use background image approach
+                        headerUserAvatar.style.backgroundImage = `url(${imgUrl})`;
+                        headerUserAvatar.style.backgroundSize = 'cover';
+                        headerUserAvatar.style.backgroundPosition = 'center';
+                        headerUserAvatar.style.backgroundRepeat = 'no-repeat';
+                        headerUserAvatar.textContent = '';
+                    }
+                } else {
+                    // No image URL - show initials
+                    const initials = (userData.fullName || 'Usuario').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    headerUserAvatar.textContent = initials;
+                    headerUserAvatar.style.backgroundImage = '';
                 }
             }
         }
@@ -701,10 +691,14 @@
         // Load user items
         async function loadUserItems(headers) {
             try {
-                const response = await fetch('/api/v1/inventory/user-items', { headers });
+                const response = await fetch('/api/v1/items/user-items', { headers });
                 if (response.ok) {
                     const items = await response.json();
                     userDashboardData.userItems = Array.isArray(items) ? items : [];
+                    console.log('Loaded user items:', userDashboardData.userItems.length);
+                } else {
+                    console.error('Error loading user items:', response.status, response.statusText);
+                    userDashboardData.userItems = [];
                 }
             } catch (error) {
                 console.error('Error loading user items:', error);
@@ -775,10 +769,13 @@
         function updateDashboardUI() {
             // Calculate statistics from user items
             const items = userDashboardData.userItems || [];
+            console.log('Updating dashboard UI with items:', items.length);
             const totalItems = items.length;
-            const activeItems = items.filter(item => item.status === 'ACTIVE').length;
+            // ItemDTO uses 'status' as boolean: true = ACTIVE, false = INACTIVE
+            const activeItems = items.filter(item => item.status === true || item.status === 'ACTIVE').length;
             const maintenanceItems = items.filter(item => item.status === 'MAINTENANCE').length;
-            const totalValue = items.reduce((sum, item) => sum + (parseFloat(item.value) || 0), 0);
+            // ItemDTO uses 'acquisitionValue' for the value
+            const totalValue = items.reduce((sum, item) => sum + (parseFloat(item.acquisitionValue) || 0), 0);
 
             // Update stat cards
             document.getElementById('totalItems').textContent = totalItems;
@@ -792,92 +789,6 @@
                 currency: 'COP',
                 minimumFractionDigits: 0
             }).format(totalValue);
-
-            // Update recent items
-            updateRecentItems();
-            
-            // Update recent inventories
-            updateRecentInventories();
-        }
-
-        // Update recent items display
-        function updateRecentItems() {
-            const container = document.getElementById('recentItems');
-            const items = userDashboardData.userItems || [];
-            
-            if (items.length === 0) {
-                container.innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-sm text-center py-4">No hay items asignados</p>';
-                return;
-            }
-
-            // Sort by date and take first 5
-            const recentItems = items
-                .sort((a, b) => {
-                    const dateA = new Date(a.createdAt || a.updatedAt || 0);
-                    const dateB = new Date(b.createdAt || b.updatedAt || 0);
-                    return dateB - dateA;
-                })
-                .slice(0, 5);
-
-            container.innerHTML = recentItems.map(item => {
-                const itemName = item.name || item.itemName || item.licencePlate || item.serialNumber || 'Sin nombre';
-                const status = item.status || 'UNKNOWN';
-                const statusColors = {
-                    'ACTIVE': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300',
-                    'MAINTENANCE': 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300',
-                    'INACTIVE': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                };
-                return `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                        <div class="flex-1">
-                            <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${itemName}</div>
-                            <div class="text-xs text-gray-600 dark:text-gray-400">${item.category || 'Sin categoría'}</div>
-                        </div>
-                        <div class="ml-3">
-                            <span class="px-2 py-1 text-xs rounded-full ${statusColors[status] || 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300'}">
-                                ${status}
-                            </span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Update recent inventories display
-        function updateRecentInventories() {
-            const container = document.getElementById('recentInventories');
-            const inventories = userDashboardData.userInventories || [];
-            
-            if (inventories.length === 0) {
-                container.innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-sm text-center py-4">No hay inventarios asignados</p>';
-                return;
-            }
-
-            // Sort by date and take first 5
-            const recentInventories = inventories
-                .sort((a, b) => {
-                    const dateA = new Date(a.createdAt || a.updatedAt || 0);
-                    const dateB = new Date(b.createdAt || b.updatedAt || 0);
-                    return dateB - dateA;
-                })
-                .slice(0, 5);
-
-            container.innerHTML = recentInventories.map(inv => {
-                const status = inv.status === true || inv.status === 'ACTIVE';
-                return `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-                        <div class="flex-1">
-                            <div class="font-semibold text-gray-800 dark:text-gray-100 text-sm">${inv.name || 'Sin nombre'}</div>
-                            <div class="text-xs text-gray-600 dark:text-gray-400">${inv.institution?.name || 'Sin institución'}</div>
-                        </div>
-                        <div class="ml-3">
-                            <span class="px-2 py-1 text-xs rounded-full ${status ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'}">
-                                ${status ? 'Activo' : 'Inactivo'}
-                            </span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
 
         // Initialize charts
@@ -897,13 +808,15 @@
             };
 
             const items = userDashboardData.userItems || [];
+            console.log('Initializing charts with items:', items.length);
 
             // Chart: Items by Category
             const canvas1 = document.getElementById('itemsByCategoryChart');
-            if (canvas1 && items.length > 0) {
+            if (canvas1) {
                 const categories = {};
                 items.forEach(item => {
-                    const category = item.category || 'Sin categoría';
+                    // ItemDTO doesn't have category field, use skuDescription or productName as category
+                    const category = item.skuDescription || item.productName || 'Sin categoría';
                     categories[category] = (categories[category] || 0) + 1;
                 });
 
@@ -976,12 +889,38 @@
                             }
                         }
                     });
+                } else {
+                    // Show empty state chart
+                    userDashboardData.charts.itemsByCategory = new Chart(canvas1, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Sin categorías'],
+                            datasets: [{
+                                data: [1],
+                                backgroundColor: ['#E5E7EB'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '60%',
+                            plugins: {
+                                legend: {
+                                    display: false
+                                },
+                                tooltip: {
+                                    enabled: false
+                                }
+                            }
+                        }
+                    });
                 }
             }
 
             // Chart: Items by Status
             const canvas2 = document.getElementById('itemsByStatusChart');
-            if (canvas2 && items.length > 0) {
+            if (canvas2) {
                 const statusCounts = {
                     'ACTIVE': 0,
                     'MAINTENANCE': 0,
@@ -989,9 +928,13 @@
                 };
 
                 items.forEach(item => {
-                    const status = item.status || 'INACTIVE';
-                    if (statusCounts.hasOwnProperty(status)) {
-                        statusCounts[status]++;
+                    // ItemDTO uses boolean status: true = ACTIVE, false = INACTIVE
+                    if (item.status === true || item.status === 'ACTIVE') {
+                        statusCounts['ACTIVE']++;
+                    } else if (item.status === 'MAINTENANCE') {
+                        statusCounts['MAINTENANCE']++;
+                    } else {
+                        statusCounts['INACTIVE']++;
                     }
                 });
 
