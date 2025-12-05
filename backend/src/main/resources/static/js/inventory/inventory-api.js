@@ -531,7 +531,9 @@ async function deleteInventoryFromApi(inventoryId) {
             const deletedInventory = await response.json();
             return deletedInventory;
         } else if (response.status === 404) {
-            throw new Error('Inventario no encontrado');
+            // Si el inventario no existe, significa que ya fue eliminado exitosamente
+            // Retornar un objeto indicando éxito en lugar de lanzar error
+            return { id: inventoryId, deleted: true, message: 'Inventario eliminado exitosamente' };
         } else if (response.status === 400) {
             // Bad Request - usually validation errors or Hibernate exceptions converted to user-friendly messages
             let errorMessage = 'No se puede eliminar este inventario';
@@ -797,6 +799,18 @@ async function confirmDeleteInventory() {
         return;
     }
 
+    // Desactivar el botón para evitar múltiples peticiones
+    const deleteButton = document.getElementById('deleteInventoryButton');
+    const deleteButtonText = document.getElementById('deleteInventoryButtonText');
+    const originalButtonText = deleteButtonText ? deleteButtonText.textContent : 'Eliminar Inventario';
+    
+    if (deleteButton) {
+        deleteButton.disabled = true;
+        if (deleteButtonText) {
+            deleteButtonText.textContent = 'Eliminando...';
+        }
+    }
+
     try {
         const token = localStorage.getItem('jwt');
         const headers = {
@@ -814,15 +828,37 @@ async function confirmDeleteInventory() {
             closeDeleteInventoryModal();
             await loadInventoryData();
         } else if (response.status === 404) {
-            showErrorToast('Inventario no encontrado', 'El inventario que intenta eliminar no existe o ya fue eliminado.');
+            // Si el inventario no existe, significa que ya fue eliminado exitosamente
+            showSuccessToast('Inventario eliminado', 'El inventario ha sido eliminado exitosamente.');
             closeDeleteInventoryModal();
             await loadInventoryData(); // Recargar la lista para reflejar cambios
         } else if (response.status === 500) {
             showErrorToast('Inventario en uso', 'No se puede eliminar este inventario porque contiene items asociados. Transfiere la propiedad de los inventarios a otro usuario antes de eliminarlo.');
+            // Reactivar el botón en caso de error
+            if (deleteButton) {
+                deleteButton.disabled = false;
+                if (deleteButtonText) {
+                    deleteButtonText.textContent = originalButtonText;
+                }
+            }
         } else if (response.status === 403) {
             showErrorToast('Permisos insuficientes', 'No tienes permisos para eliminar este inventario.');
+            // Reactivar el botón en caso de error
+            if (deleteButton) {
+                deleteButton.disabled = false;
+                if (deleteButtonText) {
+                    deleteButtonText.textContent = originalButtonText;
+                }
+            }
         } else if (response.status === 401) {
             showErrorToast('Sesión expirada', 'Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+            // Reactivar el botón en caso de error
+            if (deleteButton) {
+                deleteButton.disabled = false;
+                if (deleteButtonText) {
+                    deleteButtonText.textContent = originalButtonText;
+                }
+            }
         } else {
             try {
                 const errorData = await response.json();
@@ -830,10 +866,24 @@ async function confirmDeleteInventory() {
             } catch {
                 showErrorToast('Error al eliminar inventario', 'El inventario podría estar siendo utilizado en otros módulos del sistema.');
             }
+            // Reactivar el botón en caso de error
+            if (deleteButton) {
+                deleteButton.disabled = false;
+                if (deleteButtonText) {
+                    deleteButtonText.textContent = originalButtonText;
+                }
+            }
         }
     } catch (error) {
         console.error('Error deleting inventory:', error);
         showErrorToast('Error al eliminar inventario', 'Inténtalo de nuevo.');
+        // Reactivar el botón en caso de error
+        if (deleteButton) {
+            deleteButton.disabled = false;
+            if (deleteButtonText) {
+                deleteButtonText.textContent = originalButtonText;
+            }
+        }
     }
 }
 

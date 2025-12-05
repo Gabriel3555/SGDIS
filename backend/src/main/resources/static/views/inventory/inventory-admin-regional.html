@@ -476,10 +476,10 @@
                         class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                         Cancelar
                     </button>
-                    <button type="button" onclick="confirmDeleteInventory()"
-                        class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <button type="button" id="deleteInventoryButton" onclick="confirmDeleteInventory()"
+                        class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="fas fa-trash-alt"></i>
-                        <span>Eliminar Inventario</span>
+                        <span id="deleteInventoryButtonText">Eliminar Inventario</span>
                     </button>
                 </div>
             </div>
