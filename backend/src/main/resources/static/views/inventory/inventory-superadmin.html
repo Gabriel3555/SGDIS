@@ -184,7 +184,7 @@
             <a href="/superadmin/cancellations" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/cancellations')">
                 <i class="fas fa-times-circle text-lg"></i>
-                <span class="font-medium">Cancelaciones</span>
+                <span class="font-medium">Bajas</span>
             </a>
             <a href="/superadmin/reports" class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
                 onclick="handleSidebarClick(event, '/superadmin/reports')">
@@ -425,7 +425,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <!-- Owner Selection -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Propietario del Inventario</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Propietario del Inventario <span
+                                    class="text-red-500">*</span></label>
                             <div class="custom-select-container">
                                 <div class="custom-select" id="newInventoryOwnerIdSelect">
                                     <div class="custom-select-trigger">
@@ -439,9 +440,9 @@
                                         </div>
                                     </div>
                                 </div>
-                                <input type="hidden" id="newInventoryOwnerId" name="ownerId">
+                                <input type="hidden" id="newInventoryOwnerId" name="ownerId" required>
                             </div>
-                            <p class="text-xs text-gray-500 mt-1">Usuario propietario de este inventario (opcional)</p>
+                            <p class="text-xs text-gray-500 mt-1">Usuario propietario de este inventario</p>
                         </div>
 
                         <!-- Regional Selection (if visible) -->
@@ -561,6 +562,54 @@
         .main-content {
             margin-left: 280px;
             transition: margin-left 0.3s ease;
+        }
+
+        /* Owner Card Styles for Super Admin */
+        .stat-card.owner-card {
+            border: 1px solid rgba(0, 175, 0, 0.2) !important;
+            box-shadow: 0 4px 20px rgba(0, 175, 0, 0.12) !important;
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 50%, #ffffff 100%) !important;
+            position: relative;
+        }
+
+        .stat-card.owner-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 32px rgba(0, 175, 0, 0.2) !important;
+            border-color: rgba(0, 175, 0, 0.3) !important;
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 40%, #dcfce7 60%, #f0fdf4 80%, #ffffff 100%) !important;
+        }
+
+        /* Dark Mode Owner Card */
+        .dark .stat-card.owner-card {
+            border-color: rgba(0, 175, 0, 0.3) !important;
+            background: linear-gradient(135deg, #1f2937 0%, #0f2e1a 50%, #1f2937 100%) !important;
+            box-shadow: 0 4px 20px rgba(0, 175, 0, 0.15) !important;
+        }
+
+        .dark .stat-card.owner-card:hover {
+            box-shadow: 0 12px 32px rgba(0, 175, 0, 0.25) !important;
+            border-color: rgba(0, 175, 0, 0.4) !important;
+            background: linear-gradient(135deg, #1f2937 0%, #0f2e1a 40%, #064e3b 60%, #0f2e1a 80%, #1f2937 100%) !important;
+        }
+
+        /* Owner Row Styles for Table */
+        tr.owner-row {
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 50%, #ffffff 100%) !important;
+            border-left: 3px solid rgba(0, 175, 0, 0.3) !important;
+        }
+
+        tr.owner-row:hover {
+            background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 40%, #dcfce7 60%, #f0fdf4 80%, #ffffff 100%) !important;
+        }
+
+        /* Dark Mode Owner Row */
+        .dark tr.owner-row {
+            background: linear-gradient(135deg, #1f2937 0%, #0f2e1a 50%, #1f2937 100%) !important;
+            border-left-color: rgba(0, 175, 0, 0.4) !important;
+        }
+
+        .dark tr.owner-row:hover {
+            background: linear-gradient(135deg, #1f2937 0%, #0f2e1a 40%, #064e3b 60%, #0f2e1a 80%, #1f2937 100%) !important;
         }
 
         /* Custom Select Styles */
@@ -1493,6 +1542,9 @@
                 <p class="text-sm text-gray-600">
                     Inventario: <span class="font-semibold" id="assignManagerInventoryName">-</span>
                 </p>
+                <p class="text-sm text-gray-600">
+                    ID: <span class="font-semibold" id="assignManagerInventoryId">-</span>
+                </p>
             </div>
 
             <form id="assignManagerForm" class="space-y-4">
@@ -1765,82 +1817,6 @@
                 <button onclick="closeUserDetailsModal()"
                     class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                     Cerrar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Remove Role Modal (Dedicated modal for removing managers/signatories) -->
-    <div id="removeRoleModal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden overflow-y-auto p-4"
-        style="z-index: 9999;">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4 my-8">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-orange-600">Quitar Roles</h2>
-                <button onclick="closeRemoveRoleModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fas fa-times text-2xl"></i>
-                </button>
-            </div>
-
-            <div class="mb-4">
-                <p class="text-sm text-gray-600">
-                    Inventario: <span class="font-semibold" id="removeRoleInventoryName">-</span>
-                </p>
-                <p class="text-sm text-gray-600">
-                    ID: <span class="font-semibold" id="removeRoleInventoryIdDisplay">-</span>
-                </p>
-            </div>
-
-            <!-- Role Selection Buttons -->
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Tipo de Rol</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <button type="button" id="removeManagerRoleBtn" onclick="selectRemoveRole('manager')"
-                        class="delete-role-selector-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 flex flex-col items-center gap-2">
-                        <i class="fas fa-user-tie text-2xl"></i>
-                        <span class="font-semibold">Manejador</span>
-                    </button>
-                    <button type="button" id="removeSignatoryRoleBtn" onclick="selectRemoveRole('signatory')"
-                        class="delete-role-selector-btn px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 flex flex-col items-center gap-2">
-                        <i class="fas fa-signature text-2xl"></i>
-                        <span class="font-semibold">Firmante</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- User Selection -->
-            <div id="removeRoleUserSection" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Usuario a Quitar</label>
-                <div class="custom-select-container">
-                    <div class="custom-select" id="removeRoleUserIdSelect">
-                        <div class="custom-select-trigger">
-                            <span class="custom-select-text">Seleccionar usuario...</span>
-                            <i class="fas fa-chevron-down custom-select-arrow"></i>
-                        </div>
-                        <div class="custom-select-dropdown">
-                            <input type="text" class="custom-select-search" placeholder="Buscar usuario...">
-                            <div class="custom-select-options" id="removeRoleUserIdOptions">
-                                <!-- Options loaded dynamically -->
-                            </div>
-                        </div>
-                    </div>
-                    <input type="hidden" id="removeRoleUserId" name="userId">
-                </div>
-                <p class="text-xs text-gray-500 mt-1" id="removeRoleDescription">Selecciona el usuario al que se le
-                    quitará el rol</p>
-
-                <!-- Remove Role Button -->
-                <button type="button" onclick="confirmDeleteRole()"
-                    class="w-full mt-3 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <i class="fas fa-user-times"></i>
-                    <span>Quitar Rol</span>
-                </button>
-            </div>
-
-            <div class="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-                <button type="button" onclick="closeRemoveRoleModal()"
-                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
-                    Cancelar
                 </button>
             </div>
         </div>

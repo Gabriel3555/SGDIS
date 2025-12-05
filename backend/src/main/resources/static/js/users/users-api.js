@@ -567,8 +567,29 @@ async function loadInstitutionsByRegional(regionalId) {
                 label: institution.name
             }));
 
-            if (window.institutionSelect) {
-                window.institutionSelect.setOptions(options);
+            // Wait for CustomSelect to be ready if it's not yet initialized
+            const waitForCustomSelect = async (retries = 0, maxRetries = 20) => {
+                if (window.institutionSelect && typeof window.institutionSelect.setOptions === 'function') {
+                    window.institutionSelect.setOptions(options);
+                    return true;
+                } else if (retries < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    return await waitForCustomSelect(retries + 1, maxRetries);
+                } else {
+                    console.warn('CustomSelect for institutions not ready after max retries');
+                    return false;
+                }
+            };
+
+            const loaded = await waitForCustomSelect();
+            if (!loaded) {
+                // If still not ready, try one more time after a longer delay
+                await new Promise(resolve => setTimeout(resolve, 500));
+                if (window.institutionSelect && typeof window.institutionSelect.setOptions === 'function') {
+                    window.institutionSelect.setOptions(options);
+                } else {
+                    console.error('Failed to load institutions: CustomSelect not available');
+                }
             }
         } else {
             showErrorToast('Error', 'No se pudieron cargar las instituciones');

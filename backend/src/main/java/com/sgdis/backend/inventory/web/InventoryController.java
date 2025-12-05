@@ -289,6 +289,16 @@ public class InventoryController {
         try {
             InventoryEntity inventory = inventoryRepository.findById(id)
                     .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with id: " + id));
+            
+            // Validar que el inventario esté activo
+            if (!inventory.isStatus()) {
+                String inventoryName = inventory.getName() != null ? inventory.getName() : "sin nombre";
+                return ResponseEntity.badRequest().body(
+                    String.format("No se puede subir una imagen al inventario '%s' porque está inactivo. " +
+                            "Solo se permiten transferencias de items y eliminar el inventario cuando está inactivo.",
+                            inventoryName)
+                );
+            }
 
             if (inventory.getImgUrl() != null) {
                 fileUploadService.deleteFile(inventory.getImgUrl());

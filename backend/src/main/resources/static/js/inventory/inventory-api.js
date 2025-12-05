@@ -533,17 +533,89 @@ async function deleteInventoryFromApi(inventoryId) {
         } else if (response.status === 404) {
             throw new Error('Inventario no encontrado');
         } else if (response.status === 400) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'No se puede eliminar este inventario');
+            // Bad Request - usually validation errors or Hibernate exceptions converted to user-friendly messages
+            let errorMessage = 'No se puede eliminar este inventario';
+            try {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    // Prioritize 'message' field as it contains user-friendly messages from GlobalExceptionHandler
+                    errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+                    
+                    // If the message contains technical Hibernate errors, use the detail or provide a friendly message
+                    if (errorMessage.includes('TransientObjectException') || 
+                        errorMessage.includes('persistent instance references') ||
+                        errorMessage.includes('org.hibernate')) {
+                        // Use detail if available, otherwise provide a friendly message
+                        errorMessage = errorData.detail || 
+                            'No se puede eliminar este inventario porque tiene relaciones activas con otros elementos del sistema (items, transferencias, préstamos, managers o signatories). Por favor, elimina o transfiere todos los elementos asociados antes de eliminar el inventario.';
+                    }
+                } else {
+                    // If not JSON, try to read as text
+                    const errorText = await response.text();
+                    if (errorText && errorText.trim() !== '') {
+                        errorMessage = errorText;
+                    }
+                }
+            } catch (e) {
+                console.error('Error reading 400 response:', e);
+            }
+            throw new Error(errorMessage);
         } else if (response.status === 401) {
             throw new Error('Sesión expirada. Por favor inicia sesión nuevamente.');
         } else if (response.status === 403) {
             throw new Error('No tienes permisos para eliminar este inventario.');
         } else if (response.status === 500) {
-            throw new Error('No se puede eliminar este inventario porque contiene items asociados. Transfiere o elimina los items primero.');
+            // Try to get the actual error message from the backend
+            let errorMessage = 'Error del servidor al eliminar el inventario';
+            try {
+                // First, try to read as JSON
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorData.detail || errorData.error || errorData.title || errorMessage;
+                    // If we got a generic message, try to get more details
+                    if (errorMessage === 'Ha ocurrido un error inesperado' || errorMessage.includes('unexpected')) {
+                        // Try to get more specific error info
+                        if (errorData.detail) {
+                            errorMessage = errorData.detail;
+                        } else if (errorData.timestamp && errorData.status) {
+                            errorMessage = `Error del servidor (${errorData.status}): ${errorData.message || 'Error inesperado'}`;
+                        } else {
+                            // Generic error - provide more helpful message
+                            errorMessage = 'El servidor encontró un error al eliminar el inventario. Esto puede deberse a que el inventario tiene items asociados, managers o signatories. Por favor, verifica que el inventario esté vacío antes de eliminarlo.';
+                        }
+                    }
+                } else {
+                    // If not JSON, try to read as text
+                    const errorText = await response.text();
+                    if (errorText && errorText.trim() !== '') {
+                        errorMessage = errorText;
+                    }
+                }
+            } catch (e) {
+                console.error('Error reading 500 response:', e);
+                // If we can't read the response, provide a helpful default message
+                errorMessage = 'Error del servidor al eliminar el inventario. Esto puede deberse a que el inventario tiene items asociados, managers o signatories. Por favor, verifica que el inventario esté vacío antes de eliminarlo.';
+            }
+            throw new Error(errorMessage);
         } else {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al eliminar el inventario');
+            let errorMessage = 'Error al eliminar el inventario';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+            } catch (e) {
+                // If response is not JSON, try to get text
+                try {
+                    const errorText = await response.text();
+                    if (errorText) {
+                        errorMessage = errorText;
+                    }
+                } catch (textError) {
+                    // Use default message
+                }
+            }
+            throw new Error(errorMessage);
         }
     } catch (error) {
         if (error.message && error.message.includes('Failed to fetch')) {

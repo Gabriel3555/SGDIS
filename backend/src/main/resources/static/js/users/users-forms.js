@@ -574,64 +574,19 @@ async function handleChangePasswordSubmit(e) {
         return;
     }
 
-    if (newPassword.length < 6) {
-        showErrorToast('Contraseña corta', 'La contraseña debe tener al menos 6 caracteres');
-        return;
-    }
-
     try {
-        if (!usersData.users || usersData.users.length === 0) {
-            showErrorToast('Datos no cargados', 'Los datos de usuarios no están cargados. Por favor recarga la página.');
-            return;
-        }
-
-        let currentUser = usersData.users.find(u => u && u.id === usersData.currentUserId);
-
-        if (!currentUser) {
-            try {
-                const token = localStorage.getItem('jwt');
-                const headers = { 'Content-Type': 'application/json' };
-                if (token) headers['Authorization'] = `Bearer ${token}`;
-
-                const userResponse = await fetch(`/api/v1/users/users/${usersData.currentUserId}`, {
-                    method: 'GET',
-                    headers: headers
-                });
-
-                if (userResponse.ok) {
-                    const fetchedUser = await userResponse.json();
-                    currentUser = {
-                        id: fetchedUser.id,
-                        fullName: fetchedUser.fullName,
-                        email: fetchedUser.email,
-                        role: fetchedUser.role,
-                        status: fetchedUser.status
-                    };
-                } else {
-                    showErrorToast('Usuario no encontrado', 'No se pudo obtener la información del usuario. El usuario podría no existir.');
-                    return;
-                }
-            } catch (fetchError) {
-                showErrorToast('Error de conexión', 'No se pudo obtener la información del usuario. Verifica tu conexión.');
-                return;
-            }
-        }
-
         const token = localStorage.getItem('jwt');
         const headers = {
             'Content-Type': 'application/json'
         };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
-        const response = await fetch(`/api/v1/users/${usersData.currentUserId}`, {
-            method: 'PUT',
+        const response = await fetch('/api/v1/users/changePasswordToUser', {
+            method: 'POST',
             headers: headers,
             body: JSON.stringify({
-                fullName: currentUser.fullName,
-                email: currentUser.email,
-                role: currentUser.role,
-                status: currentUser.status,
-                password: newPassword
+                id: usersData.currentUserId,
+                newPassword: newPassword
             })
         });
 
@@ -640,8 +595,14 @@ async function handleChangePasswordSubmit(e) {
             closeChangePasswordModal();
             await loadUsersData();
         } else {
-            const errorData = await response.json();
-            showErrorToast('Error al cambiar contraseña', errorData.message || 'Error desconocido');
+            let errorMessage = 'Error desconocido al cambiar la contraseña';
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.message || errorData.detail || errorMessage;
+            } catch (parseError) {
+                console.error('Error parsing error response:', parseError);
+            }
+            showErrorToast('Error al cambiar contraseña', errorMessage);
         }
     } catch (error) {
         showErrorToast('Error al cambiar contraseña', 'Inténtalo de nuevo.');
