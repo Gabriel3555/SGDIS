@@ -353,17 +353,31 @@ async function confirmDeleteInventory() {
     return;
   }
 
+  // Desactivar el botón para evitar múltiples peticiones
+  const deleteButton = document.getElementById('deleteInventoryButton');
+  const deleteButtonText = document.getElementById('deleteInventoryButtonText');
+  const originalButtonText = deleteButtonText ? deleteButtonText.textContent : 'Eliminar Inventario';
+  
+  if (deleteButton) {
+    deleteButton.disabled = true;
+    if (deleteButtonText) {
+      deleteButtonText.textContent = 'Eliminando...';
+    }
+  }
+
   // Verificar que el inventario aún existe en la lista
   const currentInventory = inventoryData.inventories.find(
     (i) => i && i.id == inventoryData.currentInventoryId
   );
   if (!currentInventory) {
-    showErrorToast(
-      "Inventario no encontrado",
-      "El inventario ya no existe en la lista. Puede que ya haya sido eliminado."
+    // Si el inventario no está en la lista, significa que ya fue eliminado exitosamente
+    showSuccessToast(
+      "Inventario eliminado",
+      "El inventario ha sido eliminado exitosamente."
     );
     closeDeleteInventoryModal();
-    return;
+    await loadInventoryData();
+    return; // El botón se reactivará cuando se cierre el modal
   }
 
   try {
@@ -378,6 +392,17 @@ async function confirmDeleteInventory() {
   } catch (error) {
     console.error("Error deleting inventory:", error);
 
+    // Si el error indica que el inventario no fue encontrado, tratarlo como éxito
+    if (error.message && (error.message.includes("no encontrado") || error.message.includes("not found") || error.message.includes("404"))) {
+      showSuccessToast(
+        "Inventario eliminado",
+        "El inventario ha sido eliminado exitosamente."
+      );
+      closeDeleteInventoryModal();
+      await loadInventoryData();
+      return; // El botón se reactivará cuando se cierre el modal
+    }
+
     if (error.message && error.message.includes("contiene items asociados")) {
       showErrorToast(
         "No se puede eliminar",
@@ -388,6 +413,14 @@ async function confirmDeleteInventory() {
         "Error al eliminar inventario",
         error.message || "Inténtalo de nuevo."
       );
+    }
+    
+    // Reactivar el botón en caso de error
+    if (deleteButton) {
+      deleteButton.disabled = false;
+      if (deleteButtonText) {
+        deleteButtonText.textContent = originalButtonText;
+      }
     }
   }
 }

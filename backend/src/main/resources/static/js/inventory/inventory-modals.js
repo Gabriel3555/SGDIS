@@ -641,6 +641,16 @@ function closeDeleteInventoryModal() {
     modal.classList.add("hidden");
   }
 
+  // Reactivar el botón de eliminar si estaba desactivado
+  const deleteButton = document.getElementById('deleteInventoryButton');
+  const deleteButtonText = document.getElementById('deleteInventoryButtonText');
+  if (deleteButton) {
+    deleteButton.disabled = false;
+    if (deleteButtonText) {
+      deleteButtonText.textContent = 'Eliminar Inventario';
+    }
+  }
+
   // Reset delete role selection
   resetDeleteRoleSelection();
 
@@ -1412,13 +1422,23 @@ window.showRemoveRoleModal = function(inventoryId) {
 async function confirmDeleteInventory() {
   const data = window.inventoryData || inventoryData;
   const inventoryId = parseInt(data ? data.currentInventoryId : null);
-  if (!isNaN(inventoryId)) {
-    await window.deleteInventory(inventoryId);
-    closeDeleteInventoryModal();
-  } else {
+  
+  if (isNaN(inventoryId)) {
     showErrorToast("Error", "ID de inventario inválido");
     console.error("Invalid inventory ID:", inventoryData.currentInventoryId);
     return;
+  }
+
+  // Desactivar el botón para evitar múltiples peticiones
+  const deleteButton = document.getElementById('deleteInventoryButton');
+  const deleteButtonText = document.getElementById('deleteInventoryButtonText');
+  const originalButtonText = deleteButtonText ? deleteButtonText.textContent : 'Eliminar Inventario';
+  
+  if (deleteButton) {
+    deleteButton.disabled = true;
+    if (deleteButtonText) {
+      deleteButtonText.textContent = 'Eliminando...';
+    }
   }
 
   console.log("Attempting to delete inventory with ID:", inventoryId);
@@ -1491,8 +1511,18 @@ async function confirmDeleteInventory() {
       errorTitle = "Permisos insuficientes";
       errorMessage = "No tienes permisos para eliminar este inventario.";
     } else if (errorMessage.includes("404") || errorMessage.includes("no encontrado") || errorMessage.includes("not found")) {
-      errorTitle = "Inventario no encontrado";
-      errorMessage = "El inventario que intentas eliminar no existe o ya fue eliminado.";
+      // Si el inventario no existe, significa que ya fue eliminado exitosamente
+      // Tratar como éxito en lugar de error
+      if (typeof showSuccessToast === 'function') {
+        showSuccessToast("Inventario eliminado", "El inventario ha sido eliminado exitosamente.");
+      } else if (typeof showInfoToast === 'function') {
+        showInfoToast("Inventario eliminado", "El inventario ha sido eliminado exitosamente.");
+      }
+      closeDeleteInventoryModal();
+      if (typeof loadInventoryData === 'function') {
+        await loadInventoryData();
+      }
+      return; // Salir de la función sin mostrar error (el botón se reactivará cuando se cierre el modal)
     } else if (errorMessage.includes("500") || errorMessage.includes("Error del servidor") || errorMessage.includes("unexpected") || errorMessage.includes("inesperado")) {
       errorTitle = "Error del servidor";
       if (errorMessage === "Ha ocurrido un error inesperado" || errorMessage.includes("unexpected")) {
@@ -1509,6 +1539,14 @@ async function confirmDeleteInventory() {
     }
     
     showErrorToast(errorTitle, errorMessage);
+    
+    // Reactivar el botón en caso de error
+    if (deleteButton) {
+      deleteButton.disabled = false;
+      if (deleteButtonText) {
+        deleteButtonText.textContent = originalButtonText;
+      }
+    }
   }
 }
 
