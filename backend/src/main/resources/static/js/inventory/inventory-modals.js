@@ -20,7 +20,7 @@ if (
       );
       this.textElement = this.container.querySelector(".custom-select-text");
       
-      // Debug: log if optionsContainer is found
+      // Debug:
       if (!this.optionsContainer) {
         console.error(`CustomSelect: optionsContainer not found for "${containerId}"`, {
           container: this.container,
