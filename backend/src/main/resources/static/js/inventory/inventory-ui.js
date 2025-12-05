@@ -444,6 +444,16 @@ function initializeInventoryFilterSelects() {
     return;
   }
 
+  // Only initialize if we're on a page that has the filter selects (not in modals)
+  // Check if the filter container exists in the DOM before proceeding
+  const institutionFilterContainer = document.getElementById("inventoryInstitutionFilterSelect");
+  const regionalFilterContainer = document.getElementById("inventoryRegionalFilterSelect");
+  
+  // If neither container exists, this function shouldn't run (e.g., in modals)
+  if (!institutionFilterContainer && !regionalFilterContainer) {
+    return;
+  }
+
   const CustomSelectClass = window.CustomSelect || CustomSelect;
 
   // Regional filter select
@@ -529,18 +539,41 @@ function initializeInventoryFilterSelects() {
             return;
           }
           
-          window.inventoryInstitutionFilterSelect = new CustomSelectClass("inventoryInstitutionFilterSelect", {
-            placeholder: placeholder,
-            onChange: function (option) {
-              if (typeof handleInstitutionFilterChange === 'function') {
-                handleInstitutionFilterChange(option.value);
+          try {
+            window.inventoryInstitutionFilterSelect = new CustomSelectClass("inventoryInstitutionFilterSelect", {
+              placeholder: placeholder,
+              onChange: function (option) {
+                if (typeof handleInstitutionFilterChange === 'function') {
+                  handleInstitutionFilterChange(option.value);
+                }
+              },
+            });
+            
+            // Verify initialization was successful - wait a bit for CustomSelect to fully initialize
+            setTimeout(() => {
+              if (!window.inventoryInstitutionFilterSelect || 
+                  !window.inventoryInstitutionFilterSelect.container || 
+                  !window.inventoryInstitutionFilterSelect.trigger) {
+                console.error('CustomSelect institution: Failed to initialize properly', {
+                  exists: !!window.inventoryInstitutionFilterSelect,
+                  hasContainer: !!(window.inventoryInstitutionFilterSelect && window.inventoryInstitutionFilterSelect.container),
+                  hasTrigger: !!(window.inventoryInstitutionFilterSelect && window.inventoryInstitutionFilterSelect.trigger)
+                });
+                // Clear invalid instance
+                window.inventoryInstitutionFilterSelect = null;
+                // Retry initialization
+                setTimeout(() => {
+                  initializeInventoryFilterSelects();
+                }, 200);
               }
-            },
-          });
-          
-          // Verify initialization was successful
-          if (!window.inventoryInstitutionFilterSelect || !window.inventoryInstitutionFilterSelect.container) {
-            console.error('CustomSelect institution: Failed to initialize');
+            }, 50);
+          } catch (initError) {
+            console.error('CustomSelect institution: Error during initialization', initError);
+            window.inventoryInstitutionFilterSelect = null;
+            // Retry after delay
+            setTimeout(() => {
+              initializeInventoryFilterSelects();
+            }, 200);
             return;
           }
           
@@ -559,12 +592,69 @@ function initializeInventoryFilterSelects() {
         }
       } else {
         // Already exists, verify it's still valid
-        if (!window.inventoryInstitutionFilterSelect.container || !window.inventoryInstitutionFilterSelect.trigger) {
-          console.warn('CustomSelect institution exists but is invalid, reinitializing...');
-          window.inventoryInstitutionFilterSelect = null;
-          setTimeout(() => {
-            initializeInventoryFilterSelects();
-          }, 100);
+        // Check if it's a valid CustomSelect instance (has container and trigger properties)
+        if (window.inventoryInstitutionFilterSelect) {
+          try {
+            // Check if the CustomSelect has the required properties
+            const hasContainer = window.inventoryInstitutionFilterSelect.container !== null && 
+                                window.inventoryInstitutionFilterSelect.container !== undefined;
+            const hasTrigger = window.inventoryInstitutionFilterSelect.trigger !== null && 
+                              window.inventoryInstitutionFilterSelect.trigger !== undefined;
+            
+            // Only check if container is in DOM if it exists
+            let containerInDOM = false;
+            if (hasContainer) {
+              try {
+                containerInDOM = document.contains(window.inventoryInstitutionFilterSelect.container);
+              } catch (e) {
+                // Container might not be a valid DOM element
+                containerInDOM = false;
+              }
+            }
+            
+            const isValid = hasContainer && hasTrigger && containerInDOM;
+            
+            if (!isValid) {
+              // Only reinitialize if the container element still exists in the DOM
+              const containerElement = document.getElementById("inventoryInstitutionFilterSelect");
+              if (containerElement) {
+                // Check if this is a timing issue (CustomSelect exists but not fully initialized)
+                // If container exists in DOM but CustomSelect properties are missing, it's likely a timing issue
+                const isTimingIssue = !hasContainer || !hasTrigger;
+                
+                // Only show warning if it's not a timing issue or if container is not in DOM
+                if (!isTimingIssue && !containerInDOM && hasContainer) {
+                  // Container exists but not in DOM - this is a real issue
+                  console.warn('CustomSelect institution container not in DOM, reinitializing...');
+                }
+                // For timing issues, silently reinitialize without warning
+                
+                window.inventoryInstitutionFilterSelect = null;
+                setTimeout(() => {
+                  initializeInventoryFilterSelects();
+                }, 100);
+              } else {
+                // Container doesn't exist - this function shouldn't have been called
+                // Clear the reference and return silently
+                window.inventoryInstitutionFilterSelect = null;
+                return;
+              }
+            }
+          } catch (error) {
+            // If there's an error checking the CustomSelect, check if container still exists
+            const containerElement = document.getElementById("inventoryInstitutionFilterSelect");
+            if (containerElement) {
+              // Container exists, try to reinitialize
+              window.inventoryInstitutionFilterSelect = null;
+              setTimeout(() => {
+                initializeInventoryFilterSelects();
+              }, 100);
+            } else {
+              // Container doesn't exist - clear reference and return
+              window.inventoryInstitutionFilterSelect = null;
+              return;
+            }
+          }
         }
       }
     } else {
@@ -992,10 +1082,15 @@ function updateSearchAndFilters() {
     `;
 
   // Initialize CustomSelects for filters (super admin and admin_regional)
+  // Only initialize if the filter containers exist in the DOM
   if (isSuperAdmin || isAdminRegional) {
-    setTimeout(() => {
-      initializeInventoryFilterSelects();
-    }, 100);
+    const hasFilterContainers = document.getElementById("inventoryInstitutionFilterSelect") || 
+                                document.getElementById("inventoryRegionalFilterSelect");
+    if (hasFilterContainers) {
+      setTimeout(() => {
+        initializeInventoryFilterSelects();
+      }, 100);
+    }
   }
 
   const searchInput = document.getElementById("inventorySearch");
