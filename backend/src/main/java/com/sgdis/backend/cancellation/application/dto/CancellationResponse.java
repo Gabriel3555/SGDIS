@@ -19,7 +19,8 @@ public record CancellationResponse(
         String comment,
         Boolean approved,
         String urlFormat,
-        String urlCorrectedExample
+        String urlCorrectedExample,
+        String institutionName
 ) {
     public record ItemSummary(
             Long id,

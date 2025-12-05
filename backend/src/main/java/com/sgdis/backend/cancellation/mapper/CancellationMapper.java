@@ -23,6 +23,8 @@ public final class CancellationMapper {
         }
         
         List<CancellationResponse.ItemSummary> itemsSummary = new ArrayList<>();
+        String institutionName = null;
+        
         if (entity.getItems() != null && !entity.getItems().isEmpty()) {
             itemsSummary = entity.getItems().stream()
                     .filter(item -> item != null)
@@ -34,6 +36,19 @@ public final class CancellationMapper {
                             item.getProductName() != null ? item.getProductName() : ""
                     ))
                     .toList();
+            
+            // Get institution name from the first item's inventory
+            // If items are from different institutions, we'll use the first one
+            var firstItem = entity.getItems().stream()
+                    .filter(item -> item != null && item.getInventory() != null)
+                    .findFirst();
+            
+            if (firstItem.isPresent()) {
+                var inventory = firstItem.get().getInventory();
+                if (inventory != null && inventory.getInstitution() != null) {
+                    institutionName = inventory.getInstitution().getName();
+                }
+            }
         }
 
         return new CancellationResponse(
@@ -52,7 +67,8 @@ public final class CancellationMapper {
                 entity.getComment() != null ? entity.getComment() : "",
                 entity.getApproved() != null ? entity.getApproved() : false,
                 entity.getUrlFormat() != null ? entity.getUrlFormat() : "",
-                entity.getUrlCorrectedExample() != null ? entity.getUrlCorrectedExample() : ""
+                entity.getUrlCorrectedExample() != null ? entity.getUrlCorrectedExample() : "",
+                institutionName
         );
     }
 }
