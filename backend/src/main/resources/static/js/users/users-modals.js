@@ -390,22 +390,22 @@ async function showViewUserModal(userId) {
                                        (window.location.pathname && window.location.pathname.includes('/warehouse'));
                     if (!isAdminRegional && !isWarehouse) {
                         return `
-                            <div class="mt-6 pt-6 border-t border-gray-200">
-                                <h4 class="text-sm font-semibold text-gray-700 mb-3">Acciones</h4>
+                            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Acciones</h4>
                                 <div class="grid grid-cols-2 gap-2">
-                                    <button onclick="showUserLoansModal('${user.id}')" class="flex items-center justify-center gap-2 px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition-colors">
+                                    <button onclick="showUserLoansModal('${user.id}')" class="flex items-center justify-center gap-2 px-4 py-2 bg-purple-50 dark:bg-purple-900/30 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 rounded-lg transition-colors">
                                         <i class="fas fa-hand-holding"></i>
                                         <span class="text-sm font-medium">Ver Préstamos</span>
                                     </button>
-                                    <button onclick="showUserInventoriesModal('${user.id}', 'owner')" class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors">
+                                    <button onclick="showUserInventoriesModal('${user.id}', 'owner')" class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 rounded-lg transition-colors">
                                         <i class="fas fa-crown"></i>
                                         <span class="text-sm font-medium">Owner</span>
                                     </button>
-                                    <button onclick="showUserInventoriesModal('${user.id}', 'signatory')" class="flex items-center justify-center gap-2 px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg transition-colors">
+                                    <button onclick="showUserInventoriesModal('${user.id}', 'signatory')" class="flex items-center justify-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-700 dark:text-green-300 rounded-lg transition-colors">
                                         <i class="fas fa-signature"></i>
                                         <span class="text-sm font-medium">Signatory</span>
                                     </button>
-                                    <button onclick="showUserInventoriesModal('${user.id}', 'manager')" class="flex items-center justify-center gap-2 px-4 py-2 bg-orange-50 hover:bg-orange-100 text-orange-700 rounded-lg transition-colors">
+                                    <button onclick="showUserInventoriesModal('${user.id}', 'manager')" class="flex items-center justify-center gap-2 px-4 py-2 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50 text-orange-700 dark:text-orange-300 rounded-lg transition-colors">
                                         <i class="fas fa-user-cog"></i>
                                         <span class="text-sm font-medium">Manager</span>
                                     </button>
