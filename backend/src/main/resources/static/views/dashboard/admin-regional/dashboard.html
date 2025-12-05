@@ -1252,118 +1252,157 @@
                     return;
                 }
                 
-                // Load cancellations - the backend should filter by regional for ADMIN_REGIONAL
-                const response = await fetch(`/api/v1/cancellations?page=0&size=10000`, { headers });
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    let cancellations = [];
-                    let totalElements = 0;
-                    
-                    if (Array.isArray(data)) {
-                        cancellations = data;
-                        totalElements = data.length;
-                    } else if (data && Array.isArray(data.content)) {
-                        cancellations = data.content;
-                        totalElements = data.totalElements || data.content.length;
-                    } else if (data && data.totalElements !== undefined) {
-                        totalElements = data.totalElements;
-                    }
-                    
-                    // Filter cancellations by regional (client-side filter as backup)
-                    // Get institution IDs for the regional
-                    const institutionsInRegional = adminRegionalDashboardData.institutions || [];
-                    const institutionIdsInRegional = new Set(
-                        institutionsInRegional
-                            .map(inst => {
-                                const id = inst.id || inst.institutionId;
-                                return id ? id.toString() : null;
-                            })
-                            .filter(id => id !== null)
-                    );
-                    
-                    // Also create a map of institution names for lookup
-                    const institutionNameMap = {};
-                    institutionsInRegional.forEach(inst => {
-                        const id = inst.id || inst.institutionId;
-                        if (id) {
-                            institutionNameMap[id.toString()] = inst.name || `Institución ${id}`;
-                        }
-                    });
-                    
-                    // Filter cancellations by regional (client-side filter as backup)
-                    // Only keep cancellations that belong to institutions in this regional
-                    const institutionNamesInRegional = new Set(
-                        institutionsInRegional.map(inst => inst.name).filter(name => name)
-                    );
-                    
-                    const filteredCancellations = cancellations.filter(cancellation => {
-                        const instName = cancellation.institutionName;
-                        // Only include if it has an institution name and it's in our regional
-                        return instName && institutionNamesInRegional.has(instName);
-                    });
-                    
-                    // Store cancellations for chart
-                    adminRegionalDashboardData.cancellations = filteredCancellations;
-                    
-                    // Group cancellations by institution
-                    // Initialize all institutions in the regional with 0 (so they appear even if no cancellations)
-                    const cancellationsByInstitution = {};
-                    institutionsInRegional.forEach(inst => {
-                        if (inst.name) {
-                            cancellationsByInstitution[inst.name] = 0;
-                        }
-                    });
-                    
-                    // Count cancellations for each institution
-                    filteredCancellations.forEach(cancellation => {
-                        const institutionName = cancellation.institutionName;
+                // Use the new endpoint that filters by regional (more efficient)
+                let allCancellations = [];
+                let totalElements = 0;
+                let currentPage = 0;
+                const pageSize = 100;
+                let hasMorePages = true;
+                let loadError = false;
+                
+                // Load cancellations in batches using the regional-specific endpoint
+                while (hasMorePages && currentPage < 10 && !loadError) {
+                    try {
+                        const response = await fetch(`/api/v1/cancellations/regional/${regionalId}?page=${currentPage}&size=${pageSize}`, { headers });
                         
-                        // Only count if institution name exists and is in our regional
-                        if (institutionName && institutionNamesInRegional.has(institutionName)) {
-                            if (!cancellationsByInstitution[institutionName]) {
-                                cancellationsByInstitution[institutionName] = 0;
-                            }
-                            cancellationsByInstitution[institutionName]++;
+                        if (!response.ok) {
+                            // If request fails, stop loading and use fallback
+                            loadError = true;
+                            console.warn(`Failed to load cancellations page ${currentPage}, status: ${response.status}. Using fallback.`);
+                            break;
                         }
-                    });
-                    
-                    // Remove institutions with 0 cancellations for cleaner chart (optional - comment out if you want to show all)
-                    // Object.keys(cancellationsByInstitution).forEach(key => {
-                    //     if (cancellationsByInstitution[key] === 0) {
-                    //         delete cancellationsByInstitution[key];
-                    //     }
-                    // });
-                    
-                    adminRegionalDashboardData.cancellationsByInstitution = cancellationsByInstitution;
-                    
-                    // Store count (already set from consolidated endpoint, but update if needed)
-                    const count = totalElements > 0 ? totalElements : cancellations.length;
-                    if (!adminRegionalDashboardData.cancellationsCount || adminRegionalDashboardData.cancellationsCount === 0) {
-                        adminRegionalDashboardData.cancellationsCount = count;
+                        
+                        const data = await response.json();
+                        let pageCancellations = [];
+                        let pageTotalElements = 0;
+                        
+                        if (Array.isArray(data)) {
+                            pageCancellations = data;
+                            pageTotalElements = data.length;
+                        } else if (data && Array.isArray(data.content)) {
+                            pageCancellations = data.content;
+                            pageTotalElements = data.totalElements || 0;
+                        } else if (data && data.totalElements !== undefined) {
+                            pageTotalElements = data.totalElements;
+                        }
+                        
+                        // Set total elements from first page
+                        if (currentPage === 0) {
+                            totalElements = pageTotalElements;
+                        }
+                        
+                        // Add cancellations from this page
+                        allCancellations = allCancellations.concat(pageCancellations);
+                        
+                        // Check if there are more pages
+                        if (pageCancellations.length < pageSize || allCancellations.length >= totalElements) {
+                            hasMorePages = false;
+                        } else {
+                            currentPage++;
+                        }
+                    } catch (error) {
+                        // If there's an error loading a page, stop and use what we have
+                        loadError = true;
+                        console.warn(`Error loading cancellations page ${currentPage}:`, error);
+                        break;
                     }
+                }
+                
+                const cancellations = allCancellations;
+                
+                // Filter cancellations by regional (client-side filter as backup)
+                // Get institution IDs for the regional
+                const institutionsInRegional = adminRegionalDashboardData.institutions || [];
+                const institutionIdsInRegional = new Set(
+                    institutionsInRegional
+                        .map(inst => {
+                            const id = inst.id || inst.institutionId;
+                            return id ? id.toString() : null;
+                        })
+                        .filter(id => id !== null)
+                );
+                
+                // Also create a map of institution names for lookup
+                const institutionNameMap = {};
+                institutionsInRegional.forEach(inst => {
+                    const id = inst.id || inst.institutionId;
+                    if (id) {
+                        institutionNameMap[id.toString()] = inst.name || `Institución ${id}`;
+                    }
+                });
+                
+                // Filter cancellations by regional (client-side filter as backup)
+                // Only keep cancellations that belong to institutions in this regional
+                const institutionNamesInRegional = new Set(
+                    institutionsInRegional.map(inst => inst.name).filter(name => name)
+                );
+                
+                const filteredCancellations = cancellations.filter(cancellation => {
+                    const instName = cancellation.institutionName;
+                    // Only include if it has an institution name and it's in our regional
+                    return instName && institutionNamesInRegional.has(instName);
+                });
+                
+                // Store cancellations for chart
+                adminRegionalDashboardData.cancellations = filteredCancellations;
+                
+                // Group cancellations by institution
+                // Initialize all institutions in the regional with 0 (so they appear even if no cancellations)
+                const cancellationsByInstitution = {};
+                institutionsInRegional.forEach(inst => {
+                    if (inst.name) {
+                        cancellationsByInstitution[inst.name] = 0;
+                    }
+                });
+                
+                // Count cancellations for each institution
+                filteredCancellations.forEach(cancellation => {
+                    const institutionName = cancellation.institutionName;
                     
-                    const totalCancellationsEl = document.getElementById('totalCancellations');
-                    if (totalCancellationsEl && (!adminRegionalDashboardData.cancellationsCount || adminRegionalDashboardData.cancellationsCount === 0)) {
-                        totalCancellationsEl.textContent = count || 0;
+                    // Only count if institution name exists and is in our regional
+                    if (institutionName && institutionNamesInRegional.has(institutionName)) {
+                        if (!cancellationsByInstitution[institutionName]) {
+                            cancellationsByInstitution[institutionName] = 0;
+                        }
+                        cancellationsByInstitution[institutionName]++;
                     }
-                } else {
-                    console.error('Failed to load cancellations, status:', response.status);
-                    const totalCancellationsEl = document.getElementById('totalCancellations');
-                    if (totalCancellationsEl) {
-                        totalCancellationsEl.textContent = '0';
-                    }
-                    adminRegionalDashboardData.cancellations = [];
-                    adminRegionalDashboardData.cancellationsByInstitution = {};
+                });
+                
+                // Remove institutions with 0 cancellations for cleaner chart (optional - comment out if you want to show all)
+                // Object.keys(cancellationsByInstitution).forEach(key => {
+                //     if (cancellationsByInstitution[key] === 0) {
+                //         delete cancellationsByInstitution[key];
+                //     }
+                // });
+                
+                adminRegionalDashboardData.cancellationsByInstitution = cancellationsByInstitution;
+                
+                // Store count (already set from consolidated endpoint, but update if needed)
+                const count = totalElements > 0 ? totalElements : cancellations.length;
+                if (!adminRegionalDashboardData.cancellationsCount || adminRegionalDashboardData.cancellationsCount === 0) {
+                    adminRegionalDashboardData.cancellationsCount = count;
+                }
+                
+                const totalCancellationsEl = document.getElementById('totalCancellations');
+                if (totalCancellationsEl && (!adminRegionalDashboardData.cancellationsCount || adminRegionalDashboardData.cancellationsCount === 0)) {
+                    totalCancellationsEl.textContent = count || 0;
                 }
             } catch (error) {
-                console.error('Error loading cancellations count:', error);
-                const totalCancellationsEl = document.getElementById('totalCancellations');
-                if (totalCancellationsEl) {
-                    totalCancellationsEl.textContent = '0';
-                }
+                console.warn('Error loading cancellations for chart (non-critical):', error);
+                // Initialize empty chart data - the count is already loaded from consolidated endpoint
                 adminRegionalDashboardData.cancellations = [];
-                adminRegionalDashboardData.cancellationsByInstitution = {};
+                
+                // Initialize chart with empty data for all institutions in regional
+                const institutionsInRegional = adminRegionalDashboardData.institutions || [];
+                const cancellationsByInstitution = {};
+                institutionsInRegional.forEach(inst => {
+                    if (inst.name) {
+                        cancellationsByInstitution[inst.name] = 0;
+                    }
+                });
+                adminRegionalDashboardData.cancellationsByInstitution = cancellationsByInstitution;
+                
+                // Count is already set from consolidated endpoint, so we don't need to update it here
             }
         }
 
@@ -1568,14 +1607,9 @@
 
         // Initialize charts
         function initializeCharts() {
-            console.log('Inicializando gráficas...');
-            console.log('userStats:', adminRegionalDashboardData.userStats);
-            
             // Check for Chart.js availability (try different possible names)
             // Declare once at the beginning for all charts
             const ChartLib = window.Chart || window.chart || (typeof Chart !== 'undefined' ? Chart : null);
-            console.log('Chart disponible:', typeof ChartLib !== 'undefined' && ChartLib !== null);
-            console.log('window.Chart:', typeof window.Chart);
             
             if (!ChartLib) {
                 console.error('Chart.js no está disponible. Verifica que el script esté cargado.');
@@ -1595,7 +1629,6 @@
             // Chart: Users by Role (without Superadmin)
             if (adminRegionalDashboardData.userStats) {
                 const canvas = document.getElementById('usersByRoleChart');
-                console.log('Canvas encontrado:', canvas);
                 if (canvas) {
                     // Check if canvas has proper dimensions
                     const canvasContainer = canvas.parentElement;
@@ -1603,23 +1636,14 @@
                         const containerHeight = canvasContainer.offsetHeight || 256;
                         canvas.height = containerHeight;
                         canvas.width = canvasContainer.offsetWidth || 400;
-                        console.log('Canvas dimensions:', canvas.width, 'x', canvas.height);
                     }
                     
-                    console.log('Creando gráfica de usuarios por rol...');
                     const dataValues = [
                         adminRegionalDashboardData.userStats.adminRegionalCount || 0,
                         adminRegionalDashboardData.userStats.adminInstitutionCount || 0,
                         adminRegionalDashboardData.userStats.warehouseCount || 0,
                         adminRegionalDashboardData.userStats.userCount || 0
                     ];
-                    console.log('Datos:', {
-                        adminRegional: dataValues[0],
-                        adminInstitution: dataValues[1],
-                        warehouse: dataValues[2],
-                        users: dataValues[3],
-                        total: dataValues.reduce((a, b) => a + b, 0)
-                    });
                     
                     const ctx2d = canvas.getContext('2d');
                     
@@ -1706,20 +1730,10 @@
                                 }
                             }
                         });
-                        console.log('Gráfica de usuarios por rol creada exitosamente');
                     } catch (chartError) {
                         console.error('Error al crear la gráfica de usuarios por rol:', chartError);
                     }
-                } else {
-                    if (!canvas) {
-                        console.warn('Canvas usersByRoleChart no encontrado');
-                    }
-                    if (typeof Chart === 'undefined') {
-                        console.warn('Chart.js no está disponible');
-                    }
                 }
-            } else {
-                console.warn('userStats no está disponible para inicializar la gráfica');
             }
 
             // Chart: Cancellations by Institution
@@ -1939,7 +1953,6 @@
             // Chart: Institutions Distribution
             if (adminRegionalDashboardData.institutions && adminRegionalDashboardData.institutions.length > 0) {
                 const canvas = document.getElementById('institutionsChart');
-                console.log('Canvas de instituciones encontrado:', canvas);
                 if (canvas) {
                     // Check if canvas has proper dimensions
                     const canvasContainer = canvas.parentElement;
@@ -1957,9 +1970,6 @@
                         institutionCounts[inst.name] = 0;
                     });
                     
-                    console.log('Instituciones encontradas:', adminRegionalDashboardData.institutions.length);
-                    console.log('Inventarios totales:', adminRegionalDashboardData.allInventories?.length || 0);
-                    
                     // Count inventories per institution
                     if (adminRegionalDashboardData.allInventories && adminRegionalDashboardData.allInventories.length > 0) {
                         adminRegionalDashboardData.allInventories.forEach(inv => {
@@ -1976,12 +1986,6 @@
                     // Prepare data for chart
                     const labels = Object.keys(institutionCounts);
                     const dataValues = Object.values(institutionCounts);
-                    
-                    console.log('Datos para gráfica de instituciones:', {
-                        labels,
-                        dataValues,
-                        total: dataValues.reduce((a, b) => a + b, 0)
-                    });
 
                     // Create gradient for bars
                     const ctx2d = canvas.getContext('2d');
@@ -2068,15 +2072,10 @@
                             }
                         }
                     });
-                    console.log('Gráfica de instituciones creada exitosamente');
                     } catch (error) {
                         console.error('Error al crear gráfica de instituciones:', error);
                     }
-                } else {
-                    console.warn('Canvas de instituciones no encontrado');
                 }
-            } else {
-                console.warn('No hay instituciones disponibles para la gráfica');
             }
         }
 

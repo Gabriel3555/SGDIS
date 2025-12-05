@@ -150,6 +150,58 @@ public class CancellationController {
     }
 
     @Operation(
+            summary = "Get cancellations by regional ID",
+            description = "Retrieves paginated cancellations for a specific regional (Admin Regional)"
+    )
+    @ApiResponse(responseCode = "200", description = "Cancellations retrieved successfully")
+    @ApiResponse(responseCode = "403", description = "Access denied")
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_REGIONAL')")
+    @GetMapping("/regional/{regionalId}")
+    public ResponseEntity<Page<CancellationResponse>> getCancellationsByRegional(
+            @Parameter(description = "Regional ID")
+            @org.springframework.web.bind.annotation.PathVariable Long regionalId,
+            @Parameter(description = "Page number (0-indexed)")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size")
+            @RequestParam(defaultValue = "100") int size
+    ) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            
+            List<CancellationEntity> allCancellations = cancellationRepository.findAllByRegionalIdWithJoins(regionalId);
+            
+            if (allCancellations == null || allCancellations.isEmpty()) {
+                Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+                return ResponseEntity.ok(emptyPage);
+            }
+            
+            // Apply pagination manually
+            int start = (int) pageable.getOffset();
+            int end = Math.min((start + pageable.getPageSize()), allCancellations.size());
+            
+            List<CancellationEntity> paginatedCancellations;
+            if (start >= allCancellations.size()) {
+                paginatedCancellations = List.of();
+            } else {
+                paginatedCancellations = allCancellations.subList(start, end);
+            }
+            
+            Page<CancellationEntity> cancellationPage = new PageImpl<>(paginatedCancellations, pageable, allCancellations.size());
+            Page<CancellationResponse> responsePage = cancellationPage.map(CancellationMapper::toDto);
+            
+            return ResponseEntity.ok(responsePage);
+        } catch (Exception e) {
+            System.err.println("Error fetching cancellations by regional: " + e.getMessage());
+            e.printStackTrace();
+            Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+            Page<CancellationResponse> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+            return ResponseEntity.ok(emptyPage);
+        }
+    }
+
+    @Operation(
             summary = "Get cancellations by current user's institution",
             description = "Retrieves paginated cancellations for the current user's institution (Warehouse and Admin Institution)"
     )
