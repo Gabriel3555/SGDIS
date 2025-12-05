@@ -383,6 +383,12 @@
                 <i class="fas fa-clipboard-check text-lg"></i>
                 <span class="font-medium">Verificación</span>
             </a>
+            <a href="/user/cancellations" id="navCancellations"
+               class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2"
+               onclick="handleSidebarClick(event, '/user/cancellations')">
+                <i class="fas fa-times-circle text-lg"></i>
+                <span class="font-medium">Bajas</span>
+            </a>
             <a href="/user/transfers" id="navTransfers"
                class="sidebar-item flex items-center gap-3 hover:bg-green-50 mb-2" style="display: none;"
                onclick="handleSidebarClick(event, '/user/transfers')">
@@ -437,32 +443,42 @@
 
         <!-- Content -->
         <main class="p-6">
-            <!-- Filter Tabs -->
-            <div class="mb-6 flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+            <!-- Filter Tabs and View Controls -->
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
                 <button onclick="filterInventories('all')" id="filterAll"
                     class="filter-tab px-5 py-3 font-semibold text-sm whitespace-nowrap active">
                     <i class="fas fa-th-large mr-2"></i>
                     Todos
                 </button>
-                <button onclick="filterInventories('owner')" id="filterOwner"
+                    <button onclick="filterInventories('signatory')" id="filterSignatory"
                     class="filter-tab px-5 py-3 font-semibold text-sm whitespace-nowrap">
-                    <i class="fas fa-crown mr-2"></i>
-                    Como Propietario
+                        <i class="fas fa-signature mr-2"></i>
+                        Como Firmante
                 </button>
                 <button onclick="filterInventories('manager')" id="filterManager"
                     class="filter-tab px-5 py-3 font-semibold text-sm whitespace-nowrap">
                     <i class="fas fa-user-tie mr-2"></i>
-                    Como Manager
+                        Como Manejador
                 </button>
-                <button onclick="filterInventories('signatory')" id="filterSignatory"
-                    class="filter-tab px-5 py-3 font-semibold text-sm whitespace-nowrap">
-                    <i class="fas fa-signature mr-2"></i>
-                    Como Firmante
+                </div>
+                
+                <!-- View Mode Toggle -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-600 dark:text-gray-400 font-medium">Vista:</span>
+                    <button id="viewModeCards" onclick="setViewMode('cards')"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-[#00AF00] text-white">
+                        <i class="fas fa-th-large mr-2"></i>Tarjetas
+                    </button>
+                    <button id="viewModeTable" onclick="setViewMode('table')"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-500">
+                        <i class="fas fa-table mr-2"></i>Tabla
                 </button>
+                </div>
             </div>
 
             <!-- Stats -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 <div class="stat-card">
                     <div class="flex items-start justify-between mb-3">
                         <div>
@@ -477,18 +493,7 @@
                 <div class="stat-card">
                     <div class="flex items-start justify-between mb-3">
                         <div>
-                            <p class="text-sm text-gray-600 mb-1">Como Propietario</p>
-                            <p class="text-3xl font-bold text-gray-800" id="ownerCount">0</p>
-                        </div>
-                        <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <i class="fas fa-crown text-green-600 text-xl"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <p class="text-sm text-gray-600 mb-1">Como Manager</p>
+                            <p class="text-sm text-gray-600 mb-1">Como Manejador</p>
                             <p class="text-3xl font-bold text-gray-800" id="managerCount">0</p>
                         </div>
                         <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
@@ -526,7 +531,179 @@
                 <h3 class="text-xl font-semibold text-gray-800 mb-2">No tienes inventarios</h3>
                 <p class="text-gray-600">Aún no se te ha asignado ningún inventario como propietario, gestor o firmante.</p>
             </div>
+
+            <!-- Pagination -->
+            <div class="flex items-center justify-between mt-6" id="paginationContainer">
+                <!-- Will be populated by JavaScript -->
+            </div>
         </main>
+    </div>
+
+    <!-- Assign Role Modal -->
+    <div id="assignManagerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Asignar Rol</h2>
+                <button onclick="closeAssignManagerModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Inventario: <span class="font-semibold" id="assignManagerInventoryName">-</span>
+                </p>
+            </div>
+
+            <form id="assignManagerForm" class="space-y-4">
+                <!-- Usuario Selector -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seleccionar Usuario</label>
+                    <select id="roleUserId" name="userId" 
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#00AF00] focus:border-[#00AF00] transition-colors">
+                        <option value="">Seleccionar usuario...</option>
+                        <!-- Options loaded dynamically -->
+                    </select>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecciona el usuario al que se le asignará el rol</p>
+                </div>
+
+                <!-- Role Selection Buttons -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Seleccionar Rol a Asignar</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" id="managerRoleBtn" onclick="selectRole('manager')"
+                            class="role-selector-btn px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:border-[#00AF00] hover:bg-green-50 dark:hover:bg-green-900/30 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-user-tie text-2xl"></i>
+                            <span class="font-semibold">Manejador</span>
+                        </button>
+                        <button type="button" id="signatoryRoleBtn" onclick="selectRole('signatory')"
+                            class="role-selector-btn px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:border-[#00AF00] hover:bg-green-50 dark:hover:bg-green-900/30 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-signature text-2xl"></i>
+                            <span class="font-semibold">Firmante</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="selectedRole" name="role">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2" id="roleDescription">Selecciona un rol para continuar</p>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeAssignManagerModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+                        Asignar Rol
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Remove Role Modal -->
+    <div id="removeRoleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 9999;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-md w-full mx-4">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Quitar Rol</h2>
+                <button onclick="closeRemoveRoleModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Inventario: <span class="font-semibold" id="removeRoleInventoryName">-</span>
+                </p>
+            </div>
+
+            <form id="removeRoleForm" class="space-y-4">
+                <!-- Role Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Seleccionar Rol a Quitar</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" id="removeManagerRoleBtn" onclick="selectRemoveRole('manager')"
+                            class="remove-role-selector-btn px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-user-tie text-2xl"></i>
+                            <span class="font-semibold">Manejador</span>
+                        </button>
+                        <button type="button" id="removeSignatoryRoleBtn" onclick="selectRemoveRole('signatory')"
+                            class="remove-role-selector-btn px-4 py-3 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all duration-200 flex flex-col items-center gap-2">
+                            <i class="fas fa-signature text-2xl"></i>
+                            <span class="font-semibold">Firmante</span>
+                        </button>
+                    </div>
+                    <input type="hidden" id="removeSelectedRole" name="role">
+                </div>
+
+                <!-- Usuario Selector -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Seleccionar Usuario</label>
+                    <select id="removeRoleUserId" name="userId" 
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors">
+                        <option value="">Seleccionar usuario...</option>
+                        <!-- Options loaded dynamically -->
+                    </select>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Selecciona el usuario al que se le quitará el rol</p>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closeRemoveRoleModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl transition-colors">
+                        Quitar Rol
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Inventory Tree Hierarchy Modal -->
+    <div id="inventoryTreeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+        style="z-index: 10003;">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-sitemap text-[#00AF00] text-3xl"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Jerarquía del Inventario</h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400" id="inventoryTreeName">Cargando...</p>
+                    </div>
+                </div>
+                <button onclick="closeInventoryTreeModal()"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="inventoryTreeLoading" class="flex flex-col items-center justify-center p-12">
+                <div class="relative w-16 h-16 mb-4">
+                    <div
+                        class="absolute inset-0 border-4 border-[#00AF00] border-t-transparent rounded-full animate-spin">
+                    </div>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">Cargando jerarquía...</p>
+            </div>
+
+            <!-- Tree Container -->
+            <div id="inventoryTreeContainer"
+                class="w-full h-[600px] border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden bg-gray-50 dark:bg-gray-900"
+                style="min-height: 600px;">
+                <!-- Tree will be rendered here -->
+            </div>
+
+            <div class="flex gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <button onclick="closeInventoryTreeModal()"
+                    class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    Cerrar
+                </button>
+            </div>
+        </div>
     </div>
 
     <script src="../../js/user-sidebar.js"></script>
@@ -534,6 +711,10 @@
     <script src="../../js/dashboard.js"></script>
     <script src="../../js/notifications-bell.js"></script>
     <script src="../../js/inventory/inventory-toast.js"></script>
+    <script src="../../js/inventory/inventory-api.js"></script>
+    <script src="../../js/inventory/inventory-forms.js"></script>
+    <script src="../../js/inventory/inventory-modals.js"></script>
+    <script src="../../js/inventory/inventory-tree.js"></script>
     <script src="../../js/inventory/user-my-inventories.js"></script>
 
     <style>
@@ -631,8 +812,107 @@
             }
         }
 
+        // Load current user information for header
+        async function loadCurrentUserInfo() {
+            try {
+                const token = localStorage.getItem('jwt');
+                if (!token) {
+                    throw new Error('No authentication token found');
+                }
+
+                const response = await fetch('/api/v1/users/me', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    updateHeaderUserInfo(userData);
+                } else {
+                    throw new Error('Failed to load user info');
+                }
+            } catch (error) {
+                console.error('Error loading current user info:', error);
+                updateHeaderUserInfo({
+                    fullName: 'Usuario',
+                    role: 'USER',
+                    email: 'usuario@sena.edu.co'
+                });
+            }
+        }
+
+        // Update user info display in header
+        function updateHeaderUserInfo(userData) {
+            const headerUserName = document.getElementById('headerUserName');
+            const headerUserRole = document.getElementById('headerUserRole');
+            const headerUserAvatar = document.getElementById('headerUserAvatar');
+
+            if (headerUserName) headerUserName.textContent = userData.fullName || 'Usuario';
+            if (headerUserRole) {
+                const roleText = {
+                    'SUPERADMIN': 'Super Administrador',
+                    'ADMIN_INSTITUTIONAL': 'Administrador Institucional',
+                    'ADMIN_INSTITUTION': 'Administrador Institucional',
+                    'ADMIN_REGIONAL': 'Administrador Regional',
+                    'WAREHOUSE': 'Encargado de Almacén',
+                    'USER': 'Usuario'
+                }[userData.role] || 'Usuario';
+                headerUserRole.textContent = roleText;
+            }
+
+            if (headerUserAvatar) {
+                // Ensure the container has the correct class
+                headerUserAvatar.className = 'user-avatar';
+                
+                // Try multiple image URL fields
+                const imgUrl = userData.imgUrl || userData.profilePhotoUrl || userData.profileImageUrl;
+                
+                if (imgUrl) {
+                    // Try to use createImageWithSpinner from dashboard.js if available
+                    if (typeof createImageWithSpinner === 'function') {
+                        const spinnerHtml = createImageWithSpinner(
+                            imgUrl,
+                            userData.fullName || 'Usuario',
+                            'w-full h-full object-cover',
+                            'w-full h-full',
+                            'rounded-full'
+                        );
+                        if (spinnerHtml) {
+                            // Clear any existing styles that might interfere
+                            headerUserAvatar.style.backgroundImage = '';
+                            headerUserAvatar.style.backgroundSize = '';
+                            headerUserAvatar.style.backgroundPosition = '';
+                            headerUserAvatar.style.backgroundRepeat = '';
+                            headerUserAvatar.innerHTML = spinnerHtml;
+                        } else {
+                            // Fallback to initials if createImageWithSpinner returns null
+                            const initials = (userData.fullName || 'Usuario').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                            headerUserAvatar.textContent = initials;
+                            headerUserAvatar.style.backgroundImage = '';
+                        }
+                    } else {
+                        // Fallback: use background image approach
+                        headerUserAvatar.style.backgroundImage = `url(${imgUrl})`;
+                        headerUserAvatar.style.backgroundSize = 'cover';
+                        headerUserAvatar.style.backgroundPosition = 'center';
+                        headerUserAvatar.style.backgroundRepeat = 'no-repeat';
+                        headerUserAvatar.textContent = '';
+                    }
+                } else {
+                    // No image URL - show initials
+                    const initials = (userData.fullName || 'Usuario').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                    headerUserAvatar.textContent = initials;
+                    headerUserAvatar.style.backgroundImage = '';
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
             setupMobileMenuToggle();
+            loadCurrentUserInfo();
             loadUserSidebarPermissions();
             scrollToActiveSidebarItem();
         });

@@ -61,5 +61,13 @@ public interface SpringDataVerificationRepository extends JpaRepository<Verifica
     // Institution queries for recent verifications
     @Query("SELECT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory inv WHERE inv.institution.id = :institutionId ORDER BY v.createdAt DESC")
     Page<VerificationEntity> findAllByInstitutionIdOrderedByCreatedAt(@Param("institutionId") Long institutionId, Pageable pageable);
+    
+    // Query to get verifications for user's inventories (owner, manager, or signatory)
+    @Query("SELECT DISTINCT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory inv WHERE inv.id IN :inventoryIds ORDER BY v.id DESC")
+    Page<VerificationEntity> findAllByInventoryIds(@Param("inventoryIds") List<Long> inventoryIds, Pageable pageable);
+    
+    // Query to get verifications by item IDs
+    @Query("SELECT DISTINCT v FROM VerificationEntity v JOIN FETCH v.item i JOIN FETCH i.inventory WHERE i.id IN :itemIds ORDER BY v.id DESC")
+    Page<VerificationEntity> findAllByItemIds(@Param("itemIds") List<Long> itemIds, Pageable pageable);
 }
 

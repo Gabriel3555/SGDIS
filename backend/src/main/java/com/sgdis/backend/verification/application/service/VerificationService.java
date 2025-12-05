@@ -267,9 +267,14 @@ public class VerificationService implements
         }
 
         // Si no cumple ninguna condición, lanzar excepción
-        throw new DomainValidationException(
-                "User is not authorized to verify items from inventory: " + inventory.getName()
-        );
+        // Para usuarios con rol USER, el mensaje debe ser más específico
+        String errorMessage;
+        if (user.getRole() == Role.USER) {
+            errorMessage = "No tienes permisos para verificar items de este inventario. Solo puedes verificar items de inventarios donde eres propietario, manejador o firmante.";
+        } else {
+            errorMessage = "User is not authorized to verify items from inventory: " + inventory.getName();
+        }
+        throw new DomainValidationException(errorMessage);
     }
 
     @Override

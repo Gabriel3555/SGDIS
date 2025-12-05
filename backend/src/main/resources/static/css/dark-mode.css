@@ -3487,6 +3487,7 @@ html:not(.dark) #loansTableContainer .text-gray-400.dark\:text-gray-500 {
 .dark #lendItemModal .sticky.bg-white,
 .dark #returnItemModal .sticky.bg-white {
     background-color: var(--dark-bg-secondary) !important;
+    box-shadow: none !important;
 }
 
 .dark #lendItemModal h2,
@@ -3565,6 +3566,7 @@ html:not(.dark) #returnItemModal > div.bg-white.dark\:bg-gray-800 {
 html:not(.dark) #lendItemModal .sticky.bg-white,
 html:not(.dark) #returnItemModal .sticky.bg-white {
     background-color: #ffffff !important;
+    box-shadow: none !important;
 }
 
 html:not(.dark) #lendItemModal .sticky.bg-white.dark\:bg-gray-800,

@@ -237,13 +237,17 @@ function updateUserLoansStats() {
     
     // Loans made by user (where user is lender)
     const allLoansMade = loansData.loansMade || [];
+    const activeLoansMade = allLoansMade.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
+    
+    // Combine all active loans (received + made)
+    const allActiveLoans = activeLoansReceived.length + activeLoansMade.length;
 
     statsContainer.innerHTML = `
         <div class="stat-card bg-gradient-to-br from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 border border-yellow-200 dark:border-yellow-800">
             <div class="flex items-start justify-between mb-3">
                 <div>
                     <p class="text-sm text-yellow-600 dark:text-yellow-400 font-medium mb-1">Préstamos Activos</p>
-                    <p class="text-3xl font-bold text-yellow-800 dark:text-yellow-300">${activeLoansReceived.length}</p>
+                    <p class="text-3xl font-bold text-yellow-800 dark:text-yellow-300">${allActiveLoans}</p>
                 </div>
                 <div class="w-12 h-12 bg-yellow-500 dark:bg-yellow-600 rounded-full flex items-center justify-center">
                     <i class="fas fa-clock text-white text-xl"></i>
@@ -263,19 +267,6 @@ function updateUserLoansStats() {
                 </div>
             </div>
             <p class="text-xs text-green-600 dark:text-green-400">Items que has devuelto</p>
-        </div>
-
-        <div class="stat-card bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 border border-purple-200 dark:border-purple-800">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">Préstamos Realizados</p>
-                    <p class="text-3xl font-bold text-purple-800 dark:text-purple-300">${allLoansMade.length}</p>
-                </div>
-                <div class="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-full flex items-center justify-center">
-                    <i class="fas fa-hand-holding text-white text-xl"></i>
-                </div>
-            </div>
-            <p class="text-xs text-purple-600 dark:text-purple-400">Items que has prestado</p>
         </div>
 
         <div class="stat-card bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
@@ -307,18 +298,30 @@ function updateUserLoansContent() {
         return;
     }
 
-    // Use filteredLoans if available, otherwise use loans
-    const allLoans = (loansData.filteredLoans && loansData.filteredLoans.length > 0) ? loansData.filteredLoans : (loansData.loans || []);
+    // Use loans directly (not filteredLoans) to ensure we show all active loans
+    // filteredLoans might be filtered by search terms, which would hide active loans
+    const allLoans = loansData.loans || [];
     const activeLoans = allLoans.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
-    const returnedLoans = allLoans.filter(loan => loan.returned === true);
+    const returnedLoansReceived = allLoans.filter(loan => loan.returned === true);
 
     // Get current active tab from localStorage or default to 'active'
+    // If 'made' tab was saved, change it to 'active' since we removed that tab
     let currentTab = localStorage.getItem('userLoansActiveTab') || 'active';
+    if (currentTab === 'made') {
+        currentTab = 'active';
+        localStorage.setItem('userLoansActiveTab', 'active');
+    }
     
     // Loans made by user
     const allLoansMade = (loansData.filteredLoansMade && loansData.filteredLoansMade.length > 0) ? loansData.filteredLoansMade : (loansData.loansMade || []);
     const activeLoansMade = allLoansMade.filter(loan => !loan.returned || loan.returned === null || loan.returned === false);
     const returnedLoansMade = allLoansMade.filter(loan => loan.returned === true);
+    
+    // Combine active loans: received + made (for active tab)
+    const allActiveLoans = [...activeLoans, ...activeLoansMade];
+    
+    // Combine returned loans: received + made (for history tab)
+    const allReturnedLoans = [...returnedLoansReceived, ...returnedLoansMade];
 
     let html = `
         <div class="mb-6">
@@ -330,7 +333,7 @@ function updateUserLoansContent() {
                             : 'text-gray-600 dark:text-gray-400 hover:text-[#00AF00] dark:hover:text-green-400'
                     }">
                     <i class="fas fa-clock mr-2"></i>
-                    Préstamos Activos (${activeLoans.length})
+                    Préstamos Activos (${allActiveLoans.length})
                 </button>
                 <button onclick="switchUserLoansTab('history')" 
                     class="px-6 py-3 font-semibold text-sm transition-colors whitespace-nowrap ${
@@ -339,27 +342,16 @@ function updateUserLoansContent() {
                             : 'text-gray-600 dark:text-gray-400 hover:text-[#00AF00] dark:hover:text-green-400'
                     }">
                     <i class="fas fa-history mr-2"></i>
-                    Historial (${returnedLoans.length})
-                </button>
-                <button onclick="switchUserLoansTab('made')" 
-                    class="px-6 py-3 font-semibold text-sm transition-colors whitespace-nowrap ${
-                        currentTab === 'made' 
-                            ? 'border-b-2 border-[#00AF00] text-[#00AF00] dark:text-green-400' 
-                            : 'text-gray-600 dark:text-gray-400 hover:text-[#00AF00] dark:hover:text-green-400'
-                    }">
-                    <i class="fas fa-hand-holding mr-2"></i>
-                    Préstamos Realizados (${allLoansMade.length})
+                    Historial (${allReturnedLoans.length})
                 </button>
             </div>
         </div>
     `;
 
     if (currentTab === 'active') {
-        html += renderActiveLoans(activeLoans);
+        html += renderActiveLoans(allActiveLoans);
     } else if (currentTab === 'history') {
-        html += renderLoanHistory(returnedLoans);
-    } else if (currentTab === 'made') {
-        html += renderLoansMade(allLoansMade, activeLoansMade, returnedLoansMade);
+        html += renderLoanHistory(allReturnedLoans);
     }
 
     container.innerHTML = html;
@@ -388,7 +380,9 @@ function renderActiveLoans(activeLoans) {
             minute: '2-digit'
         }) : 'N/A';
 
-        const daysSinceLend = loan.lendAt ? Math.floor((new Date() - new Date(loan.lendAt)) / (1000 * 60 * 60 * 24)) : 0;
+        // Determine if this is a loan received (has lenderName) or made (has responsibleName)
+        const isLoanReceived = loan.lenderName && (!loan.responsibleName || loan.responsibleName === '');
+        const isLoanMade = loan.responsibleName && (!loan.lenderName || loan.lenderName === '');
 
         html += `
             <div class="stat-card border-2 border-yellow-200 dark:border-yellow-800 hover:border-yellow-300 dark:hover:border-yellow-700 transition-all">
@@ -396,19 +390,30 @@ function renderActiveLoans(activeLoans) {
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-2">
                             <i class="fas fa-box text-yellow-600 dark:text-yellow-400"></i>
-                            <span class="font-semibold text-gray-800 dark:text-gray-200">Item #${loan.itemId || 'N/A'}</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">${loan.itemName || `Item #${loan.itemId || 'N/A'}`}</span>
+                            ${isLoanMade ? '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400">Realizado</span>' : ''}
                         </div>
+                        ${loan.licencePlateNumber ? `
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                <i class="fas fa-tag mr-1"></i>
+                                Placa: ${loan.licencePlateNumber}
+                            </p>
+                        ` : ''}
+                        ${isLoanReceived ? `
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
                             <i class="fas fa-user mr-1"></i>
                             Prestado por: ${loan.lenderName || 'N/A'}
                         </p>
+                        ` : ''}
+                        ${isLoanMade ? `
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                <i class="fas fa-user mr-1"></i>
+                                Prestado a: ${loan.responsibleName || 'N/A'}
+                            </p>
+                        ` : ''}
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
                             <i class="fas fa-calendar mr-1"></i>
                             ${lendDate}
-                        </p>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            <i class="fas fa-clock mr-1"></i>
-                            ${daysSinceLend} día${daysSinceLend !== 1 ? 's' : ''} prestado
                         </p>
                         ${loan.detailsLend ? `
                             <p class="text-xs text-gray-500 dark:text-gray-500 mt-2 italic">
@@ -417,12 +422,19 @@ function renderActiveLoans(activeLoans) {
                         ` : ''}
                     </div>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button onclick="showReturnLoanModal(${loan.id})" 
-                        class="w-full bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
-                        <i class="fas fa-undo"></i>
-                        Devolver Item
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex gap-2">
+                    <button onclick="showLoanDetailsModal(${loan.id})" 
+                        class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
+                        <i class="fas fa-eye"></i>
+                        Ver Detalle
                     </button>
+                    ${!loan.returned ? `
+                    <button onclick="showReturnLoanModal(${loan.id})" 
+                            class="flex-1 bg-[#00AF00] hover:bg-[#008800] text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2">
+                        <i class="fas fa-undo"></i>
+                            Marcar como Devuelto
+                    </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -432,20 +444,20 @@ function renderActiveLoans(activeLoans) {
     return html;
 }
 
-// Render loan history
-function renderLoanHistory(returnedLoans) {
-    if (returnedLoans.length === 0) {
+// Render loan history (returned loans - both received and made)
+function renderLoanHistory(allReturnedLoans) {
+    if (allReturnedLoans.length === 0) {
         return `
             <div class="text-center py-12">
                 <i class="fas fa-inbox text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
                 <p class="text-gray-600 dark:text-gray-400 text-lg">No hay historial de préstamos</p>
-                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Los préstamos devueltos aparecerán aquí</p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Los préstamos devueltos (recibidos y realizados) aparecerán aquí</p>
             </div>
         `;
     }
 
     // Sort by return date, most recent first
-    const sortedLoans = [...returnedLoans].sort((a, b) => {
+    const sortedLoans = [...allReturnedLoans].sort((a, b) => {
         if (!a.returnAt && !b.returnAt) return 0;
         if (!a.returnAt) return 1;
         if (!b.returnAt) return -1;
@@ -471,19 +483,29 @@ function renderLoanHistory(returnedLoans) {
             minute: '2-digit'
         }) : 'N/A';
 
+        // Determine if this is a loan received (has lenderName) or made (has responsibleName)
+        const isLoanReceived = loan.lenderName && (!loan.responsibleName || loan.responsibleName === '');
+        const isLoanMade = loan.responsibleName && (!loan.lenderName || loan.lenderName === '');
+
         html += `
             <div class="stat-card border border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-green-700 transition-all">
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-2">
                             <i class="fas fa-box text-green-600 dark:text-green-400"></i>
-                            <span class="font-semibold text-gray-800 dark:text-gray-200">Item #${loan.itemId || 'N/A'}</span>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">${loan.itemName || `Item #${loan.itemId || 'N/A'}`}</span>
                             <span class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
                                 Devuelto
                             </span>
+                            ${isLoanMade ? '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-400">Realizado</span>' : ''}
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            ${isLoanReceived ? `
                             <p><i class="fas fa-user mr-1"></i> Prestado por: ${loan.lenderName || 'N/A'}</p>
+                            ` : ''}
+                            ${isLoanMade ? `
+                                <p><i class="fas fa-user mr-1"></i> Prestado a: ${loan.responsibleName || 'N/A'}</p>
+                            ` : ''}
                             <p><i class="fas fa-calendar-alt mr-1"></i> Prestado: ${lendDate}</p>
                             <p><i class="fas fa-check-circle mr-1"></i> Devuelto: ${returnDate}</p>
                         </div>
@@ -507,39 +529,27 @@ function renderLoanHistory(returnedLoans) {
     return html;
 }
 
-// Render loans made by user
-function renderLoansMade(allLoansMade, activeLoansMade, returnedLoansMade) {
-    if (allLoansMade.length === 0) {
+// Render loans made by user (only active loans)
+function renderLoansMade(activeLoansMade) {
+    if (activeLoansMade.length === 0) {
         return `
             <div class="text-center py-12">
                 <i class="fas fa-hand-holding text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
-                <p class="text-gray-600 dark:text-gray-400 text-lg">No has realizado ningún préstamo</p>
-                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Los préstamos que realices aparecerán aquí</p>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">No tienes préstamos activos realizados</p>
+                <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Los préstamos activos que realices aparecerán aquí. Los devueltos aparecen en Historial.</p>
             </div>
         `;
     }
 
     // Sort by lend date, most recent first
-    const sortedLoans = [...allLoansMade].sort((a, b) => {
+    const sortedLoans = [...activeLoansMade].sort((a, b) => {
         if (!a.lendAt && !b.lendAt) return 0;
         if (!a.lendAt) return 1;
         if (!b.lendAt) return -1;
         return new Date(b.lendAt) - new Date(a.lendAt);
     });
 
-    let html = `
-        <div class="mb-4">
-            <div class="flex gap-2 mb-4">
-                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
-                    <i class="fas fa-clock mr-1"></i> Activos: ${activeLoansMade.length}
-                </span>
-                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400">
-                    <i class="fas fa-check-circle mr-1"></i> Devueltos: ${returnedLoansMade.length}
-                </span>
-            </div>
-        </div>
-        <div class="space-y-4">
-    `;
+    let html = '<div class="space-y-4">';
 
     sortedLoans.forEach(loan => {
         const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleDateString('es-ES', {
@@ -550,44 +560,27 @@ function renderLoansMade(allLoansMade, activeLoansMade, returnedLoansMade) {
             minute: '2-digit'
         }) : 'N/A';
 
-        const returnDate = loan.returnAt ? new Date(loan.returnAt).toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        }) : null;
-
-        const isActive = !loan.returned || loan.returned === null || loan.returned === false;
-        const statusColor = isActive ? 'yellow' : 'green';
-        const statusText = isActive ? 'Activo' : 'Devuelto';
-        const borderColor = isActive ? 'border-yellow-200 dark:border-yellow-800' : 'border-green-200 dark:border-green-800';
-        const iconColor = isActive ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400';
+        const daysSinceLend = loan.lendAt ? Math.floor((new Date() - new Date(loan.lendAt)) / (1000 * 60 * 60 * 24)) : 0;
 
         html += `
-            <div class="stat-card border-2 ${borderColor} hover:border-opacity-70 transition-all">
+            <div class="stat-card border-2 border-yellow-200 dark:border-yellow-800 hover:border-yellow-300 dark:hover:border-yellow-700 transition-all">
                 <div class="flex items-start justify-between">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-2">
-                            <i class="fas fa-box ${iconColor}"></i>
-                            <span class="font-semibold text-gray-800 dark:text-gray-200">Item #${loan.itemId || 'N/A'}</span>
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-${statusColor}-100 dark:bg-${statusColor}-900/30 text-${statusColor}-800 dark:text-${statusColor}-400">
-                                ${statusText}
+                            <i class="fas fa-box text-yellow-600 dark:text-yellow-400"></i>
+                            <span class="font-semibold text-gray-800 dark:text-gray-200">${loan.itemName || `Item #${loan.itemId || 'N/A'}`}</span>
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400">
+                                Activo
                             </span>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
                             <p><i class="fas fa-user mr-1"></i> Prestado a: ${loan.responsibleName || 'N/A'}</p>
                             <p><i class="fas fa-calendar-alt mr-1"></i> Fecha préstamo: ${lendDate}</p>
-                            ${returnDate ? `<p><i class="fas fa-check-circle mr-1"></i> Devuelto: ${returnDate}</p>` : ''}
+                            <p><i class="fas fa-clock mr-1"></i> ${daysSinceLend} día${daysSinceLend !== 1 ? 's' : ''} prestado</p>
                         </div>
                         ${loan.detailsLend ? `
                             <p class="text-xs text-gray-500 dark:text-gray-500 mt-2 italic">
                                 <strong>Motivo:</strong> "${loan.detailsLend}"
-                            </p>
-                        ` : ''}
-                        ${loan.detailsReturn ? `
-                            <p class="text-xs text-gray-500 dark:text-gray-500 mt-1 italic">
-                                <strong>Observación devolución:</strong> "${loan.detailsReturn}"
                             </p>
                         ` : ''}
                     </div>
@@ -602,6 +595,10 @@ function renderLoansMade(allLoansMade, activeLoansMade, returnedLoansMade) {
 
 // Switch between active and history tabs
 function switchUserLoansTab(tab) {
+    // Only allow 'active' or 'history' tabs
+    if (tab !== 'active' && tab !== 'history') {
+        tab = 'active';
+    }
     localStorage.setItem('userLoansActiveTab', tab);
     updateUserLoansContent();
 }
@@ -680,6 +677,161 @@ async function handleReturnLoanSubmit(e) {
         if (window.showErrorToast) {
             window.showErrorToast('Error', 'Función de devolución no disponible');
         }
+    }
+}
+
+// Show loan details modal
+function showLoanDetailsModal(loanId) {
+    // Check if user is USER role
+    const isUserRole = window.loansData && window.loansData.userRole === 'USER';
+    if (!isUserRole) {
+        console.warn('showLoanDetailsModal should only be called for USER role');
+        return;
+    }
+
+    const modal = document.getElementById('loanDetailsModal');
+    if (!modal) {
+        console.error('Loan details modal not found');
+        return;
+    }
+
+    // Find loan in current data
+    let loan = null;
+    const allActiveLoans = [...(loansData.loans || []), ...(loansData.loansMade || [])];
+    loan = allActiveLoans.find(l => l.id === loanId || l.id === parseInt(loanId));
+
+    if (!loan) {
+        console.error('Loan not found:', loanId);
+        if (window.showErrorToast) {
+            window.showErrorToast('Error', 'No se encontró el préstamo');
+        }
+        return;
+    }
+
+    // Populate modal content
+    const content = document.getElementById('loanDetailsContent');
+    if (!content) {
+        console.error('Loan details content element not found');
+        return;
+    }
+
+    const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }) : 'N/A';
+
+    const returnDate = loan.returnAt ? new Date(loan.returnAt).toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    }) : null;
+
+    const isLoanReceived = loan.lenderName && (!loan.responsibleName || loan.responsibleName === '');
+    const isLoanMade = loan.responsibleName && (!loan.lenderName || loan.lenderName === '');
+
+    content.innerHTML = `
+        <div class="space-y-6">
+            <!-- Item Information -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-box text-yellow-600 dark:text-yellow-400"></i>
+                    Información del Item
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Nombre del Item</p>
+                        <p class="font-semibold text-gray-800 dark:text-white">${loan.itemName || `Item #${loan.itemId || 'N/A'}`}</p>
+                    </div>
+                    ${loan.licencePlateNumber ? `
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Número de Placa</p>
+                            <p class="font-semibold text-gray-800 dark:text-white">${loan.licencePlateNumber}</p>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <!-- Loan Information -->
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-hand-holding text-purple-600 dark:text-purple-400"></i>
+                    Información del Préstamo
+                </h3>
+                <div class="space-y-3">
+                    ${isLoanReceived ? `
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Prestado por</p>
+                            <p class="font-semibold text-gray-800 dark:text-white">${loan.lenderName || 'N/A'}</p>
+                        </div>
+                    ` : ''}
+                    ${isLoanMade ? `
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Prestado a</p>
+                            <p class="font-semibold text-gray-800 dark:text-white">${loan.responsibleName || 'N/A'}</p>
+                        </div>
+                    ` : ''}
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Fecha de Préstamo</p>
+                        <p class="font-semibold text-gray-800 dark:text-white">${lendDate}</p>
+                    </div>
+                    ${returnDate ? `
+                        <div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Fecha de Devolución</p>
+                            <p class="font-semibold text-gray-800 dark:text-white">${returnDate}</p>
+                        </div>
+                    ` : ''}
+                    <div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Estado</p>
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${
+                            loan.returned ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400'
+                        }">
+                            ${loan.returned ? 'Devuelto' : 'Activo'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details -->
+            ${loan.detailsLend ? `
+                <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+                        Detalles del Préstamo
+                    </h3>
+                    <p class="text-gray-700 dark:text-gray-300">${loan.detailsLend}</p>
+                </div>
+            ` : ''}
+            ${loan.detailsReturn ? `
+                <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-4">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
+                        <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                        Detalles de Devolución
+                    </h3>
+                    <p class="text-gray-700 dark:text-gray-300">${loan.detailsReturn}</p>
+                </div>
+            ` : ''}
+        </div>
+    `;
+
+    // Show modal
+    modal.classList.remove('hidden');
+}
+
+// Close loan details modal
+function closeLoanDetailsModal() {
+    const modal = document.getElementById('loanDetailsModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
+    
+    const content = document.getElementById('loanDetailsContent');
+    if (content) {
+        content.innerHTML = '';
     }
 }
 
@@ -821,4 +973,6 @@ window.switchUserLoansTab = switchUserLoansTab;
 window.showReturnLoanModal = showReturnLoanModal;
 window.closeReturnLoanModal = closeReturnLoanModal;
 window.handleReturnLoanSubmit = handleReturnLoanSubmit;
+window.showLoanDetailsModal = showLoanDetailsModal;
+window.closeLoanDetailsModal = closeLoanDetailsModal;
 

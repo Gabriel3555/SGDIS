@@ -744,7 +744,7 @@ async function addScannedItem(licencePlate, photoFile, itemName = null) {
                 if (isAdminInstitutionPage) {
                     const isValidInstitution = await validateItemInstitutionForAdminInstitution(item);
                     if (!isValidInstitution) {
-                        return; // Don't add item if validation fails
+                    return; // Don't add item if validation fails
                     }
                 }
                 

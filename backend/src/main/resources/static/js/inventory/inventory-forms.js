@@ -554,16 +554,11 @@ async function handleAssignManagerSubmit(e) {
     return;
   }
 
-  // Get user ID from CustomSelect or hidden input
+  // Get user ID from select element
   let userId = "";
-  if (window.roleUserSelect && window.roleUserSelect.getValue) {
-    userId = window.roleUserSelect.getValue();
-  }
-  if (!userId) {
     const userIdElement = document.getElementById("roleUserId");
     if (userIdElement) {
       userId = userIdElement.value;
-    }
   }
 
   // Get selected role

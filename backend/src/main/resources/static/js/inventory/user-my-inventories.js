@@ -5,6 +5,21 @@ let managedInventories = [];
 let signatoryInventories = [];
 let currentFilter = 'all';
 let currentUserRole = null;
+let currentPage = 0;
+let pageSize = 6;
+let totalPages = 0;
+let sortBy = 'name'; // 'name', 'location', 'status'
+let sortOrder = 'asc'; // 'asc', 'desc'
+let viewMode = 'cards'; // 'cards', 'table'
+
+// Create a minimal inventoryData object for modals compatibility
+// This is needed because inventory-modals.js expects inventoryData to exist
+if (typeof window.inventoryData === 'undefined') {
+    window.inventoryData = {
+        currentInventoryId: null,
+        inventories: allInventories // Will be updated when inventories are loaded
+    };
+}
 
 // Load current user role
 async function loadCurrentUserRole() {
@@ -131,18 +146,27 @@ async function loadMyInventories() {
 
         allInventories = Array.from(inventoryMap.values());
 
+        // Update inventoryData for modals compatibility
+        if (window.inventoryData) {
+            window.inventoryData.inventories = allInventories;
+        }
+
         // Update stats
         updateStats();
 
         // Display inventories
+        currentPage = 0; // Reset to first page when data loads
         displayInventories();
+        updatePagination();
+        updateViewModeButtons();
 
         loadingState.style.display = 'none';
         
         if (allInventories.length === 0) {
             emptyState.style.display = 'block';
+            inventoriesContainer.style.display = 'none';
         } else {
-            inventoriesContainer.style.display = 'grid';
+            inventoriesContainer.style.display = viewMode === 'table' ? 'block' : 'grid';
         }
 
     } catch (error) {
@@ -165,9 +189,6 @@ async function loadMyInventories() {
 function updateStats() {
     const totalCount = allInventories.length;
     
-    // Count unique inventories where user is owner
-    const ownerCount = allInventories.filter(inv => inv.roles && inv.roles.includes('owner')).length;
-    
     // Count unique inventories where user is manager, but NOT owner (to avoid duplicates)
     const managerCount = allInventories.filter(inv => {
         const roles = inv.roles || [];
@@ -187,7 +208,6 @@ function updateStats() {
     }).length;
 
     document.getElementById('totalCount').textContent = totalCount;
-    document.getElementById('ownerCount').textContent = ownerCount;
     document.getElementById('managerCount').textContent = managerCount;
     document.getElementById('signatoryCount').textContent = signatoryCount;
 }
@@ -206,7 +226,227 @@ function filterInventories(filter) {
         activeBtn.classList.add('active');
     }
 
+    currentPage = 0; // Reset to first page when filter changes
     displayInventories();
+}
+
+// Sort inventories
+function sortInventories(inventories) {
+    const sorted = [...inventories];
+    
+    sorted.sort((a, b) => {
+        let aValue, bValue;
+        
+        switch (sortBy) {
+            case 'name':
+                aValue = (a.name || '').toLowerCase();
+                bValue = (b.name || '').toLowerCase();
+                break;
+            case 'location':
+                aValue = (a.location || '').toLowerCase();
+                bValue = (b.location || '').toLowerCase();
+                break;
+            case 'status':
+                aValue = a.status ? 1 : 0;
+                bValue = b.status ? 1 : 0;
+                break;
+            default:
+                aValue = (a.name || '').toLowerCase();
+                bValue = (b.name || '').toLowerCase();
+        }
+        
+        if (sortBy === 'status') {
+            return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+        } else {
+            if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        }
+    });
+    
+    return sorted;
+}
+
+// Change page
+function changePage(page) {
+    if (page < 0) return;
+    const maxPage = Math.max(0, totalPages - 1);
+    if (page > maxPage) return;
+    
+    currentPage = page;
+    displayInventories();
+    updatePagination();
+}
+
+// Set sort
+function setSort(field) {
+    if (sortBy === field) {
+        sortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortBy = field;
+        sortOrder = 'asc';
+    }
+    currentPage = 0; // Reset to first page when sorting changes
+    displayInventories();
+    updateSortButtons();
+}
+
+// Set view mode
+function setViewMode(mode) {
+    viewMode = mode;
+    currentPage = 0; // Reset to first page when view changes
+    displayInventories();
+    updateViewModeButtons();
+    updatePagination();
+}
+
+// Update sort buttons
+function updateSortButtons() {
+    const buttons = document.querySelectorAll('[data-sort]');
+    buttons.forEach(btn => {
+        const field = btn.getAttribute('data-sort');
+        const icon = btn.querySelector('i');
+        if (field === sortBy) {
+            btn.classList.add('active');
+            if (icon) {
+                icon.className = sortOrder === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            }
+        } else {
+            btn.classList.remove('active');
+            if (icon) {
+                icon.className = 'fas fa-sort';
+            }
+        }
+    });
+}
+
+// Update view mode buttons
+function updateViewModeButtons() {
+    const cardsBtn = document.getElementById('viewModeCards');
+    const tableBtn = document.getElementById('viewModeTable');
+    
+    if (cardsBtn) {
+        if (viewMode === 'cards') {
+            cardsBtn.classList.add('active');
+            cardsBtn.classList.remove('bg-gray-200', 'dark:bg-gray-600');
+            cardsBtn.classList.add('bg-[#00AF00]', 'text-white');
+        } else {
+            cardsBtn.classList.remove('active', 'bg-[#00AF00]', 'text-white');
+            cardsBtn.classList.add('bg-gray-200', 'dark:bg-gray-600');
+        }
+    }
+    
+    if (tableBtn) {
+        if (viewMode === 'table') {
+            tableBtn.classList.add('active');
+            tableBtn.classList.remove('bg-gray-200', 'dark:bg-gray-600');
+            tableBtn.classList.add('bg-[#00AF00]', 'text-white');
+        } else {
+            tableBtn.classList.remove('active', 'bg-[#00AF00]', 'text-white');
+            tableBtn.classList.add('bg-gray-200', 'dark:bg-gray-600');
+        }
+    }
+}
+
+// Update pagination
+function updatePagination() {
+    const container = document.getElementById('paginationContainer');
+    if (!container) return;
+    
+    // Calculate filtered count
+    let filteredCount = 0;
+    switch (currentFilter) {
+        case 'manager':
+            filteredCount = allInventories.filter(inv => inv.roles.includes('manager') && !inv.roles.includes('owner')).length;
+            break;
+        case 'signatory':
+            filteredCount = allInventories.filter(inv => inv.roles.includes('signatory') && !inv.roles.includes('owner') && !inv.roles.includes('manager')).length;
+            break;
+        default:
+            filteredCount = allInventories.length;
+    }
+    
+    const startItem = currentPage * pageSize + 1;
+    const endItem = Math.min((currentPage + 1) * pageSize, filteredCount);
+    
+    let paginationHtml = `
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+            Mostrando ${startItem}-${endItem} de ${filteredCount} inventarios
+        </div>
+        <div class="flex gap-2">
+    `;
+    
+    // Previous button
+    const prevDisabled = currentPage === 0;
+    paginationHtml += `
+        <button onclick="changePage(${currentPage - 1})" 
+                ${prevDisabled ? 'disabled' : ''}
+                class="px-4 py-2 rounded-xl transition-colors ${
+                    prevDisabled 
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'bg-[#00AF00] hover:bg-[#008800] text-white'
+                }">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    `;
+    
+    // Page numbers
+    const maxPagesToShow = 5;
+    let startPage = Math.max(0, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage < maxPagesToShow - 1) {
+        startPage = Math.max(0, endPage - maxPagesToShow + 1);
+    }
+    
+    if (startPage > 0) {
+        paginationHtml += `
+            <button onclick="changePage(0)" class="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">1</button>
+        `;
+        if (startPage > 1) {
+            paginationHtml += `<span class="px-2 text-gray-500">...</span>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === currentPage;
+        paginationHtml += `
+            <button onclick="changePage(${i})" 
+                    class="px-4 py-2 rounded-xl transition-colors ${
+                        isActive 
+                            ? 'bg-[#00AF00] text-white' 
+                            : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }">
+                ${i + 1}
+            </button>
+        `;
+    }
+    
+    if (endPage < totalPages - 1) {
+        if (endPage < totalPages - 2) {
+            paginationHtml += `<span class="px-2 text-gray-500">...</span>`;
+        }
+        paginationHtml += `
+            <button onclick="changePage(${totalPages - 1})" class="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">${totalPages}</button>
+        `;
+    }
+    
+    // Next button
+    const nextDisabled = currentPage >= totalPages - 1;
+    paginationHtml += `
+        <button onclick="changePage(${currentPage + 1})" 
+                ${nextDisabled ? 'disabled' : ''}
+                class="px-4 py-2 rounded-xl transition-colors ${
+                    nextDisabled 
+                        ? 'bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'bg-[#00AF00] hover:bg-[#008800] text-white'
+                }">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+    
+    paginationHtml += '</div>';
+    container.innerHTML = paginationHtml;
 }
 
 // Display inventories based on current filter
@@ -216,9 +456,6 @@ function displayInventories() {
     let filteredInventories = [];
     
     switch (currentFilter) {
-        case 'owner':
-            filteredInventories = allInventories.filter(inv => inv.roles.includes('owner'));
-            break;
         case 'manager':
             filteredInventories = allInventories.filter(inv => inv.roles.includes('manager') && !inv.roles.includes('owner'));
             break;
@@ -229,6 +466,20 @@ function displayInventories() {
             filteredInventories = allInventories;
     }
 
+    // Apply sorting
+    filteredInventories = sortInventories(filteredInventories);
+    
+    // Calculate pagination
+    totalPages = Math.ceil(filteredInventories.length / pageSize);
+    if (currentPage >= totalPages && totalPages > 0) {
+        currentPage = totalPages - 1;
+    }
+    
+    // Get paginated inventories
+    const startIndex = currentPage * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedInventories = filteredInventories.slice(startIndex, endIndex);
+
     if (filteredInventories.length === 0) {
         container.innerHTML = `
             <div class="col-span-full text-center py-12">
@@ -237,15 +488,36 @@ function displayInventories() {
                 <p class="text-gray-600">No tienes inventarios con este rol.</p>
             </div>
         `;
+        updatePagination();
         return;
     }
 
-    container.innerHTML = filteredInventories.map(inventory => {
+    if (viewMode === 'table') {
+        displayInventoriesTable(paginatedInventories, filteredInventories.length);
+        container.style.display = 'block';
+    } else {
+        displayInventoriesCards(paginatedInventories);
+        container.style.display = 'grid';
+    }
+    
+    updatePagination();
+}
+
+// Display inventories as cards
+function displayInventoriesCards(inventories) {
+    const container = document.getElementById('inventoriesContainer');
+    container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+    
+    container.innerHTML = inventories.map(inventory => {
         const roles = inventory.roles || [];
-        const roleBadges = roles.map(role => {
-            if (role === 'owner') {
-                return '<span class="role-badge role-owner"><i class="fas fa-crown"></i> Propietario</span>';
-            } else if (role === 'manager') {
+        const isOwner = roles.includes('owner');
+        
+        // Si es propietario, solo mostrar badge de propietario (tiene todos los permisos)
+        // Si no es propietario, mostrar los otros roles (Gestor, Firmante)
+        const roleBadges = isOwner 
+            ? '<span class="role-badge role-owner"><i class="fas fa-crown"></i> Propietario</span>'
+            : roles.map(role => {
+                if (role === 'manager') {
                 return '<span class="role-badge role-manager"><i class="fas fa-user-tie"></i> Gestor</span>';
             } else if (role === 'signatory') {
                 return '<span class="role-badge role-signatory"><i class="fas fa-signature"></i> Firmante</span>';
@@ -259,7 +531,6 @@ function displayInventories() {
 
         const imgUrl = inventory.imgUrl || '../../svg/box.png';
         const uuid = inventory.uuid || inventory.id;
-        const isOwner = roles.includes('owner');
         const isManager = roles.includes('manager') && !isOwner;
         const isSignatory = roles.includes('signatory') && !isOwner;
         const ownerClass = isOwner ? 'owner-card' : '';
@@ -341,20 +612,261 @@ function displayInventories() {
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                    <span class="text-xs text-gray-500 dark:text-gray-400 font-mono">${uuid.substring(0, 8)}...</span>
+                <div class="flex items-center justify-end pt-3 border-t border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-1.5">
                         ${quitButtonHtml}
+                        ${isOwner ? `
                         <button onclick="event.stopPropagation(); viewInventory('${uuid}')" 
-                            class="flex items-center justify-center gap-1.5 px-4 py-2 bg-sena-verde hover:bg-sena-verde-oscuro text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200 whitespace-nowrap">
-                            <i class="fas fa-eye text-xs"></i>
-                            <span>Ver Detalles</span>
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Ver Items">
+                                <i class="fas fa-box"></i>
                         </button>
+                            <button onclick="event.stopPropagation(); openAssignRoleModal('${inventory.id}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Añadir Firmantes y Manejadores">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openRemoveRoleModal('${inventory.id}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Quitar Firmantes y Manejadores">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openInventoryTree('${inventory.id}', '${escapeHtml(inventory.name || '')}', '${inventory.imgUrl || ''}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Ver Árbol de Jerarquía">
+                                <i class="fas fa-sitemap"></i>
+                            </button>
+                        ` : isSignatory ? `
+                            <button onclick="event.stopPropagation(); viewInventoryItems('${uuid}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Ver Items">
+                                <i class="fas fa-box"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openAssignRoleModal('${inventory.id}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Añadir Firmantes y Manejadores">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openRemoveRoleModal('${inventory.id}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Quitar Firmantes y Manejadores">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openInventoryTree('${inventory.id}', '${escapeHtml(inventory.name || '')}', '${inventory.imgUrl || ''}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Ver Árbol de Jerarquía">
+                                <i class="fas fa-sitemap"></i>
+                            </button>
+                        ` : isManager ? `
+                            <button onclick="event.stopPropagation(); viewInventoryItems('${uuid}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Ver Items">
+                                <i class="fas fa-box"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); openInventoryTree('${inventory.id}', '${escapeHtml(inventory.name || '')}', '${inventory.imgUrl || ''}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-semibold relative z-10 shadow transition-all duration-200"
+                                title="Ver Árbol de Jerarquía">
+                                <i class="fas fa-sitemap"></i>
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             </div>
         `;
     }).join('');
+}
+
+// Display inventories as table
+function displayInventoriesTable(inventories, totalCount) {
+    const container = document.getElementById('inventoriesContainer');
+    container.className = 'overflow-x-auto';
+    
+    let tableHtml = `
+        <table class="w-full">
+            <thead>
+                <tr class="border-b-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        <button onclick="setSort('name')" data-sort="name" class="flex items-center gap-2 hover:text-[#00AF00] transition-colors">
+                            <i class="fas fa-sort"></i>
+                            Nombre
+                        </button>
+                    </th>
+                    <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        <button onclick="setSort('location')" data-sort="location" class="flex items-center gap-2 hover:text-[#00AF00] transition-colors">
+                            <i class="fas fa-sort"></i>
+                            Ubicación
+                        </button>
+                    </th>
+                    <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        Roles
+                    </th>
+                    <th class="text-left py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        <button onclick="setSort('status')" data-sort="status" class="flex items-center gap-2 hover:text-[#00AF00] transition-colors">
+                            <i class="fas fa-sort"></i>
+                            Estado
+                        </button>
+                    </th>
+                    <th class="text-center py-4 px-4 text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+                        Acciones
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    inventories.forEach(inventory => {
+        const roles = inventory.roles || [];
+        const isOwner = roles.includes('owner');
+        
+        const roleBadges = isOwner 
+            ? '<span class="role-badge role-owner"><i class="fas fa-crown"></i> Propietario</span>'
+            : roles.map(role => {
+                if (role === 'manager') {
+                    return '<span class="role-badge role-manager"><i class="fas fa-user-tie"></i> Gestor</span>';
+                } else if (role === 'signatory') {
+                    return '<span class="role-badge role-signatory"><i class="fas fa-signature"></i> Firmante</span>';
+                }
+                return '';
+            }).filter(b => b).join(' ');
+
+        const statusClass = inventory.status ? 'status-active' : 'status-inactive';
+        const statusText = inventory.status ? 'Activo' : 'Inactivo';
+        const statusIcon = inventory.status ? 'fa-check-circle' : 'fa-times-circle';
+        const uuid = inventory.uuid || inventory.id;
+        const isManager = roles.includes('manager') && !isOwner;
+        const isSignatory = roles.includes('signatory') && !isOwner;
+        
+        const showQuitButton = currentUserRole === 'USER' && (isManager || isSignatory);
+        const roleType = isManager ? 'manager' : 'signatory';
+        const roleName = isManager ? 'Gestor' : 'Firmante';
+        
+        let quitButtonHtml = '';
+        if (showQuitButton) {
+            if (isManager && isSignatory) {
+                quitButtonHtml = `
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="event.stopPropagation(); quitRole('${inventory.id}', 'manager', '${escapeHtml(inventory.name || 'este inventario')}', 'Gestor')" 
+                            class="flex items-center justify-center gap-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold shadow transition-all duration-200"
+                            title="Renunciar como Gestor">
+                            <i class="fas fa-user-tie"></i>
+                            <span>Gestor</span>
+                        </button>
+                        <button onclick="event.stopPropagation(); quitRole('${inventory.id}', 'signatory', '${escapeHtml(inventory.name || 'este inventario')}', 'Firmante')" 
+                            class="flex items-center justify-center gap-1 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs font-semibold shadow transition-all duration-200"
+                            title="Renunciar como Firmante">
+                            <i class="fas fa-signature"></i>
+                            <span>Firmante</span>
+                        </button>
+                    </div>
+                `;
+            } else {
+                quitButtonHtml = `
+                    <button onclick="event.stopPropagation(); quitRole('${inventory.id}', '${roleType}', '${escapeHtml(inventory.name || 'este inventario')}', '${roleName}')" 
+                        class="flex items-center justify-center gap-1.5 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap"
+                        title="Renunciar como ${roleName}">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Renunciar</span>
+                    </button>
+                `;
+            }
+        }
+        
+        tableHtml += `
+            <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <td class="py-4 px-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex-shrink-0">
+                            <img src="${inventory.imgUrl || '../../svg/box.png'}" alt="${escapeHtml(inventory.name)}" 
+                                class="w-full h-full object-cover" 
+                                onerror="this.src='../../svg/box.png'">
+                        </div>
+                        <span class="font-semibold text-gray-800 dark:text-gray-200">${escapeHtml(inventory.name || 'Sin nombre')}</span>
+                    </div>
+                </td>
+                <td class="py-4 px-4">
+                    <span class="text-gray-700 dark:text-gray-300">${escapeHtml(inventory.location || 'Sin ubicación')}</span>
+                </td>
+                <td class="py-4 px-4">
+                    <div class="flex flex-wrap gap-1.5">
+                        ${roleBadges}
+                    </div>
+                </td>
+                <td class="py-4 px-4">
+                    <span class="status-badge ${statusClass} text-xs">
+                        <i class="fas ${statusIcon}"></i>
+                        ${statusText}
+                    </span>
+                </td>
+                <td class="py-4 px-4">
+                    <div class="flex items-center justify-center gap-2">
+                        ${quitButtonHtml}
+                        ${isOwner ? `
+                            <button onclick="viewInventory('${uuid}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Ver Items">
+                                <i class="fas fa-box"></i>
+                            </button>
+                            <button onclick="openAssignRoleModal('${inventory.id}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Añadir Firmantes y Manejadores">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                            <button onclick="openRemoveRoleModal('${inventory.id}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Quitar Firmantes y Manejadores">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                            <button onclick="openInventoryTree('${inventory.id}', '${escapeHtml(inventory.name || '')}', '${inventory.imgUrl || ''}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Ver Árbol de Jerarquía">
+                                <i class="fas fa-sitemap"></i>
+                            </button>
+                        ` : isSignatory ? `
+                            <button onclick="viewInventoryItems('${uuid}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Ver Items">
+                                <i class="fas fa-box"></i>
+                            </button>
+                            <button onclick="openAssignRoleModal('${inventory.id}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Añadir Firmantes y Manejadores">
+                                <i class="fas fa-user-plus"></i>
+                            </button>
+                            <button onclick="openRemoveRoleModal('${inventory.id}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Quitar Firmantes y Manejadores">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                            <button onclick="openInventoryTree('${inventory.id}', '${escapeHtml(inventory.name || '')}', '${inventory.imgUrl || ''}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Ver Árbol de Jerarquía">
+                                <i class="fas fa-sitemap"></i>
+                            </button>
+                        ` : isManager ? `
+                            <button onclick="viewInventoryItems('${uuid}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Ver Items">
+                                <i class="fas fa-box"></i>
+                            </button>
+                            <button onclick="openInventoryTree('${inventory.id}', '${escapeHtml(inventory.name || '')}', '${inventory.imgUrl || ''}')" 
+                                class="flex items-center justify-center gap-1.5 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-semibold shadow transition-all duration-200"
+                                title="Ver Árbol de Jerarquía">
+                                <i class="fas fa-sitemap"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tableHtml += `
+            </tbody>
+        </table>
+    `;
+    
+    container.innerHTML = tableHtml;
+    updateSortButtons();
 }
 
 // View inventory details
@@ -620,4 +1132,52 @@ document.addEventListener('DOMContentLoaded', async function() {
 function refreshInventories() {
     loadMyInventories();
 }
+
+// Make functions globally available
+window.loadMyInventories = loadMyInventories;
+window.filterInventories = filterInventories;
+// Open assign role modal
+function openAssignRoleModal(inventoryId) {
+    if (typeof window.showAssignManagerModal === 'function') {
+        window.showAssignManagerModal(inventoryId);
+    } else if (typeof showAssignManagerModal === 'function') {
+        showAssignManagerModal(inventoryId);
+    } else {
+        console.error('showAssignManagerModal function not found');
+    }
+}
+
+// Open remove role modal
+function openRemoveRoleModal(inventoryId) {
+    if (typeof window.showRemoveRoleModal === 'function') {
+        window.showRemoveRoleModal(inventoryId);
+    } else if (typeof showRemoveRoleModal === 'function') {
+        showRemoveRoleModal(inventoryId);
+    } else {
+        console.error('showRemoveRoleModal function not found');
+    }
+}
+
+// Open inventory tree modal
+function openInventoryTree(inventoryId, inventoryName, inventoryImgUrl) {
+    if (typeof window.showInventoryTreeModal === 'function') {
+        window.showInventoryTreeModal(inventoryId, inventoryName, inventoryImgUrl);
+    } else if (typeof showInventoryTreeModal === 'function') {
+        showInventoryTreeModal(inventoryId, inventoryName, inventoryImgUrl);
+    } else {
+        console.error('showInventoryTreeModal function not found');
+    }
+}
+
+// Make functions globally available
+window.loadMyInventories = loadMyInventories;
+window.filterInventories = filterInventories;
+window.viewInventory = viewInventory;
+window.quitRole = quitRole;
+window.changePage = changePage;
+window.setSort = setSort;
+window.setViewMode = setViewMode;
+window.openAssignRoleModal = openAssignRoleModal;
+window.openRemoveRoleModal = openRemoveRoleModal;
+window.openInventoryTree = openInventoryTree;
 

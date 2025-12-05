@@ -9,6 +9,7 @@ async function loadVerificationData() {
     try {
         await loadCurrentUserInfo();
         await loadUserInventories(); // Load only user's inventories
+        console.log('User inventories loaded:', verificationData.inventories.length);
         await loadLatestVerifications();
         // Update filters first to show inventories, then update UI
         if (typeof updateFilters === 'function') {
@@ -175,48 +176,99 @@ async function loadUserInventories() {
 
 async function loadLatestVerifications() {
     try {
-        // Check if we have inventories
-        if (!verificationData.inventories || verificationData.inventories.length === 0) {
+        const token = localStorage.getItem('jwt');
+        if (!token) {
+            console.warn('No authentication token found');
             verificationData.verifications = [];
             verificationData.filteredVerifications = [];
             return;
         }
 
-        // Load verifications for all user inventories
-        const allVerifications = [];
-        
-        for (const inventory of verificationData.inventories) {
-            if (!inventory || !inventory.id) {
-                continue; // Skip invalid inventories
-            }
-            
-            const verifications = await getLatestVerifications(inventory.id);
-            if (verifications && verifications.length > 0) {
-                allVerifications.push(...verifications);
-            }
-        }
+        const headers = { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        };
 
-        // Sort verifications by date (most recent first)
-        allVerifications.sort((a, b) => {
-            const dateA = new Date(a.verificationDate || 0);
-            const dateB = new Date(b.verificationDate || 0);
-            return dateB - dateA; // Most recent first
+        // Use the new endpoint to get all verifications for user's inventories
+        console.log('Loading verifications from /api/v1/verifications/my-inventories');
+        console.log('User inventories count:', verificationData.inventories ? verificationData.inventories.length : 0);
+        if (verificationData.inventories && verificationData.inventories.length > 0) {
+            console.log('User inventory IDs:', verificationData.inventories.map(inv => inv.id));
+        }
+        
+        const response = await fetch(`/api/v1/verifications/my-inventories?page=0&size=1000`, {
+            method: 'GET',
+            headers: headers,
+            credentials: 'include'
         });
 
-        verificationData.verifications = allVerifications;
-        // Apply filters after loading
-        if (typeof filterVerifications === 'function') {
-            filterVerifications();
-        } else {
-            verificationData.filteredVerifications = [...verificationData.verifications];
-            verificationData.currentPage = 1; // Reset to first page
-        }
+        console.log('Response status:', response.status);
         
-        // Ensure UI is updated after loading
-        if (typeof window.updateVerificationUI === 'function') {
-            window.updateVerificationUI();
-        } else if (typeof updateVerificationUI === 'function') {
-            updateVerificationUI();
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Response data:', data);
+            console.log('Total elements:', data.totalElements || 0);
+            console.log('Total pages:', data.totalPages || 0);
+            const verifications = data.content || [];
+            console.log('Verifications found:', verifications.length);
+            
+            // Transform the response to match frontend expectations
+            const transformedVerifications = verifications.map(v => ({
+                id: v.id,
+                itemId: v.itemId,
+                licensePlate: v.itemLicencePlateNumber,
+                itemName: v.itemName,
+                inventoryId: v.inventoryId,
+                inventoryName: v.inventoryName,
+                status: (v.photoUrl && v.photoUrl.length > 0) ? 'VERIFIED' : 'PENDING',
+                hasEvidence: v.photoUrl && v.photoUrl.length > 0,
+                verificationDate: v.createdAt,
+                photoUrl: v.photoUrl || null,
+                photoUrls: v.photoUrl ? [v.photoUrl] : [],
+                userId: v.userId,
+                userFullName: v.userFullName,
+                userEmail: v.userEmail
+            }));
+
+            // Sort verifications by date (most recent first)
+            transformedVerifications.sort((a, b) => {
+                const dateA = new Date(a.verificationDate || 0);
+                const dateB = new Date(b.verificationDate || 0);
+                return dateB - dateA; // Most recent first
+            });
+
+            console.log('Transformed verifications:', transformedVerifications.length);
+            verificationData.verifications = transformedVerifications;
+            
+            // Apply filters after loading
+            if (typeof filterVerifications === 'function') {
+                filterVerifications();
+            } else {
+                verificationData.filteredVerifications = [...verificationData.verifications];
+                verificationData.currentPage = 1; // Reset to first page
+            }
+            
+            console.log('Filtered verifications:', verificationData.filteredVerifications.length);
+            
+            // Ensure UI is updated after loading
+            if (typeof window.updateVerificationUI === 'function') {
+                window.updateVerificationUI();
+            } else if (typeof updateVerificationUI === 'function') {
+                updateVerificationUI();
+            }
+        } else if (response.status === 404) {
+            // No verifications found
+            console.log('No verifications found (404)');
+            verificationData.verifications = [];
+            verificationData.filteredVerifications = [];
+            if (typeof window.updateVerificationUI === 'function') {
+                window.updateVerificationUI();
+            }
+        } else {
+            const errorText = await response.text();
+            console.error('Failed to load verifications:', response.status, errorText);
+            verificationData.verifications = [];
+            verificationData.filteredVerifications = [];
         }
     } catch (error) {
         console.error('Error loading verifications:', error);
@@ -387,8 +439,20 @@ async function createVerificationBySerial(serialNumber) {
             throw new Error(errorMsg);
         } else if (response.status === 400) {
             const errorData = await response.json().catch(() => ({}));
-            showInventoryErrorToast('Datos inválidos', errorData.message || 'Los datos de verificación son inválidos. Verifica la información.');
-            throw new Error(errorData.message || 'Datos de verificación inválidos');
+            const errorMessage = errorData.message || 'Los datos de verificación son inválidos. Verifica la información.';
+            
+            // Check if it's an authorization error (sometimes comes as 400)
+            if (errorMessage.includes("no autorizado") || 
+                errorMessage.includes("not authorized") || 
+                errorMessage.includes("permisos") ||
+                errorMessage.includes("propietario") ||
+                errorMessage.includes("manejador") ||
+                errorMessage.includes("firmante")) {
+                showInventoryErrorToast('Sin permisos', errorMessage);
+            } else {
+                showInventoryErrorToast('Datos inválidos', errorMessage);
+            }
+            throw new Error(errorMessage);
         } else {
             const errorData = await response.json().catch(() => ({}));
             showInventoryErrorToast('Error al crear verificación', errorData.message || 'No se pudo crear la verificación. Intenta nuevamente.');
@@ -430,8 +494,20 @@ async function createVerificationByPlate(licensePlate) {
             throw new Error(errorMsg);
         } else if (response.status === 400) {
             const errorData = await response.json().catch(() => ({}));
-            showInventoryErrorToast('Datos inválidos', errorData.message || 'Los datos de verificación son inválidos. Verifica la información.');
-            throw new Error(errorData.message || 'Datos de verificación inválidos');
+            const errorMessage = errorData.message || 'Los datos de verificación son inválidos. Verifica la información.';
+            
+            // Check if it's an authorization error (sometimes comes as 400)
+            if (errorMessage.includes("no autorizado") || 
+                errorMessage.includes("not authorized") || 
+                errorMessage.includes("permisos") ||
+                errorMessage.includes("propietario") ||
+                errorMessage.includes("manejador") ||
+                errorMessage.includes("firmante")) {
+                showInventoryErrorToast('Sin permisos', errorMessage);
+            } else {
+                showInventoryErrorToast('Datos inválidos', errorMessage);
+            }
+            throw new Error(errorMessage);
         } else {
             const errorData = await response.json().catch(() => ({}));
             showInventoryErrorToast('Error al crear verificación', errorData.message || 'No se pudo crear la verificación. Intenta nuevamente.');

@@ -41,4 +41,20 @@ public interface SpringDataItemRepository extends JpaRepository<ItemEntity, Long
     // Institution statistics queries
     @Query("SELECT COUNT(i) FROM ItemEntity i WHERE i.inventory.institution.id = :institutionId")
     long countByInstitutionId(@Param("institutionId") Long institutionId);
+    
+    // Inventory statistics queries
+    @Query("SELECT COUNT(i) FROM ItemEntity i WHERE i.inventory.id = :inventoryId " +
+           "AND NOT EXISTS (SELECT 1 FROM com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity c JOIN c.items ci " +
+           "WHERE ci.id = i.id AND c.approved = true AND c.refusedAt IS NULL)")
+    long countByInventoryId(@Param("inventoryId") Long inventoryId);
+    
+    @Query("SELECT COUNT(i) FROM ItemEntity i WHERE i.inventory.id = :inventoryId AND i.status = true " +
+           "AND NOT EXISTS (SELECT 1 FROM com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity c JOIN c.items ci " +
+           "WHERE ci.id = i.id AND c.approved = true AND c.refusedAt IS NULL)")
+    long countActiveByInventoryId(@Param("inventoryId") Long inventoryId);
+    
+    @Query("SELECT COUNT(i) FROM ItemEntity i WHERE i.inventory.id = :inventoryId AND i.status = false " +
+           "AND NOT EXISTS (SELECT 1 FROM com.sgdis.backend.cancellation.infrastructure.entity.CancellationEntity c JOIN c.items ci " +
+           "WHERE ci.id = i.id AND c.approved = true AND c.refusedAt IS NULL)")
+    long countInactiveByInventoryId(@Param("inventoryId") Long inventoryId);
 }

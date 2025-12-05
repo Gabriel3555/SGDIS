@@ -931,4 +931,18 @@ public class AdminDashboardController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/user/cancellations")
+    @PreAuthorize("hasRole('USER')")
+    @ResponseBody
+    public ResponseEntity<Resource> userCancellations() throws IOException {
+        Resource resource = new ClassPathResource("static/views/cancellations/cancellations-user.html");
+        if (resource.exists()) {
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(resource);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

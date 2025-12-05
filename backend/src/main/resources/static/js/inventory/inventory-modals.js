@@ -573,9 +573,13 @@ if (
 } // Fin del if (typeof CustomSelect === 'undefined')
 
 async function showDeleteInventoryModal(inventoryId) {
-  inventoryData.currentInventoryId = inventoryId;
+  const data = window.inventoryData || inventoryData;
+  if (data) {
+    data.currentInventoryId = inventoryId;
+  }
 
-  const inventory = inventoryData.inventories.find(
+  const inventories = (data && data.inventories) ? data.inventories : [];
+  const inventory = inventories.find(
     (i) => i && i.id == inventoryId
   );
 
@@ -628,7 +632,10 @@ function closeDeleteInventoryModal() {
     window.deleteRoleUserSelect.clear();
   }
 
-  inventoryData.currentInventoryId = null;
+  const data = window.inventoryData || inventoryData;
+  if (data) {
+    data.currentInventoryId = null;
+  }
 }
 
 // Show modal to remove roles (managers/signatories) - dedicated modal
@@ -639,10 +646,14 @@ function showRemoveRoleModal(inventoryId) {
   }
 
   // Set current inventory ID
-  inventoryData.currentInventoryId = inventoryId;
+  const data = window.inventoryData || inventoryData;
+  if (data) {
+    data.currentInventoryId = inventoryId;
+  }
 
   // Get inventory name for display
-  const inventory = inventoryData.inventories.find((inv) => inv.id == inventoryId);
+  const inventories = (data && data.inventories) ? data.inventories : [];
+  const inventory = inventories.find((inv) => inv.id == inventoryId);
   const inventoryName = inventory ? inventory.name : "Inventario";
 
   const inventoryNameElement = document.getElementById("removeRoleInventoryName");
@@ -663,39 +674,12 @@ function showRemoveRoleModal(inventoryId) {
   if (modal) {
     modal.classList.remove("hidden");
     
-    // Destroy existing CustomSelect instance if it exists
-    if (window.removeRoleUserSelect) {
-      try {
-        // Remove event listeners if there's a cleanup method
-        if (window.removeRoleUserSelect.destroy) {
-          window.removeRoleUserSelect.destroy();
+    // Reset the select element
+    const select = document.getElementById("removeRoleUserId");
+    if (select) {
+      select.innerHTML = '<option value="">Seleccionar usuario...</option>';
+      select.disabled = false;
         }
-      } catch (error) {
-        console.warn("Error destroying existing CustomSelect:", error);
-      }
-      window.removeRoleUserSelect = null;
-    }
-    
-    // Initialize CustomSelect when modal is shown (wait a bit for DOM to be ready)
-    setTimeout(() => {
-      const selectElement = document.getElementById("removeRoleUserIdSelect");
-      if (selectElement) {
-        try {
-          const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
-          if (!CustomSelectClass) {
-            console.error("CustomSelect class not available");
-            return;
-          }
-          
-          window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
-            placeholder: "Seleccionar usuario...",
-            searchable: true,
-          });
-        } catch (error) {
-          console.error("Error initializing CustomSelect for remove role modal:", error);
-        }
-      }
-    }, 150);
   }
 }
 
@@ -709,15 +693,16 @@ function closeRemoveRoleModal() {
   resetRemoveRoleSelection();
 
   // Clear remove role user select
-  if (window.removeRoleUserSelect) {
-    try {
-      window.removeRoleUserSelect.clear();
-    } catch (error) {
-      console.warn("Error clearing removeRoleUserSelect:", error);
+  const select = document.getElementById("removeRoleUserId");
+  if (select) {
+    select.innerHTML = '<option value="">Seleccionar usuario...</option>';
+    select.value = "";
     }
-  }
 
-  inventoryData.currentInventoryId = null;
+  const data = window.inventoryData || inventoryData;
+  if (data) {
+    data.currentInventoryId = null;
+  }
 }
 
 // Reset remove role selection (reuse same logic as delete role)
@@ -823,40 +808,26 @@ async function selectRemoveRole(role) {
   if (userSection) {
     userSection.classList.remove("hidden");
     
-    // Wait a bit for the section to be visible before initializing CustomSelect
+    // Wait a bit for the section to be visible before loading users
     setTimeout(async () => {
-      // Ensure CustomSelect is initialized for remove role modal
-      const selectElement = document.getElementById("removeRoleUserIdSelect");
-      if (selectElement && !window.removeRoleUserSelect) {
-        try {
-          const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
-          if (CustomSelectClass) {
-            window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
-              placeholder: "Seleccionar usuario...",
-              searchable: true,
-            });
-          }
-        } catch (error) {
-          console.error("Error initializing CustomSelect in selectRemoveRole:", error);
-        }
-      }
-      
       // Load users based on role
-      if (!inventoryData.currentInventoryId) {
+      const data = window.inventoryData || inventoryData;
+      if (!data || !data.currentInventoryId) {
         showErrorToast("Error", "No se ha seleccionado un inventario");
         return;
       }
 
-      await loadUsersForRemoveRole(role, inventoryData.currentInventoryId);
+      await loadUsersForRemoveRole(role, data.currentInventoryId);
     }, 150);
   } else {
     // If section doesn't exist, try loading anyway
-    if (!inventoryData.currentInventoryId) {
+    const data = window.inventoryData || inventoryData;
+    if (!data || !data.currentInventoryId) {
       showErrorToast("Error", "No se ha seleccionado un inventario");
       return;
     }
 
-    await loadUsersForRemoveRole(role, inventoryData.currentInventoryId);
+    await loadUsersForRemoveRole(role, data.currentInventoryId);
   }
 }
 
@@ -923,12 +894,13 @@ async function selectDeleteRole(role) {
   }
 
   // Load users based on role
-  if (!inventoryData.currentInventoryId) {
+  const data = window.inventoryData || inventoryData;
+  if (!data || !data.currentInventoryId) {
     showErrorToast("Error", "No se ha seleccionado un inventario");
     return;
   }
 
-  await loadUsersForDeleteRole(role, inventoryData.currentInventoryId);
+    await loadUsersForDeleteRole(role, data.currentInventoryId);
 }
 
 // Reset delete role selection
@@ -975,22 +947,6 @@ function resetDeleteRoleSelection() {
 
 // Load users for remove role (dedicated function for remove role modal)
 async function loadUsersForRemoveRole(role, inventoryId) {
-  // Ensure CustomSelect is initialized before loading
-  const selectElement = document.getElementById("removeRoleUserIdSelect");
-  if (selectElement && !window.removeRoleUserSelect) {
-    try {
-      const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
-      if (CustomSelectClass) {
-        window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
-          placeholder: "Seleccionar usuario...",
-          searchable: true,
-        });
-      }
-    } catch (error) {
-      console.error("Error initializing CustomSelect in loadUsersForRemoveRole:", error);
-    }
-  }
-  
   showRemoveRoleUserSelectLoading();
 
   try {
@@ -1045,74 +1001,31 @@ async function loadUsersForRemoveRole(role, inventoryId) {
 
 // Show loading state for remove role user select
 function showRemoveRoleUserSelectLoading() {
-  if (!window.removeRoleUserSelect) {
-    const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
-    if (CustomSelectClass) {
-      try {
-        window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
-          placeholder: "Cargando usuarios...",
-          searchable: true,
-        });
-      } catch (error) {
-        console.error("Error initializing CustomSelect for loading state:", error);
-        return;
-      }
-    }
-  }
-  if (window.removeRoleUserSelect) {
-    window.removeRoleUserSelect.setOptions([
-      { value: "", label: "Cargando usuarios...", disabled: true },
-    ]);
+  const select = document.getElementById("removeRoleUserId");
+  if (select) {
+    select.innerHTML = '<option value="">Cargando usuarios...</option>';
+    select.disabled = true;
   }
 }
 
 // Hide loading state for remove role user select
 function hideRemoveRoleUserSelectLoading() {
-  // Loading state is cleared when populateRemoveRoleUserSelect is called
+  const select = document.getElementById("removeRoleUserId");
+  if (select) {
+    select.disabled = false;
+  }
 }
 
 // Populate remove role user select
 function populateRemoveRoleUserSelect(users) {
-  // Initialize CustomSelect if not already done
-  const selectElement = document.getElementById("removeRoleUserIdSelect");
-  if (!selectElement) {
-    console.error("CustomSelect element not found: removeRoleUserIdSelect");
+  const select = document.getElementById("removeRoleUserId");
+  if (!select) {
+    console.error("removeRoleUserId select element not found");
     return;
   }
   
-  if (!window.removeRoleUserSelect) {
-    try {
-      const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
-      if (CustomSelectClass) {
-        window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
-          placeholder: "Seleccionar usuario...",
-          searchable: true,
-        });
-      }
-    } catch (error) {
-      console.error("Error initializing CustomSelect:", error);
-      // Try to reinitialize
-      setTimeout(() => {
-        try {
-          const CustomSelectClass = window.CustomSelect || (typeof CustomSelect !== 'undefined' ? CustomSelect : null);
-          if (CustomSelectClass) {
-            window.removeRoleUserSelect = new CustomSelectClass("removeRoleUserIdSelect", {
-              placeholder: "Seleccionar usuario...",
-              searchable: true,
-            });
-            // Retry populating after initialization
-            populateRemoveRoleUserSelect(users);
-          }
-        } catch (retryError) {
-          console.error("Error retrying CustomSelect initialization:", retryError);
-        }
-      }, 200);
-      return;
-    }
-  }
-
-  // Format users as options
-  const userOptions = [];
+  // Clear existing options except the first one
+  select.innerHTML = '<option value="">Seleccionar usuario...</option>';
 
   if (users && users.length > 0) {
     users.forEach((user) => {
@@ -1131,22 +1044,18 @@ function populateRemoveRoleUserSelect(users) {
         displayName += ` (${user.email})`;
       }
 
-      userOptions.push({
-        value: String(user.id),
-        label: displayName,
-      });
+      const option = document.createElement("option");
+      option.value = String(user.id);
+      option.textContent = displayName;
+      select.appendChild(option);
     });
   } else {
-    // Add no users option (will be shown as disabled in CustomSelect)
-    userOptions.push({
-      value: "",
-      label: "No hay usuarios disponibles",
-      disabled: true,
-    });
-  }
-
-  if (window.removeRoleUserSelect) {
-    window.removeRoleUserSelect.setOptions(userOptions);
+    // Add no users option
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No hay usuarios disponibles";
+    option.disabled = true;
+    select.appendChild(option);
   }
 }
 
@@ -1241,7 +1150,8 @@ function hideDeleteRoleUserSelectLoading() {
 
 // Confirm delete role
 async function confirmDeleteRole() {
-  if (!inventoryData.currentInventoryId) {
+  const data = window.inventoryData || inventoryData;
+  if (!data || !data.currentInventoryId) {
     showErrorToast("Error", "No se ha seleccionado un inventario");
     return;
   }
@@ -1255,19 +1165,20 @@ async function confirmDeleteRole() {
     return;
   }
 
-  // Get user ID from CustomSelect or hidden input
+  // Get user ID from select element
   // Check both modals (delete and remove role)
   let userId = "";
-  if (window.removeRoleUserSelect && window.removeRoleUserSelect.getValue) {
-    userId = window.removeRoleUserSelect.getValue();
+  const removeRoleUserIdElement = document.getElementById("removeRoleUserId");
+  if (removeRoleUserIdElement && removeRoleUserIdElement.value) {
+    userId = removeRoleUserIdElement.value;
   }
   if (!userId && window.deleteRoleUserSelect && window.deleteRoleUserSelect.getValue) {
     userId = window.deleteRoleUserSelect.getValue();
   }
   if (!userId) {
-    const removeRoleUserIdElement = document.getElementById("removeRoleUserId");
-    if (removeRoleUserIdElement && removeRoleUserIdElement.value) {
-      userId = removeRoleUserIdElement.value;
+    const userIdElement = document.getElementById("deleteRoleUserId");
+    if (userIdElement) {
+      userId = userIdElement.value;
     }
   }
   if (!userId) {
@@ -1296,10 +1207,11 @@ async function confirmDeleteRole() {
 
   try {
     // Validate inventoryId is a valid number
-    const numericInventoryId = parseInt(inventoryData.currentInventoryId);
+    const data = window.inventoryData || inventoryData;
+    const numericInventoryId = parseInt(data ? data.currentInventoryId : null);
     if (isNaN(numericInventoryId)) {
       showErrorToast("Error", "ID de inventario inválido");
-      console.error("Invalid inventory ID:", inventoryData.currentInventoryId);
+      console.error("Invalid inventory ID:", data ? data.currentInventoryId : null);
       return;
     }
 
@@ -1366,7 +1278,8 @@ window.closeRemoveRoleModal = closeRemoveRoleModal;
 window.selectRemoveRole = selectRemoveRole;
 
 async function confirmDeleteInventory() {
-  const inventoryId = parseInt(inventoryData.currentInventoryId);
+  const data = window.inventoryData || inventoryData;
+  const inventoryId = parseInt(data ? data.currentInventoryId : null);
   if (!isNaN(inventoryId)) {
     await window.deleteInventory(inventoryId);
     closeDeleteInventoryModal();
@@ -1386,7 +1299,10 @@ let currentInventoryId = null;
 async function showViewInventoryModal(inventoryId) {
   try {
     // Set the current inventory ID
-    inventoryData.currentInventoryId = inventoryId;
+    const data = window.inventoryData || inventoryData;
+    if (data) {
+      data.currentInventoryId = inventoryId;
+    }
     currentInventoryId = inventoryId;
     if (window.itemsData) {
       window.itemsData.currentInventoryId = inventoryId;
@@ -1720,7 +1636,10 @@ window.closeInventoryImageModal = closeInventoryImageModal;
 async function showEditInventoryModal(inventoryId) {
   try {
     // Set the current inventory ID
-    inventoryData.currentInventoryId = inventoryId;
+    const data = window.inventoryData || inventoryData;
+    if (data) {
+      data.currentInventoryId = inventoryId;
+    }
 
     // Fetch inventory details from API
     const inventoryDetails = await getInventoryById(inventoryId);
@@ -1809,7 +1728,10 @@ window.showEditErrorToast = showEditErrorToast;
 async function showAssignInventoryModal(inventoryId) {
   try {
     // Set the current inventory ID
-    inventoryData.currentInventoryId = inventoryId;
+    const data = window.inventoryData || inventoryData;
+    if (data) {
+      data.currentInventoryId = inventoryId;
+    }
 
     // Fetch inventory details for display
     const inventoryDetails = await getInventoryById(inventoryId);
@@ -1903,7 +1825,10 @@ function closeAssignInventoryModal() {
     window.assignUserSelect.clear();
   }
 
-  inventoryData.currentInventoryId = null;
+  const data = window.inventoryData || inventoryData;
+  if (data) {
+    data.currentInventoryId = null;
+  }
 }
 
 // Toast notification helpers for assignment operations
@@ -1967,7 +1892,7 @@ async function showNewInventoryModal() {
   // Check if we're on admin regional page
   const path = window.location.pathname || '';
   const isAdminRegionalPage = path.includes('/admin_regional');
-  
+
   if (isInventoryInstitutionLocked()) {
     hideRegionalField();
     tasks.push(
@@ -2942,7 +2867,10 @@ window.loadInstitutionsForAdminRegionalNewInventory = loadInstitutionsForAdminRe
 async function showAssignManagerModal(inventoryId) {
   try {
     // Set the current inventory ID
-    inventoryData.currentInventoryId = inventoryId;
+    const data = window.inventoryData || inventoryData;
+    if (data) {
+      data.currentInventoryId = inventoryId;
+    }
 
     // Fetch inventory details for display
     const inventoryDetails = await getInventoryById(inventoryId);
@@ -3001,9 +2929,90 @@ async function loadUsersForRoleAssignment(inventoryId) {
   showRoleUserSelectLoading();
 
   try {
+    const token = localStorage.getItem("jwt");
+    if (!token) {
+      throw new Error("No se encontró el token de autenticación");
+    }
+
+    const headers = {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    };
+
+    // For USER role, load only users from the same institution
+    // Check if we're on the user-my-inventories page
+    const isUserPage = window.location.pathname.includes("/user/my-inventories") || 
+                       window.location.pathname.includes("/user/inventory");
+    
+    if (isUserPage) {
+      // Load users from the current user's institution
+      let allUsers = [];
+      let page = 0;
+      let hasMore = true;
+      const pageSize = 1000;
+
+      while (hasMore) {
+        const response = await fetch(`/api/v1/users/institution?page=${page}&size=${pageSize}`, {
+          method: "GET",
+          headers: headers,
+        });
+
+        if (!response.ok) {
+          let errorMessage = "Error al cargar los usuarios";
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorData.detail || errorData.error || errorMessage;
+            
+            if (response.status === 404) {
+              errorMessage = "No tienes una institución asignada. Contacta a un administrador.";
+            }
+          } catch (parseError) {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        const pageUsers = data.users || (Array.isArray(data) ? data : []);
+        
+        if (pageUsers.length > 0) {
+          allUsers = allUsers.concat(pageUsers);
+          hasMore = !data.last && pageUsers.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      // Filter out current user
+      const currentUserResponse = await fetch("/api/v1/users/me", {
+        headers: headers
+      });
+      if (currentUserResponse.ok) {
+        const currentUser = await currentUserResponse.json();
+        if (currentUser && currentUser.id) {
+          allUsers = allUsers.filter(user => user.id !== currentUser.id);
+        }
+      }
+
+      // Sort users by full name
+      allUsers.sort((a, b) => {
+        const nameA = (a.fullName || `${a.name || ''} ${a.lastName || ''}`.trim() || a.email || '').toLowerCase();
+        const nameB = (b.fullName || `${b.name || ''} ${b.lastName || ''}`.trim() || b.email || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+
+      populateRoleUserSelect(allUsers);
+      return;
+    }
+
+    // For other roles, use the original logic
     // Get inventory data to find its regional
     const inventory = window.currentRoleAssignmentInventory || 
-                     inventoryData.inventories?.find(inv => inv.id == inventoryId);
+                     (window.inventoryData || inventoryData)?.inventories?.find(inv => inv.id == inventoryId);
     
     console.log("Loading users for role assignment - Inventory:", inventory);
     
@@ -3027,8 +3036,6 @@ async function loadUsersForRoleAssignment(inventoryId) {
     } else if (inventory.institutionId) {
       // If we only have institutionId, fetch the institution to get its regional
       try {
-        const token = localStorage.getItem("jwt");
-        const headers = { "Content-Type": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
         
         const institutionsResponse = await fetch("/api/v1/institutions", {
@@ -3165,16 +3172,14 @@ async function loadUsersForRoleAssignment(inventoryId) {
 }
 
 function populateRoleUserSelect(users) {
-  // Initialize CustomSelect if not already done
-  if (!window.roleUserSelect) {
-    window.roleUserSelect = new CustomSelect("roleUserIdSelect", {
-      placeholder: "Seleccionar usuario...",
-      searchable: true,
-    });
+  const select = document.getElementById("roleUserId");
+  if (!select) {
+    console.error("roleUserId select element not found");
+    return;
   }
 
-  // Format users as options
-  const userOptions = [];
+  // Clear existing options except the first one
+  select.innerHTML = '<option value="">Seleccionar usuario...</option>';
 
   if (users && users.length > 0) {
     users.forEach((user) => {
@@ -3193,38 +3198,34 @@ function populateRoleUserSelect(users) {
         displayName += ` (${user.jobTitle})`;
       }
 
-      userOptions.push({
-        value: String(user.id),
-        label: displayName,
-      });
+      const option = document.createElement("option");
+      option.value = String(user.id);
+      option.textContent = displayName;
+      select.appendChild(option);
     });
   } else {
-    // Add no users option (will be shown as disabled in CustomSelect)
-    userOptions.push({
-      value: "",
-      label: "No hay usuarios disponibles",
-      disabled: true,
-    });
+    // Add no users option
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No hay usuarios disponibles";
+    option.disabled = true;
+    select.appendChild(option);
   }
-
-  window.roleUserSelect.setOptions(userOptions);
 }
 
 function showRoleUserSelectLoading() {
-  // Initialize CustomSelect if not already done
-  if (!window.roleUserSelect) {
-    window.roleUserSelect = new CustomSelect("roleUserIdSelect", {
-      placeholder: "Cargando usuarios...",
-      searchable: true,
-    });
+  const select = document.getElementById("roleUserId");
+  if (select) {
+    select.innerHTML = '<option value="">Cargando usuarios...</option>';
+    select.disabled = true;
   }
-  window.roleUserSelect.setOptions([
-    { value: "", label: "Cargando usuarios...", disabled: true },
-  ]);
 }
 
 function hideRoleUserSelectLoading() {
-  // Loading state is cleared when populateRoleUserSelect is called
+  const select = document.getElementById("roleUserId");
+  if (select) {
+    select.disabled = false;
+  }
 }
 
 // Role selection function
