@@ -386,6 +386,44 @@ public class CancellationController {
     }
 
     @Operation(
+            summary = "Get cancellations by inventory for admin institution",
+            description = "Retrieves count of approved cancellations grouped by inventory for the current admin institution user's institution"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Cancellations by inventory retrieved successfully",
+            content = @Content(schema = @Schema(implementation = CancellationsByInventoryResponse.class))
+    )
+    @ApiResponse(responseCode = "404", description = "User institution not found")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('ADMIN_INSTITUTION')")
+    @GetMapping("/institution/statistics/by-inventory")
+    public ResponseEntity<CancellationsByInventoryResponse> getCancellationsByInventoryForAdminInstitution() {
+        try {
+            UserEntity currentUser = authService.getCurrentUser();
+            if (currentUser.getInstitution() == null || currentUser.getInstitution().getId() == null) {
+                return ResponseEntity.ok(new CancellationsByInventoryResponse(java.util.Map.of()));
+            }
+            
+            Long institutionId = currentUser.getInstitution().getId();
+            List<Object[]> results = cancellationRepository.countCancellationsByInventoryForInstitution(institutionId);
+            
+            Map<String, Long> cancellationsByInventory = new HashMap<>();
+            for (Object[] result : results) {
+                String inventoryName = (String) result[0];
+                Long count = ((Number) result[1]).longValue();
+                cancellationsByInventory.put(inventoryName, count);
+            }
+            
+            return ResponseEntity.ok(new CancellationsByInventoryResponse(cancellationsByInventory));
+        } catch (Exception e) {
+            System.err.println("Error fetching cancellations by inventory for admin institution: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(new CancellationsByInventoryResponse(java.util.Map.of()));
+        }
+    }
+
+    @Operation(
             summary = "Get all cancellations from user's inventories",
             description = "Retrieves all cancellations from inventories where the current user is owner, manager, or signatory"
     )

@@ -157,8 +157,8 @@
                 <!-- Total Items -->
                 <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-box text-green-600 dark:text-green-400 text-xl"></i>
+                        <div class="w-12 h-12 bg-green-500 dark:bg-green-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-box text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalItems">-</div>
@@ -174,8 +174,8 @@
                 <!-- Total Inventarios -->
                 <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-boxes text-blue-600 dark:text-blue-400 text-xl"></i>
+                        <div class="w-12 h-12 bg-blue-500 dark:bg-blue-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-boxes text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="totalInventories">-</div>
@@ -190,8 +190,8 @@
                 <!-- Valor Total -->
                 <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-dollar-sign text-purple-600 dark:text-purple-400 text-xl"></i>
+                        <div class="w-12 h-12 bg-purple-500 dark:bg-purple-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-dollar-sign text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-lg font-bold text-gray-800 dark:text-gray-100" id="totalValue">$0</div>
@@ -206,8 +206,8 @@
                 <!-- Notificaciones -->
                 <div class="stat-card bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-bell text-red-600 dark:text-red-400 text-xl"></i>
+                        <div class="w-12 h-12 bg-red-500 dark:bg-red-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-bell text-white text-xl"></i>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-gray-800 dark:text-gray-100" id="unreadNotifications">-</div>
@@ -625,6 +625,7 @@
         // User Dashboard Data
         const userDashboardData = {
             user: null,
+            stats: null,
             userItems: [],
             userInventories: [],
             charts: {}
@@ -648,6 +649,20 @@
             });
         });
 
+        // Load consolidated dashboard statistics
+        async function loadConsolidatedDashboardStats(headers) {
+            try {
+                const response = await fetch('/api/v1/dashboard/user/stats', { headers });
+                if (response.ok) {
+                    userDashboardData.stats = await response.json();
+                } else {
+                    console.error('Error loading consolidated dashboard stats:', response.status);
+                }
+            } catch (error) {
+                console.error('Error loading consolidated dashboard stats:', error);
+            }
+        }
+
         // Load all dashboard data
         async function loadDashboardData() {
             const token = localStorage.getItem('jwt');
@@ -662,6 +677,9 @@
             };
 
             try {
+                // Load consolidated stats first
+                await loadConsolidatedDashboardStats(headers);
+
                 // Load user info
                 const userResponse = await fetch('/api/v1/users/me', { headers });
                 if (userResponse.ok) {
@@ -671,10 +689,9 @@
                     document.getElementById('welcomeMessage').textContent = `Bienvenido, ${userName}. Vista general de tus inventarios y items asignados`;
                 }
 
-                // Load user items and inventories in parallel
+                // Load user items (for charts) and notifications in parallel
                 await Promise.all([
                     loadUserItems(headers),
-                    loadUserInventories(headers),
                     loadUnreadNotifications(headers)
                 ]);
 
@@ -695,7 +712,6 @@
                 if (response.ok) {
                     const items = await response.json();
                     userDashboardData.userItems = Array.isArray(items) ? items : [];
-                    console.log('Loaded user items:', userDashboardData.userItems.length);
                 } else {
                     console.error('Error loading user items:', response.status, response.statusText);
                     userDashboardData.userItems = [];
@@ -767,28 +783,47 @@
 
         // Update dashboard UI with loaded data
         function updateDashboardUI() {
-            // Calculate statistics from user items
-            const items = userDashboardData.userItems || [];
-            console.log('Updating dashboard UI with items:', items.length);
-            const totalItems = items.length;
-            // ItemDTO uses 'status' as boolean: true = ACTIVE, false = INACTIVE
-            const activeItems = items.filter(item => item.status === true || item.status === 'ACTIVE').length;
-            const maintenanceItems = items.filter(item => item.status === 'MAINTENANCE').length;
-            // ItemDTO uses 'acquisitionValue' for the value
-            const totalValue = items.reduce((sum, item) => sum + (parseFloat(item.acquisitionValue) || 0), 0);
+            // Use consolidated stats if available, otherwise fallback to calculating from items
+            if (userDashboardData.stats && userDashboardData.stats.itemStats && userDashboardData.stats.inventoryStats) {
+                const itemStats = userDashboardData.stats.itemStats;
+                const inventoryStats = userDashboardData.stats.inventoryStats;
 
-            // Update stat cards
-            document.getElementById('totalItems').textContent = totalItems;
-            document.getElementById('activeItems').textContent = activeItems;
-            document.getElementById('maintenanceItems').textContent = maintenanceItems;
-            document.getElementById('totalInventories').textContent = userDashboardData.userInventories.length || 0;
-            
-            // Format total value
-            document.getElementById('totalValue').textContent = new Intl.NumberFormat('es-CO', {
-                style: 'currency',
-                currency: 'COP',
-                minimumFractionDigits: 0
-            }).format(totalValue);
+                // Update stat cards from consolidated stats
+                document.getElementById('totalItems').textContent = itemStats.totalItems || 0;
+                document.getElementById('activeItems').textContent = itemStats.activeItems || 0;
+                document.getElementById('maintenanceItems').textContent = itemStats.maintenanceItems || 0;
+                document.getElementById('totalInventories').textContent = inventoryStats.totalInventories || 0;
+                
+                // Format total value
+                const totalValue = itemStats.totalValue ? parseFloat(itemStats.totalValue) : 0;
+                document.getElementById('totalValue').textContent = new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                }).format(totalValue);
+            } else {
+                // Fallback: Calculate statistics from user items
+                const items = userDashboardData.userItems || [];
+                const totalItems = items.length;
+                // ItemDTO uses 'status' as boolean: true = ACTIVE, false = INACTIVE
+                const activeItems = items.filter(item => item.status === true || item.status === 'ACTIVE').length;
+                const maintenanceItems = items.filter(item => item.status === 'MAINTENANCE').length;
+                // ItemDTO uses 'acquisitionValue' for the value
+                const totalValue = items.reduce((sum, item) => sum + (parseFloat(item.acquisitionValue) || 0), 0);
+
+                // Update stat cards
+                document.getElementById('totalItems').textContent = totalItems;
+                document.getElementById('activeItems').textContent = activeItems;
+                document.getElementById('maintenanceItems').textContent = maintenanceItems;
+                document.getElementById('totalInventories').textContent = userDashboardData.userInventories.length || 0;
+                
+                // Format total value
+                document.getElementById('totalValue').textContent = new Intl.NumberFormat('es-CO', {
+                    style: 'currency',
+                    currency: 'COP',
+                    minimumFractionDigits: 0
+                }).format(totalValue);
+            }
         }
 
         // Initialize charts
@@ -808,7 +843,6 @@
             };
 
             const items = userDashboardData.userItems || [];
-            console.log('Initializing charts with items:', items.length);
 
             // Chart: Items by Category
             const canvas1 = document.getElementById('itemsByCategoryChart');
