@@ -17,6 +17,13 @@ import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import com.sgdis.backend.loan.infrastructure.repository.SpringDataLoanRepository;
 import com.sgdis.backend.loan.mapper.LoanMapper;
 import com.sgdis.backend.file.service.FileUploadService;
+import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.user.infrastructure.repository.SpringDataUserRepository;
+import com.sgdis.backend.inventory.infrastructure.entity.InventoryEntity;
+import org.springframework.transaction.annotation.Transactional;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -59,6 +66,7 @@ public class LoanController {
     private final GetLoansByItemUseCase getLoansByItemUseCase;
     private final GetLastLoanByItemUseCase getLastLoanByItemUseCase;
     private final SpringDataLoanRepository loanRepository;
+    private final SpringDataUserRepository userRepository;
     private final FileUploadService fileUploadService;
     private final AuthService authService;
 
@@ -263,6 +271,83 @@ public class LoanController {
                 .map(LoanMapper::toDto)
                 .collect(java.util.stream.Collectors.toList());
 
+        return ResponseEntity.ok(loanResponses);
+    }
+
+    @Operation(
+            summary = "Get all loans from user's inventories",
+            description = "Retrieves all loans from inventories where the current user is owner, manager, or signatory"
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Loans retrieved successfully",
+            content = @Content(schema = @Schema(implementation = List.class))
+    )
+    @ApiResponse(responseCode = "401", description = "Not authenticated")
+    @SecurityRequirement(name = "bearerAuth")
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/my-inventories")
+    @Transactional(readOnly = true)
+    public ResponseEntity<List<LoanResponse>> getLoansFromMyInventories() {
+        var currentUser = authService.getCurrentUser();
+        Long userId = currentUser.getId();
+        
+        // Get all inventories where user is owner, manager, or signatory
+        List<InventoryEntity> ownedInventories = userRepository.findInventoriesByOwnerId(userId);
+        List<InventoryEntity> managedInventories = userRepository.findManagedInventoriesByUserId(userId);
+        
+        // Get signatory inventories
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        List<InventoryEntity> signatoryInventories = user.getMySignatories();
+        if (signatoryInventories == null) {
+            signatoryInventories = List.of();
+        } else {
+            // Initialize the collection to avoid LazyInitializationException
+            signatoryInventories.size();
+        }
+        
+        // Combine all inventories and get unique IDs
+        Set<Long> inventoryIds = new HashSet<>();
+        ownedInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        managedInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        signatoryInventories.forEach(inv -> {
+            if (inv != null && inv.getId() != null) {
+                inventoryIds.add(inv.getId());
+            }
+        });
+        
+        // If no inventories, return empty list
+        if (inventoryIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        
+        // Get all loans from user's inventories
+        List<LoanEntity> allLoans = new ArrayList<>();
+        for (Long inventoryId : inventoryIds) {
+            try {
+                List<LoanEntity> loans = loanRepository.findAllByInventoryId(inventoryId);
+                if (loans != null) {
+                    allLoans.addAll(loans);
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching loans for inventory " + inventoryId + ": " + e.getMessage());
+            }
+        }
+        
+        // Convert to DTOs
+        List<LoanResponse> loanResponses = allLoans.stream()
+                .map(LoanMapper::toDto)
+                .collect(java.util.stream.Collectors.toList());
+        
         return ResponseEntity.ok(loanResponses);
     }
 

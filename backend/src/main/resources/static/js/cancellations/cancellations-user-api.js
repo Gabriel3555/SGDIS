@@ -48,97 +48,28 @@ async function fetchUserCancellations(page = 0, size = 6) {
         const signatoryInventories = signatoryResponse.ok ? await signatoryResponse.json() : [];
         const managedInventories = managedResponse.ok ? await managedResponse.json() : [];
 
-        // Combine and get unique inventory IDs
-        const inventoryMap = new Map();
-        [...ownedInventories, ...signatoryInventories, ...managedInventories].forEach(inv => {
-            if (inv && inv.id) {
-                inventoryMap.set(inv.id, inv);
-            }
+        // Use the new endpoint that returns cancellations from user's inventories
+        const response = await fetch(`/api/v1/cancellations/my-inventories?page=${page}&size=${size}`, {
+            method: "GET",
+            headers: headers,
         });
 
-        const userInventoryIds = Array.from(inventoryMap.keys());
-
-        if (userInventoryIds.length === 0) {
-            return {
-                content: [],
-                totalElements: 0,
-                totalPages: 0,
-                number: page,
-                size: size
-            };
+        if (!response.ok) {
+            if (response.status === 404 || response.status === 403) {
+                // User doesn't have permission or endpoint doesn't exist
+                return {
+                    content: [],
+                    totalElements: 0,
+                    totalPages: 0,
+                    number: page,
+                    size: size
+                };
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Fetch all cancellations and filter by inventory IDs
-        let allCancellations = [];
-        let currentPage = 0;
-        let hasMore = true;
-        
-        while (hasMore && currentPage < 50) { // Limit to prevent infinite loops
-            const response = await fetch(`/api/v1/cancellations?page=${currentPage}&size=100`, {
-                method: "GET",
-                headers: headers,
-            });
-
-            if (!response.ok) {
-                if (response.status === 404 || response.status === 403) {
-                    // User doesn't have permission or endpoint doesn't exist
-                    break;
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const pageData = await response.json();
-            
-            if (pageData.content && pageData.content.length > 0) {
-                // Filter cancellations that have items belonging to user's inventories
-                const relevantCancellations = pageData.content.filter(cancellation => {
-                    if (!cancellation.items || cancellation.items.length === 0) {
-                        return false;
-                    }
-                    // Check if any item in the cancellation belongs to one of user's inventories
-                    return cancellation.items.some(item => {
-                        const itemInventoryId = item.inventoryId || item.inventory?.id;
-                        return itemInventoryId && userInventoryIds.includes(itemInventoryId);
-                    });
-                });
-                
-                allCancellations = allCancellations.concat(relevantCancellations);
-                hasMore = !pageData.last && pageData.content.length === 100;
-                currentPage++;
-            } else {
-                hasMore = false;
-            }
-        }
-
-        // Remove duplicates (in case same cancellation appears in multiple pages)
-        const uniqueCancellations = [];
-        const seenIds = new Set();
-        allCancellations.forEach(c => {
-            if (c.id && !seenIds.has(c.id)) {
-                seenIds.add(c.id);
-                uniqueCancellations.push(c);
-            }
-        });
-
-        // Sort by ID descending
-        uniqueCancellations.sort((a, b) => {
-            if (!a.id || !b.id) return 0;
-            return b.id - a.id;
-        });
-
-        // Apply pagination manually
-        const start = page * size;
-        const end = start + size;
-        const paginatedCancellations = uniqueCancellations.slice(start, end);
-
-        return {
-            content: paginatedCancellations,
-            totalElements: uniqueCancellations.length,
-            totalPages: Math.ceil(uniqueCancellations.length / size),
-            number: page,
-            size: size,
-            last: end >= uniqueCancellations.length
-        };
+        const pageData = await response.json();
+        return pageData;
     } catch (error) {
         console.error("Error fetching user cancellations:", error);
         // Return empty page on error
