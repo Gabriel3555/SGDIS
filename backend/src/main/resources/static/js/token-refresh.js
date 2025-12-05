@@ -453,6 +453,43 @@ let originalFetchForExport = null;
       }
       // Si no hay token, dejar headers como están (o undefined si no existían)
       
+      // Suppress console errors for expected 400/404 responses (item not found searches and transfer requests)
+      const isItemSearchRequest = urlString.includes('/api/v1/items/licence-plate/') || 
+                                   urlString.includes('/api/v1/items/serial/');
+      const isTransferRequest = urlString.includes('/api/v1/transfers/request') ||
+                                urlString.includes('/api/v1/transfers/');
+      const shouldSuppressErrors = isItemSearchRequest || isTransferRequest;
+      
+      // Override console.error and console.warn temporarily for item search and transfer requests
+      let originalConsoleError = null;
+      let originalConsoleWarn = null;
+      if (shouldSuppressErrors) {
+        originalConsoleError = console.error;
+        originalConsoleWarn = console.warn;
+        
+        console.error = function(...args) {
+          const message = args.join(' ');
+          // Suppress 400/404 errors for item searches and transfer requests (expected behavior)
+          if (message.includes('400') || message.includes('404') || 
+              message.includes('Bad Request') || message.includes('not found') ||
+              (message.includes('GET http') && (message.includes('400') || message.includes('404'))) ||
+              (message.includes('POST http') && (message.includes('400') || message.includes('404')))) {
+            return; // Suppress this error
+          }
+          originalConsoleError.apply(console, args);
+        };
+        
+        // Also suppress warnings for 400/404
+        console.warn = function(...args) {
+          const message = args.join(' ');
+          if (message.includes('400') || message.includes('404') || 
+              message.includes('Bad Request')) {
+            return; // Suppress this warning
+          }
+          originalConsoleWarn.apply(console, args);
+        };
+      }
+      
       // Hacer la petición
       let response;
       try {
@@ -481,6 +518,16 @@ let originalFetchForExport = null;
           }
         } else {
           throw fetchError;
+        }
+      } finally {
+        // Restore original console.error and console.warn if they were overridden
+        if (shouldSuppressErrors) {
+          if (originalConsoleError) {
+            console.error = originalConsoleError;
+          }
+          if (originalConsoleWarn) {
+            console.warn = originalConsoleWarn;
+          }
         }
       }
       

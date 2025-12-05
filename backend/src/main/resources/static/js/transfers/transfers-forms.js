@@ -126,7 +126,7 @@ function populateNewTransferForm(itemId = null) {
             }
             
             if (!CustomSelectClass) {
-                console.error('CustomSelect not available. Please ensure users-modals.js is loaded before transfers-forms.js.');
+                // Silently return - CustomSelect is optional, will use fallback
                 return;
             }
             
@@ -710,7 +710,7 @@ function populateNewTransferForm(itemId = null) {
             }
             
             if (!CustomSelectClass) {
-                console.error('CustomSelect not available. Please ensure users-modals.js is loaded before transfers-forms.js.');
+                // Silently return - CustomSelect is optional, will use fallback
                 return;
             }
             
@@ -784,17 +784,35 @@ function populateNewTransferForm(itemId = null) {
             }
         }, 100);
     } else {
-        // For other users: use item ID (original behavior)
+        // For other users: use licence plate with automatic verification
         form.innerHTML = `
         <div class="space-y-4">
+            <!-- Error message container -->
+            <div id="transferFormError" class="hidden">
+                <!-- Error messages will be displayed here -->
+            </div>
+            
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Item a Transferir *</label>
-                <input type="number" id="newTransferItemId" 
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
-                    placeholder="ID del item" 
-                    value="${itemIdValue}"
-                    required>
-                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ingresa el ID del item que deseas transferir</p>
+                <!-- Inventory Info Display (shown after verification) -->
+                <div id="itemInventoryInfo" class="mb-3 hidden">
+                    <!-- Will be populated when item is verified -->
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="newTransferLicencePlate" 
+                        class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00AF00]" 
+                        placeholder="Placa del item" 
+                        autocomplete="off"
+                        required>
+                    <button type="button" id="verifyItemBtn" onclick="verifyItemByLicencePlate()" 
+                        class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-search"></i>
+                        <span class="hidden sm:inline">Verificar</span>
+                    </button>
+                </div>
+                <input type="hidden" id="newTransferItemId" value="${itemIdValue}">
+                <div id="itemVerificationResult" class="mt-2"></div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Ingresa la placa del item. La búsqueda se realizará automáticamente.</p>
             </div>
             
             <div>
@@ -822,12 +840,94 @@ function populateNewTransferForm(itemId = null) {
                 class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                 Cancelar
             </button>
-            <button type="submit" 
-                class="flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors">
+            <button type="submit" id="userTransferSubmitBtn"
+                class="flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors cursor-not-allowed" 
+                disabled>
                 Solicitar Transferencia
             </button>
         </div>
     `;
+    
+    // Setup automatic search with debounce
+    setTimeout(() => {
+        const licencePlateInput = document.getElementById('newTransferLicencePlate');
+        const submitButton = document.getElementById('userTransferSubmitBtn');
+        
+        if (licencePlateInput) {
+            let debounceTimer;
+            
+            // Auto-search on input with debounce (500ms delay)
+            licencePlateInput.addEventListener('input', (e) => {
+                const value = e.target.value.trim();
+                
+                // Clear previous timer
+                clearTimeout(debounceTimer);
+                
+                // Clear verification result if input is empty
+                if (!value) {
+                    const resultDiv = document.getElementById('itemVerificationResult');
+                    const inventoryInfoDiv = document.getElementById('itemInventoryInfo');
+                    const itemIdInput = document.getElementById('newTransferItemId');
+                    
+                    if (resultDiv) resultDiv.innerHTML = '';
+                    if (inventoryInfoDiv) {
+                        inventoryInfoDiv.classList.add('hidden');
+                        inventoryInfoDiv.innerHTML = '';
+                    }
+                    if (itemIdInput) itemIdInput.value = '';
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        submitButton.className = 'flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors cursor-not-allowed';
+                    }
+                    return;
+                }
+                
+                // Only search if value has at least 2 characters
+                if (value.length >= 2) {
+                    // Show loading state
+                    const resultDiv = document.getElementById('itemVerificationResult');
+                    if (resultDiv) {
+                        resultDiv.innerHTML = `
+                            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                <p class="text-sm text-blue-800 dark:text-blue-300">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                                    Buscando...
+                                </p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Debounce: wait 500ms after user stops typing
+                    debounceTimer = setTimeout(() => {
+                        verifyItemByLicencePlate();
+                    }, 500);
+                }
+            });
+            
+            // Also allow Enter key to search immediately
+            licencePlateInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    clearTimeout(debounceTimer);
+                    verifyItemByLicencePlate();
+                }
+            });
+        }
+        
+        // Re-attach form submit listener
+        const formElement = document.getElementById('newTransferForm');
+        if (formElement) {
+            const submitHandler = window.handleNewTransferSubmit || handleNewTransferSubmit;
+            if (typeof submitHandler === 'function') {
+                formElement.removeEventListener('submit', submitHandler);
+                formElement.addEventListener('submit', (e) => {
+                    console.log('Form submit event triggered (user form)');
+                    submitHandler(e);
+                }, { once: false });
+                console.log('Submit listener attached to user form');
+            }
+        }
+    }, 100);
     }
 }
 
@@ -909,6 +1009,13 @@ async function verifyItemByLicencePlate() {
                 </div>
             `;
             
+            // Enable submit button for user form
+            const submitButton = document.getElementById('userTransferSubmitBtn');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.className = 'flex-1 px-4 py-2 bg-[#00AF00] hover:bg-[#008800] text-white rounded-xl transition-colors';
+            }
+            
             // Show inventory info if available
             if (inventoryInfoDiv && item.inventoryId && item.inventoryName) {
                 inventoryInfoDiv.innerHTML = `
@@ -960,6 +1067,13 @@ async function verifyItemByLicencePlate() {
                 inventoryInfoDiv.classList.add('hidden');
                 inventoryInfoDiv.innerHTML = '';
             }
+            
+            // Disable submit button for user form
+            const submitButton = document.getElementById('userTransferSubmitBtn');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.className = 'flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors cursor-not-allowed';
+            }
         } else {
             // Try to get error message from response
             let errorMessage = 'Error al verificar el item';
@@ -1001,6 +1115,13 @@ async function verifyItemByLicencePlate() {
             if (inventoryInfoDiv) {
                 inventoryInfoDiv.classList.add('hidden');
                 inventoryInfoDiv.innerHTML = '';
+            }
+            
+            // Disable submit button for user form
+            const submitButton = document.getElementById('userTransferSubmitBtn');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.className = 'flex-1 px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors cursor-not-allowed';
             }
         }
     } catch (error) {
@@ -1116,8 +1237,24 @@ async function handleNewTransferSubmit(event) {
             // For superadmin, warehouse, and admin regional, get itemId from hidden input
             itemId = document.getElementById('newTransferItemId')?.value?.trim();
         } else {
-            // For other users, get from visible input
+            // For other users, get from hidden input (set after verification)
             itemId = document.getElementById('newTransferItemId')?.value?.trim();
+            
+            // For users, verify that item was validated
+            if (!itemId) {
+                const licencePlate = document.getElementById('newTransferLicencePlate')?.value?.trim();
+                if (licencePlate) {
+                    if (window.showErrorToast) {
+                        window.showErrorToast('Validación Requerida', 'Por favor verifica que el item existe antes de continuar. La búsqueda se realiza automáticamente al escribir la placa.');
+                    }
+                } else {
+                    if (window.showErrorToast) {
+                        window.showErrorToast('Error', 'Por favor ingresa la placa del item');
+                    }
+                }
+                isSubmittingTransfer = false;
+                return;
+            }
         }
         
         const destinationInventoryId = document.getElementById('newTransferDestinationInventoryId')?.value?.trim();
@@ -2121,13 +2258,12 @@ let newTransferInstitutionSelect = null;
 let newTransferInventorySelect = null;
 
 // Ensure CustomSelect is available - it should be loaded from centers.js
-// Wait for it to be available
+// Wait for it to be available (silently, don't show warnings if not critical)
 if (typeof window.CustomSelect === "undefined" && typeof CustomSelect === "undefined") {
-    // Wait a bit for centers.js to load
+    // Wait a bit for centers.js to load (silently)
     setTimeout(() => {
-        if (typeof window.CustomSelect === "undefined" && typeof CustomSelect === "undefined") {
-            console.warn("CustomSelect not found. Please ensure centers.js is loaded before transfers-forms.js");
-        }
+        // Only log if we're actually trying to use it and it's still not available
+        // This will be handled gracefully in the functions that use it
     }, 500);
 }
 
@@ -2138,7 +2274,7 @@ function initializeTransferFormSelects() {
     // Check if CustomSelect is available
     const CustomSelectClass = window.CustomSelect || CustomSelect;
     if (!CustomSelectClass) {
-        console.error('CustomSelect is not available');
+        // Silently return - CustomSelect is optional for some forms
         return;
     }
     
