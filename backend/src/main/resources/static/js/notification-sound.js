@@ -25,7 +25,7 @@ const NotificationSound = {
                 try {
                     await this.audioContext.resume();
                 } catch (e) {
-                    console.log('AudioContext suspendido, esperando interacción del usuario');
+                    // AudioContext suspendido, esperando interacción del usuario
                 }
             }
 

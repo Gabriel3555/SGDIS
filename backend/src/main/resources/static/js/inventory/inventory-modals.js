@@ -20,7 +20,7 @@ if (
       );
       this.textElement = this.container.querySelector(".custom-select-text");
       
-      // Debug: log if optionsContainer is found
+      // Debug:
       if (!this.optionsContainer) {
         console.error(`CustomSelect: optionsContainer not found for "${containerId}"`, {
           container: this.container,
@@ -2126,6 +2126,13 @@ async function showNewInventoryModal() {
 
   resetRegionalSelection();
 
+  // Initialize CustomSelects for institution and owner (for superadmin)
+  // Small delay to ensure modal is fully rendered
+  setTimeout(() => {
+    ensureNewInventoryInstitutionSelect();
+    ensureNewInventoryOwnerSelect();
+  }, 50);
+
   // Don't load users initially - wait for institution selection
   // Initialize owner select with placeholder message
   const ownerSelect = ensureNewInventoryOwnerSelect();
@@ -2307,9 +2314,6 @@ async function loadUsersForNewInventory(institutionId = null) {
         // If user has institutionId as number, compare directly
         if (userInstitutionId !== null && userInstitutionId !== undefined) {
           const matches = parseInt(userInstitutionId) === institutionIdNum;
-          if (matches) {
-            console.log('User matched by institutionId:', user.fullName || user.email, 'institutionId:', userInstitutionId);
-          }
           return matches;
         }
         
@@ -2319,16 +2323,12 @@ async function loadUsersForNewInventory(institutionId = null) {
             ? user.institution 
             : (user.institution.name || user.institution.nombre);
           const matches = userInstitutionName === institutionName;
-          if (matches) {
-            console.log('User matched by institution name:', user.fullName || user.email, 'institution:', userInstitutionName);
-          }
           return matches;
         }
         
         return false;
       });
       
-      console.log(`Filtered ${filteredUsers.length} users from ${users.length} total users for institution ID ${institutionIdNum} (${institutionName || 'name not found'})`);
 
       if (filteredUsers.length === 0) {
         populateNewInventoryOwnerSelect([]);
@@ -2352,50 +2352,94 @@ async function loadUsersForNewInventory(institutionId = null) {
 
 function ensureNewInventoryOwnerSelect() {
   if (!window.newInventoryOwnerSelect) {
-    const selectElement = document.getElementById('newInventoryOwnerId');
-    if (!selectElement) {
-      console.error('Select element newInventoryOwnerId not found');
+    // Check if CustomSelect container exists (for superadmin)
+    const customSelectContainer = document.getElementById('newInventoryOwnerIdSelect');
+    const hiddenInput = document.getElementById('newInventoryOwnerId');
+    
+    if (customSelectContainer) {
+      // Use CustomSelect for superadmin
+      if (typeof CustomSelect === 'undefined' && typeof window.CustomSelect === 'undefined') {
+        console.error('CustomSelect is not available');
+        return null;
+      }
+      
+      const CustomSelectClass = window.CustomSelect || CustomSelect;
+      
+      try {
+        window.newInventoryOwnerSelect = new CustomSelectClass("newInventoryOwnerIdSelect", {
+          placeholder: "Seleccionar propietario...",
+          searchable: true,
+          onChange: function(option) {
+            // Update hidden input
+            if (hiddenInput) {
+              hiddenInput.value = option ? option.value : '';
+            }
+          },
+        });
+      } catch (error) {
+        console.error('Error initializing CustomSelect for owner:', error);
+        return null;
+      }
+    } else if (hiddenInput) {
+      // Fallback: Use native select wrapper (for other roles)
+      const selectElement = document.querySelector('select[id="newInventoryOwnerId"]');
+      if (!selectElement) {
+        console.error('Select element newInventoryOwnerId not found');
+        return null;
+      }
+      
+      // Create a wrapper object with methods compatible with CustomSelect API
+      window.newInventoryOwnerSelect = {
+        element: selectElement,
+        setOptions: function(options) {
+          // Clear existing options
+          this.element.innerHTML = '';
+          
+          if (options && Array.isArray(options)) {
+            options.forEach(option => {
+              const optionElement = document.createElement('option');
+              optionElement.value = option.value || '';
+              optionElement.textContent = option.label || option.value || '';
+              if (option.disabled) {
+                optionElement.disabled = true;
+              }
+              this.element.appendChild(optionElement);
+            });
+          }
+        },
+        setValue: function(value) {
+          if (this.element) {
+            this.element.value = value || '';
+            if (hiddenInput) {
+              hiddenInput.value = value || '';
+            }
+          }
+        },
+        getValue: function() {
+          // Try to get from hidden input first, then from select
+          if (hiddenInput && hiddenInput.value) {
+            return hiddenInput.value;
+          }
+          return this.element ? this.element.value : '';
+        },
+        clear: function() {
+          if (this.element) {
+            this.element.value = '';
+            if (hiddenInput) {
+              hiddenInput.value = '';
+            }
+          }
+        },
+        setDisabled: function(disabled) {
+          if (this.element) {
+            this.element.disabled = !!disabled;
+          }
+        }
+      };
+    } else {
+      console.error('Neither CustomSelect container nor select element found for owner');
       return null;
     }
-    
-    // Create a wrapper object with methods compatible with CustomSelect API
-    window.newInventoryOwnerSelect = {
-      element: selectElement,
-      setOptions: function(options) {
-        // Clear existing options
-        this.element.innerHTML = '';
-        
-        if (options && Array.isArray(options)) {
-          options.forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option.value || '';
-            optionElement.textContent = option.label || option.value || '';
-            if (option.disabled) {
-              optionElement.disabled = true;
-            }
-            this.element.appendChild(optionElement);
-          });
-        }
-      },
-      setValue: function(value) {
-        if (this.element) {
-          this.element.value = value || '';
-        }
-      },
-      getValue: function() {
-        return this.element ? this.element.value : '';
-      },
-      clear: function() {
-        if (this.element) {
-          this.element.value = '';
-        }
-      },
-      setDisabled: function(disabled) {
-        if (this.element) {
-          this.element.disabled = !!disabled;
-        }
-      }
-    };
   }
   return window.newInventoryOwnerSelect;
 }
@@ -2468,80 +2512,149 @@ const inventoryInstitutionsByRegionalCache = new Map();
 
 function ensureNewInventoryInstitutionSelect() {
   if (!window.newInventoryInstitutionSelect) {
-    const selectElement = document.getElementById('newInventoryInstitutionId');
-    if (!selectElement) {
-      console.error('Select element newInventoryInstitutionId not found');
+    // Check if CustomSelect container exists (for superadmin)
+    const customSelectContainer = document.getElementById('newInventoryInstitutionIdSelect');
+    const hiddenInput = document.getElementById('newInventoryInstitutionId');
+    
+    if (customSelectContainer) {
+      // Use CustomSelect for superadmin
+      if (typeof CustomSelect === 'undefined' && typeof window.CustomSelect === 'undefined') {
+        console.error('CustomSelect is not available');
+        return null;
+      }
+      
+      const CustomSelectClass = window.CustomSelect || CustomSelect;
+      
+      try {
+        window.newInventoryInstitutionSelect = new CustomSelectClass("newInventoryInstitutionIdSelect", {
+          placeholder: "Seleccionar centro...",
+          searchable: true,
+          onChange: function(option) {
+            // Update hidden input
+            if (hiddenInput) {
+              hiddenInput.value = option ? option.value : '';
+            }
+            
+            const institutionId = option ? option.value : '';
+            const ownerSelect = ensureNewInventoryOwnerSelect();
+            
+            if (institutionId && institutionId !== '') {
+              // Clear current owner selection
+              if (ownerSelect) {
+                ownerSelect.clear();
+              }
+              // Reload users filtered by institution
+              loadUsersForNewInventory(institutionId);
+            } else {
+              // If no institution selected, reset owner select
+              if (ownerSelect) {
+                ownerSelect.clear();
+                ownerSelect.setOptions([
+                  { value: "", label: "Selecciona primero una institución", disabled: true },
+                ]);
+                ownerSelect.setDisabled(true);
+              }
+            }
+          },
+        });
+      } catch (error) {
+        console.error('Error initializing CustomSelect for institution:', error);
+        return null;
+      }
+    } else if (hiddenInput) {
+      // Fallback: Use native select wrapper (for other roles)
+      const selectElement = document.querySelector('select[id="newInventoryInstitutionId"]');
+      if (!selectElement) {
+        console.error('Select element newInventoryInstitutionId not found');
+        return null;
+      }
+      
+      // Create a wrapper object with methods compatible with CustomSelect API
+      window.newInventoryInstitutionSelect = {
+        element: selectElement,
+        setOptions: function(options) {
+          // Clear existing options except the first placeholder
+          this.element.innerHTML = '<option value="">Seleccionar centro...</option>';
+          
+          if (options && Array.isArray(options)) {
+            options.forEach(option => {
+              const optionElement = document.createElement('option');
+              optionElement.value = option.value || '';
+              optionElement.textContent = option.label || option.value || '';
+              if (option.disabled) {
+                optionElement.disabled = true;
+              }
+              this.element.appendChild(optionElement);
+            });
+          }
+        },
+        setValue: function(value) {
+          if (this.element) {
+            this.element.value = value || '';
+            // Update hidden input if it exists
+            if (hiddenInput) {
+              hiddenInput.value = value || '';
+            }
+            // Trigger change event
+            this.element.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        },
+        getValue: function() {
+          // Try to get from hidden input first, then from select
+          if (hiddenInput && hiddenInput.value) {
+            return hiddenInput.value;
+          }
+          return this.element ? this.element.value : '';
+        },
+        clear: function() {
+          if (this.element) {
+            this.element.value = '';
+            if (hiddenInput) {
+              hiddenInput.value = '';
+            }
+            this.element.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        },
+        setDisabled: function(disabled) {
+          if (this.element) {
+            this.element.disabled = !!disabled;
+          }
+        },
+        refresh: function() {
+          // No-op for native select
+        }
+      };
+      
+      // Add change event listener
+      selectElement.addEventListener('change', function() {
+        const institutionId = selectElement.value;
+        if (hiddenInput) {
+          hiddenInput.value = institutionId;
+        }
+        const ownerSelect = ensureNewInventoryOwnerSelect();
+        
+        if (institutionId && institutionId !== '') {
+          // Clear current owner selection
+          if (ownerSelect) {
+            ownerSelect.clear();
+          }
+          // Reload users filtered by institution
+          loadUsersForNewInventory(institutionId);
+        } else {
+          // If no institution selected, reset owner select
+          if (ownerSelect) {
+            ownerSelect.clear();
+            ownerSelect.setOptions([
+              { value: "", label: "Selecciona primero una institución", disabled: true },
+            ]);
+            ownerSelect.setDisabled(true);
+          }
+        }
+      });
+    } else {
+      console.error('Neither CustomSelect container nor select element found for institution');
       return null;
     }
-    
-    // Create a wrapper object with methods compatible with CustomSelect API
-    window.newInventoryInstitutionSelect = {
-      element: selectElement,
-      setOptions: function(options) {
-        // Clear existing options except the first placeholder
-        this.element.innerHTML = '<option value="">Seleccionar centro...</option>';
-        
-        if (options && Array.isArray(options)) {
-          options.forEach(option => {
-            const optionElement = document.createElement('option');
-            optionElement.value = option.value || '';
-            optionElement.textContent = option.label || option.value || '';
-            if (option.disabled) {
-              optionElement.disabled = true;
-            }
-            this.element.appendChild(optionElement);
-          });
-        }
-      },
-      setValue: function(value) {
-        if (this.element) {
-          this.element.value = value || '';
-          // Trigger change event
-          this.element.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      },
-      getValue: function() {
-        return this.element ? this.element.value : '';
-      },
-      clear: function() {
-        if (this.element) {
-          this.element.value = '';
-          this.element.dispatchEvent(new Event('change', { bubbles: true }));
-        }
-      },
-      setDisabled: function(disabled) {
-        if (this.element) {
-          this.element.disabled = !!disabled;
-        }
-      },
-      refresh: function() {
-        // No-op for native select
-      }
-    };
-    
-    // Add change event listener
-    selectElement.addEventListener('change', function() {
-      const institutionId = selectElement.value;
-      const ownerSelect = ensureNewInventoryOwnerSelect();
-      
-      if (institutionId && institutionId !== '') {
-        // Clear current owner selection
-        if (ownerSelect) {
-          ownerSelect.clear();
-        }
-        // Reload users filtered by institution
-        loadUsersForNewInventory(institutionId);
-      } else {
-        // If no institution selected, reset owner select
-        if (ownerSelect) {
-          ownerSelect.clear();
-          ownerSelect.setOptions([
-            { value: "", label: "Selecciona primero una institución", disabled: true },
-          ]);
-          ownerSelect.setDisabled(true);
-        }
-      }
-    });
   }
   return window.newInventoryInstitutionSelect;
 }
@@ -3510,7 +3623,6 @@ async function loadUsersForRoleAssignment(inventoryId) {
           const userInstIdNum = parseInt(userInstitutionId);
           const matches = institutionIdsInRegional.includes(userInstIdNum);
           if (matches) {
-            console.log("User matched by institutionId:", user.fullName || user.email, "institutionId:", userInstIdNum);
           }
           return matches;
         }
@@ -3522,9 +3634,6 @@ async function loadUsersForRoleAssignment(inventoryId) {
         
         if (userRegionalId) {
           const matches = parseInt(userRegionalId) === regionalIdNum;
-          if (matches) {
-            console.log("User matched by regionalId:", user.fullName || user.email, "regionalId:", userRegionalId);
-          }
           return matches;
         }
         
@@ -3537,7 +3646,6 @@ async function loadUsersForRoleAssignment(inventoryId) {
           });
           
           if (matchingInstitution) {
-            console.log("User matched by institution name:", user.fullName || user.email, "institution:", userInstitutionName);
             return true;
           }
         }
@@ -3545,7 +3653,6 @@ async function loadUsersForRoleAssignment(inventoryId) {
         return false;
       });
 
-      console.log(`Filtered ${filteredUsers.length} users from ${allUsers.length} total users for regional ID ${regionalIdNum}`);
 
       if (filteredUsers.length === 0) {
         populateRoleUserSelect([]);

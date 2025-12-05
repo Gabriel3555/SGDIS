@@ -300,8 +300,8 @@ function updateItemsCards() {
                     <button onclick="event.stopPropagation(); showCancelItemModal(${item.id})" class="px-2.5 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs transition-colors" title="Solicitar Cancelación">
                         <i class="fas fa-ban"></i>
                     </button>
-                    <button onclick="event.stopPropagation(); showDeleteItemModal(${item.id})" class="px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition-colors" title="Eliminar Item">
-                        <i class="fas fa-trash"></i>
+                    <button onclick="event.stopPropagation(); showDeleteItemModal(${item.id})" class="px-2.5 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs transition-colors" title="Desactivar Item">
+                        <i class="fas fa-toggle-off"></i>
                     </button>
                 </div>
             </div>
@@ -393,8 +393,8 @@ function updateItemsList() {
                         <button onclick="showCancelItemModal(${item.id})" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors" title="Solicitar Cancelación">
                             <i class="fas fa-ban"></i>
                         </button>
-                        <button onclick="showDeleteItemModal(${item.id})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors" title="Eliminar Item">
-                            <i class="fas fa-trash"></i>
+                        <button onclick="showDeleteItemModal(${item.id})" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors" title="Desactivar Item">
+                            <i class="fas fa-toggle-off"></i>
                         </button>
                     </div>
                 </td>

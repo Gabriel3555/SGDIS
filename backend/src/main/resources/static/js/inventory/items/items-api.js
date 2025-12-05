@@ -289,7 +289,7 @@ async function getItemImages(itemId) {
   }
 }
 
-async function deleteItem(itemId) {
+async function deactivateItem(itemId) {
   try {
     const token = localStorage.getItem("jwt");
     const headers = {
@@ -305,7 +305,7 @@ async function deleteItem(itemId) {
     });
 
     if (!response.ok) {
-      let errorMessage = "Error al eliminar el item";
+      let errorMessage = "Error al desactivar el item";
       try {
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
@@ -327,9 +327,14 @@ async function deleteItem(itemId) {
 
     return await response.json();
   } catch (error) {
-    console.error("Error deleting item:", error);
+    console.error("Error deactivating item:", error);
     throw error;
   }
+}
+
+// Keep deleteItem as alias for backward compatibility (but it now does soft delete)
+async function deleteItem(itemId) {
+  return deactivateItem(itemId);
 }
 
 async function deleteItemImage(itemId, imageUrl) {
@@ -498,6 +503,7 @@ window.createItem = createItem;
 window.updateItem = updateItem;
 window.getItemById = getItemById;
 window.deleteItem = deleteItem;
+window.deactivateItem = deactivateItem;
 window.uploadItemImage = uploadItemImage;
 window.getItemImages = getItemImages;
 window.deleteItemImage = deleteItemImage;

@@ -666,9 +666,9 @@ function showDeleteItemModal(itemId) {
     if (item) {
       const messageElement = document.getElementById("deleteItemMessage");
       if (messageElement) {
-        messageElement.textContent = `¿Está seguro que desea eliminar el item "${
+        messageElement.textContent = `¿Está seguro que desea desactivar el item "${
           item.productName || "Sin nombre"
-        }"? Esta acción no se puede deshacer.`;
+        }"? El item quedará inactivo y no se mostrará en las listas activas.`;
       }
     }
   }
@@ -685,8 +685,9 @@ function closeDeleteItemModal() {
 
 async function confirmDeleteItem() {
   if (!window.itemsData || !window.itemsData.currentItemId) {
-    if (window.showErrorToast) {
-      window.showErrorToast("Error", "No se ha seleccionado un item para eliminar");
+    const showToast = window.showInventoryErrorToast || window.showErrorToast;
+    if (typeof showToast === 'function') {
+      showToast("Error", "No se ha seleccionado un item para desactivar", true, 4000);
     }
     return;
   }
@@ -698,23 +699,22 @@ async function confirmDeleteItem() {
     const deleteButton = document.querySelector('#deleteItemModal button[onclick="confirmDeleteItem()"]');
     if (deleteButton) {
       deleteButton.disabled = true;
-      deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Eliminando...';
+      deleteButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Desactivando...';
     }
 
-    // Call delete API
-    if (window.deleteItem) {
-      const response = await window.deleteItem(itemId);
+    // Call deactivate API (deleteItem now does soft delete)
+    if (window.deactivateItem || window.deleteItem) {
+      const deactivateFn = window.deactivateItem || window.deleteItem;
+      const response = await deactivateFn(itemId);
       
-      // Show success message
-      if (window.showSuccessToast) {
-        window.showSuccessToast(
-          "Éxito",
-          response.message || `Item "${response.itemName || 'eliminado'}" eliminado correctamente`
-        );
-      } else if (window.showErrorToast) {
-        window.showErrorToast(
-          "Éxito",
-          response.message || "Item eliminado correctamente"
+      // Show success toast
+      const showToast = window.showInventorySuccessToast || window.showSuccessToast;
+      if (typeof showToast === 'function') {
+        showToast(
+          "Item Desactivado",
+          response.message || `El item "${response.itemName || 'desactivado'}" ha sido desactivado exitosamente`,
+          true,
+          5000
         );
       }
 
@@ -728,22 +728,25 @@ async function confirmDeleteItem() {
         window.updateItemsUI();
       }
     } else {
-      throw new Error("La función de eliminar item no está disponible");
+      throw new Error("La función de desactivar item no está disponible");
     }
   } catch (error) {
-    console.error("Error deleting item:", error);
+    console.error("Error deactivating item:", error);
     
     // Restore button state
     const deleteButton = document.querySelector('#deleteItemModal button[onclick="confirmDeleteItem()"]');
     if (deleteButton) {
       deleteButton.disabled = false;
-      deleteButton.innerHTML = 'Eliminar Item';
+      deleteButton.innerHTML = 'Desactivar Item';
     }
 
-    if (window.showErrorToast) {
-      window.showErrorToast(
+    const showToast = window.showInventoryErrorToast || window.showErrorToast;
+    if (typeof showToast === 'function') {
+      showToast(
         "Error",
-        error.message || "No se pudo eliminar el item"
+        error.message || "No se pudo desactivar el item",
+        true,
+        5000
       );
     }
   }
