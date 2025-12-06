@@ -1705,6 +1705,83 @@ async function loadInventoryStatistics() {
     }
 }
 
+// Load all inventories for search (fetches all pages)
+async function loadAllInventoriesForSearch() {
+    try {
+        const token = localStorage.getItem('jwt');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                            (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        
+        const pageSize = 6; // Use the default page size
+        let allInventories = [];
+        let currentPage = 0;
+        let totalPages = 1;
+        let hasMorePages = true;
+
+        // Fetch all pages
+        while (hasMorePages && currentPage < 100) { // Safety limit of 100 pages
+            const endpoint = buildInventoryEndpoint(currentPage, pageSize);
+            
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to load page ${currentPage}: ${response.status} ${response.statusText}`);
+            }
+
+            const payload = await response.json();
+            let inventories = [];
+
+            if (Array.isArray(payload)) {
+                inventories = payload;
+                hasMorePages = false; // If it's an array, it's not paginated
+            } else if (payload && Array.isArray(payload.content)) {
+                inventories = payload.content;
+                totalPages = payload.totalPages || 1;
+                hasMorePages = currentPage < totalPages - 1;
+            } else {
+                hasMorePages = false;
+            }
+
+            allInventories = allInventories.concat(inventories);
+            currentPage++;
+
+            // If we got fewer items than the page size, we've reached the end
+            if (inventories.length < pageSize) {
+                hasMorePages = false;
+            }
+        }
+
+        // Update inventoryData with all inventories
+        if (window.inventoryData) {
+            window.inventoryData.inventories = allInventories;
+            window.inventoryData.filteredInventories = [...allInventories];
+            window.inventoryData.currentPage = 1;
+        }
+
+        // Also update local inventoryData reference
+        if (inventoryData && inventoryData !== window.inventoryData) {
+            inventoryData.inventories = allInventories;
+            inventoryData.filteredInventories = [...allInventories];
+            inventoryData.currentPage = 1;
+        }
+
+        return allInventories;
+    } catch (error) {
+        console.error('Error loading all inventories for search:', error);
+        throw error;
+    }
+}
+
 // Export functions
 window.loadRegionalsForFilter = loadRegionalsForFilter;
 window.loadInstitutionsForFilter = loadInstitutionsForFilter;
@@ -1712,3 +1789,4 @@ window.handleRegionalFilterChange = handleRegionalFilterChange;
 window.handleInstitutionFilterChange = handleInstitutionFilterChange;
 window.loadInventoryStatistics = loadInventoryStatistics;
 window.loadInventoryStatistics = loadInventoryStatistics;
+window.loadAllInventoriesForSearch = loadAllInventoriesForSearch;

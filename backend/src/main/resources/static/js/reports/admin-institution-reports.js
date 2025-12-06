@@ -212,6 +212,9 @@ function populateInventoryDropdown(inventoriesList) {
     
     if (!inventoriesList || inventoriesList.length === 0) {
         select.innerHTML = '<option value="">No hay inventarios disponibles</option>';
+        // Enable button even if no inventories (user can still generate report)
+        const generateBtn = document.getElementById('generateReportBtn');
+        if (generateBtn) generateBtn.disabled = false;
         return;
     }
     
@@ -223,6 +226,10 @@ function populateInventoryDropdown(inventoriesList) {
         option.textContent = inventory.name || 'Sin nombre';
         select.appendChild(option);
     });
+    
+    // Enable button once inventories are loaded (inventory selection is optional)
+    const generateBtn = document.getElementById('generateReportBtn');
+    if (generateBtn) generateBtn.disabled = false;
 }
 
 // Clear all filters
