@@ -8,6 +8,7 @@ import com.sgdis.backend.loan.application.dto.ReturnItemRequest;
 import com.sgdis.backend.loan.application.dto.ReturnItemResponse;
 import com.sgdis.backend.loan.infrastructure.entity.LoanEntity;
 import com.sgdis.backend.user.infrastructure.entity.UserEntity;
+import com.sgdis.backend.utils.DateTimeUtils;
 
 import java.time.LocalDateTime;
 
@@ -17,7 +18,7 @@ public final class LoanMapper {
 
     public static LoanEntity toEntity(LendItemRequest request, ItemEntity item, UserEntity lender, UserEntity responsible) {
         return LoanEntity.builder()
-                .lendAt(LocalDateTime.now())
+                .lendAt(DateTimeUtils.now())
                 .detailsLend(request.details())
                 .responsible(responsible)
                 .item(item)
