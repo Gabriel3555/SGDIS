@@ -644,7 +644,32 @@ function updateUsersTable() {
     // Only exclude current user on first page (backend handles other pages)
     // The backend already requested one extra user for first page if needed
     if (shouldExcludeCurrentUser && window.usersData.currentPage === 1) {
+      const beforeFilterCount = usersToDisplay.length;
       usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+      
+      // If after filtering we have fewer users than itemsPerPage, load additional users
+      // Note: This should ideally be handled in loadUsers, but keeping as fallback
+      if (usersToDisplay.length < window.usersData.itemsPerPage && beforeFilterCount > 0) {
+        const neededUsers = window.usersData.itemsPerPage - usersToDisplay.length;
+        // Load additional users asynchronously with a delay for smoother transition
+        if (typeof window.loadAdditionalUsersForFirstPage === 'function') {
+          // Use a small delay to make the loading smoother
+          setTimeout(() => {
+            window.loadAdditionalUsersForFirstPage(neededUsers).then(() => {
+              // Add a small delay before updating UI for smoother transition
+              setTimeout(() => {
+                // Update UI again after loading additional users
+                if (typeof window.updateUsersUI === 'function') {
+                  window.updateUsersUI();
+                }
+              }, 200);
+            }).catch(error => {
+              console.warn('Could not load additional users:', error);
+            });
+          }, 100);
+        }
+      }
+      
       // Limit to itemsPerPage to ensure consistent page size for first page
       usersToDisplay = usersToDisplay.slice(0, window.usersData.itemsPerPage);
     }
@@ -818,12 +843,30 @@ function updatePagination() {
   const totalUsers = window.usersData.totalUsers || 0;
 
   // Calculate items being shown on current page
-  const startItem =
-    (window.usersData.currentPage - 1) * window.usersData.itemsPerPage + 1;
-  const endItem = Math.min(
-    window.usersData.currentPage * window.usersData.itemsPerPage,
-    totalUsers
-  );
+  // Use the actual number of users in filteredUsers for the current page
+  const hasFilters =
+    window.usersData.searchTerm ||
+    window.usersData.selectedRole !== "all" ||
+    window.usersData.selectedStatus !== "all";
+  
+  let startItem, endItem;
+  if (hasFilters) {
+    // For filtered results, use local pagination
+    const startIndex = (window.usersData.currentPage - 1) * window.usersData.itemsPerPage;
+    const endIndex = startIndex + window.usersData.itemsPerPage;
+    const currentPageUsers = window.usersData.filteredUsers.slice(startIndex, endIndex);
+    startItem = window.usersData.filteredUsers.length > 0 ? startIndex + 1 : 0;
+    endItem = startItem + currentPageUsers.length - 1;
+  } else {
+    // For backend pagination, calculate based on page number
+    startItem = (window.usersData.currentPage - 1) * window.usersData.itemsPerPage + 1;
+    // Use actual number of users on current page, but don't exceed totalUsers
+    const currentPageUsersCount = window.usersData.filteredUsers.length;
+    endItem = Math.min(
+      startItem + currentPageUsersCount - 1,
+      totalUsers
+    );
+  }
 
   let paginationHtml = `
         <div class="text-sm text-gray-600">
@@ -1463,7 +1506,32 @@ function updateUsersCards() {
     // Only exclude current user on first page (backend handles other pages)
     // The backend already requested one extra user for first page if needed
     if (shouldExcludeCurrentUser && window.usersData.currentPage === 1) {
+      const beforeFilterCount = usersToDisplay.length;
       usersToDisplay = usersToDisplay.filter(user => user && user.id !== currentUserId);
+      
+      // If after filtering we have fewer users than itemsPerPage, load additional users
+      // Note: This should ideally be handled in loadUsers, but keeping as fallback
+      if (usersToDisplay.length < window.usersData.itemsPerPage && beforeFilterCount > 0) {
+        const neededUsers = window.usersData.itemsPerPage - usersToDisplay.length;
+        // Load additional users asynchronously with a delay for smoother transition
+        if (typeof window.loadAdditionalUsersForFirstPage === 'function') {
+          // Use a small delay to make the loading smoother
+          setTimeout(() => {
+            window.loadAdditionalUsersForFirstPage(neededUsers).then(() => {
+              // Add a small delay before updating UI for smoother transition
+              setTimeout(() => {
+                // Update UI again after loading additional users
+                if (typeof window.updateUsersUI === 'function') {
+                  window.updateUsersUI();
+                }
+              }, 200);
+            }).catch(error => {
+              console.warn('Could not load additional users:', error);
+            });
+          }, 100);
+        }
+      }
+      
       // Limit to itemsPerPage to ensure consistent page size for first page
       usersToDisplay = usersToDisplay.slice(0, window.usersData.itemsPerPage);
     }

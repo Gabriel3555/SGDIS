@@ -1141,7 +1141,107 @@ function handleInventorySearchInput(e) {
       window.inventoryData.currentPage = 1;
     }
 
-    // Apply filter immediately for real-time search
+    // Check if we're using server-side pagination
+    const useServerPagination = window.inventoryData && 
+                                 window.inventoryData.serverPagination !== null && 
+                                 window.inventoryData.serverPagination !== undefined;
+    
+    // If search term was cleared and we have original server pagination, restore it
+    if (!searchValue && window.inventoryData && window.inventoryData.originalServerPagination) {
+      // Restore original server pagination
+      window.inventoryData.serverPagination = window.inventoryData.originalServerPagination;
+      delete window.inventoryData.originalServerPagination;
+      
+      // Reload with normal page size
+      const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+      const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                             (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+      
+      if (isSuperAdmin || isAdminRegional) {
+        if (typeof window.loadInventories === 'function') {
+          window.loadInventories({ page: 0, size: 6 }).then(() => {
+            // After loading, apply the filter (which will show all since searchTerm is empty)
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          }).catch(error => {
+            console.error("Error loading inventories after clearing search:", error);
+            // Fallback to local filtering
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          });
+        }
+        return;
+      }
+    }
+    
+    // If using server-side pagination and there's a search term, reload all inventories
+    if (useServerPagination && searchValue) {
+      // For superadmin, reload all inventories to enable proper search
+      const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+      const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                             (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+      
+      if (isSuperAdmin || isAdminRegional) {
+        // Save original server pagination state to restore later
+        if (!window.inventoryData.originalServerPagination) {
+          window.inventoryData.originalServerPagination = JSON.parse(JSON.stringify(window.inventoryData.serverPagination));
+        }
+        
+        // Load all inventories by fetching all pages
+        if (typeof window.loadAllInventoriesForSearch === 'function') {
+          window.loadAllInventoriesForSearch().then(() => {
+            // Disable server pagination temporarily for client-side filtering
+            if (window.inventoryData.serverPagination) {
+              window.inventoryData.serverPagination = null;
+            }
+            
+            // After loading, apply the filter
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          }).catch(error => {
+            console.error("Error loading all inventories for search:", error);
+            // Fallback to local filtering
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          });
+        } else {
+          // Fallback: try to load with a large page size
+          if (typeof window.loadInventories === 'function') {
+            window.loadInventories({ page: 0, size: 10000 }).then(() => {
+              // Disable server pagination temporarily for client-side filtering
+              if (window.inventoryData.serverPagination) {
+                window.inventoryData.serverPagination = null;
+              }
+              
+              // After loading, apply the filter
+              if (typeof window.filterInventories === "function") {
+                window.filterInventories();
+              }
+            }).catch(error => {
+              console.error("Error loading inventories for search:", error);
+              // Fallback to local filtering
+              if (typeof window.filterInventories === "function") {
+                window.filterInventories();
+              }
+            });
+          } else {
+            // Final fallback to local filtering
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          }
+        }
+        return;
+      }
+    }
+
+    // Apply filter immediately for real-time search (client-side pagination or no search term)
     try {
       if (
         typeof window.filterInventories === "function" &&
@@ -1165,6 +1265,39 @@ function handleInventorySearchKeyup(e) {
       window.inventoryData.currentPage = 1;
     }
 
+    // Check if we have original server pagination to restore
+    if (window.inventoryData && window.inventoryData.originalServerPagination) {
+      // Restore original server pagination
+      window.inventoryData.serverPagination = window.inventoryData.originalServerPagination;
+      delete window.inventoryData.originalServerPagination;
+      
+      // Reload with normal page size
+      if (typeof window.loadInventories === 'function') {
+        const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                            (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                               (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+        
+        if (isSuperAdmin || isAdminRegional) {
+          // Reload with normal page size (6)
+          window.loadInventories({ page: 0, size: 6 }).then(() => {
+            // After loading, apply the filter (which will show all since searchTerm is empty)
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          }).catch(error => {
+            console.error("Error loading inventories after clearing search:", error);
+            // Fallback to local filtering
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          });
+          return;
+        }
+      }
+    }
+
+    // Apply filter for client-side pagination
     if (
       typeof window.filterInventories === "function" &&
       window.inventoryData
@@ -1178,7 +1311,77 @@ function handleInventorySearchKeypress(e) {
   if (e.key === "Enter") {
     e.preventDefault();
 
-    // Apply current search term
+    // Check if we're using server-side pagination
+    const useServerPagination = window.inventoryData && 
+                                 window.inventoryData.serverPagination !== null && 
+                                 window.inventoryData.serverPagination !== undefined;
+    
+    const searchValue = window.inventoryData?.searchTerm?.trim() || '';
+    
+    // If using server-side pagination and there's a search term, reload all inventories
+    if (useServerPagination && searchValue) {
+      const isSuperAdmin = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'SUPERADMIN') || 
+                          (window.location.pathname && window.location.pathname.includes('/superadmin'));
+      const isAdminRegional = (window.currentUserRole && window.currentUserRole.toUpperCase() === 'ADMIN_REGIONAL') || 
+                             (window.location.pathname && window.location.pathname.includes('/admin_regional'));
+      
+      if (isSuperAdmin || isAdminRegional) {
+        // Save original server pagination state to restore later
+        if (!window.inventoryData.originalServerPagination) {
+          window.inventoryData.originalServerPagination = JSON.parse(JSON.stringify(window.inventoryData.serverPagination));
+        }
+        
+        // Load all inventories by fetching all pages
+        if (typeof window.loadAllInventoriesForSearch === 'function') {
+          window.loadAllInventoriesForSearch().then(() => {
+            // Disable server pagination temporarily for client-side filtering
+            if (window.inventoryData.serverPagination) {
+              window.inventoryData.serverPagination = null;
+            }
+            
+            // After loading, apply the filter
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          }).catch(error => {
+            console.error("Error loading all inventories for search:", error);
+            // Fallback to local filtering
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          });
+        } else {
+          // Fallback: try to load with a large page size
+          if (typeof window.loadInventories === 'function') {
+            window.loadInventories({ page: 0, size: 10000 }).then(() => {
+              // Disable server pagination temporarily for client-side filtering
+              if (window.inventoryData.serverPagination) {
+                window.inventoryData.serverPagination = null;
+              }
+              
+              // After loading, apply the filter
+              if (typeof window.filterInventories === "function") {
+                window.filterInventories();
+              }
+            }).catch(error => {
+              console.error("Error loading inventories for search:", error);
+              // Fallback to local filtering
+              if (typeof window.filterInventories === "function") {
+                window.filterInventories();
+              }
+            });
+          } else {
+            // Final fallback to local filtering
+            if (typeof window.filterInventories === "function") {
+              window.filterInventories();
+            }
+          }
+        }
+        return;
+      }
+    }
+
+    // Apply current search term (client-side pagination or no search term)
     if (
       typeof window.filterInventories === "function" &&
       window.inventoryData

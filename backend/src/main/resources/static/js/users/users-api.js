@@ -242,6 +242,20 @@ async function loadUsers(page = 0) {
             
             usersData.users = loadedUsers;
             
+            // For first page without filters, if we have fewer users than itemsPerPage after filtering,
+            // load additional users from next page to fill the gap BEFORE updating UI
+            if (!hasFilters && page === 0 && loadedUsers.length < usersData.itemsPerPage) {
+                const neededUsers = usersData.itemsPerPage - loadedUsers.length;
+                // Load additional users synchronously before updating UI to avoid showing incomplete page
+                try {
+                    await loadAdditionalUsersForFirstPage(neededUsers);
+                    // Add a small delay for smoother transition
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } catch (error) {
+                    console.warn('Could not load additional users for first page:', error);
+                }
+            }
+            
             if (hasFilters) {
                 // Will be filtered by filterUsers function
                 usersData.filteredUsers = [...usersData.users];
@@ -258,11 +272,19 @@ async function loadUsers(page = 0) {
                     const superadminCountInPage = originalUsers.filter(u => u && u.role === 'SUPERADMIN').length;
                     // Estimate total excluding SUPERADMIN (this is approximate)
                     const estimatedTotal = Math.max(0, (pagedResponse.totalUsers || 0) - superadminCountInPage);
-                    usersData.totalUsers = estimatedTotal;
-                    usersData.totalPages = Math.ceil(estimatedTotal / usersData.itemsPerPage) || 1;
+                    // Only update totalUsers if it hasn't been set yet (first page) or if we're on the first page
+                    // This ensures consistent totals across pages
+                    if (page === 0 || !usersData.totalUsers || usersData.totalUsers === 0) {
+                        usersData.totalUsers = estimatedTotal;
+                        usersData.totalPages = Math.ceil(estimatedTotal / usersData.itemsPerPage) || 1;
+                    }
                 } else {
-                    usersData.totalPages = pagedResponse.totalPages || 0;
-                    usersData.totalUsers = pagedResponse.totalUsers || 0;
+                    // Only update totalUsers if it hasn't been set yet (first page) or if we're on the first page
+                    // This ensures consistent totals across pages
+                    if (page === 0 || !usersData.totalUsers || usersData.totalUsers === 0) {
+                        usersData.totalPages = pagedResponse.totalPages || 0;
+                        usersData.totalUsers = pagedResponse.totalUsers || 0;
+                    }
                 }
                 usersData.backendPage = pagedResponse.currentPage || 0;
                 usersData.currentPage = (pagedResponse.currentPage || 0) + 1; // Convert to 1-indexed for UI
@@ -280,9 +302,9 @@ async function loadUsers(page = 0) {
 }
 
 /**
- * Loads an additional user from the next page to fill the gap when current user is excluded
+ * Loads additional users from the next page to fill the gap when filtered users result in fewer than itemsPerPage
  */
-async function loadAdditionalUserForFirstPage() {
+async function loadAdditionalUsersForFirstPage(neededUsers) {
     try {
         const token = localStorage.getItem('jwt');
         const headers = { 'Content-Type': 'application/json' };
@@ -296,14 +318,18 @@ async function loadAdditionalUserForFirstPage() {
                            (window.location.pathname && window.location.pathname.includes('/warehouse'));
         const isSuperAdmin = (usersData.currentLoggedInUserRole && usersData.currentLoggedInUserRole.toUpperCase() === 'SUPERADMIN') ||
                              (window.location.pathname && window.location.pathname.includes('/superadmin'));
+        const currentUserId = usersData.currentLoggedInUserId;
+        
+        // Request more users than needed to account for potential filtering
+        const requestSize = neededUsers + 5; // Request extra to account for filtering
         
         let url;
         if (isAdminInstitution || isWarehouse) {
-            url = `/api/v1/users/institution?page=1&size=1`;
+            url = `/api/v1/users/institution?page=1&size=${requestSize}`;
         } else if (isAdminRegional) {
-            url = `/api/v1/users/regional?page=1&size=1`;
+            url = `/api/v1/users/regional?page=1&size=${requestSize}`;
         } else {
-            url = `/api/v1/users?page=1&size=1`;
+            url = `/api/v1/users?page=1&size=${requestSize}`;
         }
 
         const response = await fetch(url, {
@@ -313,27 +339,55 @@ async function loadAdditionalUserForFirstPage() {
 
         if (response.ok) {
             const pagedResponse = await response.json();
-            if (pagedResponse.users && pagedResponse.users.length > 0) {
-                const additionalUser = pagedResponse.users[0];
-                const currentUserId = usersData.currentLoggedInUserId;
-                
-                // Only add if it's not the current user
-                if (additionalUser.id !== currentUserId) {
-                    // Add to the end of current users
-                    usersData.users.push(additionalUser);
-                    usersData.filteredUsers.push(additionalUser);
-                    
-                    // Update UI
-                    if (window.updateUsersUI) {
-                        window.updateUsersUI();
-                    }
-                }
+            let additionalUsers = Array.isArray(pagedResponse.users) ? pagedResponse.users : [];
+            
+            // Apply same filters as in loadUsers
+            if (isSuperAdmin) {
+                additionalUsers = additionalUsers.filter(user => user && user.role !== 'SUPERADMIN');
             }
+            
+            if (isWarehouse) {
+                additionalUsers = additionalUsers.filter(user => user && user.role === 'USER');
+            }
+            
+            // Exclude current user
+            if (currentUserId) {
+                additionalUsers = additionalUsers.filter(user => user && user.id !== currentUserId);
+            }
+            
+            // Sort by ID descending
+            additionalUsers.sort((a, b) => {
+                const idA = a.id || 0;
+                const idB = b.id || 0;
+                return idB - idA;
+            });
+            
+            // Take only the needed number of users
+            const usersToAdd = additionalUsers.slice(0, neededUsers);
+            
+            // Add to current users
+            usersData.users.push(...usersToAdd);
+            usersData.filteredUsers.push(...usersToAdd);
+            
+            // IMPORTANT: Do NOT update totalUsers or totalPages here
+            // These users are already counted in the backend's total
+            // Updating them would cause inconsistent totals between pages
+            
+            // Don't update UI here - let the caller handle it after all users are loaded
+            // This prevents showing incomplete pages
         }
     } catch (error) {
-        console.warn('Could not load additional user:', error);
+        console.warn('Could not load additional users for first page:', error);
         // Silently fail - it's not critical
     }
+}
+
+/**
+ * Loads an additional user from the next page to fill the gap when current user is excluded
+ * @deprecated Use loadAdditionalUsersForFirstPage instead
+ */
+async function loadAdditionalUserForFirstPage() {
+    return loadAdditionalUsersForFirstPage(1);
 }
 
 // Flag to prevent multiple simultaneous delete operations
@@ -1167,5 +1221,6 @@ window.loadUserStatistics = loadUserStatistics;
 window.loadUsersData = loadUsersData;
 window.loadUsers = loadUsers;
 window.loadAdditionalUserForFirstPage = loadAdditionalUserForFirstPage;
+window.loadAdditionalUsersForFirstPage = loadAdditionalUsersForFirstPage;
 window.loadCurrentUserInfo = loadCurrentUserInfo;
 window.updateUsersWelcomeMessage = updateUsersWelcomeMessage;

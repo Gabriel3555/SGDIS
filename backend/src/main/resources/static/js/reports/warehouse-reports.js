@@ -6,7 +6,7 @@ let userInstitutionName = null;
 let userRegionalName = null;
 let inventories = {};
 let currentReportData = [];
-let currentReportType = 'items';
+let currentReportType = 'general';
 let currentReportFilters = {};
 
 // Store chart instances for PDF export
@@ -32,14 +32,9 @@ if (document.readyState !== 'loading') {
     }, 200);
 }
 
-// Setup date inputs to default values
+// Setup date inputs to default values - removed (no date filters)
 function setupDateInputs() {
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-    document.getElementById('startDate').valueAsDate = firstDay;
-    document.getElementById('endDate').valueAsDate = lastDay;
+    // No date filters - removed
 }
 
 // Load user info and inventories
@@ -113,6 +108,7 @@ function setupEventListeners() {
     if (inventorySelect) {
         inventorySelect.addEventListener('change', function() {
             // Inventory changed, no need to reload
+            // For warehouse, button is always enabled (inventory is optional)
         });
     }
 
@@ -123,6 +119,15 @@ function setupEventListeners() {
     // Clear filters button
     const clearBtn = document.getElementById('clearFiltersBtn');
     if (clearBtn) clearBtn.addEventListener('click', clearFilters);
+    
+    // For warehouse reports, enable button once inventories are loaded
+    // (inventory selection is optional, so button can be enabled after initial load)
+    setTimeout(() => {
+        const generateBtn = document.getElementById('generateReportBtn');
+        if (generateBtn && document.getElementById('inventorySelect') && document.getElementById('inventorySelect').options.length > 1) {
+            generateBtn.disabled = false;
+        }
+    }, 1000);
 
     // Export buttons - only PDF
     const exportPdfBtn = document.getElementById('exportPdfBtn');
@@ -385,6 +390,9 @@ function populateInventoryDropdown(inventoriesList) {
         select.disabled = false;
         select.className = select.className.replace('bg-gray-50', 'bg-white').replace('cursor-not-allowed', 'cursor-pointer');
         select.innerHTML = '<option value="">No hay inventarios disponibles</option>';
+        // Enable button even if no inventories (user can still generate report)
+        const generateBtn = document.getElementById('generateReportBtn');
+        if (generateBtn) generateBtn.disabled = false;
         return;
     }
     
@@ -398,6 +406,10 @@ function populateInventoryDropdown(inventoriesList) {
         option.textContent = inventory.name || 'Sin nombre';
         select.appendChild(option);
     });
+    
+    // Enable button once inventories are loaded (inventory selection is optional)
+    const generateBtn = document.getElementById('generateReportBtn');
+    if (generateBtn) generateBtn.disabled = false;
 }
 
 // Reset dropdowns
@@ -416,15 +428,10 @@ function resetDropdowns(types) {
 
 // Clear all filters
 function clearFilters() {
-    document.getElementById('reportTypeSelect').value = 'items';
+    // Report type is always 'general', no need to reset it
     document.getElementById('inventorySelect').value = '';
     
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-    
-    document.getElementById('startDate').valueAsDate = firstDay;
-    document.getElementById('endDate').valueAsDate = lastDay;
+    // No date filters - removed
     
     hideReportResults();
 }
@@ -464,10 +471,10 @@ async function generateReport() {
         }
     }
 
-    const reportType = document.getElementById('reportTypeSelect').value;
+    // Always use 'general' report type
+    const reportType = 'general';
     const inventoryId = document.getElementById('inventorySelect').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
+    // No date filters - removed
 
     // Show loading state
     document.getElementById('reportLoadingState').classList.remove('hidden');
@@ -478,62 +485,12 @@ async function generateReport() {
     currentReportFilters = {
         regionalId: userRegionalId,
         institutionId: userInstitutionId,
-        inventoryId,
-        startDate,
-        endDate
+        inventoryId
     };
 
     try {
-        let data = [];
-        
-        switch (reportType) {
-            case 'items':
-                // For items report, we need items, loans, and transfers
-                const items = await fetchItemsReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
-                const loans = await fetchLoansReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate).catch(() => []);
-                const transfers = await fetchTransfersReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate).catch(() => []);
-                data = {
-                    items: items || [],
-                    loans: loans || [],
-                    transfers: transfers || []
-                };
-                break;
-            case 'loans':
-                console.log('Fetching loans report with filters:', {
-                    regionalId: userRegionalId,
-                    institutionId: userInstitutionId,
-                    inventoryId: inventoryId,
-                    startDate: startDate,
-                    endDate: endDate
-                });
-                try {
-                    data = await fetchLoansReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
-                    console.log('Loans data received, length:', data ? data.length : 0, 'data:', data);
-                    if (!data || !Array.isArray(data)) {
-                        console.warn('Loans data is not an array, converting to empty array');
-                        data = [];
-                    }
-                } catch (error) {
-                    console.error('Error fetching loans:', error);
-                    showReportErrorToast('Error', 'Error al cargar préstamos: ' + error.message);
-                    document.getElementById('reportLoadingState').classList.add('hidden');
-                    document.getElementById('reportEmptyState').classList.remove('hidden');
-                    return;
-                }
-                break;
-            case 'verifications':
-                data = await fetchVerificationsReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
-                break;
-            case 'inventory':
-                data = await fetchInventoryReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
-                break;
-            case 'general':
-                data = await fetchGeneralReport(userRegionalId, userInstitutionId, inventoryId, startDate, endDate);
-                break;
-            default:
-                console.warn('Unknown report type:', reportType);
-                data = [];
-        }
+        // Always generate general report without date filters
+        const data = await fetchGeneralReport(userRegionalId, userInstitutionId, inventoryId);
 
         currentReportData = data || [];
         console.log('Final data to display, type:', typeof currentReportData, 'isArray:', Array.isArray(currentReportData), 'length:', Array.isArray(currentReportData) ? currentReportData.length : 'N/A');
@@ -548,7 +505,7 @@ async function generateReport() {
 }
 
 // Fetch items report
-async function fetchItemsReport(regionalId, institutionId, inventoryId, startDate, endDate) {
+async function fetchItemsReport(regionalId, institutionId, inventoryId) {
     const token = localStorage.getItem('jwt');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -622,18 +579,7 @@ async function fetchItemsReport(regionalId, institutionId, inventoryId, startDat
         const data = await response.json();
         let items = data.content || data || [];
         
-        // Filter by date if provided
-        if (startDate || endDate) {
-            items = items.filter(item => {
-                const itemDate = item.createdAt || item.registrationDate;
-                if (!itemDate) return false;
-                const date = new Date(itemDate);
-                if (startDate && date < new Date(startDate)) return false;
-                if (endDate && date > new Date(endDate)) return false;
-                return true;
-            });
-        }
-        
+        // No date filtering - return all items
         return items;
     } else {
         throw new Error('Error al cargar items');
@@ -641,7 +587,7 @@ async function fetchItemsReport(regionalId, institutionId, inventoryId, startDat
 }
 
 // Fetch users report
-async function fetchUsersReport(regionalId, institutionId, startDate, endDate) {
+async function fetchUsersReport(regionalId, institutionId) {
     const token = localStorage.getItem('jwt');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -670,16 +616,7 @@ async function fetchUsersReport(regionalId, institutionId, startDate, endDate) {
         }
         
         // Filter by date if provided
-        if ((startDate || endDate) && Array.isArray(users)) {
-            users = users.filter(user => {
-                const userDate = user.createdAt || user.registrationDate;
-                if (!userDate) return false;
-                const date = new Date(userDate);
-                if (startDate && date < new Date(startDate)) return false;
-                if (endDate && date > new Date(endDate)) return false;
-                return true;
-            });
-        }
+        // No date filtering - return all users
         
         return users;
     } else {
@@ -688,7 +625,7 @@ async function fetchUsersReport(regionalId, institutionId, startDate, endDate) {
 }
 
 // Fetch loans report
-async function fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate) {
+async function fetchLoansReport(regionalId, institutionId, inventoryId) {
     const token = localStorage.getItem('jwt');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -729,33 +666,7 @@ async function fetchLoansReport(regionalId, institutionId, inventoryId, startDat
 
     console.log(`Loaded ${loans.length} loans from API`);
     
-    // Filter by date if provided
-    if (startDate || endDate) {
-        loans = loans.filter(loan => {
-            const loanDate = loan.lendAt;
-            if (!loanDate) return false;
-            try {
-                const date = new Date(loanDate);
-                if (isNaN(date.getTime())) return false;
-                
-                if (startDate) {
-                    const startDateObj = new Date(startDate);
-                    startDateObj.setHours(0, 0, 0, 0);
-                    if (date < startDateObj) return false;
-                }
-                if (endDate) {
-                    const endDateObj = new Date(endDate);
-                    endDateObj.setHours(23, 59, 59, 999);
-                    if (date > endDateObj) return false;
-                }
-                return true;
-            } catch (e) {
-                console.warn('Error parsing loan date:', loanDate, e);
-                return false;
-            }
-        });
-        console.log(`Filtered to ${loans.length} loans by date range`);
-    }
+    // No date filtering - return all loans
     
     // Fetch item names for all unique item IDs
     const uniqueItemIds = [...new Set(loans.map(loan => loan.itemId).filter(id => id != null))];
@@ -831,7 +742,7 @@ async function fetchItemNames(itemIds, headers) {
 }
 
 // Fetch verifications report
-async function fetchVerificationsReport(regionalId, institutionId, inventoryId, startDate, endDate) {
+async function fetchVerificationsReport(regionalId, institutionId, inventoryId) {
     const token = localStorage.getItem('jwt');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -939,22 +850,7 @@ async function fetchVerificationsReport(regionalId, institutionId, inventoryId, 
             return dateB - dateA;
         });
         
-        // Filter by date if provided
-        if (startDate || endDate) {
-            return uniqueVerifications.filter(verification => {
-                const verDate = verification.createdAt;
-                if (!verDate) return false;
-                const date = new Date(verDate);
-                if (startDate && date < new Date(startDate)) return false;
-                if (endDate) {
-                    const endDateObj = new Date(endDate);
-                    endDateObj.setHours(23, 59, 59, 999);
-                    if (date > endDateObj) return false;
-                }
-                return true;
-            });
-        }
-        
+        // No date filtering - return all verifications
         return uniqueVerifications;
     } catch (error) {
         console.error('Error fetching verifications:', error);
@@ -963,7 +859,7 @@ async function fetchVerificationsReport(regionalId, institutionId, inventoryId, 
 }
 
 // Fetch inventory report
-async function fetchInventoryReport(regionalId, institutionId, inventoryId, startDate, endDate) {
+async function fetchInventoryReport(regionalId, institutionId, inventoryId) {
     const token = localStorage.getItem('jwt');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -1053,7 +949,7 @@ async function fetchInventoryReport(regionalId, institutionId, inventoryId, star
 }
 
 // Fetch transfers report
-async function fetchTransfersReport(regionalId, institutionId, inventoryId, startDate, endDate) {
+async function fetchTransfersReport(regionalId, institutionId, inventoryId) {
     const token = localStorage.getItem('jwt');
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -1067,17 +963,7 @@ async function fetchTransfersReport(regionalId, institutionId, inventoryId, star
             });
             if (response.ok) {
                 let transfers = await response.json();
-                // Filter by date if provided
-                if (startDate || endDate) {
-                    transfers = transfers.filter(transfer => {
-                        const transferDate = transfer.requestDate || transfer.createdAt;
-                        if (!transferDate) return false;
-                        const date = new Date(transferDate);
-                        if (startDate && date < new Date(startDate)) return false;
-                        if (endDate && date > new Date(endDate)) return false;
-                        return true;
-                    });
-                }
+                // No date filtering - return all transfers
                 return transfers || [];
             }
         } catch (error) {
@@ -1085,7 +971,7 @@ async function fetchTransfersReport(regionalId, institutionId, inventoryId, star
         }
     } else {
         // Get transfers from all inventories in the institution/regional
-        const inventories = await fetchInventoryReport(regionalId, institutionId, null, startDate, endDate).catch(() => []);
+        const inventories = await fetchInventoryReport(regionalId, institutionId, null).catch(() => []);
         const allTransfers = [];
         for (const inv of inventories) {
             try {
@@ -1095,17 +981,7 @@ async function fetchTransfersReport(regionalId, institutionId, inventoryId, star
                 });
                 if (response.ok) {
                     let transfers = await response.json();
-                    // Filter by date if provided
-                    if (startDate || endDate) {
-                        transfers = transfers.filter(transfer => {
-                            const transferDate = transfer.requestDate || transfer.createdAt;
-                            if (!transferDate) return false;
-                            const date = new Date(transferDate);
-                            if (startDate && date < new Date(startDate)) return false;
-                            if (endDate && date > new Date(endDate)) return false;
-                            return true;
-                        });
-                    }
+                    // No date filtering - return all transfers
                     allTransfers.push(...(transfers || []));
                 }
             } catch (error) {
@@ -1118,17 +994,17 @@ async function fetchTransfersReport(regionalId, institutionId, inventoryId, star
 }
 
 // Fetch general report
-async function fetchGeneralReport(regionalId, institutionId, inventoryId, startDate, endDate) {
-    // General report combines multiple data types
+async function fetchGeneralReport(regionalId, institutionId, inventoryId) {
+    // General report combines multiple data types - no date filters, always show all data
     const [items, loans, verifications, inventories] = await Promise.all([
-        fetchItemsReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []),
-        fetchLoansReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []),
-        fetchVerificationsReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []),
-        fetchInventoryReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => [])
+        fetchItemsReport(regionalId, institutionId, inventoryId).catch(() => []),
+        fetchLoansReport(regionalId, institutionId, inventoryId).catch(() => []),
+        fetchVerificationsReport(regionalId, institutionId, inventoryId).catch(() => []),
+        fetchInventoryReport(regionalId, institutionId, inventoryId).catch(() => [])
     ]);
 
     // Get transfers
-    const transfers = await fetchTransfersReport(regionalId, institutionId, inventoryId, startDate, endDate).catch(() => []);
+    const transfers = await fetchTransfersReport(regionalId, institutionId, inventoryId).catch(() => []);
 
     return {
         items: items || [],
