@@ -43,6 +43,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
+import com.sgdis.backend.utils.DateTimeUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -193,7 +194,7 @@ public class LoanService implements LendItemUseCase, ReturnItemUseCase, GetLoans
 
         loanEntity.setReturned(true);
         loanEntity.setDetailsReturn(request.detailsReturn());
-        loanEntity.setReturnAt(LocalDateTime.now());
+        loanEntity.setReturnAt(DateTimeUtils.now());
 
         ItemEntity item = loanEntity.getItem();
         if (item != null) {

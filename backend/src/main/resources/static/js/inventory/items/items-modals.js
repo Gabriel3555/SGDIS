@@ -2526,7 +2526,8 @@ function displayItemLoansHistory(loans) {
     }
 
     contentElement.innerHTML = filteredLoans.map(loan => {
-        const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleDateString('es-ES', {
+        const lendDate = loan.lendAt ? new Date(loan.lendAt).toLocaleString('es-ES', {
+            timeZone: 'America/Bogota',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
@@ -2534,7 +2535,8 @@ function displayItemLoansHistory(loans) {
             minute: '2-digit'
         }) : 'Fecha no disponible';
 
-        const returnDate = loan.returnAt ? new Date(loan.returnAt).toLocaleDateString('es-ES', {
+        const returnDate = loan.returnAt ? new Date(loan.returnAt).toLocaleString('es-ES', {
+            timeZone: 'America/Bogota',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
