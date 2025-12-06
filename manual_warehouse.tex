@@ -1,0 +1,1701 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{caption}
+
+\geometry{a4paper, margin=2.5cm}
+
+% Colores SENA
+\definecolor{senaverde}{RGB}{0, 175, 0}
+\definecolor{senaverdeoscuro}{RGB}{0, 136, 0}
+
+% Configuración de títulos
+\titleformat{\section}
+{\Large\bfseries\color{senaverde}}
+{}
+{0em}
+{}[\titlerule]
+
+\titleformat{\subsection}
+{\large\bfseries}
+{}
+{0em}
+{}
+
+% Encabezado y pie de página
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{senaverde}{\textbf{SGDIS}}}
+\fancyhead[R]{\textcolor{gray}{Manual de Usuario - Warehouse (Almacén)}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{SGDIS - Manual de Usuario\\Warehouse (Encargado de Almacén)}
+\author{Julian Chaparro Barrera}
+\date{Diciembre 2025}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introducción}
+
+Este manual de usuario está diseñado específicamente para los usuarios con rol de \textbf{Warehouse (Encargado de Almacén)} del Sistema de Gestión de Inventario SENA (SGDIS). El manual proporciona instrucciones detalladas sobre cómo utilizar todas las funcionalidades disponibles para este rol.
+
+\subsection{Alcance del Rol de Warehouse}
+
+El rol de Warehouse (Encargado de Almacén) tiene las siguientes características:
+
+\begin{itemize}
+    \item \textbf{Alcance geográfico:} Puede gestionar únicamente los inventarios y items de su institución asignada.
+    \item \textbf{Función principal:} Rol operativo encargado de la gestión diaria del almacén, inventarios, verificaciones y préstamos.
+    \item \textbf{Permisos de inventario:} Puede gestionar inventarios, items, realizar verificaciones y administrar préstamos.
+    \item \textbf{Gestión de usuarios:} Puede crear usuarios con rol USER, visualizar usuarios y cambiar contraseñas de usuarios de su institución.
+    \item \textbf{Transferencias:} Puede crear y gestionar solicitudes de transferencia.
+    \item \textbf{Verificaciones:} Puede realizar verificaciones físicas de items.
+    \item \textbf{Préstamos:} Puede gestionar préstamos y devoluciones de items.
+    \item \textbf{Cancelaciones:} Puede solicitar cancelaciones (bajas) de items.
+\end{itemize}
+
+\subsection{Diferencias con Administrador Institucional}
+
+\begin{itemize}
+    \item El Warehouse \textbf{solo puede crear usuarios con rol USER}, mientras que el Administrador Institucional puede crear usuarios con más roles.
+    \item El Warehouse \textbf{no puede editar información de usuarios}, solo cambiar contraseñas.
+    \item El Warehouse tiene un rol más \textbf{operativo} enfocado en la gestión diaria del almacén.
+    \item El Administrador Institucional tiene un rol más \textbf{administrativo} con control total sobre usuarios.
+    \item Las transferencias del Warehouse se \textbf{aprueban automáticamente}, mientras que las del Administrador requieren aprobación.
+\end{itemize}
+
+\section{Acceso al Dashboard de Warehouse}
+
+Para acceder al dashboard de warehouse:
+
+\begin{enumerate}
+    \item Inicie sesión en el sistema con credenciales de warehouse.
+    \item Después del inicio de sesión, será redirigido automáticamente al dashboard de warehouse.
+    \item El dashboard se encuentra en la ruta \texttt{/warehouse/dashboard}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{werehuse/dashboard_warehouse.png}
+    \caption{Dashboard principal del Warehouse (Encargado de Almacén)}
+    \label{fig:dashboard-warehouse}
+\end{figure}
+
+\subsection{Panel de Navegación}
+
+El panel lateral izquierdo contiene las siguientes opciones de navegación:
+
+\begin{itemize}
+    \item \textbf{Dashboard:} Vista general del almacén con estadísticas y gráficos.
+    \item \textbf{Inventario:} Gestión de inventarios de la institución.
+    \item \textbf{Usuarios:} Visualización de usuarios de la institución (solo lectura).
+    \item \textbf{Transferencias:} Administración de transferencias de items.
+    \item \textbf{Verificación:} Gestión de verificaciones físicas de items.
+    \item \textbf{Préstamos:} Administración de préstamos de items.
+    \item \textbf{Bajas:} Gestión de solicitudes de cancelación de items.
+    \item \textbf{Reportes:} Generación y visualización de reportes.
+    \item \textbf{Auditoría:} Registro de actividades del sistema.
+    \item \textbf{Notificaciones:} Gestión de notificaciones del sistema.
+    \item \textbf{Importar/Exportar:} Funciones de importación y exportación de datos.
+    \item \textbf{Configuración:} Configuraciones generales del sistema.
+    \item \textbf{Mi Perfil:} Información personal y configuración de cuenta.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/sideBarSgdis.png}
+    \caption{Panel de navegación lateral del Warehouse}
+    \label{fig:panel-navegacion-warehouse}
+\end{figure}
+
+\subsection{Dashboard de Warehouse}
+
+El dashboard proporciona una vista general del almacén con las siguientes secciones:
+
+\subsubsection{Tarjetas de Estadísticas}
+
+El dashboard muestra tarjetas con estadísticas clave del almacén:
+
+\begin{itemize}
+    \item \textbf{Total Inventarios:} Muestra el número total de inventarios en la institución, con desglose de activos e inactivos.
+    \item \textbf{Total Items:} Cantidad total de items en todos los inventarios, con valor total en COP.
+    \item \textbf{Total Transferencias:} Cantidad de transferencias con estado (pendientes, aprobadas, rechazadas).
+    \item \textbf{Total Préstamos:} Cantidad de préstamos registrados.
+    \item \textbf{Total Categorías:} Número de categorías de items diferentes.
+    \item \textbf{Pendientes:} Cantidad de items o transferencias pendientes de aprobación.
+    \item \textbf{Notificaciones No Leídas:} Cantidad de notificaciones pendientes por leer.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{werehuse/tarjetas_estadisticas_werehouse.png}
+    \caption{Tarjetas de estadísticas del dashboard}
+    \label{fig:dashboard-estadisticas-warehouse}
+\end{figure}
+
+\subsubsection{Gráficos y Visualizaciones}
+
+El dashboard incluye los siguientes gráficos:
+
+\begin{enumerate}
+    \item \textbf{Inventarios por Estado:} Gráfico circular (pie) que muestra la cantidad de inventarios activos e inactivos.
+    
+    \item \textbf{Items por Categoría:} Gráfico circular (doughnut) que muestra la distribución de items según su categoría.
+    
+    \item \textbf{Transferencias por Estado:} Gráfico circular que muestra la distribución de transferencias según su estado (Pendientes, Aprobadas, Rechazadas).
+    
+    \item \textbf{Items por Inventario:} Gráfico de barras que muestra la cantidad de items por cada inventario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{werehuse/estadisticas_werehouse.png}
+    \caption{Gráficos y visualizaciones del dashboard}
+    \label{fig:dashboard-graficos-warehouse}
+\end{figure}
+
+\subsubsection{Actividad Reciente}
+
+El dashboard muestra tres secciones de actividad reciente:
+
+\begin{itemize}
+    \item \textbf{Inventarios Recientes:} Lista de los últimos 5 inventarios creados o modificados, mostrando nombre, institución y estado.
+    \item \textbf{Transferencias Recientes:} Lista de las últimas 5 transferencias, mostrando el item, fecha y estado.
+    \item \textbf{Items Recientes:} Lista de los últimos 5 items agregados o modificados, mostrando nombre e inventario.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{werehuse/estadisticas_recientes_warehouse.png}
+    \caption{Secciones de actividad reciente del dashboard}
+    \label{fig:dashboard-actividad-warehouse}
+\end{figure}
+
+\newpage
+
+\section{Gestión de Inventario}
+
+El warehouse puede gestionar todos los inventarios de su institución.
+
+\subsection{Acceso a Gestión de Inventario}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Inventario"}.
+    \item Será redirigido a la página de gestión de inventario (\texttt{/warehouse/inventory}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/inventario_dashboard_admin.png}
+    \caption{Página de gestión de inventario}
+    \label{fig:gestion-inventario-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todos los inventarios:} Visualice inventarios de su institución en vista de tabla o tarjetas.
+    \item \textbf{Buscar inventarios:} Busque inventarios por nombre, ubicación o UUID.
+    \item \textbf{Filtrar inventarios:} Filtre por estado (activo/inactivo) y ubicación.
+    \item \textbf{Crear inventario:} Cree nuevos inventarios para su institución.
+    \item \textbf{Editar inventario:} Modifique información de inventarios existentes.
+    \item \textbf{Eliminar inventario:} Elimine inventarios que ya no se necesitan.
+    \item \textbf{Activar/Desactivar inventario:} Cambie el estado de un inventario.
+    \item \textbf{Ver items de inventario:} Acceda a la lista de items de cada inventario.
+    \item \textbf{Gestionar items:} Agregue, edite o elimine items de inventarios.
+    \item \textbf{Cambiar imagen del inventario:} Actualice la imagen representativa del inventario.
+    \item \textbf{Ver jerarquía del inventario:} Visualice la estructura jerárquica del inventario con sus items y usuarios asignados.
+    \item \textbf{Asignar roles:} Asigne roles de Manejador o Firmante a usuarios para cada inventario.
+\end{itemize}
+
+\subsection{Modos de Visualización}
+
+El sistema ofrece dos modos de visualización para los inventarios:
+
+\begin{itemize}
+    \item \textbf{Vista de Tabla:} Muestra los inventarios en formato de lista con columnas para nombre, ubicación, estado, cantidad de items y acciones.
+    \item \textbf{Vista de Tarjetas:} Muestra los inventarios en formato de tarjetas con información visual más detallada.
+\end{itemize}
+
+Para cambiar entre los modos de visualización, utilice los botones \textbf{"Lista"} y \textbf{"Cards"} en la parte superior de la tabla.
+
+\subsection{Crear Nuevo Inventario}
+
+Para crear un nuevo inventario:
+
+\begin{enumerate}
+    \item En la página de gestión de inventario, localice el botón \textbf{"Nuevo Inventario"} o \textbf{"Crear Inventario"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_crear_inventario_admin.png}
+    \caption{Botón para crear nuevo inventario}
+    \label{fig:boton-crear-inventario-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de creación de inventario.
+    \item Complete el formulario del modal con la siguiente información:
+    \begin{itemize}
+        \item \textbf{Nombre del inventario:} Ingrese un nombre descriptivo para el inventario.
+        \item \textbf{Descripción:} Proporcione una descripción detallada del inventario.
+        \item \textbf{Ubicación:} Indique la ubicación física del inventario.
+        \item \textbf{Imagen del inventario:} Opcionalmente, suba una imagen representativa.
+        \item \textbf{Estado:} Seleccione si el inventario estará Activo o Inactivo.
+    \end{itemize}
+    \item Revise toda la información ingresada.
+    \item Haga clic en \textbf{"Guardar"} o \textbf{"Crear"} para confirmar la creación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{werehuse/modal_nuevo_inventario_warehouse.png}
+    \caption{Modal de creación de inventario con todos los campos del formulario}
+    \label{fig:modal-crear-inventario-warehouse}
+\end{figure}
+
+\subsection{Editar Inventario}
+
+Para editar un inventario existente:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario que desea editar.
+    \item Localice el botón \textbf{"Editar"} o el ícono de edición en la fila del inventario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_editar_usuario_admin.png}
+    \caption{Botón de editar inventario en la lista}
+    \label{fig:boton-editar-inventario-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de edición.
+    \item El modal mostrará el formulario con los datos actuales del inventario.
+    \item Modifique los campos necesarios (nombre, descripción, estado, ubicación, etc.).
+    \item Haga clic en \textbf{"Guardar"} para aplicar los cambios.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/editar_inventario_modal_sgdis.png}
+    \caption{Modal de edición de inventario con los campos prellenados}
+    \label{fig:modal-editar-inventario-warehouse}
+\end{figure}
+
+\subsection{Ver Items de un Inventario}
+
+Para ver los items de un inventario específico:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario del cual desea ver los items.
+    \item Localice el botón \textbf{"Ver Items"} o el ícono de items en la fila del inventario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{SuperAdminImage/ver_items_inventario_admin.png}
+    \caption{Botón para ver items de un inventario}
+    \label{fig:boton-ver-items-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para acceder a la página de items del inventario.
+    \item Será redirigido a una página que muestra todos los items del inventario seleccionado.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/ver_items_modal_inventario_admin.png}
+    \caption{Página de items de un inventario con lista de items}
+    \label{fig:pagina-items-inventario-warehouse}
+\end{figure}
+
+\subsection{Ver Detalles de Inventario}
+
+Para ver los detalles completos de un inventario:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario del cual desea ver los detalles.
+    \item Haga clic en el botón \textbf{"Ver"} (ícono de ojo) en la fila del inventario.
+    \item Se abrirá un modal con información detallada que incluye:
+    \begin{itemize}
+        \item \textbf{Información del inventario:} Nombre, ubicación, estado, cantidad de items y valor total.
+        \item \textbf{Imagen del inventario:} Puede hacer clic para ver en tamaño completo.
+        \item \textbf{Información del propietario:} Nombre, email, rol, cargo, departamento e institución del propietario.
+    \end{itemize}
+    \item Desde este modal puede acceder a \textbf{"Ver Items"} para ir directamente a los items del inventario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/visualizacion_inventario_admin.png}
+    \caption{Modal de detalles del inventario}
+    \label{fig:modal-ver-inventario-warehouse}
+\end{figure}
+
+\subsection{Ver Jerarquía del Inventario}
+
+Para visualizar la estructura jerárquica de un inventario:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario del cual desea ver la jerarquía.
+    \item Haga clic en el botón de \textbf{jerarquía} (ícono de árbol/sitemap) en la fila del inventario.
+    \item Se abrirá un modal con la estructura visual del inventario mostrando:
+    \begin{itemize}
+        \item El inventario principal en el centro.
+        \item Los items pertenecientes al inventario.
+        \item Los usuarios asignados con sus roles (Manejador, Firmante, Propietario).
+    \end{itemize}
+    \item Puede hacer clic en los nodos para ver detalles de cada elemento.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/jerarquia_inventario.png}
+    \caption{Vista de jerarquía del inventario}
+    \label{fig:jerarquia-inventario-warehouse}
+\end{figure}
+
+\subsection{Asignar Roles a Usuarios}
+
+Para asignar roles de Manejador o Firmante a usuarios en un inventario:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario al cual desea asignar roles.
+    \item Haga clic en el botón \textbf{"Asignar Rol"} (ícono de usuario con corbata) en la fila del inventario.
+    \item Se abrirá un modal de asignación de roles.
+    \item Seleccione el usuario al que desea asignar el rol.
+    \item Seleccione el tipo de rol:
+    \begin{itemize}
+        \item \textbf{Manejador:} Usuario encargado de la gestión operativa del inventario.
+        \item \textbf{Firmante:} Usuario autorizado para firmar documentos relacionados con el inventario.
+    \end{itemize}
+    \item Haga clic en \textbf{"Asignar Rol"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_asignar_rol.png}
+    \caption{Modal de asignación de roles}
+    \label{fig:modal-asignar-rol-warehouse}
+\end{figure}
+
+\subsection{Eliminar Inventario}
+
+Para eliminar un inventario del sistema:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario que desea eliminar.
+    \item Localice el botón \textbf{"Eliminar"} o el ícono de papelera en la fila del inventario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/boton_eliminar.png}
+    \caption{Botón para eliminar inventario}
+    \label{fig:boton-eliminar-inventario-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de confirmación de eliminación.
+    \item El modal mostrará una advertencia indicando:
+    \begin{itemize}
+        \item Nombre del inventario a eliminar.
+        \item Cantidad de items que se eliminarán junto con el inventario.
+        \item Advertencia de que esta acción no se puede deshacer.
+    \end{itemize}
+    \item Revise cuidadosamente la información antes de confirmar.
+    \item Haga clic en \textbf{"Eliminar"} para eliminar el inventario permanentemente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{SuperAdminImage/modal_eliminar_inventario.png}
+    \caption{Modal de confirmación de eliminación de inventario}
+    \label{fig:modal-eliminar-inventario-warehouse}
+\end{figure}
+
+\subsection{Gestionar Items de un Inventario}
+
+Una vez en la página de items de un inventario, puede realizar las siguientes acciones:
+
+\paragraph{Crear Nuevo Item}
+
+Para agregar un nuevo item al inventario:
+
+\begin{enumerate}
+    \item En la página de items del inventario, localice el botón \textbf{"Nuevo Item"} o \textbf{"Agregar Item"}.
+    \item Haga clic en el botón para abrir el modal de creación de item.
+    \item Complete el formulario con la siguiente información:
+    \begin{itemize}
+        \item \textbf{Nombre del producto:} Nombre descriptivo del item.
+        \item \textbf{Placa/Código:} Identificador único o placa del item.
+        \item \textbf{Número de serie:} Número de serie del fabricante (si aplica).
+        \item \textbf{Categoría:} Seleccione la categoría del item.
+        \item \textbf{Estado:} Estado actual del item (Disponible, En uso, Dañado, etc.).
+        \item \textbf{Valor:} Valor monetario del item en COP.
+        \item \textbf{Ubicación específica:} Ubicación exacta dentro del inventario.
+        \item \textbf{Descripción:} Descripción detallada del item.
+        \item \textbf{Imágenes:} Agregue fotos del item (opcional pero recomendado).
+    \end{itemize}
+    \item Revise la información ingresada.
+    \item Haga clic en \textbf{"Guardar"} o \textbf{"Crear Item"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/modal_nuevo_item_admin.png}
+    \caption{Modal de creación de nuevo item}
+    \label{fig:modal-nuevo-item-warehouse}
+\end{figure}
+
+\paragraph{Ver Detalles de un Item}
+
+\begin{enumerate}
+    \item En la lista de items, localice el item del cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver"} o el ícono de ojo en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de un item}
+    \label{fig:boton-ver-item-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles del item.
+    \item El modal mostrará toda la información del item:
+    \begin{itemize}
+        \item Información básica (nombre, descripción, placa, número de serie).
+        \item Categoría y estado actual.
+        \item Valor y ubicación.
+        \item Imágenes asociadas (si las hay).
+        \item Historial de transferencias.
+        \item Historial de préstamos.
+        \item Historial de verificaciones.
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/visualizacion_item_inventario.png}
+    \caption{Modal de detalles del item con toda la información}
+    \label{fig:modal-ver-item-warehouse}
+\end{figure}
+
+\paragraph{Editar Item}
+
+\begin{enumerate}
+    \item En la lista de items, localice el item que desea editar.
+    \item Localice el botón \textbf{"Editar"} o el ícono de edición en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{SuperAdminImage/boton_editar_usuario_admin.png}
+    \caption{Botón para editar item}
+    \label{fig:boton-editar-item-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de edición.
+    \item El modal mostrará el formulario con los datos actuales del item.
+    \item Modifique los campos necesarios (nombre, descripción, estado, valor, ubicación, categoría, etc.).
+    \item Puede agregar o eliminar imágenes del item.
+    \item Haga clic en \textbf{"Guardar"} para aplicar los cambios.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/modal_editar_item_admin.png}
+    \caption{Modal de edición de item con los campos prellenados}
+    \label{fig:modal-editar-item-warehouse}
+\end{figure}
+
+\paragraph{Eliminar Item}
+
+\begin{enumerate}
+    \item En la lista de items, localice el item que desea eliminar.
+    \item Localice el botón \textbf{"Eliminar"} o el ícono de eliminar (papelera) en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/boton_eliminar.png}
+    \caption{Botón para eliminar item}
+    \label{fig:boton-eliminar-item-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de confirmación de eliminación.
+    \item El modal mostrará una advertencia indicando que esta acción no se puede deshacer.
+    \item Revise el mensaje de confirmación.
+    \item Haga clic en \textbf{"Eliminar"} o \textbf{"Confirmar"} para eliminar el item permanentemente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{SuperAdminImage/alerta_eliminar_item.png}
+    \caption{Modal de confirmación de eliminación de item}
+    \label{fig:modal-eliminar-item-warehouse}
+\end{figure}
+
+\paragraph{Prestar Item desde Inventario}
+
+Para crear un préstamo directamente desde la vista de items:
+
+\begin{enumerate}
+    \item En la lista de items del inventario, localice el item que desea prestar.
+    \item Localice el botón \textbf{"Prestar"} o el ícono de préstamo en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/prestar_items_admin.png}  
+    \caption{Botón para prestar item desde inventario}
+    \label{fig:boton-prestar-item-inv-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de préstamo.
+    \item El modal mostrará la información del item y solicitará:
+    \begin{itemize}
+        \item \textbf{Responsable del préstamo:} Usuario que recibirá el item en préstamo.
+        \item \textbf{Fecha de devolución estimada:} Fecha prevista para la devolución.
+        \item \textbf{Motivo del préstamo:} Razón por la cual se solicita el préstamo.
+        \item \textbf{Observaciones:} Comentarios adicionales (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Prestar Item"} para confirmar el préstamo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_prestar_items_admin.png}
+    \caption{Modal de préstamo de item desde inventario}
+    \label{fig:modal-prestar-item-inv-warehouse}
+\end{figure}
+
+\paragraph{Transferir Item}
+
+Para transferir un item a otro inventario:
+
+\begin{enumerate}
+    \item En la lista de items del inventario, localice el item que desea transferir.
+    \item Localice el botón \textbf{"Transferir"} o el ícono de transferencia en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/transferir_item_admin.png}
+    \caption{Botón para transferir item}
+    \label{fig:boton-transferir-item-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de transferencia.
+    \item El modal mostrará la información del item y solicitará:
+    \begin{itemize}
+        \item \textbf{Inventario destino:} Seleccione el inventario al cual transferir el item.
+        \item \textbf{Motivo de transferencia:} Razón por la cual se realiza la transferencia.
+        \item \textbf{Comentarios adicionales:} Observaciones sobre la transferencia (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Solicitar Transferencia"} para enviar la solicitud.
+\end{enumerate}
+
+\paragraph{Historial de Transferencias de Item}
+
+Para ver el historial completo de transferencias de un item:
+
+\begin{enumerate}
+    \item En la lista de items, localice el item del cual desea ver el historial de transferencias.
+    \item Localice el botón \textbf{"Historial Transferencias"} o el ícono de historial.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/historial_transferencia.png}
+    \caption{Botón para ver historial de transferencias}
+    \label{fig:boton-historial-trans-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de historial.
+    \item El modal mostrará el historial completo de transferencias del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_historial_transferencia.png}
+    \caption{Modal de historial de transferencias del item}
+    \label{fig:modal-historial-trans-warehouse}
+\end{figure}
+
+\paragraph{Solicitar Cancelación de Item}
+
+Para solicitar la cancelación (baja) de un item:
+
+\begin{enumerate}
+    \item En la lista de items, localice el item que desea solicitar para cancelación.
+    \item Localice el botón \textbf{"Solicitar Cancelación"} o el ícono correspondiente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/boton_solicitar_cancelacion.png}
+    \caption{Botón para solicitar cancelación de item}
+    \label{fig:boton-solicitar-cancelacion-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de solicitud de cancelación.
+    \item El modal mostrará la información del item y solicitará:
+    \begin{itemize}
+        \item \textbf{Motivo de cancelación:} Seleccione el motivo (Daño irreparable, Obsolescencia, Pérdida, etc.).
+        \item \textbf{Descripción detallada:} Explique las razones de la solicitud de cancelación.
+        \item \textbf{Evidencia:} Opcionalmente, adjunte fotos o documentos que respalden la solicitud.
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Enviar Solicitud"} para enviar la solicitud de cancelación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{SuperAdminImage/solicitar_cancelacion.png}
+    \caption{Modal de solicitud de cancelación de item}
+    \label{fig:modal-solicitar-cancelacion-warehouse}
+\end{figure}
+
+\section{Gestión de Usuarios}
+
+Como warehouse, puede gestionar usuarios de su institución con algunas restricciones específicas.
+
+\subsection{Acceso a Gestión de Usuarios}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Usuarios"}.
+    \item Será redirigido a la página de usuarios (\texttt{/warehouse/users}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{werehuse/usuarios_dashboard_warehouse.png}
+    \caption{Página de gestión de usuarios}
+    \label{fig:gestion-usuarios-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver lista de usuarios:} Visualice todos los usuarios registrados en su institución.
+    \item \textbf{Buscar usuarios:} Utilice la barra de búsqueda para encontrar usuarios específicos.
+    \item \textbf{Filtrar usuarios:} Filtre usuarios por rol y estado.
+    \item \textbf{Ver detalles de usuario:} Visualice la información completa de un usuario.
+    \item \textbf{Crear usuarios:} Cree nuevos usuarios con rol USER para su institución.
+    \item \textbf{Cambiar contraseña:} Cambie la contraseña de usuarios de su institución.
+\end{itemize}
+
+\subsection{Crear Nuevo Usuario}
+
+Para crear un nuevo usuario en el sistema:
+
+\begin{enumerate}
+    \item En la página de gestión de usuarios, localice el botón \textbf{"Nuevo Usuario"} en la parte superior derecha.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_nuevo_usuario.png}
+    \caption{Botón para crear nuevo usuario}
+    \label{fig:boton-nuevo-usuario-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de creación de usuario.
+    \item Complete el formulario con la siguiente información:
+    \begin{itemize}
+        \item \textbf{Foto de perfil:} Opcionalmente, suba una foto del usuario.
+        \item \textbf{Nombre completo:} Nombre completo del usuario (requerido).
+        \item \textbf{Email:} Correo electrónico institucional (requerido).
+        \item \textbf{Contraseña:} Contraseña temporal para el usuario (requerido).
+        \item \textbf{Institución:} La institución se asigna automáticamente a su institución.
+        \item \textbf{Cargo:} Seleccione el cargo del usuario.
+        \item \textbf{Área/Departamento:} Área o departamento laboral.
+    \end{itemize}
+    \item Revise la información ingresada.
+    \item Haga clic en \textbf{"Crear Usuario"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{werehuse/modal_nuevo_usuario_warehouse.png}
+    \caption{Modal de creación de nuevo usuario}
+    \label{fig:modal-nuevo-usuario-warehouse}
+\end{figure}
+
+\textbf{Nota importante:} Como Warehouse, solo puede crear usuarios con rol \textbf{USER}. El rol se asigna automáticamente y no puede seleccionar otros roles como Administrador o Warehouse.
+
+\subsection{Ver Detalles de Usuario}
+
+Para ver los detalles completos de un usuario:
+
+\begin{enumerate}
+    \item En la lista de usuarios, localice el usuario del cual desea ver los detalles.
+    \item Haga clic en el botón \textbf{"Ver"} (ícono de ojo) en la fila del usuario.
+    \item Se abrirá un modal con información detallada que incluye:
+    \begin{itemize}
+        \item Foto de perfil
+        \item Nombre completo
+        \item Correo electrónico
+        \item Rol en el sistema
+        \item Estado (activo/inactivo)
+        \item Cargo
+        \item Departamento/Área
+        \item Institución
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_ver_usuario.png}
+    \caption{Modal de detalles del usuario}
+    \label{fig:modal-ver-usuario-warehouse}
+\end{figure}
+
+\subsection{Cambiar Contraseña de Usuario}
+
+Para cambiar la contraseña de un usuario:
+
+\begin{enumerate}
+    \item En la lista de usuarios, localice el usuario al cual desea cambiar la contraseña.
+    \item Haga clic en el botón \textbf{"Cambiar Contraseña"} (ícono de llave) en la fila del usuario.
+    \item Se abrirá un modal solicitando:
+    \begin{itemize}
+        \item \textbf{Nueva contraseña:} Ingrese la nueva contraseña.
+        \item \textbf{Confirmar contraseña:} Confirme la nueva contraseña.
+    \end{itemize}
+    \item Haga clic en \textbf{"Cambiar Contraseña"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{SuperAdminImage/modal_cambiar_contrasena.png}
+    \caption{Modal de cambio de contraseña}
+    \label{fig:modal-cambiar-password-warehouse}
+\end{figure}
+
+\textbf{Requisitos de contraseña:}
+\begin{itemize}
+    \item Mínimo 8 caracteres.
+    \item Al menos una letra mayúscula.
+    \item Al menos una letra minúscula.
+    \item Al menos un número.
+    \item Al menos un carácter especial.
+\end{itemize}
+
+\subsection{Restricciones del Rol Warehouse en Usuarios}
+
+\textbf{Como Warehouse, NO puede:}
+\begin{itemize}
+    \item Crear usuarios con roles diferentes a USER.
+    \item Cambiar el rol de usuarios existentes.
+    \item Editar la información personal de usuarios (solo cambiar contraseña).
+    \item Eliminar usuarios del sistema.
+    \item Ver o gestionar usuarios de otras instituciones.
+\end{itemize}
+
+\section{Gestión de Transferencias}
+
+Administre las transferencias de items entre inventarios.
+
+\textbf{Nota importante:} Como usuario Warehouse, las transferencias que cree serán \textbf{aprobadas automáticamente} por el sistema. No necesita esperar aprobación de un administrador.
+
+\subsection{Acceso a Gestión de Transferencias}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Transferencias"}.
+    \item Será redirigido a la página de gestión de transferencias (\texttt{/warehouse/transfers}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_transferencias_admin.png}
+    \caption{Página de gestión de transferencias}
+    \label{fig:gestion-transferencias-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las transferencias:} Visualice transferencias de su regional (todas las instituciones de su regional).
+    \item \textbf{Filtrar transferencias:} Filtre por estado, inventario origen, inventario destino, fecha, etc.
+    \item \textbf{Ver detalles de transferencia:} Acceda a información detallada de cada transferencia.
+    \item \textbf{Crear nueva transferencia:} Cree transferencias de items con aprobación automática.
+    \item \textbf{Buscar transferencias:} Busque transferencias específicas por nombre de item o usuario.
+\end{itemize}
+
+\subsection{Característica Especial: Aprobación Automática}
+
+Las transferencias creadas por el rol Warehouse tienen la característica especial de \textbf{aprobación automática}. Esto significa que:
+
+\begin{itemize}
+    \item Al crear una transferencia, esta se aprueba inmediatamente.
+    \item El item se mueve al inventario destino de forma instantánea.
+    \item No es necesario esperar la aprobación de un administrador.
+    \item El sistema mostrará un mensaje confirmando la aprobación automática.
+\end{itemize}
+
+Esta funcionalidad facilita la gestión operativa diaria del almacén, permitiendo al encargado de almacén realizar transferencias de manera eficiente.
+
+\subsection{Crear Nueva Transferencia}
+
+Para crear una nueva solicitud de transferencia:
+
+\begin{enumerate}
+    \item En la página de gestión de transferencias, localice el botón \textbf{"Nueva Transferencia"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_nueva_transferencia.png}
+    \caption{Botón para crear nueva transferencia}
+    \label{fig:boton-nueva-transferencia-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de nueva transferencia.
+    \item El modal solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario origen:} Seleccione el inventario desde donde se transferirá el item.
+        \item \textbf{Item a transferir:} Seleccione el item de la lista del inventario origen.
+        \item \textbf{Inventario destino:} Seleccione el inventario destino.
+        \item \textbf{Motivo de la transferencia:} Explique por qué se realiza la transferencia.
+        \item \textbf{Comentarios adicionales:} Observaciones opcionales.
+    \end{itemize}
+    \item Revise la información ingresada.
+    \item Haga clic en \textbf{"Crear Transferencia"} para enviar la solicitud.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_nueva_transferencia.png}
+    \caption{Modal de creación de nueva transferencia}
+    \label{fig:modal-nueva-transferencia-warehouse}
+\end{figure}
+
+\subsection{Ver Detalles de Transferencia}
+
+Para ver los detalles completos de una transferencia:
+
+\begin{enumerate}
+    \item En la lista de transferencias, localice la transferencia de la cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver Detalles"} o el ícono de ojo en la fila de la transferencia.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de transferencia}
+    \label{fig:boton-ver-transferencia-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles.
+    \item El modal mostrará información completa de la transferencia.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/detalles_transferencia_admin.png}
+    \caption{Modal de detalles de transferencia con toda la información}
+    \label{fig:modal-ver-transferencia-warehouse}
+\end{figure}
+
+\section{Gestión de Verificaciones}
+
+Realice verificaciones físicas de items en los inventarios.
+
+\subsection{Acceso a Gestión de Verificaciones}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Verificación"}.
+    \item Será redirigido a la página de gestión de verificaciones (\texttt{/warehouse/verification}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_verificaciones_admin .png}
+    \caption{Página de gestión de verificaciones}
+    \label{fig:gestion-verificaciones-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las verificaciones:} Visualice verificaciones de todos los inventarios.
+    \item \textbf{Filtrar verificaciones:} Filtre por inventario, item, fecha, usuario, etc.
+    \item \textbf{Ver detalles de verificación:} Acceda a información completa de cada verificación.
+    \item \textbf{Ver imágenes de verificación:} Visualice las fotografías asociadas a las verificaciones.
+    \item \textbf{Crear nueva verificación:} Cree nuevas verificaciones de items.
+\end{itemize}
+
+\subsection{Nueva Verificación}
+
+Para crear una nueva verificación de item:
+
+\begin{enumerate}
+    \item En la página de gestión de verificaciones, localice el botón \textbf{"Nueva Verificación"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_nueva_transferencia.png}
+    \caption{Botón para crear nueva verificación}
+    \label{fig:boton-nueva-verificacion-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de nueva verificación.
+    \item El modal solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario:} Seleccione el inventario donde se encuentra el item.
+        \item \textbf{Item a verificar:} Seleccione el item de la lista.
+        \item \textbf{Estado observado:} Seleccione el estado actual del item (Buen estado, Dañado, etc.).
+        \item \textbf{Ubicación actual:} Confirme o actualice la ubicación del item.
+        \item \textbf{Observaciones:} Ingrese observaciones detalladas sobre la verificación.
+        \item \textbf{Evidencia fotográfica:} Adjunte fotos del item verificado (muy importante para el registro).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Guardar Verificación"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_nueva_verificacion.png}
+    \caption{Modal de creación de nueva verificación}
+    \label{fig:modal-nueva-verificacion-warehouse}
+\end{figure}
+
+\subsection{Ver Detalles de Verificación}
+
+Para ver los detalles completos de una verificación:
+
+\begin{enumerate}
+    \item En la lista de verificaciones, localice la verificación de la cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver Detalles"} o el ícono de ojo en la fila de la verificación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de verificación}
+    \label{fig:boton-ver-verificacion-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles.
+    \item El modal mostrará información completa de la verificación incluyendo las imágenes.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SuperAdminImage/verificacion_MODAL_ADMIN.png}
+    \caption{Modal de detalles de verificación con imágenes y toda la información}
+    \label{fig:modal-ver-verificacion-warehouse}
+\end{figure}
+
+\section{Gestión de Préstamos}
+
+Administre todos los préstamos de items de los inventarios.
+
+\subsection{Acceso a Gestión de Préstamos}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Préstamos"}.
+    \item Será redirigido a la página de gestión de préstamos (\texttt{/warehouse/loans}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_prestamos_dashboard_admin.png}
+    \caption{Página de gestión de préstamos}
+    \label{fig:gestion-prestamos-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todos los préstamos:} Visualice préstamos de todos los inventarios.
+    \item \textbf{Filtrar préstamos:} Filtre por estado, inventario, usuario responsable, fecha, etc.
+    \item \textbf{Crear préstamo:} Registre nuevos préstamos directamente.
+    \item \textbf{Registrar devolución:} Registre la devolución de items prestados.
+    \item \textbf{Ver historial de préstamos:} Revise el historial completo de préstamos.
+\end{itemize}
+
+\subsection{Crear Préstamo}
+
+Para registrar un nuevo préstamo en el sistema:
+
+\begin{enumerate}
+    \item Desde la sección \textbf{Gestión de Préstamos}, ubique en la parte superior derecha el botón \textbf{"Prestar Ítem"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/prestar_items_boton.png}
+    \caption{Botón para crear un nuevo préstamo}
+    \label{fig:boton-prestar-item-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Al hacer clic en el botón, se abrirá el modal de registro de préstamo.
+    \item El formulario solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario:} Indique el inventario en el que está registrado el ítem.
+        \item \textbf{Ítem:} Seleccione el ítem que será prestado.
+        \item \textbf{Responsable:} Persona a cargo del préstamo.
+        \item \textbf{Detalles (Opcional):} Comentarios adicionales relacionados con el préstamo.
+    \end{itemize}
+    \item Revise cuidadosamente la información ingresada.
+    \item Finalmente, haga clic en \textbf{"Prestar ítem"} para confirmar la creación del préstamo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_prestar_item.png}
+    \caption{Modal para registrar un préstamo}
+    \label{fig:modal-prestar-item-warehouse}
+\end{figure}
+
+\subsection{Registrar Devolución}
+
+Para registrar la devolución de un item prestado:
+
+\begin{enumerate}
+    \item En la lista de préstamos, localice el préstamo con estado \textbf{"Prestado"}.
+    \item Localice el botón \textbf{"Registrar Devolución"} o el ícono correspondiente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/devolver_prestamo_admin.png}
+    \caption{Botón para registrar devolución}
+    \label{fig:boton-devolucion-prestamo-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de devolución.
+    \item El modal mostrará los detalles del préstamo y solicitará:
+    \begin{itemize}
+        \item Confirmación de la devolución.
+        \item Estado del item (en buen estado, dañado, etc.).
+        \item Observaciones sobre la devolución (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Confirmar Devolución"} para registrar la devolución.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_devolver_prestamo.png}
+    \caption{Modal de registro de devolución de préstamo}
+    \label{fig:modal-devolucion-prestamo-warehouse}
+\end{figure}
+
+\section{Gestión de Cancelaciones (Bajas)}
+
+Gestione las solicitudes de cancelación (baja) de items. Las cancelaciones se utilizan para dar de baja items que ya no están en condiciones de uso, se han perdido, o están obsoletos.
+
+\subsection{Acceso a Gestión de Cancelaciones}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Bajas"}.
+    \item Será redirigido a la página de gestión de cancelaciones (\texttt{/warehouse/cancellations}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_cancelaciones_dashboard.png}
+    \caption{Página de gestión de cancelaciones}
+    \label{fig:gestion-cancelaciones-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las cancelaciones:} Visualice cancelaciones de todos los inventarios de su institución.
+    \item \textbf{Filtrar cancelaciones:} Filtre por inventario, item, fecha, motivo, estado, etc.
+    \item \textbf{Buscar cancelaciones:} Busque cancelaciones por nombre de item o motivo.
+    \item \textbf{Crear solicitud de cancelación:} Solicite la cancelación (baja) de un item.
+    \item \textbf{Ver detalles de cancelación:} Acceda a información completa de cada cancelación.
+    \item \textbf{Descargar formato de concepto técnico:} Descargue el formato oficial para el concepto técnico de bienes.
+\end{itemize}
+
+\subsection{Crear Solicitud de Cancelación}
+
+Para solicitar la cancelación de un item:
+
+\begin{enumerate}
+    \item En la página de gestión de cancelaciones, localice el botón \textbf{"Nueva Cancelación"} o \textbf{"Solicitar Baja"}.
+    \item Haga clic en el botón para abrir el modal de solicitud.
+    \item Complete el formulario con la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario:} Seleccione el inventario donde se encuentra el item.
+        \item \textbf{Item a cancelar:} Seleccione el item de la lista.
+        \item \textbf{Motivo de cancelación:} Seleccione el motivo:
+        \begin{itemize}
+            \item Daño irreparable
+            \item Obsolescencia
+            \item Pérdida
+            \item Hurto
+            \item Deterioro por uso
+            \item Otro
+        \end{itemize}
+        \item \textbf{Descripción detallada:} Explique las razones de la solicitud de cancelación.
+        \item \textbf{Evidencia fotográfica:} Adjunte fotos que respalden la solicitud (recomendado).
+        \item \textbf{Formato de concepto técnico:} Opcionalmente adjunte el formato de concepto técnico completado.
+    \end{itemize}
+    \item Revise la información ingresada.
+    \item Haga clic en \textbf{"Enviar Solicitud"} para enviar la solicitud de cancelación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{SuperAdminImage/modal_nueva_cancelacion.png}
+    \caption{Modal de solicitud de cancelación}
+    \label{fig:modal-nueva-cancelacion-warehouse}
+\end{figure}
+
+\subsection{Estados de las Cancelaciones}
+
+Las solicitudes de cancelación pueden tener los siguientes estados:
+
+\begin{itemize}
+    \item \textbf{Pendiente:} La solicitud ha sido enviada y está esperando revisión.
+    \item \textbf{En revisión:} Un administrador está revisando la solicitud.
+    \item \textbf{Aprobada:} La cancelación ha sido aprobada y el item ha sido dado de baja.
+    \item \textbf{Rechazada:} La solicitud ha sido rechazada con una justificación.
+\end{itemize}
+
+\textbf{Nota importante:} Como Warehouse, puede \textbf{solicitar} cancelaciones pero la \textbf{aprobación} debe ser realizada por un Administrador Institucional o superior. Esto garantiza un control adecuado sobre las bajas de activos.
+
+\section{Reportes}
+
+Genere y visualice reportes del sistema para análisis y control del inventario.
+
+\subsection{Acceso a Reportes}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Reportes"}.
+    \item Será redirigido a la página de reportes (\texttt{/warehouse/reports}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/reportes_dashboard_admin.png}
+    \caption{Página de generación de reportes}
+    \label{fig:gestion-reportes-warehouse}
+\end{figure}
+
+\subsection{Tipos de Reportes Disponibles}
+
+\subsubsection{Reportes de Inventario}
+
+\begin{itemize}
+    \item \textbf{Reporte general de inventarios:} Lista completa de todos los inventarios con estadísticas.
+    \item \textbf{Reporte de items por inventario:} Detalle de items en cada inventario.
+    \item \textbf{Reporte de valor total:} Resumen del valor monetario de todos los activos.
+    \item \textbf{Reporte de items por categoría:} Distribución de items según su categoría.
+    \item \textbf{Reporte de items por estado:} Items clasificados por su estado actual.
+\end{itemize}
+
+\subsubsection{Reportes de Transferencias}
+
+\begin{itemize}
+    \item \textbf{Historial de transferencias:} Todas las transferencias realizadas en un período.
+    \item \textbf{Transferencias por inventario:} Transferencias relacionadas con un inventario específico.
+    \item \textbf{Transferencias por estado:} Pendientes, aprobadas, rechazadas.
+\end{itemize}
+
+\subsubsection{Reportes de Préstamos}
+
+\begin{itemize}
+    \item \textbf{Préstamos activos:} Items actualmente en préstamo.
+    \item \textbf{Historial de préstamos:} Todos los préstamos realizados.
+    \item \textbf{Préstamos por usuario:} Items prestados a cada usuario.
+    \item \textbf{Préstamos vencidos:} Items que no han sido devueltos en la fecha esperada.
+\end{itemize}
+
+\subsubsection{Reportes de Verificaciones}
+
+\begin{itemize}
+    \item \textbf{Verificaciones realizadas:} Historial de verificaciones físicas.
+    \item \textbf{Items pendientes de verificación:} Items que requieren verificación.
+    \item \textbf{Discrepancias encontradas:} Inconsistencias detectadas en verificaciones.
+\end{itemize}
+
+\subsection{Formatos de Exportación}
+
+Los reportes pueden exportarse en los siguientes formatos:
+
+\begin{itemize}
+    \item \textbf{PDF:} Formato ideal para impresión y archivo.
+    \item \textbf{Excel (.xlsx):} Para análisis y manipulación de datos.
+    \item \textbf{CSV:} Para importación en otros sistemas.
+\end{itemize}
+
+\subsection{Generar un Reporte}
+
+\begin{enumerate}
+    \item Seleccione el tipo de reporte que desea generar.
+    \item Configure los filtros disponibles (fecha, inventario, estado, etc.).
+    \item Seleccione el formato de exportación deseado.
+    \item Haga clic en \textbf{"Generar Reporte"} o \textbf{"Exportar"}.
+    \item El sistema generará el archivo y lo descargará automáticamente.
+\end{enumerate}
+
+\section{Auditoría}
+
+Revise el registro de actividades del sistema para mantener un control de todas las acciones realizadas.
+
+\subsection{Acceso a Auditoría}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Auditoría"}.
+    \item Será redirigido a la página de auditoría (\texttt{/warehouse/auditory}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/auditoria_dashboard_admin.png}
+    \caption{Página de auditoría del sistema}
+    \label{fig:gestion-auditoria-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver registro de actividades:} Visualice todas las acciones realizadas en el sistema relacionadas con su institución.
+    \item \textbf{Filtrar actividades:} Filtre por usuario, fecha, tipo de acción, módulo, etc.
+    \item \textbf{Buscar actividades:} Busque actividades específicas en el registro.
+    \item \textbf{Ver detalles de actividad:} Acceda a información detallada de cada acción registrada.
+    \item \textbf{Exportar registros:} Exporte los registros de auditoría para análisis.
+\end{itemize}
+
+\subsection{Tipos de Acciones Registradas}
+
+El sistema de auditoría registra las siguientes acciones:
+
+\begin{itemize}
+    \item \textbf{Creación:} Cuando se crea un nuevo inventario, item, préstamo, transferencia, etc.
+    \item \textbf{Modificación:} Cuando se edita información de cualquier elemento.
+    \item \textbf{Eliminación:} Cuando se elimina algún elemento del sistema.
+    \item \textbf{Préstamo:} Cuando se presta un item a un usuario.
+    \item \textbf{Devolución:} Cuando se devuelve un item prestado.
+    \item \textbf{Transferencia:} Cuando se transfiere un item entre inventarios.
+    \item \textbf{Verificación:} Cuando se realiza una verificación física.
+    \item \textbf{Cancelación:} Cuando se solicita o aprueba una cancelación.
+    \item \textbf{Inicio/Cierre de sesión:} Accesos al sistema.
+\end{itemize}
+
+\subsection{Información del Registro}
+
+Cada entrada de auditoría contiene:
+
+\begin{itemize}
+    \item \textbf{Fecha y hora:} Momento exacto de la acción.
+    \item \textbf{Usuario:} Quién realizó la acción.
+    \item \textbf{Tipo de acción:} Crear, editar, eliminar, etc.
+    \item \textbf{Módulo:} Inventario, items, préstamos, etc.
+    \item \textbf{Descripción:} Detalle de la acción realizada.
+    \item \textbf{Datos anteriores/nuevos:} Cambios específicos realizados (cuando aplica).
+\end{itemize}
+
+\section{Notificaciones}
+
+Gestione las notificaciones del sistema para mantenerse informado de todas las actividades relevantes.
+
+\subsection{Acceso a Notificaciones}
+
+Existen dos formas de acceder a las notificaciones:
+
+\begin{enumerate}
+    \item \textbf{Panel lateral:} Haga clic en \textbf{"Notificaciones"} en el menú lateral.
+    \item \textbf{Icono de campana:} En el encabezado, haga clic en el ícono de campana que muestra el número de notificaciones no leídas.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/notificaciones_dashboard_admin.png}
+    \caption{Página de gestión de notificaciones}
+    \label{fig:gestion-notificaciones-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las notificaciones:} Visualice todas las notificaciones del sistema.
+    \item \textbf{Filtrar notificaciones:} Filtre por tipo, estado (leída/no leída), fecha, etc.
+    \item \textbf{Marcar como leída:} Marque notificaciones individuales como leídas.
+    \item \textbf{Marcar todas como leídas:} Marque todas las notificaciones como leídas de una vez.
+    \item \textbf{Eliminar notificaciones:} Elimine notificaciones que ya no necesite.
+\end{itemize}
+
+\subsection{Tipos de Notificaciones}
+
+El sistema envía notificaciones para los siguientes eventos:
+
+\begin{itemize}
+    \item \textbf{Transferencias:} Cuando se crea, aprueba o rechaza una transferencia.
+    \item \textbf{Préstamos:} Recordatorios de devolución, préstamos vencidos.
+    \item \textbf{Verificaciones:} Recordatorios de verificaciones programadas.
+    \item \textbf{Cancelaciones:} Estado de solicitudes de cancelación.
+    \item \textbf{Items:} Alertas sobre items que requieren atención.
+    \item \textbf{Sistema:} Notificaciones generales del sistema.
+\end{itemize}
+
+\subsection{Indicador de Notificaciones}
+
+En el encabezado de la página, junto al ícono de campana, se muestra un indicador con el número de notificaciones no leídas. Este indicador se actualiza en tiempo real.
+
+\subsection{Sonido de Notificaciones}
+
+El sistema puede reproducir un sonido cuando llega una nueva notificación. Esta función puede configurarse en la sección de configuración.
+
+\section{Importar/Exportar}
+
+Realice operaciones de importación y exportación de datos.
+
+\subsection{Acceso a Importar/Exportar}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Importar/Exportar"}.
+    \item Será redirigido a la página de importar/exportar (\texttt{/warehouse/import-export}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/importar_exportar_dashboar.png}
+    \caption{Página de importar/exportar datos}
+    \label{fig:gestion-importar-exportar-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Importar inventarios:} Importe inventarios desde archivos Excel o CSV.
+    \item \textbf{Importar items:} Importe items masivamente desde archivos.
+    \item \textbf{Exportar inventarios:} Exporte inventarios a diferentes formatos.
+    \item \textbf{Exportar items:} Exporte items a archivos Excel o CSV.
+    \item \textbf{Plantillas de importación:} Descargue plantillas para importación de datos.
+\end{itemize}
+
+\subsection{Importar Datos}
+
+Para importar datos desde un archivo:
+
+\begin{enumerate}
+    \item En la página de importar/exportar, localice la sección de \textbf{"Importar"}.
+    \item Seleccione el tipo de datos a importar (Inventarios, Items).
+    \item Localice el botón \textbf{"Seleccionar Archivo"} o \textbf{"Cargar Archivo"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_importar_items_dash.png}
+    \caption{Botón para seleccionar archivo a importar}
+    \label{fig:boton-importar-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{3}
+    \item Haga clic en el botón y seleccione el archivo desde su computadora.
+    \item El sistema mostrará un modal de confirmación con vista previa de los datos.
+    \item Revise la información en el modal.
+    \item Haga clic en \textbf{"Confirmar Importación"} para proceder.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/importar_excel_cargado.png}
+    \caption{Modal de confirmación de importación con vista previa}
+    \label{fig:modal-importar-warehouse}
+\end{figure}
+
+\subsection{Exportar Datos}
+
+Para exportar datos del sistema:
+
+\begin{enumerate}
+    \item En la página de importar/exportar, localice la sección de \textbf{"Exportar"}.
+    \item Seleccione el tipo de datos a exportar (Inventarios, Items, etc.).
+    \item Aplique filtros si desea exportar datos específicos.
+    \item Localice el botón \textbf{"Exportar"} o \textbf{"Descargar"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_exportar_item.png}
+    \caption{Botón para exportar datos}
+    \label{fig:boton-exportar-warehouse}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{4}
+    \item Seleccione el formato de exportación (Excel, CSV, PDF).
+    \item Haga clic en el botón para iniciar la exportación.
+    \item El sistema generará el archivo y lo descargará automáticamente.
+\end{enumerate}
+
+\section{Configuración}
+
+Configure parámetros generales del sistema.
+
+\subsection{Acceso a Configuración}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Configuración"}.
+    \item Será redirigido a la página de configuración (\texttt{/warehouse/settings}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/configuracion_dashboard.png}
+    \caption{Página de configuración del sistema}
+    \label{fig:gestion-configuracion-warehouse}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Configuración de apariencia:} Configure la apariencia de todo el sistema, si el usuario desea modo oscuro o claro.
+\end{itemize}
+
+\section{Mi Perfil}
+
+Gestione su información personal y configuración de cuenta.
+
+\subsection{Acceso a Mi Perfil}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Mi Perfil"}.
+    \item Será redirigido a la página de perfil (\texttt{/warehouse/info-me}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/user_me_dashboard.png}
+    \caption{Página de mi perfil}
+    \label{fig:mi-perfil-warehouse}
+\end{figure}
+
+\subsection{Información Personal}
+
+En la página de perfil puede visualizar:
+
+\begin{itemize}
+    \item \textbf{Foto de perfil:} Su imagen de perfil actual.
+    \item \textbf{Nombre completo:} Su nombre registrado en el sistema.
+    \item \textbf{Correo electrónico:} Su email institucional.
+    \item \textbf{Rol:} Su rol en el sistema (Warehouse/Encargado de Almacén).
+    \item \textbf{Cargo:} Su cargo o título laboral.
+    \item \textbf{Departamento:} Su departamento laboral.
+    \item \textbf{Institución:} La institución a la que pertenece.
+    \item \textbf{Estado:} Su estado en el sistema (activo/inactivo).
+\end{itemize}
+
+\subsection{Cambiar Foto de Perfil}
+
+Para actualizar su foto de perfil:
+
+\begin{enumerate}
+    \item En la página de perfil, haga clic en su foto actual o en el botón \textbf{"Cambiar Foto"}.
+    \item Seleccione una imagen desde su computadora.
+    \item La imagen se cargará automáticamente.
+    \item Formatos soportados: JPG, PNG, GIF. Tamaño máximo: 2MB.
+\end{enumerate}
+
+\subsection{Ver Mis Préstamos}
+
+En la sección \textbf{"Mis Préstamos"} puede ver:
+
+\begin{itemize}
+    \item Items que actualmente tiene prestados.
+    \item Historial de préstamos anteriores.
+    \item Fecha de préstamo y devolución esperada.
+    \item Estado de cada préstamo.
+\end{itemize}
+
+\subsection{Cambiar Contraseña}
+
+Para cambiar su contraseña de acceso:
+
+\begin{enumerate}
+    \item Localice la sección \textbf{"Seguridad"} o el botón \textbf{"Cambiar Contraseña"}.
+    \item Ingrese su contraseña actual.
+    \item Ingrese la nueva contraseña.
+    \item Confirme la nueva contraseña.
+    \item Haga clic en \textbf{"Guardar"} o \textbf{"Actualizar Contraseña"}.
+\end{enumerate}
+
+\textbf{Requisitos de contraseña:}
+\begin{itemize}
+    \item Mínimo 8 caracteres.
+    \item Al menos una letra mayúscula.
+    \item Al menos una letra minúscula.
+    \item Al menos un número.
+    \item Al menos un carácter especial.
+\end{itemize}
+
+\section{Cerrar Sesión}
+
+Para cerrar sesión en el sistema:
+
+\begin{enumerate}
+    \item En el panel lateral inferior, haga clic en el botón \textbf{"Cerrar Sesión"}.
+    \item Se mostrará un modal de confirmación.
+    \item Confirme el cierre de sesión haciendo clic en \textbf{"Cerrar Sesión"} en el modal.
+    \item Será redirigido a la página de inicio de sesión.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SuperAdminImage/modal_confirmar_cerrar_sesion.png}
+    \caption{Modal de confirmación para cerrar sesión}
+    \label{fig:cerrar-sesion-warehouse}
+\end{figure}
+
+\section{Conclusión}
+
+Este manual proporciona una guía completa para el uso del sistema SGDIS desde la perspectiva del Warehouse (Encargado de Almacén). Como warehouse, tiene un rol operativo fundamental en la gestión diaria de los inventarios, items, verificaciones y préstamos de su institución.
+
+\subsection{Resumen de Permisos y Restricciones}
+
+\textbf{Funcionalidades disponibles:}
+
+\begin{itemize}
+    \item \textbf{Inventarios:} Crear, editar, eliminar, ver detalles, asignar roles, ver jerarquía.
+    \item \textbf{Items:} Crear, editar, eliminar, ver detalles, prestar, transferir, solicitar cancelación.
+    \item \textbf{Usuarios:} Crear usuarios (solo rol USER), visualizar usuarios, cambiar contraseñas.
+    \item \textbf{Transferencias:} Crear transferencias con aprobación automática, ver historial.
+    \item \textbf{Verificaciones:} Crear y gestionar verificaciones físicas de items.
+    \item \textbf{Préstamos:} Crear préstamos, registrar devoluciones, ver historial.
+    \item \textbf{Cancelaciones:} Solicitar cancelaciones de items (requiere aprobación).
+    \item \textbf{Reportes:} Generar y exportar reportes en múltiples formatos.
+    \item \textbf{Auditoría:} Ver registro de actividades del sistema.
+    \item \textbf{Importar/Exportar:} Importar y exportar datos de inventarios e items.
+    \item \textbf{Notificaciones:} Gestionar notificaciones del sistema.
+    \item \textbf{Configuración:} Configurar apariencia (modo oscuro/claro).
+    \item \textbf{Perfil:} Ver y editar información personal, cambiar contraseña.
+\end{itemize}
+
+\textbf{Restricciones:}
+
+\begin{itemize}
+    \item \textbf{Usuarios:} Solo puede crear usuarios con rol USER, no puede editar información de usuarios ni cambiar roles.
+    \item \textbf{Cancelaciones:} Puede solicitar pero no aprobar cancelaciones.
+    \item \textbf{Alcance:} Todas las acciones están limitadas a su institución y regional asignada.
+\end{itemize}
+
+\subsection{Características Especiales del Rol Warehouse}
+
+\begin{itemize}
+    \item \textbf{Aprobación automática de transferencias:} Las transferencias creadas por el warehouse se aprueban automáticamente, facilitando la gestión operativa.
+    \item \textbf{Acceso completo a inventarios:} Puede gestionar todos los inventarios de su institución sin restricciones.
+    \item \textbf{Gestión de roles de inventario:} Puede asignar roles de Manejador y Firmante a usuarios.
+    \item \textbf{Creación de usuarios:} Puede crear usuarios con rol USER para su institución, agilizando el registro de nuevo personal.
+    \item \textbf{Gestión de contraseñas:} Puede cambiar la contraseña de cualquier usuario de su institución.
+\end{itemize}
+
+\subsection{Comparación con Otros Roles}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Funcionalidad} & \textbf{Warehouse} & \textbf{Admin Inst.} & \textbf{Admin Regional} \\
+\hline
+Crear/Editar Inventarios & Sí & Sí & Sí \\
+Crear/Editar Items & Sí & Sí & Sí \\
+Asignar Roles en Inventarios & Sí & Sí & Sí \\
+Crear Usuarios & Sí (solo USER) & Sí (limitado) & Sí \\
+Editar Usuarios & No & Sí & Sí \\
+Cambiar Contraseñas & Sí & Sí & Sí \\
+Realizar Verificaciones & Sí & Sí & Sí \\
+Gestionar Préstamos & Sí & Sí & Sí \\
+Solicitar Cancelaciones & Sí & Sí & Sí \\
+Aprobar Cancelaciones & No & Sí & Sí \\
+Transferencias Auto-aprobadas & Sí & No & No \\
+Ver Centros/Instituciones & No & No & Sí \\
+Generar Reportes & Sí & Sí & Sí \\
+Ver Auditoría & Sí & Sí & Sí \\
+Importar/Exportar Datos & Sí & Sí & Sí \\
+\hline
+\end{tabular}
+\caption{Comparación de permisos entre roles}
+\end{table}
+
+\subsection{Flujo de Trabajo Recomendado}
+
+Para una gestión eficiente del almacén, se recomienda seguir este flujo de trabajo:
+
+\begin{enumerate}
+    \item \textbf{Revisar el Dashboard:} Verificar estadísticas y actividad reciente al iniciar sesión.
+    \item \textbf{Revisar notificaciones:} Atender alertas y recordatorios pendientes.
+    \item \textbf{Gestionar préstamos:} Procesar solicitudes de préstamo y devoluciones.
+    \item \textbf{Realizar verificaciones:} Completar verificaciones físicas programadas.
+    \item \textbf{Actualizar inventarios:} Mantener la información de inventarios e items actualizada.
+    \item \textbf{Generar reportes:} Crear reportes periódicos para control y seguimiento.
+\end{enumerate}
+
+\subsection{Soporte Técnico}
+
+Para obtener ayuda adicional o reportar problemas:
+
+\begin{itemize}
+    \item Contacte a su Administrador Institucional.
+    \item Comuníquese con el equipo de soporte técnico del sistema.
+    \item Consulte la documentación en línea del sistema.
+\end{itemize}
+
+\end{document}
+
