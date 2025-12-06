@@ -166,14 +166,15 @@ function displayAuditories(auditories) {
     
     tbody.innerHTML = auditories.map(auditory => {
         const date = new Date(auditory.date);
-        const formattedDate = date.toLocaleString('es-ES', {
+        const formattedDate = date.toLocaleString('es-CO', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit'
-        });
+            second: '2-digit',
+            timeZone: 'America/Bogota'
+        }) + ' (GMT-5)';
         
         const performerName = auditory.performerName || 'N/A';
         const avatarHtml = createUserAvatar(auditory.performerImgUrl, performerName, 'w-10 h-10');

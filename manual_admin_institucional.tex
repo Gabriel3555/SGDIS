@@ -1,0 +1,1665 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{caption}
+
+\geometry{a4paper, margin=2.5cm}
+
+% Colores SENA
+\definecolor{senaverde}{RGB}{0, 175, 0}
+\definecolor{senaverdeoscuro}{RGB}{0, 136, 0}
+
+% Configuración de títulos
+\titleformat{\section}
+{\Large\bfseries\color{senaverde}}
+{}
+{0em}
+{}[\titlerule]
+
+\titleformat{\subsection}
+{\large\bfseries}
+{}
+{0em}
+{}
+
+% Encabezado y pie de página
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{senaverde}{\textbf{SGDIS}}}
+\fancyhead[R]{\textcolor{gray}{Manual de Usuario - Admin Institucional}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{SGDIS - Manual de Usuario\\Administrador Institucional}
+\author{Julian Chaparro Barrera}
+\date{Diciembre 2025}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introducción}
+
+Este manual de usuario está diseñado específicamente para los usuarios con rol de \textbf{Administrador Institucional (ADMIN\_INSTITUTION)} del Sistema de Gestión de Inventario SENA (SGDIS). El manual proporciona instrucciones detalladas sobre cómo utilizar todas las funcionalidades disponibles para este rol.
+
+\subsection{Alcance del Rol de Administrador Institucional}
+
+El rol de Administrador Institucional tiene las siguientes características:
+
+\begin{itemize}
+    \item \textbf{Alcance geográfico:} Puede gestionar únicamente los recursos, usuarios e inventarios de su institución asignada.
+    \item \textbf{Permisos:} Tiene acceso completo a todas las funcionalidades del sistema dentro de su institución.
+    \item \textbf{Restricciones:} No puede gestionar usuarios con rol SUPERADMIN ni ADMIN\_REGIONAL, ni puede acceder a datos de otras instituciones o regionales.
+    \item \textbf{Gestión de usuarios:} Puede crear y gestionar usuarios con roles: Warehouse y User (dentro de su institución).
+    \item \textbf{Gestión de inventarios:} Puede gestionar todos los inventarios de su institución.
+    \item \textbf{Sin acceso a Centros:} No puede visualizar ni gestionar regionales o instituciones.
+\end{itemize}
+
+\section{Acceso al Dashboard de Administrador Institucional}
+
+Para acceder al dashboard de administrador institucional:
+
+\begin{enumerate}
+    \item Inicie sesión en el sistema con credenciales de administrador institucional.
+    \item Después del inicio de sesión, será redirigido automáticamente al dashboard de administrador institucional.
+    \item El dashboard se encuentra en la ruta \texttt{/admin\_institution/dashboard}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/dashboardSgdis1.png}
+    \caption{Dashboard principal del Administrador Institucional}
+    \label{fig:dashboard-admin-institution}
+\end{figure}
+
+\subsection{Panel de Navegación}
+
+El panel lateral izquierdo contiene las siguientes opciones de navegación:
+
+\begin{itemize}
+    \item \textbf{Dashboard:} Vista general de la institución con estadísticas y gráficos.
+    \item \textbf{Inventario:} Gestión de inventarios de la institución.
+    \item \textbf{Usuarios:} Administración de usuarios de la institución.
+    \item \textbf{Transferencias:} Administración de transferencias entre inventarios de la institución.
+    \item \textbf{Verificación:} Gestión de verificaciones de items de la institución.
+    \item \textbf{Préstamos:} Administración de préstamos de items de la institución.
+    \item \textbf{Bajas:} Gestión de cancelaciones de items de la institución.
+    \item \textbf{Reportes:} Generación y visualización de reportes de la institución.
+    \item \textbf{Auditoría:} Registro de actividades del sistema en la institución.
+    \item \textbf{Notificaciones:} Gestión de notificaciones del sistema.
+    \item \textbf{Importar/Exportar:} Funciones de importación y exportación de datos de la institución.
+    \item \textbf{Configuración:} Configuraciones generales del sistema.
+    \item \textbf{Mi Perfil:} Información personal y configuración de cuenta.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/sideBarSgdis.png}
+    \caption{Panel de navegación lateral del Administrador Institucional}
+    \label{fig:panel-navegacion-inst}
+\end{figure}
+
+\subsection{Dashboard de Administrador Institucional}
+
+El dashboard proporciona una vista general de la institución con las siguientes secciones:
+
+\subsubsection{Tarjetas de Estadísticas}
+
+El dashboard muestra tarjetas con estadísticas clave de la institución:
+
+\begin{itemize}
+    \item \textbf{Total Inventarios:} Muestra el número total de inventarios en la institución, con desglose de activos e inactivos.
+    \item \textbf{Total Usuarios:} Cantidad total de usuarios registrados en la institución, con distribución por roles (Admin Inst., Warehouse, Usuarios).
+    \item \textbf{Total Transferencias:} Cantidad de transferencias con estado (pendientes, aprobadas, rechazadas) dentro de la institución.
+    \item \textbf{Total Verificaciones:} Número total de verificaciones realizadas en la institución.
+    \item \textbf{Total Préstamos:} Cantidad de préstamos registrados en la institución.
+    \item \textbf{Total Items:} Número total de items en todos los inventarios de la institución, con valor total en COP.
+    \item \textbf{Notificaciones No Leídas:} Cantidad de notificaciones pendientes por leer.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/estadisticasSgdis.png}
+    \caption{Tarjetas de estadísticas del dashboard}
+    \label{fig:dashboard-estadisticas-inst}
+\end{figure}
+
+\subsubsection{Gráficos y Visualizaciones}
+
+El dashboard incluye los siguientes gráficos específicos de la institución:
+
+\begin{enumerate}
+    \item \textbf{Usuarios por Rol:} Gráfico circular (doughnut) que muestra la distribución de usuarios según su rol (Admin Inst., Warehouse, Usuarios) en la institución.
+    
+    \item \textbf{Bajas por Inventario:} Gráfico de barras que muestra la cantidad de cancelaciones (bajas) por inventario en la institución.
+    
+    \item \textbf{Transferencias por Estado:} Gráfico circular que muestra la distribución de transferencias según su estado (Pendientes, Aprobadas, Rechazadas) en la institución.
+    
+    \item \textbf{Items por Inventario:} Gráfico de barras que muestra la cantidad de items por cada inventario de la institución.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/estadisticasSgdis2.png}
+    \caption{Gráficos y visualizaciones del dashboard}
+    \label{fig:dashboard-graficos-inst}
+\end{figure}
+
+\subsubsection{Actividad Reciente}
+
+El dashboard muestra tres secciones de actividad reciente de la institución:
+
+\begin{itemize}
+    \item \textbf{Inventarios Recientes:} Lista de los últimos 5 inventarios creados o modificados en la institución, mostrando nombre, institución y estado.
+    \item \textbf{Transferencias Recientes:} Lista de las últimas 5 transferencias de la institución, mostrando el item, fecha y estado.
+    \item \textbf{Verificaciones Recientes:} Lista de las últimas 5 verificaciones realizadas en la institución, mostrando el item y fecha.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/RECIENTES_SGDIS.png}
+    \caption{Secciones de actividad reciente del dashboard}
+    \label{fig:dashboard-actividad-inst}
+\end{figure}
+
+\newpage
+
+\section{Gestión de Usuarios}
+
+Como administrador institucional, puede gestionar todos los usuarios de su institución asignada.
+
+\subsection{Acceso a Gestión de Usuarios}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Usuarios"}.
+    \item Será redirigido a la página de gestión de usuarios (\texttt{/admin\_institution/users}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/usuarios_admin_dashboard.png}
+    \caption{Página de gestión de usuarios}
+    \label{fig:gestion-usuarios-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver lista de usuarios:} Visualice todos los usuarios registrados en su institución.
+    \item \textbf{Buscar usuarios:} Utilice la barra de búsqueda para encontrar usuarios específicos.
+    \item \textbf{Filtrar usuarios:} Filtre usuarios por rol y estado.
+    \item \textbf{Crear nuevo usuario:} Agregue nuevos usuarios al sistema con roles Warehouse o User.
+    \item \textbf{Editar usuario:} Modifique la información de usuarios existentes de la institución.
+    \item \textbf{Cambiar rol de usuario:} Asigne o modifique el rol de un usuario (solo Warehouse o User).
+    \item \textbf{Activar/Desactivar usuario:} Habilite o deshabilite cuentas de usuario de la institución.
+    \item \textbf{Eliminar usuario:} Elimine usuarios del sistema (con precaución).
+\end{itemize}
+
+\subsection{Roles Disponibles para Crear}
+
+\textbf{Importante:} Como Administrador Institucional, solo puede crear usuarios con los siguientes roles:
+
+\begin{itemize}
+    \item \textbf{Warehouse:} Usuarios encargados de la gestión de almacén y verificaciones.
+    \item \textbf{User:} Usuarios estándar con permisos básicos de consulta y operación.
+\end{itemize}
+
+\textbf{No puede crear usuarios con roles:} ADMIN\_INSTITUTION, ADMIN\_REGIONAL ni SUPERADMIN.
+
+\subsection{Crear Nuevo Usuario}
+
+Para crear un nuevo usuario en su institución:
+
+\begin{enumerate}
+    \item Localice el botón \textbf{"Nuevo Usuario"} o \textbf{"Crear Usuario"} en la página de gestión de usuarios.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/boton_crear_usuario_admin.png}
+    \caption{Botón para crear nuevo usuario}
+    \label{fig:boton-crear-usuario-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de creación de usuario.
+    \item Complete el formulario del modal con la siguiente información:
+    \begin{itemize}
+        \item \textbf{Nombre completo:} Ingrese el nombre completo del usuario.
+        \item \textbf{Correo electrónico:} Debe ser @soy.sena.edu.co o @sena.edu.co.
+        \item \textbf{Cargo laboral:} Especifique el cargo del usuario.
+        \item \textbf{Departamento laboral:} Indique el departamento al que pertenece.
+        \item \textbf{Rol:} Seleccione el rol (Warehouse o User). \textbf{Nota:} Solo puede crear usuarios con estos roles.
+        \item \textbf{Institución:} Se asigna automáticamente su institución.
+        \item \textbf{Contraseña:} Establezca una contraseña inicial para el usuario.
+        \item \textbf{Estado:} Seleccione si el usuario estará Activo o Inactivo.
+    \end{itemize}
+    \item Revise la información ingresada.
+    \item Haga clic en \textbf{"Guardar"} o \textbf{"Crear"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_crear_usuario_admin.png}
+    \caption{Modal de creación de nuevo usuario con todos los campos del formulario}
+    \label{fig:modal-crear-usuario-inst}
+\end{figure}
+
+\subsection{Editar Usuario}
+
+Para editar un usuario existente de su institución:
+
+\begin{enumerate}
+    \item En la lista de usuarios, localice el usuario que desea editar.
+    \item Localice el botón \textbf{"editar"} o el ícono de edición en la fila del usuario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{SuperAdminImage/boton_editar_usuario_admin.png}
+    \caption{Botón de editar usuario en la lista}
+    \label{fig:boton-editar-usuario-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de edición.
+    \item El modal mostrará el formulario con los datos actuales del usuario.
+    \item Modifique los campos necesarios:
+    \begin{itemize}
+        \item Puede cambiar el nombre completo, cargo, departamento.
+        \item Puede modificar el rol del usuario (solo Warehouse o User).
+        \item Puede cambiar el estado (Activo/Inactivo).
+    \end{itemize}
+    \item Revise los cambios realizados.
+    \item Haga clic en \textbf{"Guardar"} para aplicar los cambios.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_editar_usuario_admin.png}
+    \caption{Modal de edición de usuario con los campos prellenados}
+    \label{fig:modal-editar-usuario-inst}
+\end{figure}
+
+\subsection{Ver Detalles de Usuario}
+
+Para visualizar la información completa de un usuario:
+
+\begin{enumerate}
+    \item En la lista de usuarios, localice el usuario del cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver"} o el ícono de ojo en la fila del usuario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de usuario}
+    \label{fig:boton-ver-usuario-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de visualización.
+    \item El modal mostrará toda la información del usuario:
+    \begin{itemize}
+        \item \textbf{Información personal:} Nombre completo, correo electrónico, foto de perfil.
+        \item \textbf{Información laboral:} Cargo, departamento, institución.
+        \item \textbf{Información del sistema:} Rol asignado, estado de la cuenta, fecha de registro.
+        \item \textbf{Historial de actividad:} Últimas acciones realizadas en el sistema.
+        \item \textbf{Inventarios asignados:} Lista de inventarios donde el usuario tiene acceso.
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/visualizacion_usuario_admin.png}
+    \caption{Modal de visualización de usuario con toda la información}
+    \label{fig:modal-ver-usuario-inst}
+\end{figure}
+
+\subsection{Cambiar Contraseña de Usuario}
+
+Para cambiar la contraseña de un usuario:
+
+\begin{enumerate}
+    \item En la lista de usuarios, localice el usuario al cual desea cambiar la contraseña.
+    \item Localice el botón \textbf{"Cambiar Contraseña"} o el ícono de llave en la fila del usuario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/item_cambiar_contraseña_usuario.png}
+    \caption{Botón para cambiar contraseña de usuario}
+    \label{fig:boton-cambiar-contrasena-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de cambio de contraseña.
+    \item El modal solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Nueva contraseña:} Ingrese la nueva contraseña para el usuario.
+        \item \textbf{Confirmar contraseña:} Confirme la nueva contraseña ingresándola nuevamente.
+    \end{itemize}
+    \item Asegúrese de que ambas contraseñas coincidan.
+    \item Haga clic en \textbf{"Guardar"} o \textbf{"Cambiar Contraseña"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{SuperAdminImage/modal_cambiar_contraseña.png}
+    \caption{Modal de cambio de contraseña de usuario}
+    \label{fig:modal-cambiar-contrasena-inst}
+\end{figure}
+
+\subsection{Eliminar Usuario}
+
+Para eliminar un usuario del sistema:
+
+\begin{enumerate}
+    \item En la lista de usuarios, localice el usuario que desea eliminar.
+    \item Localice el botón \textbf{"Eliminar"} o el ícono de papelera en la fila del usuario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/boton_eliminar.png}
+    \caption{Botón para eliminar usuario}
+    \label{fig:boton-eliminar-usuario-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de confirmación de eliminación.
+    \item El modal mostrará una advertencia indicando:
+    \begin{itemize}
+        \item Nombre del usuario a eliminar.
+        \item Advertencia de que esta acción no se puede deshacer.
+        \item Información sobre los datos que se eliminarán junto con el usuario.
+    \end{itemize}
+    \item Revise cuidadosamente la información antes de confirmar.
+    \item Haga clic en \textbf{"Eliminar"} o \textbf{"Confirmar"} para eliminar el usuario permanentemente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{SuperAdminImage/modal_eliminar_usuario_admin.png}
+    \caption{Modal de confirmación de eliminación de usuario}
+    \label{fig:modal-eliminar-usuario-inst}
+\end{figure}
+
+\subsection{Notas Importantes sobre Gestión de Usuarios}
+
+\begin{itemize}
+    \item Solo puede gestionar usuarios que pertenezcan a su institución asignada.
+    \item No puede crear, editar ni asignar los roles ADMIN\_INSTITUTION, ADMIN\_REGIONAL o SUPERADMIN.
+    \item Todos los usuarios que cree pertenecerán automáticamente a su institución.
+    \item Solo puede ver usuarios de su propia institución.
+\end{itemize}
+
+\section{Gestión de Inventario}
+
+El administrador institucional puede gestionar todos los inventarios de su institución.
+
+\subsection{Acceso a Gestión de Inventario}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Inventario"}.
+    \item Será redirigido a la página de gestión de inventario (\texttt{/admin\_institution/inventory}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/inventario_dashboard_admin.png}
+    \caption{Página de gestión de inventario}
+    \label{fig:gestion-inventario-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todos los inventarios:} Visualice inventarios de su institución.
+    \item \textbf{Buscar inventarios:} Busque inventarios por nombre.
+    \item \textbf{Filtrar inventarios:} Filtre por estado y tipo.
+    \item \textbf{Crear inventario:} Cree nuevos inventarios para su institución.
+    \item \textbf{Editar inventario:} Modifique información de inventarios existentes.
+    \item \textbf{Activar/Desactivar inventario:} Cambie el estado de un inventario.
+    \item \textbf{Ver items de inventario:} Acceda a la lista de items de cada inventario.
+    \item \textbf{Gestionar items:} Agregue, edite o elimine items de inventarios.
+\end{itemize}
+
+\subsection{Crear Nuevo Inventario}
+
+Para crear un nuevo inventario en su institución:
+
+\begin{enumerate}
+    \item En la página de gestión de inventario, localice el botón \textbf{"Nuevo Inventario"} o \textbf{"Crear Inventario"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_crear_inventario_admin.png}
+    \caption{Botón para crear nuevo inventario}
+    \label{fig:boton-crear-inventario-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de creación de inventario.
+    \item Complete el formulario del modal con la siguiente información:
+    \begin{itemize}
+        \item \textbf{Nombre del inventario:} Ingrese un nombre descriptivo para el inventario.
+        \item \textbf{Descripción:} Proporcione una descripción detallada del inventario.
+        \item \textbf{Institución:} Se asigna automáticamente su institución.
+        \item \textbf{Imagen del inventario:} Opcionalmente, suba una imagen representativa.
+        \item \textbf{Estado:} Seleccione si el inventario estará Activo o Inactivo.
+        \item \textbf{Usuario responsable:} Asigne un usuario responsable del inventario (debe ser usuario de su institución).
+    \end{itemize}
+    \item Revise toda la información ingresada.
+    \item Haga clic en \textbf{"Guardar"} o \textbf{"Crear"} para confirmar la creación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/nuevo_inventario_modal_admin.png}
+    \caption{Modal de creación de inventario con todos los campos del formulario}
+    \label{fig:modal-crear-inventario-inst}
+\end{figure}
+
+\subsection{Editar Inventario}
+
+Para editar un inventario existente de su institución:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario que desea editar.
+    \item Localice el botón \textbf{"Editar"} o el ícono de edición en la fila del inventario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_editar_usuario_admin.png}
+    \caption{Botón de editar inventario en la lista}
+    \label{fig:boton-editar-inventario-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de edición.
+    \item El modal mostrará el formulario con los datos actuales del inventario.
+    \item Modifique los campos necesarios (nombre, descripción, estado, usuario responsable, etc.).
+    \item Haga clic en \textbf{"Guardar"} para aplicar los cambios.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/editar_inventario_modal_sgdis.png}
+    \caption{Modal de edición de inventario con los campos prellenados}
+    \label{fig:modal-editar-inventario-inst}
+\end{figure}
+
+\subsection{Ver Items de un Inventario}
+
+Para ver los items de un inventario específico:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario del cual desea ver los items.
+    \item Localice el botón \textbf{"Ver Items"} o el ícono de items en la fila del inventario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{SuperAdminImage/ver_items_inventario_admin.png}
+    \caption{Botón para ver items de un inventario}
+    \label{fig:boton-ver-items-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para acceder a la página de items del inventario.
+    \item Será redirigido a una página que muestra todos los items del inventario seleccionado.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/ver_items_modal_inventario_admin.png}
+    \caption{Página de items de un inventario con lista de items}
+    \label{fig:pagina-items-inventario-inst}
+\end{figure}
+
+\subsection{Asignar Manager a Inventario}
+
+Para asignar un usuario responsable (manager) a un inventario:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario al cual desea asignar un manager.
+    \item Localice el botón \textbf{"Asignar Manager"} o \textbf{"Asignar Responsable"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/asiganar_manager_inventario.png}
+    \caption{Botón para asignar manager a inventario}
+    \label{fig:boton-asignar-manager-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de asignación.
+    \item El modal mostrará:
+    \begin{itemize}
+        \item Lista de usuarios disponibles de su institución.
+        \item Usuario actual asignado (si existe).
+        \item Campo para seleccionar el nuevo usuario responsable.
+        \item Opción para asignar un rol específico al usuario en el inventario.
+    \end{itemize}
+    \item Seleccione el usuario que será el manager del inventario.
+    \item Opcionalmente, asigne un rol específico.
+    \item Haga clic en \textbf{"Asignar"} o \textbf{"Guardar"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal-asignar-manager.png}
+    \caption{Modal de asignación de manager con lista de usuarios}
+    \label{fig:modal-asignar-manager-inst}
+\end{figure}
+
+\subsection{Jerarquía de Inventario}
+
+Para visualizar y gestionar la jerarquía de un inventario:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario del cual desea ver la jerarquía.
+    \item Localice el botón \textbf{"Ver Jerarquía"} o el ícono de estructura jerárquica.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/jerarquia_inventarios_admin.png}
+    \caption{Botón para ver jerarquía de inventario}
+    \label{fig:boton-jerarquia-inventario-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de jerarquía.
+    \item El modal mostrará la estructura organizacional del inventario:
+    \begin{itemize}
+        \item \textbf{Institución:} Institución asociada al inventario (su institución).
+        \item \textbf{Usuarios asignados:} Lista de usuarios con acceso, organizados por rol.
+        \item \textbf{Sub-inventarios:} Inventarios relacionados o dependientes (si aplica).
+        \item \textbf{Diagrama visual:} Representación gráfica de la jerarquía.
+    \end{itemize}
+    \item Puede expandir o colapsar los diferentes niveles de la jerarquía.
+    \item Desde este modal puede acceder a editar roles o usuarios directamente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/modal_jerarquia_admin.png}
+    \caption{Modal de jerarquía de inventario con estructura organizacional}
+    \label{fig:modal-jerarquia-inventario-inst}
+\end{figure}
+
+\subsection{Eliminar Inventario}
+
+Para eliminar un inventario del sistema:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario que desea eliminar.
+    \item Localice el botón \textbf{"Eliminar"} o el ícono de papelera en la fila del inventario.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/boton_eliminar.png}
+    \caption{Botón para eliminar inventario}
+    \label{fig:boton-eliminar-inventario-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de confirmación de eliminación.
+    \item El modal mostrará una advertencia indicando:
+    \begin{itemize}
+        \item Nombre del inventario a eliminar.
+        \item Cantidad de items que se eliminarán junto con el inventario.
+        \item Transferencias y préstamos asociados que se verán afectados.
+        \item Advertencia de que esta acción no se puede deshacer.
+    \end{itemize}
+    \item Revise cuidadosamente la información antes de confirmar.
+    \item Escriba el nombre del inventario para confirmar (medida de seguridad adicional).
+    \item Haga clic en \textbf{"Eliminar"} para eliminar el inventario permanentemente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{SuperAdminImage/modal_eliminar_inventario.png}
+    \caption{Modal de confirmación de eliminación de inventario}
+    \label{fig:modal-eliminar-inventario-inst}
+\end{figure}
+
+\subsection{Gestionar Items de un Inventario}
+
+Una vez en la página de items de un inventario, puede realizar las siguientes acciones:
+
+\paragraph{Ver Detalles de un Item}
+
+\begin{enumerate}
+    \item En la lista de items, localice el item del cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver"} o el ícono de ojo en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de un item}
+    \label{fig:boton-ver-item-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles del item.
+    \item El modal mostrará toda la información del item:
+    \begin{itemize}
+        \item Información básica (nombre, descripción, placa).
+        \item Categoría y estado actual.
+        \item Valor y ubicación.
+        \item Imágenes asociadas (si las hay).
+        \item Historial de transferencias.
+        \item Historial de préstamos.
+        \item Historial de verificaciones.
+    \end{itemize}
+    \item Desde este modal puede editar el item haciendo clic en el botón \textbf{"Editar"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/visualizacion_item_inventario.png}
+    \caption{Modal de detalles del item con toda la información}
+    \label{fig:modal-ver-item-inst}
+\end{figure}
+
+\paragraph{Editar Item}
+
+\begin{enumerate}
+    \item En la lista de items, localice el item que desea editar.
+    \item Localice el botón \textbf{"Editar"} o el ícono de edición en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{SuperAdminImage/boton_editar_usuario_admin.png}
+    \caption{Botón para editar item}
+    \label{fig:boton-editar-item-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de edición.
+    \item El modal mostrará el formulario con los datos actuales del item.
+    \item Modifique los campos necesarios (nombre, descripción, estado, valor, ubicación, etc.).
+    \item Puede agregar o eliminar imágenes del item.
+    \item Haga clic en \textbf{"Guardar"} para aplicar los cambios.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/modal_editar_item_admin.png}
+    \caption{Modal de edición de item con los campos prellenados}
+    \label{fig:modal-editar-item-inst}
+\end{figure}
+
+\paragraph{Eliminar Item}
+
+\begin{enumerate}
+    \item En la lista de items, localice el item que desea eliminar.
+    \item Localice el botón \textbf{"Eliminar"} o el ícono de eliminar (papelera) en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/boton_eliminar.png}
+    \caption{Botón para eliminar item}
+    \label{fig:boton-eliminar-item-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de confirmación de eliminación.
+    \item El modal mostrará una advertencia indicando que esta acción no se puede deshacer.
+    \item Revise el mensaje de confirmación.
+    \item Haga clic en \textbf{"Eliminar"} o \textbf{"Confirmar"} para eliminar el item permanentemente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{SuperAdminImage/alerta_eliminar_item.png}
+    \caption{Modal de confirmación de eliminación de item}
+    \label{fig:modal-eliminar-item-inst}
+\end{figure}
+
+\paragraph{Prestar Item desde Inventario}
+
+Para crear un préstamo directamente desde la vista de items:
+
+\begin{enumerate}
+    \item En la lista de items del inventario, localice el item que desea prestar.
+    \item Localice el botón \textbf{"Prestar"} o el ícono de préstamo en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/prestar_items_admin.png}  
+    \caption{Botón para prestar item desde inventario}
+    \label{fig:boton-prestar-item-inv-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de préstamo.
+    \item El modal mostrará la información del item y solicitará:
+    \begin{itemize}
+        \item \textbf{Responsable del préstamo:} Usuario que recibirá el item en préstamo (debe ser usuario de su institución).
+        \item \textbf{Fecha de devolución estimada:} Fecha prevista para la devolución.
+        \item \textbf{Motivo del préstamo:} Razón por la cual se solicita el préstamo.
+        \item \textbf{Observaciones:} Comentarios adicionales (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Prestar Item"} para confirmar el préstamo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_prestar_items_admin.png}
+    \caption{Modal de préstamo de item desde inventario}
+    \label{fig:modal-prestar-item-inv-inst}
+\end{figure}
+
+\paragraph{Transferir Item}
+
+Para transferir un item a otro inventario:
+
+\begin{enumerate}
+    \item En la lista de items del inventario, localice el item que desea transferir.
+    \item Localice el botón \textbf{"Transferir"} o el ícono de transferencia en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/transferir_item_admin.png}
+    \caption{Botón para transferir item}
+    \label{fig:boton-transferir-item-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de transferencia.
+    \item El modal mostrará la información del item y solicitará:
+    \begin{itemize}
+        \item \textbf{Inventario destino:} Seleccione el inventario al cual transferir el item.
+        \item \textbf{Motivo de transferencia:} Razón por la cual se realiza la transferencia.
+        \item \textbf{Comentarios adicionales:} Observaciones sobre la transferencia (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Solicitar Transferencia"} para enviar la solicitud.
+\end{enumerate}
+
+\textbf{Nota:} Las transferencias a inventarios fuera de su institución requerirán aprobación adicional.
+
+\paragraph{Historial de Transferencias de Item}
+
+Para ver el historial completo de transferencias de un item:
+
+\begin{enumerate}
+    \item En la lista de items, localice el item del cual desea ver el historial de transferencias.
+    \item Localice el botón \textbf{"Historial Transferencias"} o el ícono de historial.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/historial_transferencia.png}
+    \caption{Botón para ver historial de transferencias}
+    \label{fig:boton-historial-trans-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de historial.
+    \item El modal mostrará el historial completo de transferencias del item:
+    \begin{itemize}
+        \item \textbf{Línea de tiempo:} Visualización cronológica de todas las transferencias.
+        \item \textbf{Inventarios anteriores:} Lista de inventarios donde ha estado el item.
+        \item \textbf{Fechas de transferencia:} Cuándo se realizó cada transferencia.
+        \item \textbf{Usuarios involucrados:} Quién solicitó y aprobó cada transferencia.
+        \item \textbf{Estados:} Estado de cada transferencia (Aprobada, Rechazada, Pendiente).
+    \end{itemize}
+    \item Puede filtrar el historial por fecha o estado.
+    \item Haga clic en cualquier entrada para ver más detalles.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_historial_transferencia.png}
+    \caption{Modal de historial de transferencias del item}
+    \label{fig:modal-historial-trans-inst}
+\end{figure}
+
+\paragraph{Solicitar Cancelación de Item}
+
+Para solicitar la cancelación (baja) de un item:
+
+\begin{enumerate}
+    \item En la lista de items, localice el item que desea solicitar para cancelación.
+    \item Localice el botón \textbf{"Solicitar Cancelación"} o el ícono correspondiente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/boton_solicitar_cancelacion.png}
+    \caption{Botón para solicitar cancelación de item}
+    \label{fig:boton-solicitar-cancelacion-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de solicitud de cancelación.
+    \item El modal mostrará la información del item y solicitará:
+    \begin{itemize}
+        \item \textbf{Motivo de cancelación:} Seleccione el motivo (Daño irreparable, Obsolescencia, Pérdida, etc.).
+        \item \textbf{Descripción detallada:} Explique las razones de la solicitud de cancelación.
+        \item \textbf{Evidencia:} Opcionalmente, adjunte fotos o documentos que respalden la solicitud.
+        \item \textbf{Valor residual:} Indique el valor residual del item si aplica.
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Enviar Solicitud"} para enviar la solicitud de cancelación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{SuperAdminImage/solicitar_cancelacion.png}
+    \caption{Modal de solicitud de cancelación de item}
+    \label{fig:modal-solicitar-cancelacion-inst}
+\end{figure}
+
+\subsection{Notas Importantes sobre Gestión de Inventario}
+
+\begin{itemize}
+    \item Solo puede gestionar inventarios que pertenezcan a su institución.
+    \item Todos los inventarios creados pertenecerán automáticamente a su institución.
+    \item Los usuarios responsables que asigne deben ser usuarios de su institución.
+    \item Las transferencias a inventarios de otras instituciones o regionales requerirán aprobación.
+\end{itemize}
+
+\section{Gestión de Transferencias}
+
+Administre todas las transferencias de items que involucren inventarios de su institución.
+
+\subsection{Acceso a Gestión de Transferencias}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Transferencias"}.
+    \item Será redirigido a la página de gestión de transferencias (\texttt{/admin\_institution/transfers}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_transferencias_admin.png}
+    \caption{Página de gestión de transferencias}
+    \label{fig:gestion-transferencias-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las transferencias:} Visualice transferencias que involucren inventarios de su institución.
+    \item \textbf{Filtrar transferencias:} Filtre por estado, inventario origen, inventario destino, fecha, etc.
+    \item \textbf{Aprobar transferencias:} Apruebe transferencias pendientes dentro de su institución.
+    \item \textbf{Rechazar transferencias:} Rechace transferencias con justificación.
+    \item \textbf{Ver detalles de transferencia:} Acceda a información detallada de cada transferencia.
+    \item \textbf{Crear nueva transferencia:} Cree solicitudes de transferencia.
+\end{itemize}
+
+\subsection{Crear Nueva Transferencia}
+
+Para crear una nueva solicitud de transferencia:
+
+\begin{enumerate}
+    \item En la página de gestión de transferencias, localice el botón \textbf{"Nueva Transferencia"} en la parte superior.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_nueva_transferencia.png}
+    \caption{Botón para crear nueva transferencia}
+    \label{fig:boton-nueva-transferencia-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de nueva transferencia.
+    \item El modal solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario origen:} Seleccione el inventario desde donde se transferirá el item (debe ser de su institución).
+        \item \textbf{Item a transferir:} Seleccione el item de la lista del inventario origen.
+        \item \textbf{Inventario destino:} Seleccione el inventario destino.
+        \item \textbf{Motivo de la transferencia:} Explique por qué se realiza la transferencia.
+        \item \textbf{Fecha deseada:} Fecha tentativa para realizar la transferencia.
+        \item \textbf{Comentarios adicionales:} Observaciones opcionales.
+    \end{itemize}
+    \item Revise la información ingresada.
+    \item Haga clic en \textbf{"Crear Transferencia"} para enviar la solicitud.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_nueva_transferencia.png}
+    \caption{Modal de creación de nueva transferencia}
+    \label{fig:modal-nueva-transferencia-inst}
+\end{figure}
+
+\subsection{Ver Detalles de Transferencia}
+
+Para ver los detalles completos de una transferencia:
+
+\begin{enumerate}
+    \item En la lista de transferencias, localice la transferencia de la cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver Detalles"} o el ícono de ojo en la fila de la transferencia.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de transferencia}
+    \label{fig:boton-ver-transferencia-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles.
+    \item El modal mostrará información completa de la transferencia:
+    \begin{itemize}
+        \item \textbf{Información del item:} Nombre, placa, descripción, imágenes.
+        \item \textbf{Inventario origen:} Nombre y ubicación del inventario de origen.
+        \item \textbf{Inventario destino:} Nombre y ubicación del inventario destino.
+        \item \textbf{Usuario solicitante:} Información del usuario que solicitó la transferencia.
+        \item \textbf{Fecha de solicitud:} Fecha y hora en que se realizó la solicitud.
+        \item \textbf{Estado actual:} Estado de la transferencia (Pendiente, Aprobada, Rechazada).
+        \item \textbf{Motivo:} Motivo de la transferencia.
+        \item \textbf{Comentarios:} Comentarios adicionales si los hay.
+        \item \textbf{Historial:} Historial de cambios de estado.
+    \end{itemize}
+    \item Desde este modal puede aprobar o rechazar la transferencia si está pendiente y tiene permisos.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/detalles_transferencia_admin.png}
+    \caption{Modal de detalles de transferencia con toda la información}
+    \label{fig:modal-ver-transferencia-inst}
+\end{figure}
+
+\subsection{Aprobar Transferencia}
+
+Para aprobar una transferencia pendiente dentro de su institución:
+
+\begin{enumerate}
+    \item En la lista de transferencias, localice la transferencia con estado \textbf{"Pendiente"}.
+    \item Localice el botón \textbf{"Aprobar"} o el ícono de aprobación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/apro_transferencia_admin.png}
+    \caption{Botón para aprobar transferencia}
+    \label{fig:boton-aprobar-transferencia-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de aprobación.
+    \item El modal mostrará los detalles de la transferencia.
+    \item Revise toda la información cuidadosamente.
+    \item Opcionalmente, puede agregar comentarios o notas.
+    \item Haga clic en \textbf{"Aprobar"} o \textbf{"Confirmar"} para aprobar la transferencia.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_transderencias_aprobar.png}
+    \caption{Modal de aprobación de transferencia con los detalles}
+    \label{fig:modal-aprobar-transferencia-inst}
+\end{figure}
+
+\subsection{Rechazar Transferencia}
+
+Para rechazar una transferencia pendiente:
+
+\begin{enumerate}
+    \item En la lista de transferencias, localice la transferencia con estado \textbf{"Pendiente"}.
+    \item Localice el botón \textbf{"Rechazar"} o el ícono de rechazo en la fila de la transferencia.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/cancelar_transferencia_icon.png}
+    \caption{Botón para rechazar transferencia}
+    \label{fig:boton-rechazar-transferencia-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de rechazo.
+    \item El modal mostrará los detalles de la transferencia y un campo para justificación.
+    \item Ingrese el motivo del rechazo en el campo \textbf{"Justificación"} (obligatorio).
+    \item Revise la información antes de confirmar.
+    \item Haga clic en \textbf{"Rechazar"} o \textbf{"Confirmar"} para rechazar la transferencia.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_rechazar_transferencia.png}
+    \caption{Modal de rechazo de transferencia con campo de justificación}
+    \label{fig:modal-rechazar-transferencia-inst}
+\end{figure}
+
+\section{Gestión de Verificaciones}
+
+Administre las verificaciones de items realizadas en inventarios de su institución.
+
+\subsection{Acceso a Gestión de Verificaciones}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Verificación"}.
+    \item Será redirigido a la página de gestión de verificaciones (\texttt{/admin\_institution/verification}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_verificaciones_admin .png}
+    \caption{Página de gestión de verificaciones}
+    \label{fig:gestion-verificaciones-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las verificaciones:} Visualice verificaciones de todos los inventarios de su institución.
+    \item \textbf{Filtrar verificaciones:} Filtre por inventario, item, fecha, usuario, etc.
+    \item \textbf{Ver detalles de verificación:} Acceda a información completa de cada verificación.
+    \item \textbf{Ver imágenes de verificación:} Visualice las fotografías asociadas a las verificaciones.
+    \item \textbf{Crear nueva verificación:} Cree nuevas verificaciones de items.
+    \item \textbf{Exportar verificaciones:} Exporte datos de verificaciones para análisis.
+\end{itemize}
+
+\subsection{Nueva Verificación}
+
+Para crear una nueva verificación de item:
+
+\begin{enumerate}
+    \item En la página de gestión de verificaciones, localice el botón \textbf{"Nueva Verificación"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_nueva_transferencia.png}
+    \caption{Botón para crear nueva verificación}
+    \label{fig:boton-nueva-verificacion-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de nueva verificación.
+    \item El modal solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario:} Seleccione el inventario donde se encuentra el item (debe ser de su institución).
+        \item \textbf{Item a verificar:} Seleccione el item de la lista.
+        \item \textbf{Estado observado:} Seleccione el estado actual del item (Buen estado, Dañado, etc.).
+        \item \textbf{Ubicación actual:} Confirme o actualice la ubicación del item.
+        \item \textbf{Observaciones:} Ingrese observaciones detalladas sobre la verificación.
+        \item \textbf{Evidencia fotográfica:} Adjunte fotos del item verificado.
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Guardar Verificación"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_nueva_verificacion.png}
+    \caption{Modal de creación de nueva verificación}
+    \label{fig:modal-nueva-verificacion-inst}
+\end{figure}
+
+\subsection{Ver Detalles de Verificación}
+
+Para ver los detalles completos de una verificación:
+
+\begin{enumerate}
+    \item En la lista de verificaciones, localice la verificación de la cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver Detalles"} o el ícono de ojo en la fila de la verificación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de verificación}
+    \label{fig:boton-ver-verificacion-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles.
+    \item El modal mostrará información completa de la verificación:
+    \begin{itemize}
+        \item \textbf{Información del item:} Nombre, placa, descripción del item verificado.
+        \item \textbf{Inventario:} Inventario al que pertenece el item.
+        \item \textbf{Usuario verificador:} Información del usuario que realizó la verificación.
+        \item \textbf{Fecha de verificación:} Fecha y hora en que se realizó la verificación.
+        \item \textbf{Estado del item:} Estado observado durante la verificación.
+        \item \textbf{Observaciones:} Observaciones y notas del verificador.
+        \item \textbf{Imágenes:} Galería de imágenes tomadas durante la verificación.
+        \item \textbf{Ubicación:} Ubicación donde se encontró el item.
+    \end{itemize}
+    \item Puede navegar entre las imágenes usando los controles del modal.
+    \item Puede descargar las imágenes individualmente o en conjunto.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SuperAdminImage/verificacion_MODAL_ADMIN.png}
+    \caption{Modal de detalles de verificación con imágenes y toda la información}
+    \label{fig:modal-ver-verificacion-inst}
+\end{figure}
+
+\section{Gestión de Préstamos}
+
+Administre todos los préstamos de items de inventarios de su institución.
+
+\subsection{Acceso a Gestión de Préstamos}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Préstamos"}.
+    \item Será redirigido a la página de gestión de préstamos (\texttt{/admin\_institution/loans}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_prestamos_dashboard_admin.png}
+    \caption{Página de gestión de préstamos}
+    \label{fig:gestion-prestamos-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todos los préstamos:} Visualice préstamos de todos los inventarios de su institución.
+    \item \textbf{Filtrar préstamos:} Filtre por estado, inventario, usuario responsable, fecha, etc.
+    \item \textbf{Crear préstamo:} Registre nuevos préstamos directamente.
+    \item \textbf{Registrar devolución:} Registre la devolución de items prestados.
+    \item \textbf{Ver historial de préstamos:} Revise el historial completo de préstamos.
+\end{itemize}
+
+\subsection{Crear Préstamo}
+
+Para registrar un nuevo préstamo en el sistema:
+
+\begin{enumerate}
+    \item Desde la sección \textbf{Gestión de Préstamos}, ubique en la parte superior derecha el botón \textbf{"Prestar Ítem"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/prestar_items_boton.png}
+    \caption{Botón para crear un nuevo préstamo}
+    \label{fig:boton-prestar-item-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Al hacer clic en el botón, se abrirá el modal de registro de préstamo.
+    \item El formulario solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Institución:} Se autocompleta con su institución.
+        \item \textbf{Inventario:} Indique el inventario en el que está registrado el ítem.
+        \item \textbf{Ítem:} Seleccione el ítem que será prestado.
+        \item \textbf{Responsable:} Persona a cargo del préstamo (debe ser usuario de su institución).
+        \item \textbf{Detalles (Opcional):} Comentarios adicionales relacionados con el préstamo.
+    \end{itemize}
+    \item Revise cuidadosamente la información ingresada.
+    \item Finalmente, haga clic en \textbf{"Prestar ítem"} para confirmar la creación del préstamo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_prestar_item.png}
+    \caption{Modal para registrar un préstamo}
+    \label{fig:modal-prestar-item-inst}
+\end{figure}
+
+Una vez completado el proceso, el préstamo aparecerá en la tabla principal con estado \textbf{"Prestado"}, mostrando la fecha y hora en que fue registrado.
+
+\subsection{Registrar Devolución}
+
+Para registrar la devolución de un item prestado:
+
+\begin{enumerate}
+    \item En la lista de préstamos, localice el préstamo con estado \textbf{"Prestado"}.
+    \item Localice el botón \textbf{"Registrar Devolución"} o el ícono correspondiente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/devolver_prestamo_admin.png}
+    \caption{Botón para registrar devolución}
+    \label{fig:boton-devolucion-prestamo-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de devolución.
+    \item El modal mostrará los detalles del préstamo y solicitará:
+    \begin{itemize}
+        \item Confirmación de la devolución.
+        \item Estado del item (en buen estado, dañado, etc.).
+        \item Observaciones sobre la devolución (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Confirmar Devolución"} para registrar la devolución.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_devolver_prestamo.png}
+    \caption{Modal de registro de devolución de préstamo}
+    \label{fig:modal-devolucion-prestamo-inst}
+\end{figure}
+
+\section{Gestión de Cancelaciones (Bajas)}
+
+Administre las cancelaciones de items de inventarios de su institución.
+
+\subsection{Acceso a Gestión de Cancelaciones}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Bajas"}.
+    \item Será redirigido a la página de gestión de cancelaciones (\texttt{/admin\_institution/cancellations}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_cancelaciones_dashboard.png}
+    \caption{Página de gestión de cancelaciones}
+    \label{fig:gestion-cancelaciones-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las cancelaciones:} Visualice cancelaciones de todos los inventarios de su institución.
+    \item \textbf{Filtrar cancelaciones:} Filtre por inventario, item, fecha, motivo, etc.
+    \item \textbf{Aprobar cancelaciones:} Apruebe solicitudes de cancelación pendientes.
+    \item \textbf{Rechazar cancelaciones:} Rechace cancelaciones con justificación.
+    \item \textbf{Ver detalles de cancelación:} Acceda a información completa de cada cancelación.
+\end{itemize}
+
+\subsection{Aprobar Cancelación}
+
+Para aprobar una solicitud de cancelación:
+
+\begin{enumerate}
+    \item En la lista de cancelaciones, localice la cancelación con estado \textbf{"Pendiente"}.
+    \item Localice el botón \textbf{"Aprobar"} o el ícono de aprobación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_aprobar_cancelacion_dash.png}
+    \caption{Botón para aprobar cancelación}
+    \label{fig:boton-aprobar-cancelacion-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de aprobación.
+    \item El modal mostrará los detalles de la cancelación:
+    \begin{itemize}
+        \item Información del item a cancelar.
+        \item Motivo de la cancelación.
+        \item Usuario que solicita la cancelación.
+        \item Fecha de solicitud.
+        \item Inventario al que pertenece el item.
+    \end{itemize}
+    \item Revise cuidadosamente la información antes de aprobar.
+    \item Haga clic en \textbf{"Aprobar"} para confirmar la cancelación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_aprobar_cancelacion_dash.png}
+    \caption{Modal de aprobación de cancelación con los detalles}
+    \label{fig:modal-aprobar-cancelacion-inst}
+\end{figure}
+
+\subsection{Rechazar Cancelación}
+
+Para rechazar una solicitud de cancelación:
+
+\begin{enumerate}
+    \item En la lista de cancelaciones, localice la cancelación con estado \textbf{"Pendiente"}.
+    \item Localice el botón \textbf{"Rechazar"} o el ícono de rechazo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_cancelar_cancelaciones_dash.png}
+    \caption{Botón para rechazar cancelación}
+    \label{fig:boton-rechazar-cancelacion-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de rechazo.
+    \item El modal mostrará los detalles y solicitará una justificación del rechazo.
+    \item Ingrese el motivo del rechazo en el campo \textbf{"Justificación"} (obligatorio).
+    \item Haga clic en \textbf{"Rechazar"} para confirmar el rechazo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_rechazar_cancelacion_dash.png}
+    \caption{Modal de rechazo de cancelación con campo de justificación}
+    \label{fig:modal-rechazar-cancelacion-inst}
+\end{figure}
+
+\section{Reportes}
+
+Genere y visualice reportes del sistema para su institución.
+
+\subsection{Acceso a Reportes}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Reportes"}.
+    \item Será redirigido a la página de reportes (\texttt{/admin\_institution/reports}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/reportes_dashboard_admin.png}
+    \caption{Página de generación de reportes}
+    \label{fig:gestion-reportes-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Generar reportes de inventario:} Cree reportes de inventarios de su institución.
+    \item \textbf{Generar reportes de transferencias:} Genere reportes de transferencias con diferentes filtros.
+    \item \textbf{Generar reportes de verificaciones:} Cree reportes de verificaciones realizadas en su institución.
+    \item \textbf{Generar reportes de préstamos:} Genere reportes de préstamos y devoluciones.
+    \item \textbf{Exportar reportes:} Exporte reportes en diferentes formatos (PDF, Excel, CSV).
+    \item \textbf{Reportes personalizados:} Configure reportes con filtros y parámetros específicos.
+\end{itemize}
+
+\section{Auditoría}
+
+Revise el registro de actividades del sistema en su institución.
+
+\subsection{Acceso a Auditoría}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Auditoría"}.
+    \item Será redirigido a la página de auditoría (\texttt{/admin\_institution/auditory}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/auditoria_dashboard_admin.png}
+    \caption{Página de auditoría del sistema}
+    \label{fig:gestion-auditoria-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver registro de actividades:} Visualice todas las acciones realizadas en el sistema relacionadas con su institución.
+    \item \textbf{Filtrar actividades:} Filtre por usuario, fecha, tipo de acción, módulo, etc.
+    \item \textbf{Buscar actividades:} Busque actividades específicas en el registro.
+    \item \textbf{Exportar auditoría:} Exporte registros de auditoría para análisis externo.
+    \item \textbf{Ver detalles de actividad:} Acceda a información detallada de cada acción registrada.
+\end{itemize}
+
+\section{Notificaciones}
+
+Gestione las notificaciones del sistema.
+
+\subsection{Acceso a Notificaciones}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Notificaciones"}.
+    \item Será redirigido a la página de notificaciones (\texttt{/admin\_institution/notifications}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/notificaciones_dashboard_admin.png}
+    \caption{Página de gestión de notificaciones}
+    \label{fig:gestion-notificaciones-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las notificaciones:} Visualice todas las notificaciones del sistema relacionadas con su institución.
+    \item \textbf{Filtrar notificaciones:} Filtre por tipo, estado (leída/no leída), fecha, etc.
+    \item \textbf{Marcar como leída:} Marque notificaciones como leídas.
+    \item \textbf{Crear notificación:} Envíe notificaciones a usuarios específicos de su institución.
+    \item \textbf{Configurar notificaciones:} Configure preferencias de notificaciones.
+\end{itemize}
+
+\section{Importar/Exportar}
+
+Realice operaciones de importación y exportación de datos de su institución.
+
+\subsection{Acceso a Importar/Exportar}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Importar/Exportar"}.
+    \item Será redirigido a la página de importar/exportar (\texttt{/admin\_institution/import-export}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/importar_exportar_dashboar.png}
+    \caption{Página de importar/exportar datos}
+    \label{fig:gestion-importar-exportar-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Importar inventarios:} Importe inventarios desde archivos Excel o CSV (solo para su institución).
+    \item \textbf{Importar items:} Importe items masivamente desde archivos.
+    \item \textbf{Importar usuarios:} Importe usuarios desde archivos de datos (solo para su institución).
+    \item \textbf{Exportar inventarios:} Exporte inventarios a diferentes formatos.
+    \item \textbf{Exportar items:} Exporte items a archivos Excel o CSV.
+    \item \textbf{Exportar usuarios:} Exporte listas de usuarios de su institución.
+    \item \textbf{Plantillas de importación:} Descargue plantillas para importación de datos.
+\end{itemize}
+
+\subsection{Importar Datos}
+
+Para importar datos desde un archivo:
+
+\begin{enumerate}
+    \item En la página de importar/exportar, localice la sección de \textbf{"Importar"}.
+    \item Seleccione el tipo de datos a importar (Inventarios, Items, Usuarios).
+    \item Localice el botón \textbf{"Seleccionar Archivo"} o \textbf{"Cargar Archivo"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_importar_items_dash.png}
+    \caption{Botón para seleccionar archivo a importar}
+    \label{fig:boton-importar-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{3}
+    \item Haga clic en el botón y seleccione el archivo desde su computadora.
+    \item El sistema mostrará un modal de confirmación con:
+    \begin{itemize}
+        \item Vista previa de los datos a importar.
+        \item Cantidad de registros que se importarán.
+        \item Validaciones detectadas (errores o advertencias).
+        \item Opción para confirmar o cancelar la importación.
+    \end{itemize}
+    \item Revise la información en el modal.
+    \item Haga clic en \textbf{"Confirmar Importación"} para proceder.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/importar_excel_cargado.png}
+    \caption{Modal de confirmación de importación con vista previa}
+    \label{fig:modal-importar-inst}
+\end{figure}
+
+\subsection{Exportar Datos}
+
+Para exportar datos del sistema:
+
+\begin{enumerate}
+    \item En la página de importar/exportar, localice la sección de \textbf{"Exportar"}.
+    \item Seleccione el tipo de datos a exportar (Inventarios, Items, Usuarios, etc.).
+    \item Aplique filtros si desea exportar datos específicos de su institución.
+    \item Localice el botón \textbf{"Exportar"} o \textbf{"Descargar"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_exportar_item.png}
+    \caption{Botón para exportar datos}
+    \label{fig:boton-exportar-inst}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{4}
+    \item Seleccione el formato de exportación (Excel, CSV, PDF).
+    \item Haga clic en el botón para iniciar la exportación.
+    \item El sistema generará el archivo y lo descargará automáticamente.
+\end{enumerate}
+
+\section{Configuración}
+
+Configure parámetros generales del sistema.
+
+\subsection{Acceso a Configuración}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Configuración"}.
+    \item Será redirigido a la página de configuración (\texttt{/admin\_institution/settings}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/configuracion_dashboard.png}
+    \caption{Página de configuración del sistema}
+    \label{fig:gestion-configuracion-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Configuración de apariencia:} Configure la apariencia de todo el sistema, si el usuario desea modo oscuro o claro.
+\end{itemize}
+
+\section{Mi Perfil}
+
+Gestione su información personal y configuración de cuenta.
+
+\subsection{Acceso a Mi Perfil}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Mi Perfil"}.
+    \item Será redirigido a la página de perfil (\texttt{/admin\_institution/info-me}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/user_me_dashboard.png}
+    \caption{Página de mi perfil}
+    \label{fig:mi-perfil-inst}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver información personal:} Visualice su información de usuario.
+    \item \textbf{Cambiar foto de perfil:} Actualice su foto de perfil.
+    \item \textbf{Ver mis préstamos:} Revise los préstamos que ha realizado.
+    \item \textbf{Cambiar contraseña:} Actualice su contraseña de acceso.
+\end{itemize}
+
+\section{Cerrar Sesión}
+
+Para cerrar sesión en el sistema:
+
+\begin{enumerate}
+    \item En el panel lateral inferior, haga clic en el botón \textbf{"Cerrar Sesión"}.
+    \item Se mostrará un modal de confirmación.
+    \item Confirme el cierre de sesión haciendo clic en \textbf{"Cerrar Sesión"} en el modal.
+    \item Será redirigido a la página de inicio de sesión.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SuperAdminImage/modal_confirmar_cerrar_sesion.png}
+    \caption{Modal de confirmación para cerrar sesión}
+    \label{fig:cerrar-sesion-inst}
+\end{figure}
+
+\section{Conclusión}
+
+Este manual proporciona una guía completa para el uso del sistema SGDIS desde la perspectiva del Administrador Institucional. Como administrador institucional, tiene acceso a todas las funcionalidades del sistema dentro del alcance de su institución asignada, permitiéndole gestionar eficientemente los recursos, usuarios e inventarios bajo su responsabilidad.
+
+\subsection{Resumen de Permisos y Restricciones}
+
+\begin{itemize}
+    \item \textbf{Puede gestionar:} Usuarios (Warehouse y User), inventarios, items, transferencias, verificaciones, préstamos y cancelaciones de su institución.
+    \item \textbf{No puede gestionar:} Usuarios con rol ADMIN\_INSTITUTION, ADMIN\_REGIONAL o SUPERADMIN; regionales; instituciones.
+    \item \textbf{Sin acceso a Centros:} No tiene acceso al módulo de gestión de centros/instituciones.
+    \item \textbf{Alcance:} Todas sus acciones están limitadas a su institución asignada.
+    \item \textbf{Transferencias:} Puede crear transferencias. Las transferencias a otras instituciones requieren aprobación.
+    \item \textbf{Cancelaciones:} Puede aprobar cancelaciones de items de su institución.
+\end{itemize}
+
+\subsection{Diferencias con el Administrador Regional}
+
+\begin{itemize}
+    \item El Administrador Regional tiene acceso a todas las instituciones de su regional.
+    \item El Administrador Regional puede gestionar el módulo de Centros.
+    \item El Administrador Regional puede crear usuarios con rol ADMIN\_INSTITUTION.
+    \item El Administrador Institucional solo tiene acceso a su propia institución.
+\end{itemize}
+
+Para obtener ayuda adicional o reportar problemas, contacte al equipo de soporte técnico del sistema, a su Administrador Regional o a un Super Administrador.
+
+\end{document}
+
+
+

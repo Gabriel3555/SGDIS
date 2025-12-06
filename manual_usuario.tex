@@ -1,0 +1,1199 @@
+\documentclass{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{caption}
+
+\geometry{a4paper, margin=2.5cm}
+
+% Colores SENA
+\definecolor{senaverde}{RGB}{0, 175, 0}
+\definecolor{senaverdeoscuro}{RGB}{0, 136, 0}
+
+% Configuración de títulos
+\titleformat{\section}
+{\Large\bfseries\color{senaverde}}
+{}
+{0em}
+{}[\titlerule]
+
+\titleformat{\subsection}
+{\large\bfseries}
+{}
+{0em}
+{}
+
+% Encabezado y pie de página
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{senaverde}{\textbf{SGDIS}}}
+\fancyhead[R]{\textcolor{gray}{Manual de Usuario - Usuario}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\title{SGDIS - Manual de Usuario\\Usuario (USER)}
+\author{Julian Chaparro Barrera}
+\date{Diciembre 2025}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introducción}
+
+Este manual de usuario está diseñado específicamente para los usuarios con rol de \textbf{Usuario (USER)} del Sistema de Gestión de Inventario SENA (SGDIS). El manual proporciona instrucciones detalladas sobre cómo utilizar todas las funcionalidades disponibles para este rol.
+
+\subsection{Alcance del Rol de Usuario}
+
+El rol de Usuario es el rol más básico del sistema y tiene las siguientes características:
+
+\begin{itemize}
+    \item \textbf{Función principal:} Consultar y gestionar los inventarios e items que le han sido asignados.
+    \item \textbf{Permisos basados en asignación:} Solo puede acceder a los inventarios donde ha sido asignado como owner, signatory o manager.
+    \item \textbf{Verificaciones:} Puede realizar verificaciones de los items de sus inventarios asignados.
+    \item \textbf{Préstamos:} Puede ver préstamos si es owner o signatory de un inventario. Si es owner, puede crear préstamos.
+    \item \textbf{Bajas:} Puede solicitar bajas de items si es owner o signatory de un inventario.
+    \item \textbf{Transferencias:} Puede ver transferencias si es owner de un inventario. Si es owner, puede crear y aprobar transferencias.
+    \item \textbf{Historial:} Puede ver el historial completo de items (transferencias, préstamos, verificaciones).
+    \item \textbf{Sin permisos de administración:} No puede crear ni modificar usuarios, inventarios ni instituciones.
+\end{itemize}
+
+\subsection{Tipos de Asignación a Inventarios}
+
+El usuario puede estar relacionado con un inventario de tres formas diferentes:
+
+\begin{itemize}
+    \item \textbf{Owner (Propietario):} Es el responsable principal del inventario. Tiene acceso completo a préstamos, transferencias y bajas, incluyendo la capacidad de crear y aprobar.
+    \item \textbf{Signatory (Signatario):} Es responsable conjunto del inventario. Tiene acceso a préstamos, puede registrar devoluciones y solicitar bajas.
+    \item \textbf{Manager (Administrador):} Gestiona el inventario pero con menos privilegios. Solo tiene acceso básico de consulta.
+\end{itemize}
+
+\section{Dashboard de Usuario}
+
+El dashboard es la página principal que muestra una vista general de sus inventarios e items asignados.
+
+\subsection{Acceso al Dashboard}
+
+Para acceder al dashboard de usuario:
+
+\begin{enumerate}
+    \item Inicie sesión en el sistema con sus credenciales de usuario.
+    \item Después del inicio de sesión, será redirigido automáticamente al dashboard de usuario.
+    \item El dashboard se encuentra en la ruta \texttt{/user/dashboard}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{USUARIO/dasboard_usuario.png}
+    \caption{Dashboard principal del Usuario}
+    \label{fig:dashboard-user}
+\end{figure}
+
+\subsection{Panel de Navegación}
+
+El panel lateral izquierdo contiene las siguientes opciones de navegación:
+
+\begin{itemize}
+    \item \textbf{Dashboard:} Vista general de sus inventarios e items asignados.
+    \item \textbf{Mis Inventarios:} Acceso a los inventarios donde está asignado.
+    \item \textbf{Notificaciones:} Gestión de notificaciones del sistema.
+    \item \textbf{Préstamos:} Visualización y gestión de préstamos (solo si es owner o signatory).
+    \item \textbf{Verificación:} Realización de verificaciones de items.
+    \item \textbf{Bajas:} Solicitud y seguimiento de bajas de items (solo si es owner o signatory).
+    \item \textbf{Transferencias:} Visualización y gestión de transferencias (solo si es owner).
+    \item \textbf{Mi Perfil:} Información personal y configuración de cuenta.
+\end{itemize}
+
+\textbf{Nota:} Las opciones de \textbf{Préstamos}, \textbf{Bajas} y \textbf{Transferencias} solo aparecerán en el menú si tiene los permisos correspondientes según su relación con los inventarios.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{USUARIO/navegacion_usuario.png}
+    \caption{Panel de navegación lateral del Usuario}
+    \label{fig:panel-navegacion-user}
+\end{figure}
+
+\subsection{Tarjetas de Estadísticas}
+
+El dashboard muestra tarjetas con estadísticas de sus items y inventarios:
+
+\begin{itemize}
+    \item \textbf{Total Items:} Cantidad total de items asignados, con desglose de activos y en mantenimiento.
+    \item \textbf{Total Inventarios:} Número de inventarios donde está asignado (como owner, signatory o manager).
+    \item \textbf{Valor Total:} Valor total de todos los items que tiene asignados en COP.
+    \item \textbf{Notificaciones No Leídas:} Cantidad de notificaciones pendientes por leer.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/estadisticasSgdis.png}
+    \caption{Tarjetas de estadísticas del dashboard}
+    \label{fig:dashboard-estadisticas-user}
+\end{figure}
+
+\subsection{Gráficos y Visualizaciones}
+
+El dashboard incluye los siguientes gráficos:
+
+\begin{enumerate}
+    \item \textbf{Items por Categoría:} Gráfico circular (doughnut) que muestra la distribución de sus items según su categoría.
+    
+    \item \textbf{Items por Estado:} Gráfico circular (pie) que muestra la distribución de sus items según su estado (Activos, Mantenimiento, Inactivos).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/estadisticasSgdis2.png}
+    \caption{Gráficos y visualizaciones del dashboard}
+    \label{fig:dashboard-graficos-user}
+\end{figure}
+
+\subsection{Actividad Reciente}
+
+El dashboard muestra dos secciones de actividad reciente:
+
+\begin{itemize}
+    \item \textbf{Items Recientes:} Lista de los últimos 5 items asignados o modificados, mostrando nombre, categoría y estado.
+    \item \textbf{Inventarios Asignados:} Lista de los últimos 5 inventarios donde está asignado, mostrando nombre, institución y estado.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/RECIENTES_SGDIS.png}
+    \caption{Secciones de actividad reciente del dashboard}
+    \label{fig:dashboard-actividad-user}
+\end{figure}
+
+\newpage
+
+\section{Mis Inventarios}
+
+Esta es la sección principal donde puede ver y gestionar los inventarios que le han sido asignados.
+
+\subsection{Acceso a Mis Inventarios}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Mis Inventarios"}.
+    \item Será redirigido a la página de sus inventarios (\texttt{/user/my-inventories}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{USUARIO/mis_inventarios_usuario.png}
+    \caption{Página de Mis Inventarios}
+    \label{fig:mis-inventarios-user}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver inventarios asignados:} Visualice todos los inventarios donde está asignado como owner, signatory o manager.
+    \item \textbf{Buscar inventarios:} Utilice la barra de búsqueda para encontrar inventarios específicos.
+    \item \textbf{Ver items de inventario:} Acceda a la lista de items de cada inventario.
+    \item \textbf{Ver detalles de inventario:} Acceda a información detallada de cada inventario.
+\end{itemize}
+
+\textbf{Nota importante:} Como Usuario, \textbf{NO puede}:
+\begin{itemize}
+    \item Crear nuevos inventarios.
+    \item Editar información de inventarios existentes.
+    \item Eliminar inventarios.
+    \item Asignar usuarios a inventarios.
+\end{itemize}
+
+\subsection{Ver Items de un Inventario}
+
+Para ver los items de un inventario específico:
+
+\begin{enumerate}
+    \item En la lista de inventarios, localice el inventario del cual desea ver los items.
+    \item Haga clic en el inventario o en el botón \textbf{"Ver Items"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{USUARIO/ver_detalles_inventario_boton_user.png}
+    \caption{Botón para ver items de un inventario}
+    \label{fig:boton-ver-items-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Será redirigido a la página de items del inventario (\texttt{/user/inventory/\{inventoryId\}}).
+    \item Podrá ver todos los items del inventario seleccionado.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{USUARIO/modal_items_inventario_user.png}
+    \caption{Página de items de un inventario}
+    \label{fig:pagina-items-inventario-user}
+\end{figure}
+
+\subsection{Ver Detalles de un Item}
+
+Para ver los detalles completos de un item:
+
+\begin{enumerate}
+    \item En la lista de items, localice el item del cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver"} o el ícono de ojo en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de un item}
+    \label{fig:boton-ver-item-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles del item.
+    \item El modal mostrará toda la información del item:
+    \begin{itemize}
+        \item Información básica (nombre, descripción, placa, número de serie).
+        \item Categoría y estado actual.
+        \item Valor y ubicación.
+        \item Imágenes asociadas (si las hay).
+        \item Historial del item.
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/visualizacion_item_inventario.png}
+    \caption{Modal de detalles del item con toda la información}
+    \label{fig:modal-ver-item-user}
+\end{figure}
+
+\subsection{Prestar Item desde Inventario (Solo Owner)}
+
+Si es \textbf{owner} del inventario, puede crear préstamos directamente desde la vista de items:
+
+\begin{enumerate}
+    \item En la lista de items del inventario, localice el item que desea prestar.
+    \item Localice el botón \textbf{"Prestar"} o el ícono de préstamo en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/prestar_items_admin.png}
+    \caption{Botón para prestar item desde inventario}
+    \label{fig:boton-prestar-item-inv-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de préstamo.
+    \item El modal mostrará la información del item y solicitará:
+    \begin{itemize}
+        \item \textbf{Responsable del préstamo:} Usuario que recibirá el item en préstamo.
+        \item \textbf{Fecha de devolución estimada:} Fecha prevista para la devolución.
+        \item \textbf{Motivo del préstamo:} Razón por la cual se solicita el préstamo.
+        \item \textbf{Observaciones:} Comentarios adicionales (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Prestar Item"} para confirmar el préstamo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_prestar_items_admin.png}
+    \caption{Modal de préstamo de item desde inventario}
+    \label{fig:modal-prestar-item-inv-user}
+\end{figure}
+
+\subsection{Transferir Item (Solo Owner)}
+
+Si es \textbf{owner} del inventario, puede solicitar la transferencia de un item a otro inventario:
+
+\begin{enumerate}
+    \item En la lista de items del inventario, localice el item que desea transferir.
+    \item Localice el botón \textbf{"Transferir"} o el ícono de transferencia en la fila del item.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/transferir_item_admin.png}
+    \caption{Botón para transferir item}
+    \label{fig:boton-transferir-item-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de transferencia.
+    \item El modal mostrará la información del item y solicitará:
+    \begin{itemize}
+        \item \textbf{Inventario destino:} Seleccione el inventario al cual transferir el item.
+        \item \textbf{Motivo de transferencia:} Razón por la cual se realiza la transferencia.
+        \item \textbf{Comentarios adicionales:} Observaciones sobre la transferencia (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Solicitar Transferencia"} para enviar la solicitud.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_nueva_transferencia.png}
+    \caption{Modal de solicitud de transferencia de item}
+    \label{fig:modal-transferir-item-user}
+\end{figure}
+
+\subsection{Ver Historial de Transferencias de Item}
+
+Para ver el historial completo de transferencias de un item:
+
+\begin{enumerate}
+    \item En la lista de items, localice el item del cual desea ver el historial de transferencias.
+    \item Localice el botón \textbf{"Historial Transferencias"} o el ícono de historial.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/historial_transferencia.png}
+    \caption{Botón para ver historial de transferencias}
+    \label{fig:boton-historial-trans-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de historial.
+    \item El modal mostrará el historial completo de transferencias del item:
+    \begin{itemize}
+        \item \textbf{Línea de tiempo:} Visualización cronológica de todas las transferencias.
+        \item \textbf{Inventarios anteriores:} Lista de inventarios donde ha estado el item.
+        \item \textbf{Fechas de transferencia:} Cuándo se realizó cada transferencia.
+        \item \textbf{Usuarios involucrados:} Quién solicitó y aprobó cada transferencia.
+        \item \textbf{Estados:} Estado de cada transferencia (Aprobada, Rechazada, Pendiente).
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_historial_transferencia.png}
+    \caption{Modal de historial de transferencias del item}
+    \label{fig:modal-historial-trans-user}
+\end{figure}
+
+\newpage
+
+\section{Notificaciones}
+
+Gestione las notificaciones del sistema relacionadas con sus inventarios e items.
+
+\subsection{Acceso a Notificaciones}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Notificaciones"}.
+    \item Será redirigido a la página de notificaciones (\texttt{/user/notifications}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/notificaciones_dashboard_admin.png}
+    \caption{Página de notificaciones}
+    \label{fig:notificaciones-user}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver todas las notificaciones:} Visualice todas las notificaciones relacionadas con sus inventarios.
+    \item \textbf{Filtrar notificaciones:} Filtre por tipo, estado (leída/no leída), fecha, etc.
+    \item \textbf{Marcar como leída:} Marque notificaciones como leídas.
+    \item \textbf{Ver detalles:} Acceda a información detallada de cada notificación.
+\end{itemize}
+
+\subsection{Tipos de Notificaciones}
+
+Recibirá notificaciones sobre:
+
+\begin{itemize}
+    \item Nuevas asignaciones a inventarios.
+    \item Cambios en items de sus inventarios.
+    \item Solicitudes de préstamos (si es owner o signatory).
+    \item Solicitudes de transferencias (si es owner).
+    \item Aprobaciones y rechazos de transferencias.
+    \item Aprobaciones y rechazos de bajas.
+    \item Verificaciones realizadas en sus inventarios.
+    \item Recordatorios de devolución de préstamos.
+    \item Recordatorios y alertas del sistema.
+\end{itemize}
+
+\newpage
+
+\section{Gestión de Préstamos}
+
+Si es \textbf{owner} o \textbf{signatory} de algún inventario, tendrá acceso a la sección de préstamos con diferentes niveles de permisos.
+
+\subsection{Acceso a Préstamos}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Préstamos"}.
+    \item Será redirigido a la página de préstamos (\texttt{/user/loans}).
+\end{enumerate}
+
+\textbf{Nota:} Esta opción solo aparecerá en el menú si es owner o signatory de al menos un inventario.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_prestamos_dashboard_admin.png}
+    \caption{Página de préstamos}
+    \label{fig:visualizacion-prestamos-user}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver préstamos:} Visualice los préstamos de los inventarios donde es owner o signatory.
+    \item \textbf{Filtrar préstamos:} Filtre por estado, inventario, fecha, etc.
+    \item \textbf{Ver detalles de préstamo:} Acceda a información completa de cada préstamo.
+    \item \textbf{Crear préstamo (Solo Owner):} Registre nuevos préstamos de items.
+    \item \textbf{Registrar devolución (Owner y Signatory):} Registre la devolución de items prestados.
+\end{itemize}
+
+\subsection{Crear Préstamo (Solo Owner)}
+
+Si es \textbf{owner} del inventario, puede crear nuevos préstamos:
+
+\begin{enumerate}
+    \item En la página de préstamos, localice el botón \textbf{"Prestar Ítem"} en la parte superior derecha.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/prestar_items_boton.png}
+    \caption{Botón para crear un nuevo préstamo}
+    \label{fig:boton-prestar-item-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Al hacer clic en el botón, se abrirá el modal de registro de préstamo.
+    \item El formulario solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario:} Seleccione el inventario donde está el ítem (solo inventarios donde es owner).
+        \item \textbf{Ítem:} Seleccione el ítem que será prestado.
+        \item \textbf{Responsable:} Persona a cargo del préstamo.
+        \item \textbf{Detalles (Opcional):} Comentarios adicionales relacionados con el préstamo.
+    \end{itemize}
+    \item Revise cuidadosamente la información ingresada.
+    \item Finalmente, haga clic en \textbf{"Prestar ítem"} para confirmar la creación del préstamo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_prestar_item.png}
+    \caption{Modal para registrar un préstamo}
+    \label{fig:modal-prestar-item-user}
+\end{figure}
+
+\subsection{Registrar Devolución (Owner y Signatory)}
+
+Si es \textbf{owner} o \textbf{signatory} del inventario, puede registrar devoluciones:
+
+\begin{enumerate}
+    \item En la lista de préstamos, localice el préstamo con estado \textbf{"Prestado"}.
+    \item Localice el botón \textbf{"Registrar Devolución"} o el ícono correspondiente.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/devolver_prestamo_admin.png}
+    \caption{Botón para registrar devolución}
+    \label{fig:boton-devolucion-prestamo-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de devolución.
+    \item El modal mostrará los detalles del préstamo y solicitará:
+    \begin{itemize}
+        \item Confirmación de la devolución.
+        \item Estado del item (en buen estado, dañado, etc.).
+        \item Observaciones sobre la devolución (opcional).
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Confirmar Devolución"} para registrar la devolución.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_devolver_prestamo.png}
+    \caption{Modal de registro de devolución de préstamo}
+    \label{fig:modal-devolucion-prestamo-user}
+\end{figure}
+
+\subsection{Ver Detalles de Préstamo}
+
+Para ver los detalles completos de un préstamo:
+
+\begin{enumerate}
+    \item En la lista de préstamos, localice el préstamo del cual desea ver los detalles.
+    \item Haga clic en el botón \textbf{"Ver"} o el ícono de ojo en la fila del préstamo.
+    \item El modal mostrará información completa del préstamo:
+    \begin{itemize}
+        \item Información del item prestado (nombre, placa, descripción).
+        \item Usuario responsable del préstamo.
+        \item Fecha de préstamo y fecha de devolución esperada.
+        \item Estado actual del préstamo.
+        \item Observaciones y comentarios.
+    \end{itemize}
+\end{enumerate}
+
+\newpage
+
+\section{Gestión de Verificaciones}
+
+Puede realizar verificaciones de los items de los inventarios donde está asignado.
+
+\subsection{Acceso a Verificaciones}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Verificación"}.
+    \item Será redirigido a la página de verificaciones (\texttt{/user/verification}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{USUARIO/Captura de pantalla 2025-12-05 165624.png}
+    \caption{Página de verificaciones}
+    \label{fig:gestion-verificaciones-user}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver verificaciones:} Visualice las verificaciones de items de sus inventarios.
+    \item \textbf{Crear nueva verificación:} Realice verificaciones físicas de items.
+    \item \textbf{Ver detalles de verificación:} Acceda a información completa de cada verificación.
+    \item \textbf{Ver imágenes de verificación:} Visualice las fotografías asociadas a las verificaciones.
+\end{itemize}
+
+\subsection{Nueva Verificación}
+
+Para crear una nueva verificación de item:
+
+\begin{enumerate}
+    \item En la página de verificaciones, localice el botón \textbf{"Nueva Verificación"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_nueva_transferencia.png}
+    \caption{Botón para crear nueva verificación}
+    \label{fig:boton-nueva-verificacion-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de nueva verificación.
+    \item El modal solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario:} Seleccione uno de sus inventarios asignados.
+        \item \textbf{Item a verificar:} Seleccione el item de la lista.
+        \item \textbf{Estado observado:} Seleccione el estado actual del item (Buen estado, Dañado, etc.).
+        \item \textbf{Ubicación actual:} Confirme o actualice la ubicación del item.
+        \item \textbf{Observaciones:} Ingrese observaciones detalladas sobre la verificación.
+        \item \textbf{Evidencia fotográfica:} Adjunte fotos del item verificado.
+    \end{itemize}
+    \item Complete la información requerida.
+    \item Haga clic en \textbf{"Guardar Verificación"} para confirmar.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_nueva_verificacion.png}
+    \caption{Modal de creación de nueva verificación}
+    \label{fig:modal-nueva-verificacion-user}
+\end{figure}
+
+\subsection{Ver Detalles de Verificación}
+
+Para ver los detalles completos de una verificación:
+
+\begin{enumerate}
+    \item En la lista de verificaciones, localice la verificación de la cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver Detalles"} o el ícono de ojo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de verificación}
+    \label{fig:boton-ver-verificacion-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles.
+    \item El modal mostrará información completa de la verificación incluyendo las imágenes.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SuperAdminImage/verificacion_MODAL_ADMIN.png}
+    \caption{Modal de detalles de verificación con imágenes}
+    \label{fig:modal-ver-verificacion-user}
+\end{figure}
+
+\newpage
+
+\section{Gestión de Bajas}
+
+Si es \textbf{owner} o \textbf{signatory} de algún inventario, tendrá acceso a la sección de bajas donde puede solicitar la baja de items que ya no están en condiciones de uso o que deben ser retirados del inventario.
+
+\subsection{Acceso a Bajas}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Bajas"}.
+    \item Será redirigido a la página de bajas (\texttt{/user/cancellations}).
+\end{enumerate}
+
+\textbf{Nota:} Esta opción solo aparecerá en el menú si es owner o signatory de al menos un inventario.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_transferencias_admin.png}
+    \caption{Página de gestión de bajas}
+    \label{fig:gestion-bajas-user}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver solicitudes de baja:} Visualice todas las solicitudes de baja que ha realizado.
+    \item \textbf{Crear nueva solicitud:} Solicite la baja de items de sus inventarios.
+    \item \textbf{Ver detalles de baja:} Acceda a información completa de cada solicitud.
+    \item \textbf{Filtrar bajas:} Filtre por estado (Pendiente, Aprobada, Rechazada) y por fecha.
+    \item \textbf{Descargar formato GIL-F-011:} Descargue el formato oficial de concepto técnico de bienes.
+\end{itemize}
+
+\textbf{Nota importante:} Como Usuario, \textbf{NO puede} aprobar ni rechazar solicitudes de baja. Esta función está reservada para los administradores (Admin Institucional, Admin Regional).
+
+\subsection{Tarjetas de Estadísticas de Bajas}
+
+La página de bajas muestra tarjetas con estadísticas:
+
+\begin{itemize}
+    \item \textbf{Total Bajas:} Número total de solicitudes de baja realizadas.
+    \item \textbf{Pendientes:} Solicitudes que están esperando aprobación.
+    \item \textbf{Aprobadas:} Solicitudes que han sido aprobadas.
+    \item \textbf{Rechazadas:} Solicitudes que han sido rechazadas.
+\end{itemize}
+
+\subsection{Nueva Solicitud de Baja}
+
+Para crear una nueva solicitud de baja:
+
+\begin{enumerate}
+    \item En la página de bajas, localice el botón \textbf{"Nueva Solicitud"} en la parte superior derecha.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_nueva_transferencia.png}
+    \caption{Botón para crear nueva solicitud de baja}
+    \label{fig:boton-nueva-baja-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de nueva solicitud de baja.
+    \item El modal permite dos modos de selección de items:
+    
+    \textbf{Modo Por Inventario:}
+    \begin{itemize}
+        \item \textbf{Inventario:} Seleccione uno de sus inventarios donde es owner o signatory.
+        \item \textbf{Items:} Seleccione uno o más items de la lista del inventario.
+    \end{itemize}
+    
+    \textbf{Modo Por Placa:}
+    \begin{itemize}
+        \item \textbf{Buscar por placa:} Ingrese el número de placa del item y haga clic en buscar.
+        \item Los items encontrados se agregarán a la lista de selección.
+    \end{itemize}
+    
+    \item \textbf{Razón de la Baja:} Ingrese una descripción detallada del motivo por el cual solicita la baja de los items (obligatorio).
+    \item Revise la información ingresada.
+    \item Haga clic en \textbf{"Solicitar Baja"} para enviar la solicitud.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_nueva_transferencia.png}
+    \caption{Modal de creación de nueva solicitud de baja}
+    \label{fig:modal-nueva-baja-user}
+\end{figure}
+
+\subsection{Ver Detalles de Solicitud de Baja}
+
+Para ver los detalles completos de una solicitud de baja:
+
+\begin{enumerate}
+    \item En la lista de bajas, localice la solicitud de la cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver"} o el ícono de ojo en la fila de la solicitud.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de baja}
+    \label{fig:boton-ver-baja-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles.
+    \item El modal mostrará información completa de la solicitud:
+    \begin{itemize}
+        \item \textbf{Solicitante:} Usuario que realizó la solicitud.
+        \item \textbf{Items incluidos:} Lista de items incluidos en la solicitud con sus detalles (nombre, placa, valor).
+        \item \textbf{Razón de la baja:} Motivo especificado para la solicitud.
+        \item \textbf{Fecha de solicitud:} Cuándo se realizó la solicitud.
+        \item \textbf{Estado:} Estado actual (Pendiente, Aprobada, Rechazada).
+        \item \textbf{Información de aprobación/rechazo:} Si aplica, quién aprobó/rechazó y cuándo.
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/detalles_transferencia_admin.png}
+    \caption{Modal de detalles de solicitud de baja}
+    \label{fig:modal-ver-baja-user}
+\end{figure}
+
+\subsection{Descargar Formato GIL-F-011}
+
+El sistema permite descargar el formato oficial de concepto técnico de bienes (GIL-F-011):
+
+\begin{enumerate}
+    \item En la página de bajas, localice el botón \textbf{"Formato GIL-F-011"}.
+    \item Haga clic en el botón para descargar el archivo Excel.
+    \item Este formato puede ser utilizado para documentar las bajas de manera oficial.
+\end{enumerate}
+
+\subsection{Filtros de Búsqueda}
+
+Puede filtrar las solicitudes de baja utilizando:
+
+\begin{itemize}
+    \item \textbf{Estado:} Todos, Pendientes, Aprobadas, Rechazadas.
+    \item \textbf{Período:} Todos, Hoy, Última semana, Último mes, Último año.
+    \item \textbf{Búsqueda por texto:} Busque por nombre de item o razón de la baja.
+\end{itemize}
+
+\subsection{Estados de una Solicitud de Baja}
+
+\begin{itemize}
+    \item \textbf{Pendiente:} La solicitud ha sido enviada y está esperando revisión por parte de un administrador.
+    \item \textbf{Aprobada:} La solicitud fue aprobada. Los items han sido dados de baja del inventario.
+    \item \textbf{Rechazada:} La solicitud fue rechazada. Los items permanecen en el inventario. Puede ver el motivo del rechazo en los detalles.
+\end{itemize}
+
+\newpage
+
+\section{Gestión de Transferencias}
+
+Si es \textbf{owner} de algún inventario, tendrá acceso a la sección de transferencias con capacidad de crear y aprobar transferencias.
+
+\subsection{Acceso a Transferencias}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Transferencias"}.
+    \item Será redirigido a la página de transferencias (\texttt{/user/transfers}).
+\end{enumerate}
+
+\textbf{Nota:} Esta opción solo aparecerá en el menú si es owner de al menos un inventario.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{SuperAdminImage/gestion_transferencias_admin.png}
+    \caption{Página de transferencias}
+    \label{fig:visualizacion-transferencias-user}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver transferencias:} Visualice las transferencias de los inventarios donde es owner.
+    \item \textbf{Filtrar transferencias:} Filtre por estado, inventario origen/destino, fecha, etc.
+    \item \textbf{Ver detalles de transferencia:} Acceda a información completa de cada transferencia.
+    \item \textbf{Crear transferencia:} Solicite transferencias de items de su inventario.
+    \item \textbf{Aprobar transferencias entrantes:} Apruebe transferencias de items hacia su inventario.
+    \item \textbf{Rechazar transferencias:} Rechace transferencias con justificación.
+\end{itemize}
+
+\subsection{Crear Nueva Transferencia}
+
+Para crear una nueva solicitud de transferencia:
+
+\begin{enumerate}
+    \item En la página de transferencias, localice el botón \textbf{"Nueva Transferencia"}.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\textwidth]{SuperAdminImage/boton_nueva_transferencia.png}
+    \caption{Botón para crear nueva transferencia}
+    \label{fig:boton-nueva-transferencia-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{1}
+    \item Haga clic en el botón para abrir el modal de nueva transferencia.
+    \item El modal solicitará la siguiente información:
+    \begin{itemize}
+        \item \textbf{Inventario origen:} Seleccione el inventario desde donde se transferirá el item (solo inventarios donde es owner).
+        \item \textbf{Item a transferir:} Seleccione el item de la lista del inventario origen.
+        \item \textbf{Inventario destino:} Seleccione el inventario destino.
+        \item \textbf{Motivo de la transferencia:} Explique por qué se realiza la transferencia.
+        \item \textbf{Comentarios adicionales:} Observaciones opcionales.
+    \end{itemize}
+    \item Revise la información ingresada.
+    \item Haga clic en \textbf{"Crear Transferencia"} para enviar la solicitud.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{SuperAdminImage/modal_nueva_transferencia.png}
+    \caption{Modal de creación de nueva transferencia}
+    \label{fig:modal-nueva-transferencia-user}
+\end{figure}
+
+\subsection{Ver Detalles de Transferencia}
+
+Para ver los detalles completos de una transferencia:
+
+\begin{enumerate}
+    \item En la lista de transferencias, localice la transferencia de la cual desea ver los detalles.
+    \item Localice el botón \textbf{"Ver Detalles"} o el ícono de ojo en la fila de la transferencia.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/ver_item_admin_icon.png}
+    \caption{Botón para ver detalles de transferencia}
+    \label{fig:boton-ver-transferencia-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de detalles.
+    \item El modal mostrará información completa de la transferencia:
+    \begin{itemize}
+        \item \textbf{Información del item:} Nombre, placa, descripción, imágenes.
+        \item \textbf{Inventario origen:} Nombre y ubicación del inventario de origen.
+        \item \textbf{Inventario destino:} Nombre y ubicación del inventario destino.
+        \item \textbf{Usuario solicitante:} Información del usuario que solicitó la transferencia.
+        \item \textbf{Fecha de solicitud:} Fecha y hora en que se realizó la solicitud.
+        \item \textbf{Estado actual:} Estado de la transferencia (Pendiente, Aprobada, Rechazada).
+        \item \textbf{Motivo:} Motivo de la transferencia.
+    \end{itemize}
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/detalles_transferencia_admin.png}
+    \caption{Modal de detalles de transferencia con toda la información}
+    \label{fig:modal-ver-transferencia-user}
+\end{figure}
+
+\subsection{Aprobar Transferencia Entrante}
+
+Si recibe una solicitud de transferencia hacia un inventario donde es owner, puede aprobarla:
+
+\begin{enumerate}
+    \item En la lista de transferencias, localice la transferencia con estado \textbf{"Pendiente"} donde su inventario es el destino.
+    \item Localice el botón \textbf{"Aprobar"} o el ícono de aprobación.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.1\textwidth]{SuperAdminImage/apro_transferencia_admin.png}
+    \caption{Botón para aprobar transferencia}
+    \label{fig:boton-aprobar-transferencia-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de aprobación.
+    \item El modal mostrará los detalles de la transferencia.
+    \item Revise toda la información cuidadosamente.
+    \item Opcionalmente, puede agregar comentarios o notas.
+    \item Haga clic en \textbf{"Aprobar"} para confirmar la transferencia.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_transderencias_aprobar.png}
+    \caption{Modal de aprobación de transferencia}
+    \label{fig:modal-aprobar-transferencia-user}
+\end{figure}
+
+\subsection{Rechazar Transferencia}
+
+Para rechazar una transferencia pendiente:
+
+\begin{enumerate}
+    \item En la lista de transferencias, localice la transferencia con estado \textbf{"Pendiente"}.
+    \item Localice el botón \textbf{"Rechazar"} o el ícono de rechazo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.2\textwidth]{SuperAdminImage/cancelar_transferencia_icon.png}
+    \caption{Botón para rechazar transferencia}
+    \label{fig:boton-rechazar-transferencia-user}
+\end{figure}
+
+\begin{enumerate}
+    \setcounter{enumi}{2}
+    \item Haga clic en el botón para abrir el modal de rechazo.
+    \item Ingrese el motivo del rechazo en el campo \textbf{"Justificación"} (obligatorio).
+    \item Haga clic en \textbf{"Rechazar"} para confirmar el rechazo.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{SuperAdminImage/modal_rechazar_transferencia.png}
+    \caption{Modal de rechazo de transferencia con campo de justificación}
+    \label{fig:modal-rechazar-transferencia-user}
+\end{figure}
+
+\newpage
+
+\section{Mi Perfil}
+
+Gestione su información personal y configuración de cuenta.
+
+\subsection{Acceso a Mi Perfil}
+
+\begin{enumerate}
+    \item En el panel lateral, haga clic en \textbf{"Mi Perfil"}.
+    \item Será redirigido a la página de perfil (\texttt{/info-me}).
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{SuperAdminImage/user_me_dashboard.png}
+    \caption{Página de mi perfil}
+    \label{fig:mi-perfil-user}
+\end{figure}
+
+\subsection{Funcionalidades Disponibles}
+
+\begin{itemize}
+    \item \textbf{Ver información personal:} Visualice su información de usuario (nombre, correo, cargo, etc.).
+    \item \textbf{Cambiar foto de perfil:} Actualice su foto de perfil.
+    \item \textbf{Ver mis préstamos:} Revise los préstamos asociados a su cuenta.
+    \item \textbf{Cambiar contraseña:} Actualice su contraseña de acceso.
+\end{itemize}
+
+\subsection{Cambiar Foto de Perfil}
+
+Para cambiar su foto de perfil:
+
+\begin{enumerate}
+    \item En la página de Mi Perfil, localice el área de la foto de perfil.
+    \item Haga clic en la foto o en el botón \textbf{"Cambiar Foto"}.
+    \item Seleccione una nueva imagen desde su computadora.
+    \item La imagen se actualizará automáticamente.
+\end{enumerate}
+
+\subsection{Cambiar Contraseña}
+
+Para cambiar su contraseña:
+
+\begin{enumerate}
+    \item En la página de Mi Perfil, localice la sección de seguridad o el botón \textbf{"Cambiar Contraseña"}.
+    \item Se abrirá un modal solicitando:
+    \begin{itemize}
+        \item \textbf{Contraseña actual:} Ingrese su contraseña actual.
+        \item \textbf{Nueva contraseña:} Ingrese su nueva contraseña.
+        \item \textbf{Confirmar contraseña:} Confirme la nueva contraseña.
+    \end{itemize}
+    \item Haga clic en \textbf{"Guardar"} para aplicar los cambios.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{SuperAdminImage/modal_cambiar_contraseña.png}
+    \caption{Modal de cambio de contraseña}
+    \label{fig:modal-cambiar-contrasena-user}
+\end{figure}
+
+\newpage
+
+\section{Cerrar Sesión}
+
+Para cerrar sesión en el sistema:
+
+\begin{enumerate}
+    \item En el panel lateral inferior, haga clic en el botón \textbf{"Cerrar Sesión"}.
+    \item Se mostrará un modal de confirmación.
+    \item Confirme el cierre de sesión haciendo clic en \textbf{"Cerrar Sesión"} en el modal.
+    \item Será redirigido a la página de inicio de sesión.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{SuperAdminImage/modal_confirmar_cerrar_sesion.png}
+    \caption{Modal de confirmación para cerrar sesión}
+    \label{fig:cerrar-sesion-user}
+\end{figure}
+
+\newpage
+
+\section{Preguntas Frecuentes}
+
+\subsection{¿Por qué no veo la opción de Préstamos en el menú?}
+
+La opción de Préstamos solo aparece si usted es \textbf{owner} (propietario) o \textbf{signatory} (signatario) de al menos un inventario. Si no tiene esta asignación, no verá esta opción.
+
+\subsection{¿Por qué no veo la opción de Transferencias en el menú?}
+
+La opción de Transferencias solo aparece si usted es \textbf{owner} (propietario) de al menos un inventario. Los signatarios y managers no tienen acceso a esta sección.
+
+\subsection{¿Por qué no veo la opción de Bajas en el menú?}
+
+La opción de Bajas solo aparece si usted es \textbf{owner} (propietario) o \textbf{signatory} (signatario) de al menos un inventario. Los managers no tienen acceso a esta sección.
+
+\subsection{¿Puedo crear préstamos si soy signatory?}
+
+No, solo los usuarios con rol de \textbf{owner} (propietario) pueden crear nuevos préstamos. Sin embargo, como signatory puede ver los préstamos y registrar devoluciones.
+
+\subsection{¿Puedo aprobar solicitudes de baja?}
+
+No, como Usuario no puede aprobar ni rechazar solicitudes de baja. Esta función está reservada para los administradores (Admin Institucional, Admin Regional). Solo puede crear solicitudes y ver su estado.
+
+\subsection{¿Puedo aprobar transferencias?}
+
+Sí, si es \textbf{owner} de un inventario puede aprobar transferencias entrantes (cuando su inventario es el destino) y crear solicitudes de transferencia para mover items fuera de su inventario.
+
+\subsection{¿Cómo puedo ver el historial de un item?}
+
+Puede ver el historial de un item de dos formas:
+\begin{enumerate}
+    \item Desde la vista de detalles del item, donde se muestra el historial completo.
+    \item Usando el botón de "Historial de Transferencias" en la lista de items.
+\end{enumerate}
+
+\subsection{¿Cómo puedo ser asignado a un inventario?}
+
+La asignación a inventarios es realizada por los administradores (Admin Institucional, Admin Regional o Super Admin). Si necesita acceso a un inventario específico, contacte al administrador correspondiente.
+
+\subsection{¿Puedo crear nuevos items?}
+
+No, como Usuario no tiene permisos para crear nuevos items. Esta función está reservada para roles con mayores privilegios (Warehouse, Admin Institucional, etc.).
+
+\subsection{¿Puedo editar la información de los items?}
+
+No, como Usuario no tiene permisos para editar items. Sin embargo, puede realizar verificaciones que documentan el estado actual de los items.
+
+\subsection{¿Qué pasa cuando mi solicitud de baja es rechazada?}
+
+Cuando una solicitud de baja es rechazada, los items permanecen en el inventario sin cambios. Puede ver el motivo del rechazo en los detalles de la solicitud y, si lo considera necesario, crear una nueva solicitud con información adicional o corregida.
+
+\newpage
+
+\section{Conclusión}
+
+Este manual proporciona una guía completa para el uso del sistema SGDIS desde la perspectiva del Usuario. Como usuario, tiene acceso a funcionalidades de consulta, verificación, y dependiendo de su tipo de asignación al inventario, puede también gestionar préstamos, bajas y transferencias.
+
+\subsection{Resumen de Permisos y Restricciones}
+
+\begin{itemize}
+    \item \textbf{Puede hacer:}
+    \begin{itemize}
+        \item Ver inventarios donde está asignado.
+        \item Ver items de sus inventarios.
+        \item Ver historial de items (transferencias, préstamos, verificaciones).
+        \item Realizar verificaciones de items.
+        \item Ver notificaciones.
+        \item Gestionar su perfil.
+        \item Ver préstamos (si es owner o signatory).
+        \item Crear préstamos (solo si es owner).
+        \item Registrar devoluciones (si es owner o signatory).
+        \item Solicitar bajas (si es owner o signatory).
+        \item Ver transferencias (si es owner).
+        \item Crear transferencias (solo si es owner).
+        \item Aprobar/rechazar transferencias entrantes (solo si es owner).
+    \end{itemize}
+    \item \textbf{No puede hacer:}
+    \begin{itemize}
+        \item Crear, editar o eliminar inventarios.
+        \item Crear, editar o eliminar items.
+        \item Crear, editar o eliminar usuarios.
+        \item Aprobar o rechazar solicitudes de baja.
+        \item Acceder a inventarios no asignados.
+        \item Gestionar instituciones o regionales.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Permisos según Tipo de Asignación}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Funcionalidad} & \textbf{Owner} & \textbf{Signatory} & \textbf{Manager} \\
+\hline
+Ver inventario & Sí & Sí & Sí \\
+Ver items & Sí & Sí & Sí \\
+Ver historial de items & Sí & Sí & Sí \\
+Realizar verificaciones & Sí & Sí & Sí \\
+Ver préstamos & Sí & Sí & No \\
+Crear préstamos & Sí & No & No \\
+Registrar devoluciones & Sí & Sí & No \\
+Ver bajas & Sí & Sí & No \\
+Solicitar bajas & Sí & Sí & No \\
+Aprobar/Rechazar bajas & No & No & No \\
+Ver transferencias & Sí & No & No \\
+Crear transferencias & Sí & No & No \\
+Aprobar transferencias entrantes & Sí & No & No \\
+Rechazar transferencias & Sí & No & No \\
+\hline
+\end{tabular}
+\caption{Permisos según tipo de asignación a inventario}
+\end{table}
+
+\subsection{Comparación con Otros Roles}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Funcionalidad} & \textbf{User} & \textbf{Warehouse} & \textbf{Admin Inst.} & \textbf{Admin Reg.} \\
+\hline
+Ver inventarios asignados & Sí & Sí & Sí & Sí \\
+Crear inventarios & No & Sí & Sí & Sí \\
+Crear items & No & Sí & Sí & Sí \\
+Crear usuarios & No & Sí (USER) & Sí & Sí \\
+Gestionar préstamos & Limitado* & Sí & Sí & Sí \\
+Solicitar bajas & Limitado* & Sí & Sí & Sí \\
+Aprobar bajas & No & No & Sí & Sí \\
+Gestionar transferencias & Limitado* & Sí & Sí & Sí \\
+Ver centros & No & No & No & Sí \\
+\hline
+\end{tabular}
+\caption{Comparación de permisos entre roles}
+\end{table}
+
+\textbf{* Limitado:} Depende del tipo de asignación al inventario (owner, signatory, manager).
+
+Para obtener ayuda adicional o reportar problemas, contacte al encargado de almacén (Warehouse), al Administrador Institucional o al equipo de soporte técnico del sistema.
+
+\end{document}
