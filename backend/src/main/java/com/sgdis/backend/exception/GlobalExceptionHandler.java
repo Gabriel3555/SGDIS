@@ -232,15 +232,18 @@ public class GlobalExceptionHandler {
         // Check if it's an Access Denied exception that wasn't caught by the specific handler
         if (ex instanceof AccessDeniedException || 
             (ex.getMessage() != null && ex.getMessage().contains("Access Denied"))) {
-            // This should have been caught by the AccessDeniedException handler above
-            // But if it reaches here, we'll handle it
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("timestamp", LocalDateTime.now().toString());
             errorResponse.put("status", HttpStatus.FORBIDDEN.value());
             errorResponse.put("error", "Access Denied");
             errorResponse.put("message", "Acceso denegado");
             errorResponse.put("detail", "Access Denied");
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+            
+            // Force JSON response
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+            
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).headers(headers).body(errorResponse);
         }
         
         Map<String, Object> errorResponse = new HashMap<>();
@@ -254,7 +257,13 @@ public class GlobalExceptionHandler {
         System.err.println("Unexpected error: " + ex.getMessage());
         ex.printStackTrace();
         
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        // THE FIX: Force Content-Type to JSON so it doesn't crash trying to return a Map as a PNG
+        org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .headers(headers)
+                .body(errorResponse);
     }
 }
 
