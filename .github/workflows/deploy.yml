@@ -1,0 +1,70 @@
+name: Despliegue de Java a VPS con Docker Compose
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Downloading code
+        uses: actions/checkout@v4
+
+      - name: Configuring JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Building with Maven
+        working-directory: ./backend
+        run: mvn clean package -DskipTests
+
+      - name: Preparing server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: mkdir -p /home/gabriel/SGDIS
+
+      - name: Copying files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "backend/target/*.jar,backend/Dockerfile,backend/docker-compose.yml"
+          target: "/home/${{ secrets.VPS_USERNAME }}/SGDIS"
+          strip_components: 1
+
+      - name: Deploying
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          SERVICE_DB_NAME: ${{ secrets.SERVICE_DB_NAME }}
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: DB_USER,DB_PASSWORD,DB_NAME,SERVICE_DB_NAME
+          script: |
+            cd /home/${{ secrets.VPS_USERNAME }}/SGDIS/
+            
+            echo "DB_USER=$DB_USER" > .env
+            echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+            echo "DB_NAME=$DB_NAME" >> .env
+            echo "SERVICE_DB_NAME" >> .env
+            
+            docker compose up -d --build
+            
+            rm .env
+            docker image prune -f
