@@ -1,4 +1,4 @@
-name: Despliegue de Java a VPS con Docker Compose
+name: SENA-SGDIS-RELEASE
 
 on:
   push:
@@ -34,8 +34,10 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: '2222'
-          script: mkdir -p /home/gabriel/SGDIS
-
+          script: |
+            mkdir -p /home/${{ secrets.VPS_USERNAME }}/SGDIS
+            rm -rf /home/${{ secrets.VPS_USERNAME }}/SGDIS/target
+            
       - name: Copying files to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -66,7 +68,7 @@ jobs:
             echo "DB_USER=$DB_USER" > .env
             echo "DB_PASSWORD=$DB_PASSWORD" >> .env
             echo "DB_NAME=$DB_NAME" >> .env
-            echo "SERVICE_DB_NAME=$SERVICE_DB_NAME" >> .env
+            echo "DB_PASSWORD='${DB_PASSWORD}'" >> .env
             
             docker compose up -d --build
             
