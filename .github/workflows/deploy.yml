@@ -66,7 +66,7 @@ jobs:
             echo "DB_USER=$DB_USER" > .env
             echo "DB_PASSWORD=$DB_PASSWORD" >> .env
             echo "DB_NAME=$DB_NAME" >> .env
-            echo "SERVICE_DB_NAME" >> .env
+            echo "SERVICE_DB_NAME=$SERVICE_DB_NAME" >> .env
             
             docker compose up -d --build
             
