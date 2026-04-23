@@ -1,0 +1,29 @@
+services:
+  app:
+    build: .
+    container_name: sgdis-cloud
+    ports:
+      - "88:8080"
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+  db:
+    container_name: sgdis-db
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - sgdis-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  sgdis-volume:
