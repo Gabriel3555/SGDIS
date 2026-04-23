@@ -11,7 +11,7 @@ on:
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
-
+    environment: production
     steps:
       - name: Downloading code
         uses: actions/checkout@v4
