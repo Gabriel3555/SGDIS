@@ -8,6 +8,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      - DB_USERNAME=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - SERVICE_DB_NAME=${SERVICE_DB_NAME}
+      
   db:
     container_name: sgdis-db
     image: postgres:17-alpine
